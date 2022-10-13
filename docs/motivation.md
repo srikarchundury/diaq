@@ -1,6 +1,9 @@
-layout: page
-title: "Motivation"
-permalink: /motivation
+---
+# Feel free to add content and custom Front Matter to this file.
+# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
+
+layout: default
+---
 
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
@@ -9,13 +12,13 @@ Sparse Tensor Network based Quantum Simulation
 
 ## Motivation ##
 * Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits.
-![Quantum Circuit Example](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/circuit_example.png?raw=true)
-![Tensor Network Example](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/tn_example.png?raw=true)
+![Quantum Circuit Example](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/circuit_example.png)
+![Tensor Network Example](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/tn_example.png)
 * The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
 * The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
 * There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
 * Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit.
-![Post contraction](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/tn_post_contraction.png?raw=true)
+![Post contraction](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/docs/images/tn_post_contraction.png)
 
 ## Scope of this project ##
 * We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
@@ -33,4 +36,4 @@ Sparse Tensor Network based Quantum Simulation
     * As a fall back, leverage NumPy for dense representations and kernels.
 
 ## Literature Survey ##
-[Papers](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey "Papers")
+[Paper List](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey "Papers")
