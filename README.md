@@ -1,7 +1,13 @@
+layout: page
+title: "Motivation"
+permalink: /
+
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
 
-*As of now, this repo hosts source code for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+Git Hub Link: [GIT](https://github.ncsu.edu/tnqs/sparse-tnqs "GIT")
+
+*As of now, this project is only for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
 
 ## Motivation ##
 * Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits.
