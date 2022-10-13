@@ -1,3 +1,7 @@
+layout: page
+title: "Motivation"
+permalink: /
+
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
 
