@@ -1,6 +1,6 @@
 layout: page
 title: "Motivation"
-permalink: /
+permalink: /motivation
 
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
