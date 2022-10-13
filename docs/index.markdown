@@ -12,13 +12,13 @@ Sparse Tensor Network based Quantum Simulation
 
 ## Motivation ##
 * Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits.
-<img src="images/circuit_example.png" width="100" height="100">
-<img src="images/tn_example.png" width="100" height="100">
+<img src="images/circuit_example.png" width="400" height="400"> &nbsp;
+<img src="images/tn_example.png" width="400" height="400"> <br/>
 * The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
 * The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
 * There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
 * Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit.
-<img src="images/tn_post_contraction.png" width="100" height="100">
+<img src="images/tn_post_contraction.png" width="400" height="400"> <br/>
 
 ## Scope of this project ##
 * We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
