@@ -11,7 +11,7 @@ Sparse Tensor Network based Quantum Simulation
 * Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit.
 
 ## Scope of this project ##
-* We focus only on the sparsity introduced in above-mentioned simulation and create a new library that does performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
+* We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
 
 ## Problem Statement (Subject to change) ##
 * Analyze intermediate unitaries for sparsity.
