@@ -14,8 +14,10 @@ Sparse Tensor Network based Quantum Simulation
 
 ## Motivation ##
 * Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits.
-![Quantum Circuit Example](images/circuit_example.png?raw=true)
-![Tensor Network Example](images/tn_example.png?raw=true)
+Quantum Circuit            |  Tensor Network
+:-------------------------:|:-------------------------:
+![Quantum Circuit Example](images/circuit_example.png?raw=true)  |  ![Tensor Network Example](images/tn_example.png?raw=true)
+
 * The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
 * The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
 * There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
