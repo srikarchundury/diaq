@@ -1,7 +1,7 @@
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
 
-Git Hub Link: [GIT](https://github.ncsu.edu/tnqs/sparse-tnqs "GIT")
+Git Hub Link: [GIT IO PAGE](https://pages.github.ncsu.edu/tnqs/sparse-tnqs/)
 
 *As of now, this project is only for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
 
