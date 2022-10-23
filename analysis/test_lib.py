@@ -17,7 +17,7 @@ def remove_odd_gates(circ, gates_removed = ['']):
         for op in moment:
             if str(op.gate) in gates_removed or hasattr(op.gate, '_is_measurement_') or not cirq.has_unitary(op.gate):
                 marked.append((i, op))
-    print("\nremoved for analysis - \n", marked)
+    # print("\nremoved for analysis - \n", marked)
     circ.batch_remove(marked)
     circ._moments = [e for e in circ._moments if e != cirq.Moment()]
     print("\nreduced circuit - \n", circ)
@@ -51,37 +51,39 @@ lib = str(sys.argv[3])
 if cir_name == 'ghz':
     special = supermarq.benchmarks.ghz.GHZ(num_qubits=n_qubits)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
 elif cir_name == 'bit_code':
     special = supermarq.benchmarks.bit_code.BitCode(n_qubits, 1, [1]*n_qubits)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
 elif cir_name == 'ham':
     special = supermarq.benchmarks.hamiltonian_simulation.HamiltonianSimulation(n_qubits, 1, 1)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
 elif cir_name == 'mermin_bell':
     special = supermarq.benchmarks.mermin_bell.MerminBell(n_qubits)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
 elif cir_name == 'phase_code':
     special = supermarq.benchmarks.phase_code.PhaseCode(n_qubits, 1, [1]*n_qubits)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
+# errors as of now
 elif cir_name == 'qaoa':
     special = supermarq.benchmarks.qaoa_fermionic_swap_proxy.QAOAFermionicSwapProxy(n_qubits)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
+# errors as of now
 elif cir_name == 'vqe':
     special = supermarq.benchmarks.vqe_proxy.VQEProxy(n_qubits, 1)
     special_circ = special.circuit()
-    print(special_circ)
+    # print(special_circ)
 
 else:
     raise Exception("not one of (ghz, bit_code, ham, mermin_bell, phase_code, qaoa, vqe). Check args")
