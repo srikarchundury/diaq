@@ -6,7 +6,7 @@ vector<diagonal> testdiagonal() {
     vector<int> aStart;
     vector<int> aEnd;
     aStart.push_back(0);
-    aStart.push_back(1);
+    aStart.push_back(0);
     aEnd.push_back(3);
     aEnd.push_back(3);
     diagonal aDiag(aStart, aEnd);
@@ -61,7 +61,7 @@ void testConvert() {
 int main() {
     // testdiagonal();
     quantumSparseTensor qt = testQuantumSparseTensor();
-    denseTensor dt = testDense();
-    testConvert();
+    // denseTensor dt = testDense();
+    // testConvert();
     return 0;
 }

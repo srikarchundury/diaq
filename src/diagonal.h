@@ -11,7 +11,8 @@ class diagonal {
         // diagonal end position 
         vector<int> end; // (x, y) in matrices
         // values in this diagonal
-        vector<int> values; // integers only? maybe not, but for now (1, 0, -1)
+        // TODO: complex numbers
+        vector<int> values; // most things are -1, 0, 1.
 
         // pass by value? or reference?
         diagonal(const vector<int> &st, const vector<int> &en){

@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 
-#include"quantumSparseTensor.h"
+// #include"quantumSparseTensor.h"
 using namespace std;
 
 class denseTensor {
@@ -58,6 +58,7 @@ class denseTensor {
         //     // for each element in the dense representation, get nearest diagonal and add to it.
         //     // in case of clashes, go for the diagonal with more number of elements.
         //     // re-arrange to diagnalize better? - maybe later in upper layers, not here
+            
         // }
 
     private:

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-class quantumSparseTensor{
+class quantumSparseTensor {
     public:
         vector<diagonal> diagonals;
         quantumSparseTensor(vector<diagonal> &diags) {
@@ -13,9 +13,9 @@ class quantumSparseTensor{
                 diagonals[i].print();
             }
         }
-        denseTensor convertToDenseTensor(quantumSparseTensor qt) {
-            // TODO
-            return denseTensor(vector<int> {5,5});
-        }
+        // denseTensor convertToDenseTensor(quantumSparseTensor qt) {
+        //     // TODO
+        //     return denseTensor(vector<int> {5,5});
+        // }
 };
 
