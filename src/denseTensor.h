@@ -54,12 +54,11 @@ class denseTensor {
         void set(const vector<int> pos, int value) {
             data[this->getLoc(pos)] = value;
         }
-        quantumSparseTensor convertToQuantumSparse() {
-            // for each element in the dense representation, get nearest diagonal and add to it.
-            // in case of clashes, go for the diagonal with more number of elements.
-            // re-arrange to diagnalize better? - maybe later in upper layers, not here
-            
-        }
+        // quantumSparseTensor convertToQuantumSparse() {
+        //     // for each element in the dense representation, get nearest diagonal and add to it.
+        //     // in case of clashes, go for the diagonal with more number of elements.
+        //     // re-arrange to diagnalize better? - maybe later in upper layers, not here
+        // }
 
     private:
         // euclidean distance between 2 points in n-dimensional space
