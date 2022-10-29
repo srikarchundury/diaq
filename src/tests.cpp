@@ -1,67 +1,69 @@
-#include"quantumSparseTensor.h"
-#include"denseTensor.h"
 
-vector<diagonal> testdiagonal() {
-    cout << "Testing diagonal class" << endl;
-    vector<int> aStart;
-    vector<int> aEnd;
-    aStart.push_back(0);
-    aStart.push_back(0);
-    aEnd.push_back(3);
-    aEnd.push_back(3);
-    diagonal aDiag(aStart, aEnd);
+#include"denseMatrix.h"
+
+using namespace std;
+
+
+map<int, diagonal> testdiagonal() {
+    // cout << "Testing diagonal class" << endl;
+    diagonal aDiag(0);
     aDiag.addElement(1);
     aDiag.addElement(1);
     aDiag.addElement(1);
     aDiag.addElement(1);
-    aDiag.print();
+    // aDiag.print(6);
 
     // anti-diagonal
-    vector<int> bStart;
-    vector<int> bEnd;
-    bStart.push_back(4);
-    bStart.push_back(5);
-    bEnd.push_back(5);
-    bEnd.push_back(4);
-    diagonal bDiag(bStart, bEnd);
+    diagonal bDiag(9);
     bDiag.addElement(1);
     bDiag.addElement(-1);
-    bDiag.print();
-    
-    // vector of diagonals
-    vector<diagonal> diags;
-    diags.push_back(aDiag);
-    diags.push_back(bDiag);
-    return diags;
+    // bDiag.print(6);
+    map<int, diagonal> dm;
+    dm.insert({0, aDiag});
+    dm.insert({9, bDiag});
+    return dm;
 }
 
-quantumSparseTensor testQuantumSparseTensor() {
-    vector<diagonal> diagonals = testdiagonal();
-    quantumSparseTensor qt(diagonals);
-    qt.print();
-    return qt;
+quantumSparseMatrix testQuantumSparseMatrix(map<int, diagonal> dm) {
+    quantumSparseMatrix m = quantumSparseMatrix(dm, 6);
+    // m.print();
+    return m;
 }
 
-denseTensor testDense() {
-    denseTensor dt(vector<int> {6, 6});
-    for (int i = 0;i < 4;i++) {
-        dt.set(vector<int> {i, i}, 1);
-    }
-    dt.set(vector<int> {4, 5}, 1);
-    dt.set(vector<int> {5, 4}, -1);
-    dt.print();
-    return dt;
+denseMatrix testDense() {
+    denseMatrix dm(6);
+    dm.data = {
+        1,0,0,0,0,0,
+        0,1,0,0,0,0,
+        0,0,1,0,0,0,
+        0,0,0,1,0,0,
+        0,0,0,0,0,1,
+        0,0,0,0,-1,0,
+    };
+    // dm.print();
+    return dm;
 }
 
-void testConvert() {
-
-    return;
+quantumSparseMatrix testConvertToSparse(denseMatrix dm, int matrixSize) {
+    return dm.convertToQuantumSparse(matrixSize);
 }
 
 int main() {
-    // testdiagonal();
-    quantumSparseTensor qt = testQuantumSparseTensor();
-    // denseTensor dt = testDense();
-    // testConvert();
+    // map<int, diagonal> dm = testdiagonal();
+    // quantumSparseMatrix qm = testQuantumSparseMatrix(dm);
+    // qm.print();
+    // qm.addToDiagonal(0, 2);
+    // qm.print();
+    // qm.addToDiagonal(-1, 7);
+    // qm.print();
+    // qm.addToDiagonal(-1, 8);
+    // qm.print();
+    // qm.addToDiagonal(-1, 9);
+    // qm.print();
+    // qm.addToDiagonal(10, 90);
+    // qm.print();
+    denseMatrix d = testDense();
+    quantumSparseMatrix qm = testConvertToSparse(d, 6);
+    qm.print();
     return 0;
 }
