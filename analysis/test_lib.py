@@ -30,7 +30,7 @@ def get_tn(circ):
 
 def analyse(tensor, precision=3):
     # check for overall sparsity
-    # check diagnal sparsity
+    # check diagonal sparsity
     # check intops - number of floats/complex numbers that can be represented using just integers
     unique = {}
     for i in range(len(tensor)):
