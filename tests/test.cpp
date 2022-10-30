@@ -1,5 +1,5 @@
-#include"quantumSparseTensor.h"
-#include"denseTensor.h"
+#include "quantumSparseTensor.h"
+#include "denseTensor.h"
 
 vector<diagonal> testdiagonal() {
     cout << "Testing diagonal class" << endl;

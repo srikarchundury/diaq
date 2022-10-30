@@ -18,7 +18,7 @@ void randomize(Vector &x, double scale = 1.0, double mean = 0.0);
 double one_norm(const Vector &x);
 double two_norm(const Vector &x);
 double inf_norm(const Vector &x);
-double p_norm(const Vector &x);
+//double p_norm(const Vector &x);
 
 Vector operator+(const Vector &x, const Vector &y);
 Vector operator-(const Vector &x, const Vector &y);

@@ -116,7 +116,7 @@ double inf_norm(const Vector &x)
         return result;
 }
 
-double p_norm(const Vector &x);
+//double p_norm(const Vector &x);
 
 Vector operator+(const Vector &x, const Vector &y);
 
