@@ -1,5 +1,6 @@
 
 #include"denseMatrix.h"
+#include"kernels.h"
 
 using namespace std;
 
@@ -48,6 +49,10 @@ quantumSparseMatrix testConvertToSparse(denseMatrix dm, int matrixSize) {
     return dm.convertToQuantumSparse(matrixSize);
 }
 
+quantumSparseMatrix testProducts(quantumSparseMatrix A, quantumSparseMatrix B) {
+    return;
+}
+
 int main() {
     // map<int, diagonal> dm = testdiagonal();
     // quantumSparseMatrix qm = testQuantumSparseMatrix(dm);
@@ -62,8 +67,11 @@ int main() {
     // qm.print();
     // qm.addToDiagonal(10, 90);
     // qm.print();
-    denseMatrix d = testDense();
-    quantumSparseMatrix qm = testConvertToSparse(d, 6);
-    qm.print();
+
+    // denseMatrix d = testDense();
+    // quantumSparseMatrix qm = testConvertToSparse(d, 6);
+    // qm.print();
+
+    quantumSparseMatrix qm = testProducts(qm1, qm2);
     return 0;
 }
