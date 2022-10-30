@@ -1,7 +1,9 @@
-#include"diagonal.h"
+#ifndef SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
+#define SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
+
+#include "diagonal.hpp"
 #include <map>
 
-using namespace std;
 
 class quantumSparseMatrix {
     public:
@@ -62,3 +64,5 @@ class quantumSparseMatrix {
         //     return denseTensor(vector<int> {5,5});
         // }
 };
+
+#endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP

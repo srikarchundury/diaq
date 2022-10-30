@@ -3,7 +3,7 @@
 
 #include "Vector.hpp"
 // TODO: update to .hpp and move to include/
-#include "denseTensor.h"
+#include "denseMatrix.hpp"
 
 // ----------------------------------------------------------------
 //

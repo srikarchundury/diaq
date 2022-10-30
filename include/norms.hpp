@@ -9,7 +9,7 @@
 #include "Vector.hpp"
 
 // TODO: change to .hpp and move to include/
-#include "denseTensor.h"
+#include "denseMatrix.hpp"
 #include "kernels.hpp"
 
 
