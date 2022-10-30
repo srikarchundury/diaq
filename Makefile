@@ -2,24 +2,20 @@
 #
 
 CXX	    	:= c++
-MPICXX		:= mpicxx
-# MPICXX          := mpiicpc -no-multibyte-chars
-
-# MKL		:= /sw/intel/oneAPI/2021.1.0.2659/mkl/2021.1.1/
 
 # Maximum optimization effort: -Ofast -march=native -DNDEBUG
-OPTS        	:= -Ofast -march=native -DNDEBUG
-DEBUG		:= # -g -O0 -fsanitize=address
+OPTS        	:= -O3 -march=native -DNDEBUG
+DEBUG		:= 
 PROFILE		:= 
-LANG        	:= -std=c++14
+LANG        	:= -std=c++11
 PICKY       	:= -Wall
-DIAG		:= # -Rpass=.*
-INCLUDES	:= -I../include -I$(MKL)/include
-LIBS		:= -L$(MKL)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+DIAG		:= 
+# REPORT	:=  -Rpass=loop-vectorize -Rpass-missed=loop-vectorize
+INCLUDES	:= -I../include
 
 VPATH		= ../include:../src
 
-CXXFLAGS	+= $(DEFS) $(XDEFS) $(OPTS) $(DEBUG) $(PROFILE) $(LANG) $(PICKY) $(DIAG) $(INCLUDES) 
+CXXFLAGS	+= $(DEFS) $(XDEFS) $(OPTS) $(DEBUG) $(PROFILE) $(LANG) $(PICKY) $(INCLUDES) $(DIAG)
 
 ifeq (, $(shell which ${CXX}))
   CXX := c++
@@ -48,7 +44,7 @@ OS		:= $(shell uname -s)
 
 ifeq ($(OS),Darwin)
 ifeq ($(CXXFAM),clang)
-  XDEFS     += -Xpreprocessor
+  XDEFS         += -Xpreprocessor
   LIBS		+= -lpthread -lomp
 endif
 ifeq ($(CXXFAM),gnu)
@@ -65,58 +61,21 @@ endif
 endif
 
 SOURCES		= $(TARGETS:.exe=.cpp) $(TESTS:.exe=.cpp) 
-OBJECTS		= $(SOURCES:.cpp=.o)   $(LOBJ)
 HEADERS		= $(SOURCES:.cpp=.hpp) $(LINC)
+OBJECTS		= $(SOURCES:.cpp=.o)   $(LOBJ)
 PCHS		= $(HEADERS:=.gch)
+
+LSRC		:= quantumSparseTensor.h diagonal.h denseTensor.h
+LINC		:= $(LSRC:.cpp=.hpp)
+XSRC		:= ../src/amath583.cpp ../src/amath583IO.cpp ../src/amath583sparse.cpp
+LOBJ		:= $(LSRC:.cpp=.o)
 
 $SHELL		= bash
 
-LSRC		:= denseTensor.cpp quantumSparseTensor.cpp diagonal.cpp
-LINC		:= denseTensor.hpp quantumSparseTensor.hpp
-XSRC		:= ../src/denseTensor.cpp ../src/quantumSparseTensor.cpp ../src/diagonal.cpp
-LOBJ		:= $(LSRC:.cpp=.o)
-
-
 .PHONY		: defreport optreport clean depend all verify %.test
 .SUFFIXES	: .exe .test
-.PRECIOUS   : %.o
-.DEFAULT_GOAL = all
+.PRECIOUS   	: %.o
 
-all		: $(TARGETS) $(TESTS)
 
-ALLTESTS	:= $(TARGETS:.exe=.test) $(TESTS:.exe=.test)
 
-verify		: $(ALLTESTS)
-
-%.test		: %.exe
-		  ./$^
-
-%.exe   	: %.o $(LOBJ)
-		  $(MPICXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
-
-%.o 		: %.cpp
-		  $(MPICXX) -c $(CXXFLAGS) $< -o $@
-
-%.s 		: %.cpp
-		  $(MPICXX) -S $(CXXFLAGS) $<
-
-defreport	:
-		  $(MPICXX) -dM -E -x c++ /dev/null
-
-optreport	:
-		  echo 'int;' | $(MPICXX) -xc++ $(CXXFLAGS) - -o /dev/null -\#\#\#
-
-clean		:
-		  /bin/rm -f $(TARGETS) $(TESTS) $(OBJECTS) $(PCHS) Matrix.s a.out *~ Makefile.bak makedep slurm-[0-7]*.out
-
-depend		: 
-	@ $(MPICXX) -MM -x c++ $(LANG) $(INCLUDES) $(SOURCES) $(XSRC) > makedep
-	@ echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
-	@ echo '$$r makedep' >>eddep
-	@ echo 'w' >>eddep
-	@ cp Makefile Makefile.bak
-	@ ed - Makefile < eddep
-	@ /bin/rm eddep makedep
-	@ echo '# DEPENDENCIES MUST END AT END OF FILE' >> Makefile
-	@ echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> Makefile
-	@ echo '# see make depend above' >> Makefile
+test.exe : 
