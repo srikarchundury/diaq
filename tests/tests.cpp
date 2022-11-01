@@ -30,15 +30,14 @@ quantumSparseMatrix testQuantumSparseMatrix(std::map<int, diagonal> dm) {
 }
 
 denseMatrix testDense() {
-    denseMatrix dm(6);
-    dm.data = {
-        0,0,0,0,0,0,
-        0,0,0,0,0,1,
-        0,0,0,0,1,0,
-        0,0,0,1,0,0,
-        0,0,1,0,0,0,
+    denseMatrix dm(6, {
+        1,0,0,0,0,0,
         0,1,0,0,0,0,
-    };
+        0,0,1,0,0,0,
+        0,0,0,1,0,0,
+        0,0,0,0,0,1,
+        0,0,0,0,-1,0,
+    });
     dm.print();
     return dm;
 }

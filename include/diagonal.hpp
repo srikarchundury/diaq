@@ -8,13 +8,10 @@
 
 class diagonal {
     public:
-        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
-        std::vector<int> values; // most things are -1, 0, 1.
-
         diagonal(const int di) {
             dIndex = di;
         }
-        bool addElement(int value) {
+        bool addElement(std::complex<double> value) {
             values.push_back(value);
             return true;
         }
@@ -62,12 +59,18 @@ class diagonal {
         int numNonZeros() {
             int count = 0;
             for(int i = 0; i < values.size(); i++) {
-                if(values[i] != 0) {
+                if(real(values[i]) != 0 || imag(values[i]) != 0) {
                     count++;
                 }
             }
             return count;
         }
+        std::vector<std::complex<double>> getValues() {
+            return values;
+        }
+    private:
+        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
+        std::vector<std::complex<double>> values; // most things are -1, 0, 1.
 };
 
 #endif // SPARSE_TNQS_DIAGONAL_HPP

@@ -11,11 +11,8 @@
 
 class denseMatrix {
     public:
-        int size;
-        std::vector<int> data;
-        denseMatrix(const int s) {
+        denseMatrix(const int s, std::vector<std::complex<double>> array) {
             size = s;
-            std::vector<int> array(s * s);
             data = array;
         }
         void print(std::string sep="x") {
@@ -73,6 +70,9 @@ class denseMatrix {
             }
             return p;
         }
+    private:
+        int size;
+        std::vector<std::complex<double>> data;
 };
 
 #endif // SPARSE_TNQS_DENSEMATRIX_HPP
