@@ -8,18 +8,18 @@
 class quantumSparseMatrix {
     public:
         int size;
-        map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
-        quantumSparseMatrix(map<int, diagonal> dm, int s) {
-            map<int, diagonal>::iterator it;
+        std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
+        quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
+            std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
             size = s;
         }
         void print() {
-            map<int, diagonal>::iterator it;
+            std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                cout << "diagIndex=" << it->first << " ";
+                std::cout << "diagIndex=" << it->first << " ";
                 it->second.print(this->size);
             }
         }
@@ -43,8 +43,8 @@ class quantumSparseMatrix {
             d->addElement(val);
         }
         void pruneMatrix() {
-            vector<int> toDelete;
-            map<int, diagonal>::iterator it;
+            std::vector<int> toDelete;
+            std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
                 for (int i = 0; i < it->second.values.size(); i++) {
@@ -61,7 +61,7 @@ class quantumSparseMatrix {
         }
         // denseTensor convertToDenseTensor(quantumSparseTensor qt) {
         //     // TODO
-        //     return denseTensor(vector<int> {5,5});
+        //     return denseTensor(std::vector<int> {5,5});
         // }
 };
 

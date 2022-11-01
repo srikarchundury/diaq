@@ -18,7 +18,7 @@ class denseMatrix {
             std::vector<int> array(s * s);
             data = array;
         }
-        void print(string sep="x") {
+        void print(std::string sep="x") {
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%size == 0) {
                     std::cout << data[i] << std::endl;
@@ -30,7 +30,7 @@ class denseMatrix {
         }
         quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
             std::cout << "converting dense to sparse" << std::endl;
-            map<int, diagonal> diagMap;
+            std::map<int, diagonal> diagMap;
             quantumSparseMatrix qm(diagMap, matrixSize);
             for(int i=0; i < size; i++) {
                 for(int j=0; j < size; j++) {
