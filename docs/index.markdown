@@ -6,10 +6,10 @@ layout: home
 title: s-tnqs
 ---
 
-# sparse-tnqs #
-Sparse Tensor Network based Quantum Simulation
+# Sparse Tensor-Network based Quantum Simulation #
+[Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git")
 
-*As of now, this repo hosts source code for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+*This repo hosts source code for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
 
 ## Team ##
 * Srikar Chundury (schundu3)
@@ -27,19 +27,55 @@ Sparse Tensor Network based Quantum Simulation
 ## Scope of this project ##
 * We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
 
-## Problem Statement (Subject to change) ##
+## Problem Statement ##
 * Analyze intermediate unitaries for sparsity.
     * Follow the contraction path (opt_einsum) and analyze how the unitary of the circuit evolves over time steps.
-* Write a custom numerical library that takes quantum sparsity patterns into account (diagonal/anti-diagonal, (1/-1/0) etc)
-    * New data structure format to store sparse unitaries efficiently.
-    * Handle Conversions between this new format and other formats (only NumPy as of now).
-    * Implement Kernels:
+* New data structure format to store sparse unitaries efficiently.
+    * Make use of diagonals and anti-diagonals.
+    * Estimate the time and space complexities for kernel algorithmics involved (Matrix-Vector, Matrix-Matrix).
+* Implement the new data structure and kernels in c++ and expose as a custom library.
+    * Handle Conversions between this new format and numPy.
+    * Kernels:
         * Vector to Vector multiplication
         * Vector to Matrix multiplication
-        * Matrix to Matrix multiplication
-    * As a fall back, leverage NumPy for dense representations and kernels.
+        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations).
+    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers).
+
+## Progress Update 1 ##
+* Analyzed sparsity of quantum circuits represented as unitaries.    
+    * Obtained final unitaries using quimb, qiskit (unitary simulator) for quantum circuit benchmarks described in the supermarQ paper (refer literature survey below). Some results (for 3 qubit benchmark circuits) look like this-
+        * GHZ circuit <br/> <img src="images/ghz_unitary.png" width="300"> &nbsp; <img src="images/ghz_circuit.png" width="300"> <br/>
+        * Hamiltonian circuit <br/> <img src="images/ham_unitary.png" width="300"> &nbsp; <img src="images/ham_circuit.png" width="300"> <br/>
+        * Mermin Bell circuit <br/> <img src="images/mermin_bell_unitary.png" width="300"> &nbsp; <img src="images/mermin_bell_circuit.png" width="300"> <br/>
+    
+    * Real world example: qiskit textbook's <a href="https://qiskit.org/textbook/ch-applications/vqe-molecules.html"> VQE preparation entanglement circuit </a> <br/>
+    <img src="images/vqe_prep_circuit.png" width="300"> <br/>
+    <img src="images/vqe_prep_unitary.png" width="300"> <br/>
+    
+    * Some observations:
+        * Final unitaries can be compactly represented using just the diagonals and anti-diagonals.
+        * Final unitaries' range of values is limited and can easily be written as constant times a matrix with just +1,0,-1 paving scope for reducing #flops in contraction kernels.
+    
+    * Claim (yet to prove): The intermediate matrices in the contration path have similar sparsity patterns. Support for this claim: the same benchmark ciruits when run for smaller/higher number of qubits result in unitaries looking very similar.
+
+* New sparse data structure.
+    * A quantum sparse matrix (QSM) is a collection of "diagonals" stored as a hashmap, with each diagonal's index as the key (0 for main diagonal, 1 for super diagonal, -1 for sub diagonal and so on.)
+    * Each diagonal is represented using 2 arrays (one for indices and one for the actual values) that store only non-zero values; diagonal is also sparse.
+    * Each value is a complex number
+
+* Kernel algorithms and their complexities.
+    * Any square matrix of size n has 2n-1 principal diagonals.
+    * Any square matrix can be written as a sum of 2n-1 matrices (each matrix with just one diagonal).
+    * Matrix-Matrix (A.B) multiplication algorithm: can be divided into subproblems like so-
+        * (A~-n~ + ... + A~0~ + A~1~ + ... + A~n~) . (B~-n~ + ... + B~0~ + B~1~ + ... + B~n~)
+        * A~-n~ . (B~-n~ + ... + B~0~ + B~1~ + ... + B~n~) + A~-(n-1)~ . (B~-n~ + ... + B~0~ + B~1~ + ... + B~n~) + ...
+        * A~-n~ . B~-n~ + A~-n~ . (B~-(n-1)~ + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
+        * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
+        * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
+        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
 
 ## Literature Survey ##
 [Paper List](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey "Papers")
 
-## Timeline (TBD) ##
+## Note ##
+* Please refer [Reports/Discussion](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions "Discussion") for timeline and progress so far.
