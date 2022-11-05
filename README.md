@@ -18,11 +18,15 @@ Sparse Tensor Network based Quantum Simulation
 * We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
 
 ## Problem Statement ##
-* Write a custom numerical library that takes quantum sparsity patterns into account (diagonal/anti-diagonal, (1/-1/0) etc)
-    * New data structure format to store sparse unitaries efficiently.
-    * Handle Conversions between this new format and other formats (only NumPy as of now).
-    * Implement Kernels:
+* Analyze intermediate unitaries for sparsity.
+    * Follow the contraction path (opt_einsum) and analyze how the unitary of the circuit evolves over time steps.
+* New data structure format to store sparse unitaries efficiently.
+    * Make use of diagonals and anti-diagonals.
+    * Estimate the time and space complexities for kernel algorithmics involved (Matrix-Vector, Matrix-Matrix).
+* Implement the new data structure and kernels in c++ and expose as a custom library.
+    * Handle Conversions between this new format and numPy.
+    * Kernels:
         * Vector to Vector multiplication
         * Vector to Matrix multiplication
-        * Matrix to Matrix multiplication
-    * As a fall back, leverage NumPy for dense representations and kernels.
+        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations).
+    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers).
