@@ -88,7 +88,7 @@ title: Quantum Sparse Matrices
         * A<sub>-n</sub> . B<sub>-n</sub> + A<sub>-n</sub> . (B<sub>-(n-1)</sub> + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
         * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
         * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
-        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
+        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
 
 <hr id="5" />
 
