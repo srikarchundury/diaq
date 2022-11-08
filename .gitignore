@@ -1,5 +1,8 @@
+.DS_Store
+docs/.DS_Store
 analysis/metrics/*
 analysis/metrics*/*
+analysis/*metrics*/*
 
 .vscode/*
 .DS_Store
