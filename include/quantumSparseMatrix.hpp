@@ -7,8 +7,6 @@
 
 class quantumSparseMatrix {
     public:
-        int size;
-        std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
@@ -63,6 +61,9 @@ class quantumSparseMatrix {
         //     // TODO
         //     return denseTensor(std::vector<int> {5,5});
         // }
+    private:
+        int size;
+        std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
 #endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP

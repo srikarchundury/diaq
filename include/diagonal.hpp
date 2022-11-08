@@ -8,8 +8,6 @@
 
 class diagonal {
     public:
-        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
-        std::vector<int> values; // most things are -1, 0, 1.
 
         diagonal(const int di) {
             dIndex = di;
@@ -68,6 +66,9 @@ class diagonal {
             }
             return count;
         }
+    private:
+        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
+        std::vector<int> values; // most things are -1, 0, 1.
 };
 
 #endif // SPARSE_TNQS_DIAGONAL_HPP
