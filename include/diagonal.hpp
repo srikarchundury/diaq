@@ -4,23 +4,31 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <complex>
 
 
 class diagonal {
     public:
-        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
-        std::vector<int> values; // most things are -1, 0, 1.
-
-        diagonal(const int di) {
+        diagonal(int di) {
             dIndex = di;
         }
-        bool addElement(int value) {
+        diagonal(int di, std::vector<std::complex<double> >* vals) {
+            dIndex = di;
+            values = *vals;
+        }
+        bool addElement(std::complex<double> value) {
             values.push_back(value);
             return true;
         }
-        void print(int matrixSize, std::string sep=",") {
-            int *coords= this->getCoords(matrixSize, this->dIndex);
-            std::cout << "(" << coords[0] << "," << coords[1] << ")";
+        void setValue(int i, std::complex<double> val) {
+            values[i] = val;
+        }
+        std::complex<double> getValue(int i) {
+            return values[i];
+        }
+        void print(std::string sep=",") {
+            // int *coords= this->getCoords(matrixSize, this->dIndex);
+            std::cout << "(dIndex=" << dIndex << ") ";
             std::cout << "[" << "";
             int n = values.size();
             for (int i = 0; i < n-1; i++) {
@@ -29,6 +37,9 @@ class diagonal {
             std::cout << values[n-1] << "";
             std::cout << "]" << "";
             std::cout << std::endl;
+        }
+        std::vector<std::complex<double> > getValues() {
+            return values;
         }
         // returns the start (x, y) of diagonal of the matrix
         int* getCoords(int matrixSize, int dIndex) {
@@ -62,12 +73,15 @@ class diagonal {
         int numNonZeros() {
             int count = 0;
             for(int i = 0; i < values.size(); i++) {
-                if(values[i] != 0) {
+                if(std::real(values[i]) != 0 || std::imag(values[i]) != 0) {
                     count++;
                 }
             }
             return count;
         }
+    private:
+        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
+        std::vector<std::complex<double> > values; // most things are -1, 0, 1.
 };
 
 #endif // SPARSE_TNQS_DIAGONAL_HPP

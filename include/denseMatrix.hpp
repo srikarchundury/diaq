@@ -11,11 +11,8 @@
 
 class denseMatrix {
     public:
-        int size;
-        std::vector<int> data;
-        denseMatrix(const int s) {
+        denseMatrix(const int s, std::vector<std::complex<double>> array) {
             size = s;
-            std::vector<int> array(s * s);
             data = array;
         }
         void print(std::string sep="x") {
@@ -29,12 +26,12 @@ class denseMatrix {
             }
         }
         quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
-            std::cout << "converting dense to sparse" << std::endl;
+            // std::cout << "converting dense to sparse" << std::endl;
             std::map<int, diagonal> diagMap;
             quantumSparseMatrix qm(diagMap, matrixSize);
             for(int i=0; i < size; i++) {
                 for(int j=0; j < size; j++) {
-                    int diagIndx = getTargetDiagIndex(&qm, i, j);
+                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
                     // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
                     qm.addToDiagonal(diagIndx, data[i * size + j]);
                 }
@@ -66,6 +63,9 @@ class denseMatrix {
             }
             return targetDiagIndex_1;
         }
+        int getTargetDiagIndex_onlydiags(int i, int j) {
+            return j-i;
+        }
         int isPartOf(int dIndex, int a, int b, int x, int y) {
             int p = x - y + b - a;
             if(dIndex >= size){
@@ -73,6 +73,9 @@ class denseMatrix {
             }
             return p;
         }
+    private:
+        int size;
+        std::vector<std::complex<double>> data;
 };
 
 #endif // SPARSE_TNQS_DENSEMATRIX_HPP

@@ -7,8 +7,6 @@
 
 class quantumSparseMatrix {
     public:
-        int size;
-        std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
@@ -16,11 +14,16 @@ class quantumSparseMatrix {
             }
             size = s;
         }
+        int getSize() {
+            return size;
+        }
+        std::map<int, diagonal> getDiagonalMap() {
+            return diagonalMap;
+        }
         void print() {
             std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                std::cout << "diagIndex=" << it->first << " ";
-                it->second.print(this->size);
+                it->second.print();
             }
         }
         void createDiagonal(int dIndex) {
@@ -38,20 +41,32 @@ class quantumSparseMatrix {
                 return &it->second;
             }
         }
-        void addToDiagonal(int dIndex, int val) {
+        void addToDiagonal(int dIndex, std::complex<double> val) {
             diagonal* d = this->getDiagonal(dIndex);
             d->addElement(val);
+        }
+        void addDiagonal(int dIndex, diagonal diagNew) {
+            auto it = diagonalMap.find(dIndex);
+            if(it == diagonalMap.end()) {
+                diagonalMap.insert({dIndex, diagNew});
+            }
+            else {
+                for(int i = 0; i < it->second.getValues().size(); i++) {
+                    it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
+                }
+            }
         }
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
-                for (int i = 0; i < it->second.values.size(); i++) {
-                    if(it->second.values[i] != 0) break;
+                std::vector<std::complex<double> > vals = it->second.getValues();
+                for (int i = 0; i < vals.size(); i++) {
+                    if(std::real(vals[i]) != 0.0 || std::imag(vals[i] != 0.0)) break;
                     else counter++;
                 }
-                if(counter == it->second.values.size()) {
+                if(counter == vals.size()) {
                    toDelete.push_back(it->first);
                 }
             }
@@ -63,6 +78,9 @@ class quantumSparseMatrix {
         //     // TODO
         //     return denseTensor(std::vector<int> {5,5});
         // }
+    private:
+        int size;
+        std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
 #endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
