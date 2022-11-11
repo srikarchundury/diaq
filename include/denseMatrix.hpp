@@ -26,12 +26,12 @@ class denseMatrix {
             }
         }
         quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
-            std::cout << "converting dense to sparse" << std::endl;
+            // std::cout << "converting dense to sparse" << std::endl;
             std::map<int, diagonal> diagMap;
             quantumSparseMatrix qm(diagMap, matrixSize);
             for(int i=0; i < size; i++) {
                 for(int j=0; j < size; j++) {
-                    int diagIndx = getTargetDiagIndex(&qm, i, j);
+                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
                     // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
                     qm.addToDiagonal(diagIndx, data[i * size + j]);
                 }
@@ -62,6 +62,9 @@ class denseMatrix {
                 return (qm->getDiagonal(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
             }
             return targetDiagIndex_1;
+        }
+        int getTargetDiagIndex_onlydiags(int i, int j) {
+            return j-i;
         }
         int isPartOf(int dIndex, int a, int b, int x, int y) {
             int p = x - y + b - a;

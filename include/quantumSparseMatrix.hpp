@@ -17,11 +17,13 @@ class quantumSparseMatrix {
         int getSize() {
             return size;
         }
+        std::map<int, diagonal> getDiagonalMap() {
+            return diagonalMap;
+        }
         void print() {
             std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                std::cout << "diagIndex=" << it->first << " ";
-                it->second.print(this->size);
+                it->second.print();
             }
         }
         void createDiagonal(int dIndex) {
@@ -39,18 +41,29 @@ class quantumSparseMatrix {
                 return &it->second;
             }
         }
-        void addToDiagonal(int dIndex, int val) {
+        void addToDiagonal(int dIndex, std::complex<double> val) {
             diagonal* d = this->getDiagonal(dIndex);
             d->addElement(val);
+        }
+        void addDiagonal(int dIndex, diagonal diagNew) {
+            auto it = diagonalMap.find(dIndex);
+            if(it == diagonalMap.end()) {
+                diagonalMap.insert({dIndex, diagNew});
+            }
+            else {
+                for(int i = 0; i < it->second.getValues().size(); i++) {
+                    it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
+                }
+            }
         }
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
-                std::vector<int> vals = it->second.getValues();
+                std::vector<std::complex<double> > vals = it->second.getValues();
                 for (int i = 0; i < vals.size(); i++) {
-                    if(vals[i] != 0) break;
+                    if(std::real(vals[i]) != 0.0 || std::imag(vals[i] != 0.0)) break;
                     else counter++;
                 }
                 if(counter == vals.size()) {

@@ -1,6 +1,6 @@
 
 #include "../include/denseMatrix.hpp"
-#include "../include/kernels.hpp"
+#include "../include/matrixKernels.cpp"
 
 
 std::map<int, diagonal> testdiagonal() {
@@ -25,30 +25,9 @@ std::map<int, diagonal> testdiagonal() {
 
 quantumSparseMatrix testQuantumSparseMatrix(std::map<int, diagonal> dm) {
     quantumSparseMatrix m = quantumSparseMatrix(dm, 6);
-    // m.print();
+    m.print();
     return m;
 }
-
-denseMatrix testDense() {
-    denseMatrix dm(6, {
-        1,0,0,0,0,0,
-        0,1,0,0,0,0,
-        0,0,1,0,0,0,
-        0,0,0,1,0,0,
-        0,0,0,0,0,1,
-        0,0,0,0,-1,0,
-    });
-    dm.print();
-    return dm;
-}
-
-quantumSparseMatrix testConvertToSparse(denseMatrix dm, int matrixSize) {
-    return dm.convertToQuantumSparse(matrixSize);
-}
-
-// quantumSparseMatrix testProducts(quantumSparseMatrix A, quantumSparseMatrix B) {
-//     return;
-// }
 
 int main() {
     // std::map<int, diagonal> dm = testdiagonal();
@@ -65,10 +44,33 @@ int main() {
     // qm.addToDiagonal(10, 90);
     // qm.print();
 
-    denseMatrix d = testDense();
-    quantumSparseMatrix qm = testConvertToSparse(d, 6);
-    qm.print();
+    // dense tests
+    denseMatrix dmA(6, {
+        1,0,0,0,0,0,
+        1,1,0,0,0,0,
+        0,1,1,0,0,0,
+        0,0,1,1,0,0,
+        0,0,0,1,1,0,
+        0,0,0,0,1,1,
+    });
+    // dmA.print();
+    quantumSparseMatrix qmA = dmA.convertToQuantumSparse(6);
+    qmA.print();
+    std::cout << "multiplied with" << std::endl;
+    denseMatrix dmB(6, {
+        1,0,0,0,0,0,
+        7,2,0,0,0,0,
+        0,8,3,0,0,0,
+        0,0,9,4,0,0,
+        0,0,0,10,5,0,
+        0,0,0,0,11,6,
+    });
+    // dmB.print();
+    quantumSparseMatrix qmB = dmB.convertToQuantumSparse(6);
+    qmB.print();
+    std::cout << "gives" << std::endl;
+    // testing product
+    product(qmA, qmB).print();
 
-    // quantumSparseMatrix qm = testProducts(qm1, qm2);
     return 0;
 }

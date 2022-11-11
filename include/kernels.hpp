@@ -2,7 +2,7 @@
 #define SPARSE_TNQS_KERNELS_HPP
 
 #include "Vector.hpp"
-#include "denseMatrix.hpp"
+#include "matrixKernels.cpp"
 
 // ----------------------------------------------------------------
 //
@@ -30,10 +30,11 @@ Vector &operator-=(Vector &x, const Vector &y);
 
 // ----------------------------------------------------------------
 //
-// Matrix arithmetic
+// Matrix Matrix kernels
 //
 // ----------------------------------------------------------------
 
+// quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B);
 
 
 #endif // SPARSE_TNQS_KERNELS_HPP
