@@ -30,21 +30,28 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
     int lenDiagB = size - abs(indexB);
     int lenRes = size - abs(indexA + indexB);
     if(indexA > 0) {
-        int k=0;
-        while(k<lenRes) {
-            // TODO: needs to be changed to incorporate offsets
-            res.addElement(valuesA[k] * valuesB[k]);
+        int k = 0;
+        int offset = lenDiagB - lenDiagA;
+        while(k < lenRes) {
+            res.addElement(valuesA[k] * valuesB[k + offset]);
             k++;
         }
     }
     else {
-        int k=0;
-        while(k<lenRes) {
-            res.addElement(valuesA[k] * valuesB[k]);
+        int k = 0, a=0, b=0;
+        int jump = indexB;
+        while(jump > 0) {
+            res.addElement(0);
             k++;
+            jump--;
+        }
+        while(k < lenRes) {
+            res.addElement(valuesA[a] * valuesB[b]);
+            k++;
+            a++;
+            b++;
         }
     }
-    // res.print();
     return res;
 }
 
