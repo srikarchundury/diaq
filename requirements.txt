@@ -11,7 +11,6 @@ backcall==0.2.0
 beautifulsoup4==4.11.1
 bleach==5.0.1
 cachetools==5.2.0
-certifi @ file:///croot/certifi_1665076670883/work/certifi
 cffi==1.15.1
 charset-normalizer==2.1.1
 cirq==1.0.0
@@ -98,7 +97,7 @@ ntlm-auth==1.5.0
 numba==0.56.3
 numpy==1.23.4
 oauthlib==3.2.2
-opt-einsum @ git+https://github.ncsu.edu/tnqs/opt_einsum.git@f32985d5d1eeaa7397a65f3dcb1e1a6e6c7a6669
+# opt-einsum @ git+https://github.ncsu.edu/tnqs/opt_einsum.git@f32985d5d1eeaa7397a65f3dcb1e1a6e6c7a6669
 ordered-set==4.1.0
 packaging==21.3
 pandas==1.5.1
