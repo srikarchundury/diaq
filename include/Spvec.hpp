@@ -1,0 +1,193 @@
+#ifndef SPARSE_TNQS_SPVEC_HPP
+#define SPARSE_TNQS_SPVEC_HPP
+
+#include <iostream>
+#include <string>
+#include <vector>
+#include <complex>
+#include <algorithm>
+#include <functional>
+#include <cassert>
+
+class Spvec {
+    public:
+        Spvec();
+        Spvec(std::vector<int> *inds, std::vector<std::complex<double>> *vals) : storage_(*vals), indices_(*inds) {}
+
+        size_t num_nonzero() const { return storage_.size(); }
+
+        //int get_dIndex() const { return dIndex; };
+
+        const std::vector<int> get_indices() const { return indices_;}
+        const std::vector<std::complex<double>> get_values()  const {return storage_;}
+
+        void addElement(std::complex<double> val , size_t idx) { storage_.push_back(val), indices_.push_back(idx);}
+
+        void setValue(std::complex<double> val , size_t idx) { 
+            std::vector<int>::iterator it = find(indices_.begin(),indices_.end(),idx);
+            if (it==indices_.end()) // if index not already assigned
+                addElement(val,idx);
+            else // update if already assigned
+                storage_.at(it - indices_.begin()) = val;
+        }
+
+        void print(std::string sep = ",")
+        {
+            assert(indices_.size() == storage_.size());
+
+            size_t n = indices_.end() - indices_.begin();
+            std::cout << "[";
+            
+            for (int i = 0; i < n; i++)
+            {
+                std::cout << indices_[i] <<":" << storage_[i] << sep;
+            }
+            std::cout << "]" << std::endl;
+        }
+
+    private:
+        // int dIndex; // -(n-1),..0,..n-1 (principal diagonal numbering)
+        std::vector<int> indices_; // normal vector indexing
+        std::vector<std::complex<double>> storage_;
+};
+
+// ----------------------------------------------------------------
+//
+// SPARSE DIAGONAL HELPER FUNCTIONS
+//
+// ----------------------------------------------------------------
+
+Spvec operator+(const Spvec &x, const Spvec &y)
+{
+    std::vector<int> new_idx, x_idx = x.get_indices(), y_idx = y.get_indices();
+    std::vector<std::complex<double>> new_data, x_data = x.get_values(), y_data = y.get_values();
+
+    while (!x_idx.empty() || !y_idx.empty())
+    {
+        if (x_idx.front() == y_idx.front())
+        {
+            new_idx.push_back(x_idx.front());
+            new_data.push_back(x_data.front() + y_data.front());
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else if (x_idx.front() < y_idx.front() || y_idx.empty())
+        {
+            new_idx.push_back(x_idx.front());
+            new_data.push_back(x_data.front());
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+        }
+        else if (x_idx.front() > y_idx.front() || x_idx.empty())
+        {
+            new_idx.push_back(y_idx.front());
+            new_data.push_back(y_data.front());
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else
+            std::cout << "ADDITION ERROR" << std::endl;
+    }
+
+    Spvec z = Spvec(&new_idx, &new_data);
+    return z;
+};
+
+Spvec operator-(const Spvec &x, const Spvec &y)
+{
+    std::vector<int> new_idx, x_idx = x.get_indices(), y_idx = y.get_indices();
+    std::vector<std::complex<double>> new_data, x_data = x.get_values(), y_data = y.get_values();
+
+    while (!x_idx.empty() || !y_idx.empty())
+    {
+        if (x_idx.front() == y_idx.front())
+        {
+            new_idx.push_back(x_idx.front());
+            new_data.push_back(x_data.front() - y_data.front());
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else if (x_idx.front() < y_idx.front() || y_idx.empty())
+        {
+            new_idx.push_back(x_idx.front());
+            new_data.push_back(x_data.front());
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+        }
+        else if (x_idx.front() > y_idx.front() || x_idx.empty())
+        {
+            new_idx.push_back(y_idx.front());
+            new_data.push_back(-y_data.front());
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else
+            std::cout << "SUBTRACTION ERROR" << std::endl;
+    }
+
+    Spvec z = Spvec(&new_idx, &new_data);
+    return z;
+};
+
+Spvec operator*(const Spvec &x, const Spvec &y)
+/**
+ * @brief component-wise multiplication of two sparse diag objects
+ * 
+ */
+{
+    std::vector<int> new_idx, x_idx = x.get_indices(), y_idx = y.get_indices();
+    std::vector<std::complex<double>> new_data, x_data = x.get_values(), y_data = y.get_values();
+
+    while (!x_idx.empty() || !y_idx.empty())
+    {  
+        if (y_idx.empty() || x_idx.empty())
+            break;
+
+        if (x_idx.front() == y_idx.front())
+        {
+            new_idx.push_back(x_idx.front());
+            new_data.push_back(x_data.front() * y_data.front());
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else if (x_idx.front() < y_idx.front())
+        {
+            x_idx.erase(x_idx.begin());
+            x_data.erase(x_data.begin());
+        }
+        else if (x_idx.front() > y_idx.front() )
+        {
+            y_idx.erase(y_idx.begin());
+            y_data.erase(y_data.begin());
+        }
+        else
+            std::cout << "Component Wise mult ERROR" << std::endl;
+    }
+
+    Spvec z = Spvec(&new_idx, &new_data);
+    return z;
+};
+
+Spvec shift(const Spvec &x, int s)
+{
+    std::vector<int> new_idx, x_idx = x.get_indices();
+    std::vector<std::complex<double>> new_data, data = x.get_values();
+    while (!x_idx.empty())
+    {
+        new_idx.push_back(x_idx.front() + s);
+        new_data.push_back(data.front());
+        x_idx.erase(x_idx.begin());
+        data.erase(data.begin());
+    }
+    Spvec z = Spvec(&new_idx, &new_data);
+    return z;
+};
+
+
+#endif // SPARSE_TNQS_SPVEC_HPP
