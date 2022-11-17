@@ -11,8 +11,8 @@
 
 class Spvec {
     public:
-        Spvec();
-        Spvec(std::vector<int> *inds, std::vector<std::complex<double>> *vals) : storage_(*vals), indices_(*inds) {}
+        Spvec(){storage_ = std::vector<std::complex<double>>(0); indices_ = std::vector<int>(0);}
+        Spvec(std::vector<int> *inds, std::vector<std::complex<double>> *vals) : indices_(*inds), storage_(*vals) {}
 
         size_t num_nonzero() const { return storage_.size(); }
 
@@ -215,5 +215,26 @@ Spvec shift(const Spvec &x, int s)
     return prune(z,max);
 };
 
+bool operator==(const Spvec &x, const Spvec &y)
+{
+    if(x.get_indices() != y.get_indices())
+        return 0;
+    if(x.get_values() != y.get_values())
+        return 0;
+    return 1;
+}
+
+Spvec ones(int sz)
+{
+    std::vector<int> new_idx(sz);
+    std::vector<std::complex<double>> new_data(sz);
+    for (size_t i = 0; i < sz; i++)
+    {
+        new_idx[i] = i;
+        new_data[i] = 1;
+    }
+
+    return Spvec(&new_idx, &new_data);
+}
 
 #endif // SPARSE_TNQS_SPVEC_HPP
