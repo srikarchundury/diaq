@@ -119,40 +119,54 @@ spdiags operator*(const spdiags &x, const spdiags &y)
 
     std::vector<int> new_idx, x_idx = x.get_dinds(), y_idx = y.get_dinds();
     std::vector<Spvec> new_data, x_data = x.get_diags(), y_data = y.get_diags();
-
+    spdiags res = spdiags(x.size());
     for (size_t i = 0; i < x_idx.size(); i++)
     {
+        std::vector<int> temp_idx;
+        std::vector<Spvec> temp_diags;
         for (size_t j = 0; j < y_idx.size(); j++)
         {
-            int new_diag = x_idx[i] + y_idx[i];
+            int x_d = x_idx[i], y_d = y_idx[j];
+            int new_diag = x_d + y_d;
             if (std::abs(new_diag) >= x.size())
                 continue;
             Spvec tempx = x_data[i], tempy = y_data[i];
             // WIP
             int xslide, yslide;
 
-            if (x_idx[i] <= 0)
+            if (x_d <= 0)
             {
-                if (y_idx[i] > 0)
+                if (y_d > 0)
                 {
-                    xslide = std::min(-x_idx[i], y_idx[i]);
-                    yslide = // WIP
+                    xslide = std::min(-x_d, y_d);
+                    yslide = std::max(x_d, -y_d);
                 }
-                else if (y_idx[i]>0)
+                else if (y_d < 0)
                 {
-                    xslide = y_idx[i];
-                    yslide = // WIP
+                    xslide = y_d;
+                    yslide = 0;
                 }
             }
             else
             {
-                if (y_idx[i] < 0)
-                    xslide = std::min(y_idx[i]+x_idx, 0);
-                // WIP
+                if (y_d < 0)
+                {
+                    xslide = std::min(y_d+x_d, 0);
+                    yslide = std::min(0, x_d-y_d);
+                }
+                else (y_d >0);
+                {
+                    yslide = x_d;
+                }
             }
 
-
-
+            Spvec temp_diag = shift(tempx,xslide)*shift(tempy, yslide);
+            temp_diag = prune(temp_diag,x.size()-std::abs(new_diag)-1);
+            temp_idx.push_back(new_diag);
+            temp_diags.push_back(temp_diag);
         }
+        spdiags temp_matrix = spdiags(x.size(),&temp_idx,&temp_diags);
+        res = res + temp_matrix;
     }
+    return res;
 };
