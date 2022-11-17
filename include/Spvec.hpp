@@ -133,11 +133,11 @@ Spvec operator-(const Spvec &x, const Spvec &y)
     return z;
 };
 
-Spvec operator*(const Spvec &x, const Spvec &y)
 /**
  * @brief component-wise multiplication of two sparse diag objects
- * 
+ *
  */
+Spvec operator*(const Spvec &x, const Spvec &y)
 {
     std::vector<int> new_idx, x_idx = x.get_indices(), y_idx = y.get_indices();
     std::vector<std::complex<double>> new_data, x_data = x.get_values(), y_data = y.get_values();
@@ -174,6 +174,31 @@ Spvec operator*(const Spvec &x, const Spvec &y)
     return z;
 };
 
+/**
+ * @brief prunes sparse diagonal to eliminate potentially extranious values.
+ * 
+ * @param x     spvec to be pruned
+ * @param high  highest allowed index (inclusive), ie the capacity required
+ * @param low   the lowest allowed index (inclusive)
+ * @return pruned spvec
+ */
+Spvec prune(const Spvec &x, size_t high, size_t low = 0)
+{
+    std::vector<int> new_idx, x_idx = x.get_indices();
+    std::vector<std::complex<double>> new_data, data = x.get_values();
+
+    for (size_t i = 0; i < x_idx.size(); i++)
+    {
+        if (x_idx[i] >= low && x_idx[i] <= high)
+        {
+            new_idx.push_back(x_idx[i]);
+            new_data.push_back(data[i]);
+        }
+    }
+    Spvec z = Spvec(&new_idx, &new_data);
+    return z;
+};
+
 Spvec shift(const Spvec &x, int s)
 {
     std::vector<int> new_idx, x_idx = x.get_indices();
@@ -186,7 +211,8 @@ Spvec shift(const Spvec &x, int s)
         data.erase(data.begin());
     }
     Spvec z = Spvec(&new_idx, &new_data);
-    return z;
+    size_t max = *std::max_element(x_idx.begin(), x_idx.end());
+    return prune(z,max);
 };
 
 
