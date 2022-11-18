@@ -15,6 +15,9 @@ class denseMatrix {
             size = s;
             data = array;
         }
+        int getSize() {
+            return size;
+        }
         void print(std::string sep="x") {
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%size == 0) {
