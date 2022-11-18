@@ -1,0 +1,1 @@
+g++ -o bench benchmarks.cpp -Ltool/cnpy -lcnpy -lz --std=c++11

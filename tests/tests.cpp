@@ -56,7 +56,7 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
             }
         }
     }
-    A.print();
+    // A.print();
     return "true";
 }
 
@@ -223,6 +223,90 @@ int main() {
     testCase4.push_back(qmB4);
     testCase4.push_back(qmRes4);
     testCases.push_back(testCase4);
+
+
+    // test case 5 - GHZ 3 qubit unitary simulation
+    denseMatrix dmA5(8, {
+        1,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+        0,0,1,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,1,0,
+        0,0,0,0,0,1,0,0,
+    });
+    quantumSparseMatrix qmA5 = dmA5.convertToQuantumSparse(8);
+    denseMatrix dmB5(8, {
+        1,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,0,
+        0,0,0,0,0,0,0,1,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,1,0,0,
+        0,0,1,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+    });
+    quantumSparseMatrix qmB5 = dmB5.convertToQuantumSparse(8);
+    // qmB5.print();
+    denseMatrix dmRes5(8, {
+        1,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+        0,0,0,0,0,0,1,0,
+        0,0,0,0,0,1,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,1,
+        0,0,1,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+    });
+    quantumSparseMatrix qmRes5 = dmRes5.convertToQuantumSparse(8);
+    std::vector<quantumSparseMatrix> testCase5;
+    testCase5.push_back(qmB5);
+    testCase5.push_back(qmA5);
+    testCase5.push_back(qmRes5);
+    testCases.push_back(testCase5);
+
+
+    // test case 6 - Extra debugging
+    denseMatrix dmA6(8, {
+        1,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,1,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    quantumSparseMatrix qmA6 = dmA6.convertToQuantumSparse(8);
+    denseMatrix dmB6(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,1,0,0,
+    });
+    quantumSparseMatrix qmB6 = dmB6.convertToQuantumSparse(8);
+    // qmB5.print();
+    denseMatrix dmRes6(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    quantumSparseMatrix qmRes6 = dmRes6.convertToQuantumSparse(8);
+    std::vector<quantumSparseMatrix> testCase6;
+    testCase6.push_back(qmA6);
+    testCase6.push_back(qmB6);
+    testCase6.push_back(qmRes6);
+    testCases.push_back(testCase6);
 
     for(int i = 0; i < testCases.size(); i++) {
         std::cout << "test case " << i << " ";
