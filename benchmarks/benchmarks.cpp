@@ -102,6 +102,6 @@ int main() {
     d.print();
 
     std::vector<int> res = checkResult(q, d.convertToQuantumSparse(8));
-    for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << " ";
+    for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
     std::cout << "--" << std::endl;
 }

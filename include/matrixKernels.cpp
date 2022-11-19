@@ -108,7 +108,8 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
     std::map<int, diagonal> resultMap;
-    quantumSparseMatrix result(resultMap, A.getSize());
+    quantumSparseMatrix* result;
+    // quantumSparseMatrix* resptr = &result;
     std::map<int, diagonal> mapA = A.getDiagonalMap();
     std::map<int, diagonal> mapB = B.getDiagonalMap();
     std::map<int, diagonal>::iterator itA, itB;
@@ -118,18 +119,17 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // itB->second.print();
             // std::cout << " --- " << std::endl;
             diagonal diagNew = multiplyDiagonals(A.getSize(), itA->first, itB->first, itA->second, itB->second);
-            std::cout << "new diag" << std::endl;
-            diagNew.print();
             if(diagNew.getValues().size() != 0) {
-                result.addDiagonal(itA->first + itB->first, diagNew);
-                std::cout << "result start" << std::endl;
-                result.print();
-                std::cout << "result end" << std::endl;
+                // std::cout << " ------ new diag ------ " << std::endl;
+                // diagNew.print();
+                result->addDiagonal(itA->first + itB->first, diagNew);
+                // std::cout << " ------ result ------ " << std::endl;
+                // result->print();
             }
         }
     }
-    result.pruneMatrix();
-    return result;
+    result->pruneMatrix();
+    return *result;
 }
 
 /**
