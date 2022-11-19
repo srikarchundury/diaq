@@ -118,11 +118,44 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // itB->second.print();
             // std::cout << " --- " << std::endl;
             diagonal diagNew = multiplyDiagonals(A.getSize(), itA->first, itB->first, itA->second, itB->second);
+            std::cout << "new diag" << std::endl;
+            diagNew.print();
             if(diagNew.getValues().size() != 0) {
                 result.addDiagonal(itA->first + itB->first, diagNew);
+                std::cout << "result start" << std::endl;
+                result.print();
+                std::cout << "result end" << std::endl;
             }
         }
     }
     result.pruneMatrix();
+    return result;
+}
+
+/**
+ * @brief dense matrix multiplication (C = A.B)
+ * 
+ * @param A denseMatrix
+ * @param B denseMatrix
+ * 
+ * @return denseMatrix  C
+ */
+denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
+    if(A.getSize() != B.getSize()) {
+        throw std::invalid_argument("input matrices are of different dimensions, not compatible");
+    }
+    int n = A.getSize();
+    std::vector<std::complex<double>> resArray;
+    for(int i = 0; i < n * n; i++) {
+        resArray.push_back(0);
+    }
+    denseMatrix result(n, resArray);
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            for(int k = 0; k < n; k++) {
+                result.set(i, j, result.get(i, j) + A.get(i, k) * B.get(k, j));
+            }
+        }
+    }
     return result;
 }
