@@ -107,8 +107,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
-    std::map<int, diagonal> resultMap;
-    quantumSparseMatrix* result;
+    quantumSparseMatrix* result = new quantumSparseMatrix(A.getSize());
     // quantumSparseMatrix* resptr = &result;
     std::map<int, diagonal> mapA = A.getDiagonalMap();
     std::map<int, diagonal> mapB = B.getDiagonalMap();

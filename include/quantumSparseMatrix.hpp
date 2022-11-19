@@ -7,8 +7,9 @@
 
 class quantumSparseMatrix {
     public:
-        quantumSparseMatrix(std::map<int, diagonal>* dm, int s) {
-            diagonalMap = *dm;
+        quantumSparseMatrix(int s) {
+            std::map<int, diagonal> d;
+            diagonalMap = d;
             size = s;
         }
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
