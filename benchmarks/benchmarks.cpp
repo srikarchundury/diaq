@@ -46,11 +46,13 @@ quantumSparseMatrix performMultiplications(std::vector<quantumSparseMatrix> matr
 }
 
 denseMatrix performDenseMultiplications(std::vector<denseMatrix> matrices) {
-    matrices[1].print();
-    std::cout << " --- " << std::endl;
-    matrices[0].print();
     denseMatrix result = denseProduct(matrices[1], matrices[0]);
     for(int i = 2; i < matrices.size(); i++) {
+        if(i==matrices.size()-1) {
+            matrices[i].print();
+            std::cout << " --- " << std::endl;
+            result.print();
+        }
         result = denseProduct(matrices[i], result);
     }
     return result;
@@ -85,6 +87,7 @@ std::vector<int> checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
         else {
             for(int i = 0; i < itA->second.getValues().size(); i++) {
                 if(itB->second.getValue(i) != itA->second.getValue(i)) {
+                    std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
                     errors.push_back(4);
                 }
             }
@@ -96,18 +99,18 @@ std::vector<int> checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
 int main() {
 
     // measure #flops, #memory
-    denseMatrix d = performDenseMultiplications(prepareDense("ham", "4", 13));
+    denseMatrix d = performDenseMultiplications(prepareDense("mermin_bell", "3", 6));
     // measure #flops, #memory
     // d.print();
 
     // std::cout << " --- " << std::endl;
 
     // measure #flops, #memory
-    quantumSparseMatrix q = performMultiplications(prepare("ham", "4", 13));
+    quantumSparseMatrix q = performMultiplications(prepare("mermin_bell", "3", 6));
     // measure #flops, #memory
     q.print();
 
-    std::vector<int> res = checkResult(q, d.convertToQuantumSparse(16));
+    std::vector<int> res = checkResult(q, d.convertToQuantumSparse(8));
     for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
     std::cout << "--" << std::endl;
 }

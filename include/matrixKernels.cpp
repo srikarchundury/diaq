@@ -58,10 +58,20 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
     }
     else if(indexA < 0) {
         if(indexB > 0) {
+            // std::cout << "jump,offsetA,offsetB " << jump << "," << offsetA << "," << offsetB << std::endl;
+            // std::cout << "lenDiagA,lenDiagB,lenRes " << lenDiagA << "," << lenDiagB << "," << lenRes << std::endl;
+            // jump decides how many positions to skip for each diagonal, depends on the length of the shorter diagonal.
+            if(lenDiagB < lenDiagA) {
+                jump = lenRes - lenDiagB;
+            }
+            else if(lenDiagA < lenDiagB) {
+                jump = lenRes - lenDiagA;
+            }
+            else {
+                jump = abs(indexA);
+            }
             offsetA = 0;
             offsetB = 0;
-            jump = abs(indexA + indexB);
-            if(jump == 0) jump = abs(indexA);
         }
         else if(indexB < 0) {
             offsetA = offsetB;
@@ -94,6 +104,7 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
         k++;
     }
     // std::cout << k << std::endl;
+    // std::cout << "jump,offsetA,offsetB " << jump << "," << offsetA << "," << offsetB << std::endl;
     while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
         res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
         k++;
