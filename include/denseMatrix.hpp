@@ -18,6 +18,12 @@ class denseMatrix {
         int getSize() {
             return size;
         }
+        void set(int i, int j, std::complex<double> val) {
+            data[size * i + j] = val;
+        }
+        std::complex<double> get(int i, int j) {
+            return data[size * i + j];
+        }
         void print(std::string sep="x") {
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%size == 0) {

@@ -16,14 +16,19 @@ class diagonal {
             dIndex = di;
             values = *vals;
         }
+        int getIndex() {
+            return dIndex;
+        }
         bool addElement(std::complex<double> value) {
             values.push_back(value);
             return true;
         }
         void setValue(int i, std::complex<double> val) {
+            // std::cout << "there" << std::endl;
             values[i] = val;
         }
         std::complex<double> getValue(int i) {
+            // std::cout << "here" << std::endl;
             return values[i];
         }
         void print(std::string sep=",") {

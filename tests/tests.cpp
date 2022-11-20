@@ -31,8 +31,8 @@ quantumSparseMatrix testQuantumSparseMatrix(std::map<int, diagonal> dm) {
 
 std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
     if(A.getSize() != B.getSize()) {
-        A.print();
-        return "false";
+        // A.print();
+        return "false - 1";
     }
     std::map<int, diagonal> dmA = A.getDiagonalMap();
     std::map<int, diagonal> dmB = B.getDiagonalMap();
@@ -40,18 +40,20 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
     for(itA = dmA.begin(); itA != dmA.end(); itA++) {
         auto itB = dmB.find(itA->first);
         if(itB == dmB.end()) {
-            A.print();
-            return "false";
+            // A.print();
+            return "false - 2";
         }
         if(itB->second.getValues().size() != itA->second.getValues().size()) { 
-            A.print();
-            return "false";
+            // A.print();
+            std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+            return "false - 3";
         }
         else {
             for(int i = 0; i < itA->second.getValues().size(); i++) {
                 if(itB->second.getValue(i) != itA->second.getValue(i)) {
-                    A.print();
-                    return "false";
+                    // A.print();
+                    std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+                    return "false - 4";
                 }
             }
         }
@@ -62,171 +64,116 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
 
 
 int main() {
-    std::vector<std::vector<quantumSparseMatrix> > testCases;
+    std::vector<std::vector<denseMatrix> > testCases;
 
     // test case 0
-    denseMatrix dmA0(5, {
+    denseMatrix A0(5, {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
     });
-    quantumSparseMatrix qmA0 = dmA0.convertToQuantumSparse(5);
-    denseMatrix dmB0(5, {
+    denseMatrix B0(5, {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
         0,0,0,5,0,
         0,0,0,0,6,
     });
-    quantumSparseMatrix qmB0 = dmB0.convertToQuantumSparse(5);
-    denseMatrix dmRes0(5, {
-        0,0,0,0,0,
-        0,0,0,0,0,
-        2,0,0,0,0,
-        0,3,0,0,0,
-        0,0,4,0,0,
-    });
-    quantumSparseMatrix qmRes0 = dmRes0.convertToQuantumSparse(5);
-    std::vector<quantumSparseMatrix> testCase0;
-    testCase0.push_back(qmA0);
-    testCase0.push_back(qmB0);
-    testCase0.push_back(qmRes0);
+    std::vector<denseMatrix> testCase0;
+    testCase0.push_back(A0);
+    testCase0.push_back(B0);
     testCases.push_back(testCase0);
 
     // test case 1
-    denseMatrix dmA1(5, {
+    denseMatrix A1(5, {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
     });
-    quantumSparseMatrix qmA1 = dmA1.convertToQuantumSparse(5);
-    denseMatrix dmB1(5, {
+    denseMatrix B1(5, {
         0,0,2,0,0,
         0,0,0,3,0,
         0,0,0,0,4,
         0,0,0,0,0,
         0,0,0,0,0,
     });
-    quantumSparseMatrix qmB1 = dmB1.convertToQuantumSparse(5);
-    denseMatrix dmRes1(5, {
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,2,0,0,
-        0,0,0,3,0,
-        0,0,0,0,4,
-    });
-    quantumSparseMatrix qmRes1 = dmRes1.convertToQuantumSparse(5);
-    std::vector<quantumSparseMatrix> testCase1;
-    testCase1.push_back(qmA1);
-    testCase1.push_back(qmB1);
-    testCase1.push_back(qmRes1);
+    std::vector<denseMatrix> testCase1;
+    testCase1.push_back(A1);
+    testCase1.push_back(B1);
     testCases.push_back(testCase1);
 
 
     // test case 2
-    denseMatrix dmA2(5, {
+    denseMatrix A2(5, {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
     });
-    quantumSparseMatrix qmA2 = dmA2.convertToQuantumSparse(5);
-    denseMatrix dmB2(5, {
+    denseMatrix B2(5, {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
         0,0,3,0,0,
         0,0,0,4,0,
     });
-    quantumSparseMatrix qmB2 = dmB2.convertToQuantumSparse(5);
-    denseMatrix dmRes2(5, {
-        0,0,0,0,0,
-        0,0,0,0,0,
-        0,0,0,0,0,
-        1,0,0,0,0,
-        0,2,0,0,0,
-    });
-    quantumSparseMatrix qmRes2 = dmRes2.convertToQuantumSparse(5);
-    std::vector<quantumSparseMatrix> testCase2;
-    testCase2.push_back(qmA2);
-    testCase2.push_back(qmB2);
-    testCase2.push_back(qmRes2);
+    std::vector<denseMatrix> testCase2;
+    testCase2.push_back(A2);
+    testCase2.push_back(B2);
     testCases.push_back(testCase2);
 
 
 
     // test case 3
-    denseMatrix dmA3(5, {
+    denseMatrix A3(5, {
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
         0,0,0,1,0,
     });
-    quantumSparseMatrix qmA3 = dmA3.convertToQuantumSparse(5);
-    denseMatrix dmB3(5, {
+    denseMatrix B3(5, {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
         0,0,3,0,0,
         0,0,0,4,0,
     });
-    quantumSparseMatrix qmB3 = dmB3.convertToQuantumSparse(5);
-    denseMatrix dmRes3(5, {
-        0,0,0,0,0,
-        0,0,0,0,0,
-        1,0,0,0,0,
-        0,2,0,0,0,
-        0,0,3,0,0,
-    });
-    quantumSparseMatrix qmRes3 = dmRes3.convertToQuantumSparse(5);
-    std::vector<quantumSparseMatrix> testCase3;
-    testCase3.push_back(qmA3);
-    testCase3.push_back(qmB3);
-    testCase3.push_back(qmRes3);
+    std::vector<denseMatrix> testCase3;
+    testCase3.push_back(A3);
+    testCase3.push_back(B3);
     testCases.push_back(testCase3);
 
 
 
     // test case 4
-    denseMatrix dmA4(5, {
+    denseMatrix A4(5, {
         0,0,1,0,0,
         0,0,0,1,0,
         0,0,0,0,1,
         0,0,0,0,0,
         0,0,0,0,0,
     });
-    quantumSparseMatrix qmA4 = dmA4.convertToQuantumSparse(5);
-    denseMatrix dmB4(5, {
+    denseMatrix B4(5, {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
         0,0,0,5,0,
         0,0,0,0,6,
     });
-    quantumSparseMatrix qmB4 = dmB4.convertToQuantumSparse(5);
-    denseMatrix dmRes4(5, {
-        0,0,4,0,0,
-        0,0,0,5,0,
-        0,0,0,0,6,
-        0,0,0,0,0,
-        0,0,0,0,0,
-    });
-    quantumSparseMatrix qmRes4 = dmRes4.convertToQuantumSparse(5);
-    std::vector<quantumSparseMatrix> testCase4;
-    testCase4.push_back(qmA4);
-    testCase4.push_back(qmB4);
-    testCase4.push_back(qmRes4);
+    std::vector<denseMatrix> testCase4;
+    testCase4.push_back(A4);
+    testCase4.push_back(B4);
     testCases.push_back(testCase4);
 
 
     // test case 5 - GHZ 3 qubit unitary simulation
-    denseMatrix dmA5(8, {
+    denseMatrix A5(8, {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -236,8 +183,7 @@ int main() {
         0,0,0,0,0,0,1,0,
         0,0,0,0,0,1,0,0,
     });
-    quantumSparseMatrix qmA5 = dmA5.convertToQuantumSparse(8);
-    denseMatrix dmB5(8, {
+    denseMatrix B5(8, {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,
@@ -247,28 +193,14 @@ int main() {
         0,0,1,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
     });
-    quantumSparseMatrix qmB5 = dmB5.convertToQuantumSparse(8);
-    // qmB5.print();
-    denseMatrix dmRes5(8, {
-        1,0,0,0,0,0,0,0,
-        0,0,0,1,0,0,0,0,
-        0,0,0,0,0,0,1,0,
-        0,0,0,0,0,1,0,0,
-        0,0,0,0,1,0,0,0,
-        0,0,0,0,0,0,0,1,
-        0,0,1,0,0,0,0,0,
-        0,1,0,0,0,0,0,0,
-    });
-    quantumSparseMatrix qmRes5 = dmRes5.convertToQuantumSparse(8);
-    std::vector<quantumSparseMatrix> testCase5;
-    testCase5.push_back(qmB5);
-    testCase5.push_back(qmA5);
-    testCase5.push_back(qmRes5);
+    std::vector<denseMatrix> testCase5;
+    testCase5.push_back(A5);
+    testCase5.push_back(B5);
     testCases.push_back(testCase5);
 
 
-    // test case 6 - Extra debugging
-    denseMatrix dmA6(8, {
+    // test case 6
+    denseMatrix A6(8, {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -278,8 +210,7 @@ int main() {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
     });
-    quantumSparseMatrix qmA6 = dmA6.convertToQuantumSparse(8);
-    denseMatrix dmB6(8, {
+    denseMatrix B6(8, {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -289,11 +220,365 @@ int main() {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,1,0,0,
     });
-    quantumSparseMatrix qmB6 = dmB6.convertToQuantumSparse(8);
-    // qmB5.print();
-    denseMatrix dmRes6(8, {
+    std::vector<denseMatrix> testCase6;
+    testCase6.push_back(A6);
+    testCase6.push_back(B6);
+    testCases.push_back(testCase6);
+
+
+    // test case 7
+    denseMatrix A7(8, {
+        0,0,2,0,0,0,0,0,
+        0,0,0,3,0,0,0,0,
+        0,0,0,0,4,0,0,0,
+        0,0,0,0,0,5,0,0,
+        0,0,0,0,0,0,6,0,
+        0,0,0,0,0,0,0,7,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
+    });
+    denseMatrix B7(8, {
+        0,0,0,0,8,0,0,0,
+        0,0,0,0,0,9,0,0,
+        0,0,0,0,0,0,10,0,
+        0,0,0,0,0,0,0,11,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase7;
+    testCase7.push_back(A7);
+    testCase7.push_back(B7);
+    testCases.push_back(testCase7);
+
+
+    // test case 8
+    denseMatrix A8(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        2,0,0,0,0,0,0,0,
+        0,3,0,0,0,0,0,0,
+        0,0,4,0,0,0,0,0,
+        0,0,0,5,0,0,0,0,
+        0,0,0,0,6,0,0,0,
+        0,0,0,0,0,7,0,0,
+    });
+    denseMatrix B8(8, {
+        8,0,0,0,0,0,0,0,
+        0,9,0,0,0,0,0,0,
+        0,0,10,0,0,0,0,0,
+        0,0,0,11,0,0,0,0,
+        0,0,0,0,12,0,0,0,
+        0,0,0,0,0,13,0,0,
+        0,0,0,0,0,0,14,0,
+        0,0,0,0,0,0,0,15,
+    });
+    std::vector<denseMatrix> testCase8;
+    testCase8.push_back(A8);
+    testCase8.push_back(B8);
+    testCases.push_back(testCase8);
+
+    // test case 9
+    denseMatrix A9(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,
+    });
+    denseMatrix B9(8, {
+        0,0,5,0,0,0,0,0,
+        0,0,0,6,0,0,0,0,
+        0,0,0,0,7,0,0,0,
+        0,0,0,0,0,8,0,0,
+        0,0,0,0,0,0,9,0,
+        0,0,0,0,0,0,0,10,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase9;
+    testCase9.push_back(A9);
+    testCase9.push_back(B9);
+    testCases.push_back(testCase9);
+
+
+    // test case 10
+    denseMatrix A10(8, {
+        0,0,1,0,0,0,0,0,
+        0,0,0,2,0,0,0,0,
+        0,0,0,0,3,0,0,0,
+        0,0,0,0,0,4,0,0,
+        0,0,0,0,0,0,5,0,
+        0,0,0,0,0,0,0,6,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    denseMatrix B10(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        7,0,0,0,0,0,0,0,
+        0,8,0,0,0,0,0,0,
+        0,0,9,0,0,0,0,0,
+        0,0,0,10,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase10;
+    testCase10.push_back(A10);
+    testCase10.push_back(B10);
+    testCases.push_back(testCase10);
+
+
+    // test case 11
+    denseMatrix A11(8, {
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,
+        0,0,0,0,5,0,0,0,
+        0,0,0,0,0,6,0,0,
+        0,0,0,0,0,0,7,0,
+        0,0,0,0,0,0,0,8,
+    });
+    denseMatrix B11(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        9,0,0,0,0,0,0,0,
+        0,10,0,0,0,0,0,0,
+        0,0,11,0,0,0,0,0,
+        0,0,0,12,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase11;
+    testCase11.push_back(A11);
+    testCase11.push_back(B11);
+    testCases.push_back(testCase11);
+
+
+    // test case 12
+    denseMatrix A12(8, {
+        1,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+        0,0,1,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,1,0,
+        0,0,0,0,0,1,0,0,
+    });
+    denseMatrix B12(8, {
+        1,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+        0,0,1,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,1,0,
+        0,0,0,0,0,1,0,0,
+    });
+    std::vector<denseMatrix> testCase12;
+    testCase12.push_back(A12);
+    testCase12.push_back(B12);
+    testCases.push_back(testCase12);
+
+
+    // test case 13
+    denseMatrix A13(8, {
+        0,0,1,0,0,0,0,0,
+        0,0,0,2,0,0,0,0,
+        0,0,0,0,3,0,0,0,
+        0,0,0,0,0,4,0,0,
+        0,0,0,0,0,0,5,0,
+        0,0,0,0,0,0,0,6,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    denseMatrix B13(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        7,0,0,0,0,0,0,0,
+        0,8,0,0,0,0,0,0,
+        0,0,9,0,0,0,0,0,
+        0,0,0,10,0,0,0,0,
+        0,0,0,0,11,0,0,0,
+        0,0,0,0,0,12,0,0,
+    });
+    std::vector<denseMatrix> testCase13;
+    testCase13.push_back(A13);
+    testCase13.push_back(B13);
+    testCases.push_back(testCase13);
+
+
+    // test case 14
+    denseMatrix A14(16, {
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+        0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,
+        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,
+    });
+    denseMatrix B14(16, {
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,
+    });
+    std::vector<denseMatrix> testCase14;
+    testCase14.push_back(A14);
+    testCase14.push_back(B14);
+    testCases.push_back(testCase14);
+
+    
+    denseMatrix A15(16, {
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,12,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,13,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,14,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,
+    });
+    denseMatrix B15(16, {
+        0,0,17,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,19,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,21,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,22,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,23,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,24,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,25,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,26,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,27,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,28,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,30,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase15;
+    testCase15.push_back(A15);
+    testCase15.push_back(B15);
+    testCases.push_back(testCase15);
+
+
+    denseMatrix A16(16, {
+        0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,9,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    });
+    denseMatrix B16(16, {
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,14,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,15,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,16,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,17,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,18,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,19,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,21,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,23,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,24,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,25,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,26,0,0,
+    });
+    std::vector<denseMatrix> testCase16;
+    testCase16.push_back(A16);
+    testCase16.push_back(B16);
+    testCases.push_back(testCase16);
+
+    denseMatrix A17(8, {
+        1,0,0,0,0,0,0,0,
+        0,1,0,0,0,0,0,0,
+        0,0,1,0,0,0,0,0,
+        0,0,0,1,0,0,0,0,
+        0,0,0,0,0,1,0,0,
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,0,0,1,
+        0,0,0,0,0,0,1,0,
+    });
+    denseMatrix B17(8, {
+        2,3,0,0,0,0,0,0,
+        0,0,0,0,0,0,3,2,
+        0,0,2,3,0,0,0,0,
+        0,0,0,0,3,2,0,0,
+        0,0,0,0,2,3,0,0,
+        0,0,3,2,0,0,0,0,
+        0,0,0,0,0,0,2,3,
+        3,2,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase17;
+    testCase17.push_back(A17);
+    testCase17.push_back(B17);
+    testCases.push_back(testCase17);
+
+
+    denseMatrix A18(8, {
+        0,0,0,0,0,0,0,0,
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,
+        0,0,0,0,5,0,0,0,
+        0,0,0,0,0,6,0,0,
+        0,0,0,0,0,0,7,0,
+    });
+    denseMatrix B18(8, {
+        0,0,0,0,0,0,8,0,
+        0,0,0,0,0,0,0,9,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -301,17 +586,24 @@ int main() {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
     });
-    quantumSparseMatrix qmRes6 = dmRes6.convertToQuantumSparse(8);
-    std::vector<quantumSparseMatrix> testCase6;
-    testCase6.push_back(qmA6);
-    testCase6.push_back(qmB6);
-    testCase6.push_back(qmRes6);
-    testCases.push_back(testCase6);
+    std::vector<denseMatrix> testCase18;
+    testCase18.push_back(A18);
+    testCase18.push_back(B18);
+    testCases.push_back(testCase18);
+
 
     for(int i = 0; i < testCases.size(); i++) {
-        std::cout << "test case " << i << " ";
-        std::string check = checkResult(product(testCases[i][0], testCases[i][1]), testCases[i][2]);
-        std::cout << check << std::endl;
+        if(i == 17) {
+            std::cout << "test case " << i << std::endl;
+            denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+            p.print();
+            std::cout << " --- " << std::endl;
+            quantumSparseMatrix dp = p.convertToQuantumSparse(testCases[i][0].getSize());
+            quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(testCases[i][0].getSize()), testCases[i][1].convertToQuantumSparse(testCases[i][1].getSize()));
+            qp.print();
+            std::string check = checkResult(dp, qp);
+            std::cout << check << std::endl;
+        }
     }
     return 0;
 }

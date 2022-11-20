@@ -7,6 +7,11 @@
 
 class quantumSparseMatrix {
     public:
+        quantumSparseMatrix(int s) {
+            std::map<int, diagonal> d;
+            diagonalMap = d;
+            size = s;
+        }
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
@@ -45,12 +50,18 @@ class quantumSparseMatrix {
             diagonal* d = this->getDiagonal(dIndex);
             d->addElement(val);
         }
+        void setDiagonal(int dIndex, diagonal diagNew) {
+            this->diagonalMap.erase(dIndex);
+            this->diagonalMap.insert({dIndex, diagNew});
+        }
         void addDiagonal(int dIndex, diagonal diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                diagonalMap.insert({dIndex, diagNew});
+                // std::cout << "new index" << std::endl;
+                this->diagonalMap.insert({dIndex, diagNew});
             }
             else {
+                // std::cout << "already exists, overwrite" << std::endl;
                 for(int i = 0; i < it->second.getValues().size(); i++) {
                     it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
                 }
