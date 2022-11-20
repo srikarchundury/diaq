@@ -593,17 +593,17 @@ int main() {
 
 
     for(int i = 0; i < testCases.size(); i++) {
-        // if(i == 9) {
-            // std::cout << "test case " << i << std::endl;
+        if(i == 17) {
+            std::cout << "test case " << i << std::endl;
             denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
-            // p.print();
-            // std::cout << " --- " << std::endl;
+            p.print();
+            std::cout << " --- " << std::endl;
             quantumSparseMatrix dp = p.convertToQuantumSparse(testCases[i][0].getSize());
             quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(testCases[i][0].getSize()), testCases[i][1].convertToQuantumSparse(testCases[i][1].getSize()));
-            // qp.print();
+            qp.print();
             std::string check = checkResult(dp, qp);
             std::cout << check << std::endl;
-        // }
+        }
     }
     return 0;
 }
