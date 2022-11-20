@@ -96,21 +96,57 @@ std::vector<int> checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
     return errors;
 }
 
-int main() {
+int get_num_gates(std::string cir, std::string qubits) {
+    int i;
+    if(cir == "ghz") i = 0;
+    if(cir == "ham") i = 1;
+    if(cir == "mermin_bell") i = 2;
+    int j = std::stoi(qubits) - 3;
 
-    // measure #flops, #memory
-    denseMatrix d = performDenseMultiplications(prepareDense("ham", "9", 33));
-    // measure #flops, #memory
-    // d.print();
+    std::vector<int> gates = {
+        2,3,4,5,6,7,8,9,
+        9,13,17,21,25,29,33,37,
+        11,18,25,34,43,54,65,78,
+    };
 
+    return gates[i * 8 + j];
+}
+
+int main(int argc, char** argv) {
+
+    // ./bench ghz 3 dense
+    // ./bench ghz 3 sparse
+
+    std::string circuit = argv[1];
+    std::string qubits = argv[2];
+    std::string version = argv[3];
+
+    int num_gates = get_num_gates(circuit, qubits);
+
+    std::cout << circuit << " " << qubits << " " << version << " num_gates=" << num_gates << std::endl;
+
+    if(version == "dense") {
+        std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
+
+        // measure #flops, #memory
+        denseMatrix d = performDenseMultiplications(denseMatrices);
+        // measure #flops, #memory
+        
+        d.print();
+    }
+
+    else if(version == "sparse") {
+        std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
+
+        // measure #flops, #memory
+        quantumSparseMatrix q = performMultiplications(sparseMatrices);
+        // measure #flops, #memory
+
+        q.print();
+    }
     // std::cout << " --- " << std::endl;
-
-    // measure #flops, #memory
-    quantumSparseMatrix q = performMultiplications(prepare("ham", "9", 33));
-    // measure #flops, #memory
-    q.print();
-
-    std::vector<int> res = checkResult(q, d.convertToQuantumSparse(128));
-    for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
-    std::cout << "--" << std::endl;
+    // std::vector<int> res = checkResult(q, d.convertToQuantumSparse(128));
+    // for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
+    // std::cout << "--" << std::endl;
+    return 0;
 }
