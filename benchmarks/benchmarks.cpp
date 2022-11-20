@@ -46,6 +46,9 @@ quantumSparseMatrix performMultiplications(std::vector<quantumSparseMatrix> matr
 }
 
 denseMatrix performDenseMultiplications(std::vector<denseMatrix> matrices) {
+    matrices[1].print();
+    std::cout << " --- " << std::endl;
+    matrices[0].print();
     denseMatrix result = denseProduct(matrices[1], matrices[0]);
     for(int i = 2; i < matrices.size(); i++) {
         result = denseProduct(matrices[i], result);
@@ -91,17 +94,20 @@ std::vector<int> checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
 }
 
 int main() {
+
     // measure #flops, #memory
-    quantumSparseMatrix q = performMultiplications(prepare("ham", "3", 9));
+    denseMatrix d = performDenseMultiplications(prepareDense("ham", "4", 13));
+    // measure #flops, #memory
+    // d.print();
+
+    // std::cout << " --- " << std::endl;
+
+    // measure #flops, #memory
+    quantumSparseMatrix q = performMultiplications(prepare("ham", "4", 13));
     // measure #flops, #memory
     q.print();
 
-    // measure #flops, #memory
-    denseMatrix d = performDenseMultiplications(prepareDense("ham", "3", 9));
-    // measure #flops, #memory
-    d.print();
-
-    std::vector<int> res = checkResult(q, d.convertToQuantumSparse(8));
+    std::vector<int> res = checkResult(q, d.convertToQuantumSparse(16));
     for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
     std::cout << "--" << std::endl;
 }

@@ -57,9 +57,11 @@ class quantumSparseMatrix {
         void addDiagonal(int dIndex, diagonal diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
+                // std::cout << "new index" << std::endl;
                 this->diagonalMap.insert({dIndex, diagNew});
             }
             else {
+                // std::cout << "already exists, overwrite" << std::endl;
                 for(int i = 0; i < it->second.getValues().size(); i++) {
                     it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
                 }
