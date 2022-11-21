@@ -2,6 +2,11 @@
 // UPDATE: Implement Kernels in include/kernels.hpp
 
 #include "quantumSparseMatrix.hpp"
+#include "denseMatrix.hpp"
+
+
+int sparse_add_counter = 0;
+int sparse_mul_counter = 0;
 
 // ----------------------------------------------------------------
 //
@@ -23,10 +28,10 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
     if(indexA + indexB >= size) {
-        return NULL;
+        return diagonal(0);
     }
     else if(indexA + indexB <= -1 * size) {
-        return NULL;
+        return diagonal(0);
     }
     diagonal res(indexA + indexB);
     int lenDiagA = size - abs(indexA);
@@ -108,6 +113,7 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
     while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
         res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
         k++;
+        sparse_mul_counter++;
     }
     while(k < lenRes) {
         res.addElement(0);
@@ -125,6 +131,8 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
+    sparse_add_counter = 0;
+    sparse_mul_counter = 0;
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
@@ -146,6 +154,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
                 // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
                 result->addDiagonal(itA->first + itB->first, diagNew);
+                sparse_add_counter += (A.getSize() - abs(itA->first + itB->first));
                 // std::cout << " ------ result ------ " << std::endl;
                 // result->print();
                 // std::cout << " ------ result ------ " << std::endl;
@@ -156,6 +165,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
+    std::cout << "Additions: " << sparse_add_counter << " Multiplications: " << sparse_mul_counter << std::endl;
     return *result;
 }
 
@@ -168,6 +178,8 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
  * @return denseMatrix  C
  */
 denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
+    int add_counter = 0;
+    int mul_counter = 0;
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
@@ -181,8 +193,11 @@ denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
         for(int j = 0; j < n; j++) {
             for(int k = 0; k < n; k++) {
                 result.set(i, j, result.get(i, j) + A.get(i, k) * B.get(k, j));
+                add_counter++;
+                mul_counter++;
             }
         }
     }
+    std::cout << "Additions: " << add_counter << " Multiplications: " << mul_counter << std::endl;
     return result;
 }
