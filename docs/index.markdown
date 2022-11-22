@@ -11,14 +11,17 @@ title: Quantum Sparse Matrices
   <a href="#2">Scope of this project</a>
   <a href="#3">Problem Statement</a>
   <a href="#4">Progress - update #1</a>
+  <a href="#7">Progress - update #2</a>
   <a href="#5">Literature Survey</a>
   <a href="#6">Note</a>
 </div>
 
 # Tensor-Network based Quantum Simulation #
-[Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git")
+* [Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git") <br/>
+* Download Project Presentation - [PDF](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pdf) | [PPTX](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pptx) <br/>
+* Download Library [zip](https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip) <br/>
 
-*This repo hosts source code for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+*This is part of Dr.Frank Mueller's quantum computing course: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
 
 ## Team ##
 * Srikar Chundury (schundu3)
@@ -65,9 +68,6 @@ title: Quantum Sparse Matrices
         * Hamiltonian circuit <br/> <img src="images/ham_unitary.png" width="600"> &nbsp; <img src="images/ham_circuit.png" width="400"> <br/>
         * Mermin Bell circuit <br/> <img src="images/mermin_bell_unitary.png" width="600"> &nbsp; <img src="images/mermin_bell_circuit.png" width="400"> <br/>
     
-    * Real world example: qiskit textbook's <a href="https://qiskit.org/textbook/ch-applications/vqe-molecules.html"> VQE preparation entanglement circuit </a> <br/>
-    <img src="images/vqe_prep_unitary.png" width="300"> &nbsp; <img src="images/vqe_prep_circuit.png" width="300"> <br/>
-    
     * Some observations:
         * Final unitaries can be compactly represented using just the diagonals and anti-diagonals.
         * Final unitaries' range of values is limited and can easily be written as constant times a matrix with just +1,0,-1 paving scope for reducing #flops in contraction kernels.
@@ -89,6 +89,19 @@ title: Quantum Sparse Matrices
         * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
         * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
         * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
+
+<hr id="7" />
+
+## Progress Update 2 - Likely final update this semester ##
+* Jotted down M-M algorithms for 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
+    * Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
+    * Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
+* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
+* We implemented the "Sparse Diagonal" format using c++11.
+    * Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 11. In the future, we plan to also run for >18 qubits on the ARC cluster.
+    * GHZ circuit <br/> <img src="images/ghz_flops_comparison.png" width="300"> <br/>
+    * Hamiltonian circuit <br/> <img src="images/ham_flops_comparison.png" width="300"> <br/>
+    * Mermin Bell circuit <br/> <img src="images/mermin_bell_flops_comparison.png" width="300"> <br/>
 
 <hr id="5" />
 
