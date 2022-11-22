@@ -8,7 +8,7 @@ analysis/*metrics*/*
 .vscode/*
 .DS_Store
 docs/.DS_Store
-
+docs/.DS_Store/*
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++
