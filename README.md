@@ -30,3 +30,52 @@ Sparse Tensor Network based Quantum Simulation
         * Vector to Matrix multiplication
         * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations).
     * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers).
+
+
+## Installation ##
+* git clone this repo
+
+* test cases
+```
+cd tests
+./run.sh
+./a.out
+```
+
+* getting dependencies with "cnpy" (a c++ tool that read numpy based files)
+```
+cd benchmarks
+rm -r tool/*
+git clone https://github.com/rogersce/cnpy.git
+source /opt/rh/devtoolset-8/enable .
+cmake3 cnpy -DCMAKE_INSTALL_PREFIX=.
+make
+make install
+```
+
+* compiling this library
+```
+export export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+g++ -o bench benchmarks.cpp -Itool/include -Ltool -lcnpy -lz --std=c++11
+```
+
+* Testing benchmarks
+
+* To run a circuit chain mulitplication using the usual dense algorithm
+```
+./bench ghz 5 dense
+```
+
+* To run a circuit chain mulitplication using our new sparse algorithm (NOTE: this first converts dense numpy arryays into our sparse structure and then proceeds in sparse fashion)
+```
+./bench ham 6 sparse
+```
+
+* To check results
+```
+./bench mermin_bell 7 compare
+```
+
+
+## references ##
+* https://sparse.tamu.edu  - UF sparse matrices
