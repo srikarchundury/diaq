@@ -1,8 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/cnpy.dir/cnpy.cpp.o"
-  "CMakeFiles/cnpy.dir/cnpy.cpp.o.d"
-  "libcnpy.dylib"
   "libcnpy.pdb"
+  "libcnpy.so"
 )
 
 # Per-language clean rules from dependency scanning.

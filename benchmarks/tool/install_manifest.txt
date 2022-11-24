@@ -1,6 +1,6 @@
-/usr/local/lib/libcnpy.dylib
-/usr/local/lib/libcnpy.a
-/usr/local/include/cnpy.h
-/usr/local/bin/mat2npz
-/usr/local/bin/npy2mat
-/usr/local/bin/npz2mat
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/lib/libcnpy.so
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/lib/libcnpy.a
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/include/cnpy.h
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/mat2npz
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/npy2mat
+/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/npz2mat

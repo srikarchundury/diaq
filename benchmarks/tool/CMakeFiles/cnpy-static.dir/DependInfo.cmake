@@ -1,14 +1,15 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/cnpy/cnpy.cpp" "/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/cnpy-static.dir/cnpy.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/srikar.chundury/Documents/Projects/QuantumComputing/tensorContraction/project/sparse-tnqs/benchmarks/tool/cnpy/cnpy.cpp" "CMakeFiles/cnpy-static.dir/cnpy.cpp.o" "gcc" "CMakeFiles/cnpy-static.dir/cnpy.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
   )
 
 # Targets to which this target links.

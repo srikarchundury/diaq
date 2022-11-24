@@ -8,6 +8,8 @@
 #include <iostream>
 #include <cmath>
 
+std::string DATA_DIR = "../../data/";
+
 denseMatrix getDenseMatrix(std::string npz_path) {
     cnpy::NpyArray arr = cnpy::npz_load(npz_path, "arr_0");
 
@@ -26,10 +28,10 @@ denseMatrix getDenseMatrix(std::string npz_path) {
 std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits, int num_gates) {
     std::string dir;
     if(circuit == "vqeprep") {
-        dir = "../analysis/benchmarks/" + circuit + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/";
     }
     else {
-        dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
     std::vector<quantumSparseMatrix> matrices;
     for(int i = 1; i <= num_gates; i++) {
@@ -67,10 +69,10 @@ denseMatrix performDenseMultiplications(std::vector<denseMatrix> matrices) {
 std::vector<denseMatrix> prepareDense(std::string circuit, std::string qubits, int num_gates) {
     std::string dir;
     if(circuit == "vqeprep") {
-        dir = "../analysis/benchmarks/" + circuit + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/";
     }
     else {
-        dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
     std::vector<denseMatrix> matrices;
     for(int i = 1; i <= num_gates; i++) {
