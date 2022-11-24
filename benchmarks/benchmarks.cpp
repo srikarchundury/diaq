@@ -158,6 +158,34 @@ int main(int argc, char** argv) {
         // q.print();
     }
 
+    else if(version == "compare") {
+
+
+        std::cout << "running dense version..." << std::endl;
+        std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
+
+        // measure #flops, #memory
+        denseMatrix d = performDenseMultiplications(denseMatrices);
+        // measure #flops, #memory
+        
+        d.print();
+
+        std::cout << "running sparse version..." << std::endl;
+        std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
+
+        // measure #flops, #memory
+        quantumSparseMatrix q = performMultiplications(sparseMatrices);
+        // measure #flops, #memory
+
+        q.print();
+
+
+        std::cout << "comparing results..." << std::endl;
+        std::vector<int> res = checkResult(q, d.convertToQuantumSparse(pow(2, stoi(qubits))));
+        for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
+        std::cout << "--" << std::endl;
+    }
+
     // std::cout << " --- " << std::endl;
     // std::vector<int> res = checkResult(q, d.convertToQuantumSparse(128));
     // for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
