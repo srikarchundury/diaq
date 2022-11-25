@@ -55,7 +55,7 @@ make install
 
 * compiling this library
 ```
-export export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/tool/
 g++ -o bench benchmarks.cpp -Itool/include -Ltool -lcnpy -lz --std=c++11
 ```
 
