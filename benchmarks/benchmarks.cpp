@@ -150,13 +150,15 @@ denseMatrix readAsDense(std::string filepath) {
     }
     inFile.close();
     std::cout << "array length after - " << array.size() << std::endl;
-    return denseMatrix(num_row * num_col, array);
+    return denseMatrix(num_row, array);
 }
 
 quantumSparseMatrix readAsSparse(std::string filepath) {
     denseMatrix d = readAsDense(filepath);
     // d.print();
-    return d.convertToQuantumSparse(d.getSize());
+    quantumSparseMatrix q = d.convertToQuantumSparse(d.getSize());
+    q.print();
+    return q;
 }
 
 int main(int argc, char** argv) {
