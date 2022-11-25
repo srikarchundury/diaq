@@ -144,7 +144,7 @@ denseMatrix readAsDense(std::string filepath) {
         std::complex<double> data;
         int row, col;
         inFile >> row >> col >> data;
-        // std::cout << row << "," << col << "=" << data << std::endl;
+        std::cout << row << "," << col << "=" << data << std::endl;
         // std::cout << (row - 1) + (col - 1) * num_row << std::endl;
         array[(row - 1) + (col - 1) * num_row] = data;
     }
@@ -155,7 +155,7 @@ denseMatrix readAsDense(std::string filepath) {
 
 quantumSparseMatrix readAsSparse(std::string filepath) {
     denseMatrix d = readAsDense(filepath);
-    d.print();
+    // d.print();
     return d.convertToQuantumSparse(d.getSize());
 }
 
