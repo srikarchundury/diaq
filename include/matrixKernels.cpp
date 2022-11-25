@@ -5,8 +5,8 @@
 #include "denseMatrix.hpp"
 
 
-double sparse_add_counter = 0;
-double sparse_mul_counter = 0;
+unsigned long long int sparse_add_counter = 0;
+unsigned long long int sparse_mul_counter = 0;
 
 // ----------------------------------------------------------------
 //
@@ -178,8 +178,8 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
  * @return denseMatrix  C
  */
 denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
-    double add_counter = 0;
-    double mul_counter = 0;
+    unsigned long long int add_counter = 0;
+    unsigned long long int mul_counter = 0;
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
