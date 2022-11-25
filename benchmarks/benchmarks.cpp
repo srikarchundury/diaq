@@ -230,14 +230,14 @@ int main(int argc, char** argv) {
             denseMatrix denseB = readAsDense(uf_file2);
 
             denseMatrix d = denseProduct(denseA, denseB);
-            d.print();
+            // d.print();
 
             std::cout << "running sparse version..." << std::endl;
             quantumSparseMatrix qA = readAsSparse(uf_file1);
             quantumSparseMatrix qB = readAsSparse(uf_file2);
 
             quantumSparseMatrix q = product(qA, qB);
-            q.print();
+            // q.print();
 
             std::cout << "comparing results..." << std::endl;
             std::vector<int> res = checkResult(q, d.convertToQuantumSparse(d.getSize()));
