@@ -136,20 +136,20 @@ denseMatrix readAsDense(std::string filepath) {
     while (inFile.peek() == '%') inFile.ignore(2048, '\n');
 
     inFile >> num_row >> num_col >> num_lines;
-    std::cout << num_row << "x" << num_col << std::endl;
+    // std::cout << num_row << "x" << num_col << std::endl;
 
     std::vector<std::complex<double> > array(num_row * num_col, 0);
-    std::cout << "array length before - " << array.size() << std::endl;
+    // std::cout << "array length before - " << array.size() << std::endl;
     for (int l = 0; l < num_lines; l++) {
         std::complex<double> data;
         int row, col;
         inFile >> row >> col >> data;
-        std::cout << row << "," << col << "=" << data << std::endl;
+        // std::cout << row << "," << col << "=" << data << std::endl;
         // std::cout << (row - 1) + (col - 1) * num_row << std::endl;
         array[(row - 1) + (col - 1) * num_row] = data;
     }
     inFile.close();
-    std::cout << "array length after - " << array.size() << std::endl;
+    // std::cout << "array length after - " << array.size() << std::endl;
     return denseMatrix(num_row, array);
 }
 
@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
             q.print();
 
             std::cout << "comparing results..." << std::endl;
-            std::vector<int> res = checkResult(q, d.convertToQuantumSparse(pow(2, stoi(qubits))));
+            std::vector<int> res = checkResult(q, d.convertToQuantumSparse(d.getSize()));
             for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
             std::cout << "--" << std::endl;
         }
