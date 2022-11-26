@@ -7,6 +7,9 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <fstream>
+
+std::string DATA_DIR = "../../data/";
 
 denseMatrix getDenseMatrix(std::string npz_path) {
     cnpy::NpyArray arr = cnpy::npz_load(npz_path, "arr_0");
@@ -26,10 +29,10 @@ denseMatrix getDenseMatrix(std::string npz_path) {
 std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits, int num_gates) {
     std::string dir;
     if(circuit == "vqeprep") {
-        dir = "../analysis/benchmarks/" + circuit + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/";
     }
     else {
-        dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
     std::vector<quantumSparseMatrix> matrices;
     for(int i = 1; i <= num_gates; i++) {
@@ -67,10 +70,10 @@ denseMatrix performDenseMultiplications(std::vector<denseMatrix> matrices) {
 std::vector<denseMatrix> prepareDense(std::string circuit, std::string qubits, int num_gates) {
     std::string dir;
     if(circuit == "vqeprep") {
-        dir = "../analysis/benchmarks/" + circuit + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/";
     }
     else {
-        dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
+        dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
     std::vector<denseMatrix> matrices;
     for(int i = 1; i <= num_gates; i++) {
@@ -125,70 +128,125 @@ int get_num_gates(std::string cir, std::string qubits) {
     return gates[i * 8 + j];
 }
 
+denseMatrix readAsDense(std::string filepath) {
+    std::ifstream inFile(DATA_DIR + "suitesparse/" + filepath + ".mtx");
+
+    double num_row, num_col, num_lines;
+
+    while (inFile.peek() == '%') inFile.ignore(2048, '\n');
+
+    inFile >> num_row >> num_col >> num_lines;
+    // std::cout << num_row << "x" << num_col << std::endl;
+
+    std::vector<std::complex<double> > array(num_row * num_col, 0);
+    // std::cout << "array length before - " << array.size() << std::endl;
+    for (int l = 0; l < num_lines; l++) {
+        std::complex<double> data;
+        int row, col;
+        inFile >> row >> col >> data;
+        // std::cout << row << "," << col << "=" << data << std::endl;
+        // std::cout << (row - 1) + (col - 1) * num_row << std::endl;
+        array[(row - 1) + (col - 1) * num_row] = data;
+    }
+    inFile.close();
+    // std::cout << "array length after - " << array.size() << std::endl;
+    return denseMatrix(num_row, array);
+}
+
+quantumSparseMatrix readAsSparse(std::string filepath) {
+    denseMatrix d = readAsDense(filepath);
+    // d.print();
+    quantumSparseMatrix q = d.convertToQuantumSparse(d.getSize());
+    // q.print();
+    return q;
+}
+
 int main(int argc, char** argv) {
-
-    // ./bench ghz 3 dense
-    // ./bench ghz 3 sparse
-
-    std::string circuit = argv[1];
-    std::string qubits = argv[2];
-    std::string version = argv[3];
-
-    int num_gates = get_num_gates(circuit, qubits);
-
-    std::cout << circuit << " " << qubits << " " << version << " num_gates=" << num_gates << std::endl;
-
-    if(version == "dense") {
-        std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
-
-        // measure #flops, #memory
-        denseMatrix d = performDenseMultiplications(denseMatrices);
-        // measure #flops, #memory
+    // usage:
+    // ./bench supermarq ghz 3 dense
+    // ./bench suitesparse apache1 denormal sparse
+    std::string circuit, qubits, version, uf_file1, uf_file2, type;
+    if(argc != 5 && argc != 4) {
+        std::cout << "error in number of arguments" << std::endl;
+        return 1;
+    }
+    type = argv[1];
+    if(type == "supermarq") {
+        circuit = argv[2];
+        qubits = argv[3];
+        version = argv[4];
         
-        // d.print();
+        int num_gates = get_num_gates(circuit, qubits);
+
+        std::cout << circuit << " " << qubits << " " << version << " num_gates=" << num_gates << std::endl;
+
+        if(version == "dense") {
+            std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
+            denseMatrix d = performDenseMultiplications(denseMatrices);
+            // d.print();
+        }
+        else if(version == "sparse") {
+            std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
+            quantumSparseMatrix q = performMultiplications(sparseMatrices);
+            // q.print();
+        }
+        else if(version == "compare") {
+            std::cout << "running dense version..." << std::endl;
+            std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
+
+            denseMatrix d = performDenseMultiplications(denseMatrices);            
+            d.print();
+
+            std::cout << "running sparse version..." << std::endl;
+            std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
+
+            quantumSparseMatrix q = performMultiplications(sparseMatrices);
+            q.print();
+
+            std::cout << "comparing results..." << std::endl;
+            std::vector<int> res = checkResult(q, d.convertToQuantumSparse(pow(2, stoi(qubits))));
+            for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
+            std::cout << "--" << std::endl;
+        }
+        return 0;
     }
+    else if(type == "suitesparse") {
+        uf_file1 = argv[2];
+        uf_file2 = argv[3];
+        version = argv[4];
+        if(version == "dense") {
+            denseMatrix denseA = readAsDense(uf_file1);
+            denseMatrix denseB = readAsDense(uf_file2);
+            denseMatrix d = denseProduct(denseA, denseB);
+        }
+        else if(version == "sparse") {
+            quantumSparseMatrix qA = readAsSparse(uf_file1);
+            quantumSparseMatrix qB = readAsSparse(uf_file2);
+            quantumSparseMatrix q = product(qA, qB);
+        }
+        else if(version == "compare") {
+            std::cout << "running dense version..." << std::endl;
+            denseMatrix denseA = readAsDense(uf_file1);
+            denseMatrix denseB = readAsDense(uf_file2);
 
-    else if(version == "sparse") {
-        std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
+            denseMatrix d = denseProduct(denseA, denseB);
+            // d.print();
 
-        // measure #flops, #memory
-        quantumSparseMatrix q = performMultiplications(sparseMatrices);
-        // measure #flops, #memory
+            std::cout << "running sparse version..." << std::endl;
+            quantumSparseMatrix qA = readAsSparse(uf_file1);
+            quantumSparseMatrix qB = readAsSparse(uf_file2);
 
-        // q.print();
+            quantumSparseMatrix q = product(qA, qB);
+            // q.print();
+
+            std::cout << "comparing results..." << std::endl;
+            std::vector<int> res = checkResult(q, d.convertToQuantumSparse(d.getSize()));
+            for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
+            std::cout << "--" << std::endl;
+        }
     }
-
-    else if(version == "compare") {
-
-
-        std::cout << "running dense version..." << std::endl;
-        std::vector<denseMatrix> denseMatrices = prepareDense(circuit, qubits, num_gates);
-
-        // measure #flops, #memory
-        denseMatrix d = performDenseMultiplications(denseMatrices);
-        // measure #flops, #memory
-        
-        d.print();
-
-        std::cout << "running sparse version..." << std::endl;
-        std::vector<quantumSparseMatrix> sparseMatrices = prepare(circuit, qubits, num_gates);
-
-        // measure #flops, #memory
-        quantumSparseMatrix q = performMultiplications(sparseMatrices);
-        // measure #flops, #memory
-
-        q.print();
-
-
-        std::cout << "comparing results..." << std::endl;
-        std::vector<int> res = checkResult(q, d.convertToQuantumSparse(pow(2, stoi(qubits))));
-        for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
-        std::cout << "--" << std::endl;
+    else {
+        std::cout << "something wrong..." << std::endl;
+        return 0;
     }
-
-    // std::cout << " --- " << std::endl;
-    // std::vector<int> res = checkResult(q, d.convertToQuantumSparse(128));
-    // for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
-    // std::cout << "--" << std::endl;
-    return 0;
 }
