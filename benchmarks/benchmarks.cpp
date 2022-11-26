@@ -157,7 +157,7 @@ quantumSparseMatrix readAsSparse(std::string filepath) {
     denseMatrix d = readAsDense(filepath);
     // d.print();
     quantumSparseMatrix q = d.convertToQuantumSparse(d.getSize());
-    q.print();
+    // q.print();
     return q;
 }
 
