@@ -1,0 +1,7 @@
+cryg2500 x cryg2500
+dense: Additions: 15625000000 Multiplications: 15625000000
+sparse: Additions: 73592 Multiplications: 63480
+
+cryg10000 x cryg10000
+dense: 
+sparse: 
