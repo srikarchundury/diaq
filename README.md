@@ -33,7 +33,7 @@ Sparse Tensor Network based Quantum Simulation
 
 
 ## Installation ##
-* git clone this repo and get data required for testing (this data is generated using qiskit's unitary simulator)
+* Clone this repo and get data required for testing (this data is generated using qiskit's unitary simulator)
 
 ```
 wget https://drive.google.com/drive/folders/1u0AOzLUxlX0dz7NxdSpZx7S7XXMFgWpX?usp=sharing
@@ -59,7 +59,7 @@ make
 make install
 ```
 
-* compiling this library, alternatively use run.sh
+* Compiling this library, alternatively use run.sh
 ```
 g++ -o bench benchmarks.cpp -Itool/include -Ltool -lcnpy -lz --std=c++11
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/tool/
