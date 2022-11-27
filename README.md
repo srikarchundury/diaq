@@ -97,6 +97,6 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/tool/
     ```
 
 
-## references ##
+## References ##
 * https://github.com/SupertechLabs/SupermarQ - Supermarq benchmarks
 * https://sparse.tamu.edu  - previously UF sparse matrices - sparse diagonal benchmarking using pcrystk02, denormal, cryg10000, apache1 etc.
