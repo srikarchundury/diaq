@@ -36,7 +36,9 @@ Sparse Tensor Network based Quantum Simulation
 * Clone this repo and get data required for testing (this data is generated using qiskit's unitary simulator)
 
 ```
-wget https://drive.google.com/drive/folders/1u0AOzLUxlX0dz7NxdSpZx7S7XXMFgWpX?usp=sharing
+pip install gdown
+gdown 12NhkuVehssVq28-ZGqyhIsra4GIfD8KA
+tar -xvf data.tar.gz
 git clone https://github.ncsu.edu/tnqs/sparse-tnqs.git
 cd sparse-tnqs
 ```
