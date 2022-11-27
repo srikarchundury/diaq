@@ -31,6 +31,9 @@ std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits
     if(circuit == "vqeprep") {
         dir = DATA_DIR + "benchmarks/" + circuit + "/";
     }
+    if(circuit == "qaoa") {
+        dir = DATA_DIR + "other/" + circuit + "/" + qubits + "/";
+    }
     else {
         dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
@@ -71,6 +74,9 @@ std::vector<denseMatrix> prepareDense(std::string circuit, std::string qubits, i
     std::string dir;
     if(circuit == "vqeprep") {
         dir = DATA_DIR + "benchmarks/" + circuit + "/";
+    }
+    if(circuit == "qaoa") {
+        dir = DATA_DIR + "other/" + circuit + "/" + qubits + "/";
     }
     else {
         dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
@@ -117,12 +123,14 @@ int get_num_gates(std::string cir, std::string qubits) {
     if(cir == "ghz") i = 0;
     if(cir == "ham") i = 1;
     if(cir == "mermin_bell") i = 2;
+    if(cir == "qaoa") i = 3;
     int j = std::stoi(qubits) - 3;
 
     std::vector<int> gates = {
         2,3,4,5,6,7,8,9,
         9,13,17,21,25,29,33,37,
         11,18,25,34,43,54,65,78,
+        8,8,8,8,8,8,8,8,
     };
 
     return gates[i * 8 + j];
@@ -171,7 +179,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     type = argv[1];
-    if(type == "supermarq") {
+    if(type == "supermarq" || type == "other") {
         circuit = argv[2];
         qubits = argv[3];
         version = argv[4];
@@ -244,6 +252,7 @@ int main(int argc, char** argv) {
             for(int i = 0; i < res.size(); i ++ ) std::cout << "error " << res[i] << std::endl;
             std::cout << "--" << std::endl;
         }
+        return 0;
     }
     else {
         std::cout << "something wrong..." << std::endl;
