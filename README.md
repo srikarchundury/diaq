@@ -91,7 +91,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/tool/
 
 * Testing max-cut unitary simulation
 
-    * To run a circuit chain mulitplication using the usual dense algorithm
+    * To run a circuit chain mulitplication; compare results
     ```
     ./bench other qaoa 4 compare
     ```
