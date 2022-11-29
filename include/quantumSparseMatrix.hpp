@@ -74,8 +74,8 @@ class quantumSparseMatrix {
                 int counter = 0;
                 std::vector<std::complex<double> > vals = it->second.getValues();
                 for (int i = 0; i < vals.size(); i++) {
-                    if(std::real(vals[i]) != 0.0 || std::imag(vals[i] != 0.0)) break;
-                    else counter++;
+                    if(vals[i] == 0.0) { counter++; }
+                    else {break;}
                 }
                 if(counter == vals.size()) {
                    toDelete.push_back(it->first);

@@ -591,19 +591,149 @@ int main() {
     testCase18.push_back(B18);
     testCases.push_back(testCase18);
 
+    denseMatrix A19(8, {
+        0,0,0,0,1,0,0,0,
+        0,0,0,0,0,2,0,0,
+        0,0,0,0,0,0,3,0,
+        0,0,0,0,0,0,0,4,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    denseMatrix B19(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        5,0,0,0,0,0,0,0,
+        0,6,0,0,0,0,0,0,
+        0,0,7,0,0,0,0,0,
+        0,0,0,8,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase19;
+    testCase19.push_back(A19);
+    testCase19.push_back(B19);
+    testCases.push_back(testCase19);
+
+
+    denseMatrix A20(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        1,0,0,0,0,0,0,0,
+    });
+    denseMatrix B20(8, {
+        9,0,0,0,0,0,0,0,
+        0,10,0,0,0,0,0,0,
+        0,0,11,0,0,0,0,0,
+        0,0,0,12,0,0,0,0,
+        0,0,0,0,13,0,0,0,
+        0,0,0,0,0,14,0,0,
+        0,0,0,0,0,0,15,0,
+        0,0,0,0,0,0,0,16,
+    });
+    std::vector<denseMatrix> testCase20;
+    testCase20.push_back(A20);
+    testCase20.push_back(B20);
+    testCases.push_back(testCase20);
+
+
+    denseMatrix A21(8, {
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,
+    });
+    denseMatrix B21(8, {
+        0,0,0,0,5,0,0,0,
+        0,0,0,0,0,6,0,0,
+        0,0,0,0,0,0,7,0,
+        0,0,0,0,0,0,0,8,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase21;
+    testCase21.push_back(A21);
+    testCase21.push_back(B21);
+    testCases.push_back(testCase21);
+
+
+    denseMatrix A22(8, {
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,3,0,0,0,0,0,
+        0,0,0,4,0,0,0,0,
+        0,0,0,0,0,5,0,0,
+        0,0,0,0,6,0,0,0,
+        0,0,0,0,0,0,0,7,
+        0,0,0,0,0,0,8,0,
+    });
+    denseMatrix B22(8, {
+        9,10,0,0,0,0,0,0,
+        0,0,0,0,0,0,11,12,
+        0,0,13,14,0,0,0,0,
+        0,0,0,0,15,16,0,0,
+        0,0,0,0,17,18,0,0,
+        0,0,19,20,0,0,0,0,
+        0,0,0,0,0,0,21,22,
+        23,24,0,0,0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase22;
+    testCase22.push_back(A22);
+    testCase22.push_back(B22);
+    testCases.push_back(testCase22);
+
+
+    denseMatrix A23(8, {
+        1,0,0,0,0,0,0,0,
+        0,2,0,0,0,0,0,0,
+        0,0,0,0,0,0,3,0,
+        0,0,0,0,0,0,0,4,
+        0,0,0,0,5,0,0,0,
+        0,0,0,0,0,6,0,0,
+        0,0,7,0,0,0,0,0,
+        0,0,0,8,0,0,0,0,
+    });
+    denseMatrix B23(8, {
+        9,10,0,0,0,0,0,0,
+        0,0,0,0,0,0,11,12,
+        0,0,0,0,0,0,13,14,
+        15,16,0,0,0,0,0,0,
+        0,0,0,0,17,18,0,0,
+        0,0,19,20,0,0,0,0,
+        0,0,21,22,0,0,0,0,
+        0,0,0,0,23,24,0,0,
+    });
+    std::vector<denseMatrix> testCase23;
+    testCase23.push_back(A23);
+    testCase23.push_back(B23);
+    testCases.push_back(testCase23);
 
     for(int i = 0; i < testCases.size(); i++) {
-        if(i == 17) {
+        // if(i == 20) {
             std::cout << "test case " << i << std::endl;
             denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
-            p.print();
-            std::cout << " --- " << std::endl;
+            // p.print();
+            // std::cout << " --- " << std::endl;
             quantumSparseMatrix dp = p.convertToQuantumSparse(testCases[i][0].getSize());
+            // dp.print();
+            // std::cout << " --- " << std::endl;
             quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(testCases[i][0].getSize()), testCases[i][1].convertToQuantumSparse(testCases[i][1].getSize()));
-            qp.print();
+            // qp.print();
             std::string check = checkResult(dp, qp);
             std::cout << check << std::endl;
-        }
+        // }
     }
     return 0;
 }
