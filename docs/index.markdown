@@ -18,11 +18,18 @@ title: Quantum Sparse Matrices
 </div>
 
 # Tensor-Network based Quantum Simulation #
+
 * [Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git") <br/>
+
+* [Final Report](https://github.ncsu.edu/tnqs/sparse-tnqs/blob/main/discussions/report3.pdf "PDF") <br/>
+
 * Download Project Presentation - [PDF](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pdf) | [PPTX](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pptx) <br/>
+
 * Download Library [zip](https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip) <br/>
 
+
 *This is part of Dr.Frank Mueller's quantum computing course: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+
 
 ## Team ##
 * Srikar Chundury (schundu3)
