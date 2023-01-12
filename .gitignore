@@ -5,6 +5,8 @@ analysis/benchmarks/*
 analysis/metrics*/*
 analysis/*metrics*/*
 
+benchmarks/tool/*
+
 .vscode/*
 .DS_Store
 docs/.DS_Store

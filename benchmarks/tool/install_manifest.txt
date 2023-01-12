@@ -1,6 +1,0 @@
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/lib/libcnpy.so
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/lib/libcnpy.a
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/include/cnpy.h
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/mat2npz
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/npy2mat
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/bin/npz2mat
