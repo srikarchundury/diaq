@@ -26,10 +26,13 @@ denseMatrix getDenseMatrix(std::string npz_path) {
 std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits, int num_gates) {
     std::vector<quantumSparseMatrix> matrices;
     std::string dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
+    std::cout << "Preparation phase ... " << std::endl;
     for(int i = 1; i <= num_gates; i++) {
         denseMatrix d = getDenseMatrix(dir + "gate_" + std::to_string(i) + ".npz");
 
         quantumSparseMatrix m = d.convertToQuantumSparse(pow(2, stoi(qubits)));
+        std::cout << "#diagonals = " << m.getDiagonalMap().size() << std::endl;
+        std::cout << "sparsity = " << d.sparsity() << std::endl;
         // m.print();
         // std::cout << " --- " << std::endl;
         matrices.push_back(m);
@@ -38,9 +41,18 @@ std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits
 }
 
 quantumSparseMatrix performMultiplications(std::vector<quantumSparseMatrix> matrices) {
+    std::cout << "Chain Multiplication ... " << std::endl;
     quantumSparseMatrix result = product(matrices[1], matrices[0]);
+    std::cout << "#diagonals = " << result.getDiagonalMap().size() << std::endl;
+    std::vector<std::complex<double>> data = result.convertToDenseMatrix(result.getSize());
+    denseMatrix d = denseMatrix(result.getSize(), data);
+    std::cout << "sparsity = " << d.sparsity() << std::endl;
     for(int i = 2; i < matrices.size(); i++) {
         result = product(matrices[i], result);
+        std::cout << "#diagonals = " << result.getDiagonalMap().size() << std::endl;
+        std::vector<std::complex<double>> data = result.convertToDenseMatrix(result.getSize());
+        denseMatrix d = denseMatrix(result.getSize(), data);
+        std::cout << "sparsity = " << d.sparsity() << std::endl;
     }
     return result;
 }
