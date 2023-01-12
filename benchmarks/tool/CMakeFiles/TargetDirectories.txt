@@ -1,9 +1,0 @@
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/install.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/list_install_components.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/edit_cache.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/install/strip.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/install/local.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/cnpy-static.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/rebuild_cache.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/example1.dir
-/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool/CMakeFiles/cnpy.dir

@@ -1,2 +1,0 @@
-/opt/rh/devtoolset-8/root/usr/bin/ar qc libcnpy.a  CMakeFiles/cnpy-static.dir/cnpy.cpp.o
-/opt/rh/devtoolset-8/root/usr/bin/ranlib libcnpy.a

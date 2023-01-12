@@ -1,1 +1,0 @@
-/opt/rh/devtoolset-8/root/usr/bin/c++   -std=c++11  -rdynamic CMakeFiles/example1.dir/example1.cpp.o  -o example1  -Wl,-rpath,/mnt/beegfs/schundu3/sparse-tnqs/benchmarks/tool libcnpy.so -lz 

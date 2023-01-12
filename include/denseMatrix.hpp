@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <complex>
 
 #include "quantumSparseMatrix.hpp"
 
@@ -34,20 +35,23 @@ class denseMatrix {
                 }
             }
         }
-        quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
-            // std::cout << "converting dense to sparse" << std::endl;
-            std::map<int, diagonal> diagMap;
-            quantumSparseMatrix qm(diagMap, matrixSize);
-            for(int i=0; i < size; i++) {
-                for(int j=0; j < size; j++) {
-                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
-                    // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-                    qm.addToDiagonal(diagIndx, data[i * size + j]);
+        int isPartOf(int dIndex, int a, int b, int x, int y) {
+            int p = x - y + b - a;
+            if(dIndex >= size){
+                p = x + y - a - b;
+            }
+            return p;
+        }
+        float sparsity() {
+            int z = 0;
+            for(int i = 0; i < data.size(); i++) {
+                if(data[i] == 0.0) {
+                    z++;
                 }
             }
-            qm.pruneMatrix();
-            return qm;
+            return ((float)z/(float)data.size()) * 100;
         }
+        // currently un-used!
         // given a point in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
         int getTargetDiagIndex(quantumSparseMatrix *qm, int i, int j) {
             // every element will be part of 2 diagonals. We choose one of them based on sparsity in each.
@@ -75,12 +79,19 @@ class denseMatrix {
         int getTargetDiagIndex_onlydiags(int i, int j) {
             return j-i;
         }
-        int isPartOf(int dIndex, int a, int b, int x, int y) {
-            int p = x - y + b - a;
-            if(dIndex >= size){
-                p = x + y - a - b;
+        quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
+            // std::cout << "converting dense to sparse" << std::endl;
+            std::map<int, diagonal> diagMap;
+            quantumSparseMatrix qm(diagMap, matrixSize);
+            for(int i=0; i < size; i++) {
+                for(int j=0; j < size; j++) {
+                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
+                    // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
+                    qm.addToDiagonal(diagIndx, data[i * size + j]);
+                }
             }
-            return p;
+            qm.pruneMatrix();
+            return qm;
         }
     private:
         int size;
