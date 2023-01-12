@@ -53,8 +53,9 @@ cd tests
 * Getting dependencies with "cnpy" (a c++ tool that read numpy based files)
 ```
 cd benchmarks
-rm -r tool/*
-cd tool/
+rm -r tool
+mkdir tool
+cd tool
 git clone https://github.com/rogersce/cnpy.git
 source /opt/rh/devtoolset-8/enable .
 cmake3 cnpy -DCMAKE_INSTALL_PREFIX=.
