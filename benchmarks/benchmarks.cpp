@@ -137,6 +137,7 @@ int get_num_gates(std::string cir, std::string qubits) {
     if(cir == "ham") i = 1;
     if(cir == "mermin_bell") i = 2;
     if(cir == "qaoa") i = 3;
+	if(cir=="shortham") i = 4;
     int j = std::stoi(qubits) - 3;
 
     std::vector<int> gates = {
@@ -144,6 +145,7 @@ int get_num_gates(std::string cir, std::string qubits) {
         9,13,17,21,25,29,33,37,
         11,18,25,34,43,54,65,78,
         8,8,8,8,8,8,8,8,
+        0,0,0,0,0,0,17,0
     };
 
     return gates[i * 8 + j];

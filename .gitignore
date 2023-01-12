@@ -5,6 +5,7 @@ analysis/benchmarks/*
 analysis/metrics*/*
 analysis/*metrics*/*
 
+benchmarks/bench
 benchmarks/tool/*
 
 .vscode/*
