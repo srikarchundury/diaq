@@ -11,14 +11,25 @@ title: Quantum Sparse Matrices
   <a href="#2">Scope of this project</a>
   <a href="#3">Problem Statement</a>
   <a href="#4">Progress - update #1</a>
+  <a href="#7">Progress - update #2</a>
+  <a href="#8">QAOA - Max Cut</a>
   <a href="#5">Literature Survey</a>
   <a href="#6">Note</a>
 </div>
 
 # Tensor-Network based Quantum Simulation #
-[Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git")
 
-*This repo hosts source code for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+* [Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git") <br/>
+
+* [Final Report](https://github.ncsu.edu/tnqs/sparse-tnqs/blob/main/discussions/report3.pdf "PDF") <br/>
+
+* Download Project Presentation - [PDF](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pdf) | [PPTX](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pptx) <br/>
+
+* Download Library [zip](https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip) <br/>
+
+
+*This is part of Dr.Frank Mueller's quantum computing course: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
+
 
 ## Team ##
 * Srikar Chundury (schundu3)
@@ -43,18 +54,18 @@ title: Quantum Sparse Matrices
 <hr id="3" />
 
 ## Problem Statement ##
-* Analyze intermediate unitaries for sparsity.
+* Analyze intermediate unitaries for sparsity. [&check;]
     * Follow the contraction path (opt_einsum) and analyze how the unitary of the circuit evolves over time steps.
-* New data structure format to store sparse unitaries efficiently.
-    * Make use of diagonals and anti-diagonals.
+* New data structure format to store sparse unitaries efficiently.[&check;]
+    * Make use of diagonals and anti-diagonals. 
     * Estimate the time and space complexities for kernel algorithmics involved (Matrix-Vector, Matrix-Matrix).
-* Implement the new data structure and kernels in c++ and expose as a custom library.
+* Implement the new data structure and kernels in c++ and expose as a custom library. [In-progress]
     * Handle Conversions between this new format and numPy.
     * Kernels:
-        * Vector to Vector multiplication
-        * Vector to Matrix multiplication
-        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations).
-    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers).
+        * Vector to Vector multiplication [delayed, removed from scope of qc-22 course project]
+        * Vector to Matrix multiplication [delayed, removed from scope of qc-22 course project]
+        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations). [&check;]
+    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers). [In-progess, compared #flops algorithmically]
 
 <hr id="4" />
 
@@ -64,9 +75,6 @@ title: Quantum Sparse Matrices
         * GHZ circuit <br/> <img src="images/ghz_unitary.png" width="600"> &nbsp; <img src="images/ghz_circuit.png" width="300"> <br/>
         * Hamiltonian circuit <br/> <img src="images/ham_unitary.png" width="600"> &nbsp; <img src="images/ham_circuit.png" width="400"> <br/>
         * Mermin Bell circuit <br/> <img src="images/mermin_bell_unitary.png" width="600"> &nbsp; <img src="images/mermin_bell_circuit.png" width="400"> <br/>
-    
-    * Real world example: qiskit textbook's <a href="https://qiskit.org/textbook/ch-applications/vqe-molecules.html"> VQE preparation entanglement circuit </a> <br/>
-    <img src="images/vqe_prep_unitary.png" width="300"> &nbsp; <img src="images/vqe_prep_circuit.png" width="300"> <br/>
     
     * Some observations:
         * Final unitaries can be compactly represented using just the diagonals and anti-diagonals.
@@ -89,6 +97,33 @@ title: Quantum Sparse Matrices
         * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
         * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
         * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
+
+<hr id="7" />
+
+## Progress Update 2 ##
+* Jotted down M-M algorithms for 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
+    * Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
+    * Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
+* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
+* We implemented the "Sparse Diagonal" format using c++11.
+    * Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 11. In the future, we plan to also run for >18 qubits on the ARC cluster.
+    * GHZ circuit <br/> <img src="images/ghz_flops_comparison.png" width="300"> <br/>
+    * Hamiltonian circuit <br/> <img src="images/ham_flops_comparison.png" width="300"> <br/>
+    * Mermin Bell circuit <br/> <img src="images/mermin_bell_flops_comparison.png" width="300"> <br/>
+
+
+<hr id="8" />
+
+## QAOA Max-Cut ##
+
+Consider the below circuit that uses QAOA to find max-cut of a square, after stripping off measurements and Hadamards) ([Qiskit Ref](https://qiskit.org/textbook/ch-applications/qaoa.html))
+<img src="images/qaoa_maxcut_circuit.png" width="400"> <br/>
+
+This is how the intermediate unitaries look like- <br/>
+<img src="images/maxcut.gif" width="400"> <br/>
+
+Dense(numPy) vs Diagonal(our approach comparison)- <br/> 
+<img src="images/qaoa_maxcut_flops_comparison.png" width="400"> <br/>
 
 <hr id="5" />
 
