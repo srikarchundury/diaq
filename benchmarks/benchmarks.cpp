@@ -38,7 +38,6 @@ std::vector<quantumSparseMatrix> prepare(std::string circuit, std::string qubits
         dir = DATA_DIR + "benchmarks/" + circuit + "/" + qubits + "/";
     }
     std::vector<quantumSparseMatrix> matrices;
-    std::string dir = "../analysis/benchmarks/" + circuit + "/" + qubits + "/";
     std::cout << "Preparation phase ... " << std::endl;
     for(int i = 1; i <= num_gates; i++) {
         denseMatrix d = getDenseMatrix(dir + "gate_" + std::to_string(i) + ".npz");
