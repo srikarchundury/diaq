@@ -14,11 +14,11 @@ class quantumSparseMatrix:
 
 	def print(self):
 		for k, v in self.diagonalMap.items():
-			print(v.print())
+			v.print()
 	
 	def createDiagonal(self, dIndex):
 		if dIndex not in self.diagonalMap.keys():
-			diagObj = diagonal(dIndex)
+			diagObj = diagonal(dIndex, [])
 			self.diagonalMap[dIndex] = diagObj
 		else:
 			return {"error": "diagonal with index already exists"}
@@ -41,7 +41,7 @@ class quantumSparseMatrix:
 			diag = self.getDiagonal(dIndex)
 			vals = diag.getValues()
 			for i in range(len(vals)):
-				diag.setValue(i, diag.getValue(i) + diagNew.getValue(i))
+				diag.setValue(i, vals[i] + diagNew.getValue(i))
 
 	def pruneMatrix(self):
 		to_del = []

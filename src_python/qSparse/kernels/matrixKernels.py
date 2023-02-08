@@ -2,15 +2,17 @@ from ..denseMatrix import denseMatrix
 from ..quantumSparseMatrix import quantumSparseMatrix
 from ..diagonal import diagonal
 
+import math
+
 
 def multiplyDiagonals(size, indexA, indexB, diagA, diagB):
 	valuesA = diagA.getValues()
 	valuesB = diagB.getValues()
 	if indexA + indexB >= size:
-		return diagonal(0)
+		return diagonal(0, [])
 	elif indexA + indexB <= -1 * size:
-		return diagonal(0)
-	res = diagonal(indexA + indexB)
+		return diagonal(0, [])
+	res = diagonal(indexA + indexB, [])
 	lenDiagA = size - abs(indexA)
 	lenDiagB = size - abs(indexB)
 	lenRes = size - abs(indexA + indexB)
@@ -64,8 +66,8 @@ def multiplyDiagonals(size, indexA, indexB, diagA, diagB):
 		jump -= 1
 		k += 1
 	while(k < lenRes and k + offsetA - jump_cpy < lenDiagA and k + offsetB - jump_cpy < lenDiagB):
-		print("k, offsetA, offsetB, jump_cpy - ", k, offsetA, offsetB, jump_cpy)
-		res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy])
+		r = valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]
+		res.addElement(r)
 		k += 1
 	while(k < lenRes):
 		res.addElement(0)

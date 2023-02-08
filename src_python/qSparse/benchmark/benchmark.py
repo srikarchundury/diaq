@@ -31,7 +31,6 @@ class benchmark:
 			d = self.getDenseMatrix(dir + "gate_" + str(i) + ".npz")
 			m = d.convertToQuantumSparse(pow(2, int(qubits)))
 			matrices.append(m)
-
 		return matrices
 
 	def performMultiplications(self, matrices):
@@ -57,7 +56,6 @@ class benchmark:
 		matrices = []
 		for i in range(1, num_gates+1):
 			d = self.getDenseMatrix(dir + "gate_" + str(i) + ".npz")
-			d.print()
 			matrices.append(d)
 
 		return matrices
@@ -65,6 +63,7 @@ class benchmark:
 	def checkResult(self, A, B):
 		errors = []
 		if A.getSize() != B.getSize():
+			print("sizes don't match - ", A.getSize(), B.getSize())
 			errors.append(1)
 		mapA = A.getDiagonalMap()
 		mapB = B.getDiagonalMap()
@@ -122,9 +121,11 @@ class benchmark:
 			if version == "dense":
 				denseMatrices = self.prepareDense(circuit, qubits, num_gates)
 				d = self.performDenseMultiplications(denseMatrices)
+				d.print()
 			elif version == "sparse":
 				sparseMatrices = self.prepare(circuit, qubits, num_gates)
 				q = self.performMultiplications(sparseMatrices)
+				q.print()
 			elif version == "compare":
 				print("running dense version...")
 				denseMatrices = self.prepareDense(circuit, qubits, num_gates)
@@ -136,32 +137,28 @@ class benchmark:
 				q.print()
 				print("comparing results...")
 				errors = self.checkResult(q, d.convertToQuantumSparse(pow(2, int(qubits))))
-				for e in errors:
-					print("error - ", e, end="\n---\n")
-			return 0
+				return len(errors)
 		elif type == "suitesparse":
 			if version == "dense":
-				denseA = self.readAsDense(file1)
-				denseB = self.readAsDense(file2)
+				denseA = self.readAsDense(self.data_dir + "/suitesparse/" + file1 + ".mtx")
+				denseB = self.readAsDense(self.data_dir + "/suitesparse/" + file2 + ".mtx")
 				d = denseProduct(denseA, denseB)
 			elif version == "sparse":
-				sparseA = self.readAsSparse(file1)
-				sparseB = self.readAsSparse(file2)
+				sparseA = self.readAsSparse(self.data_dir + "/suitesparse/" + file1 + ".mtx")
+				sparseB = self.readAsSparse(self.data_dir + "/suitesparse/" + file2 + ".mtx")
 				q = product(sparseA, sparseB)
 			elif version == "compare":
 				print("running dense version...")
-				denseA = self.readAsDense(file1)
-				denseB = self.readAsDense(file2)
+				denseA = self.readAsDense(self.data_dir + "/suitesparse/" + file1 + ".mtx")
+				denseB = self.readAsDense(self.data_dir + "/suitesparse/" + file2 + ".mtx")
 				d = denseProduct(denseA, denseB)
 				print("running sparse version...")
-				sparseA = self.readAsSparse(file1)
-				sparseB = self.readAsSparse(file2)
+				sparseA = self.readAsSparse(self.data_dir + "/suitesparse/" + file1 + ".mtx")
+				sparseB = self.readAsSparse(self.data_dir + "/suitesparse/" + file2 + ".mtx")
 				q = product(sparseA, sparseB)
 				print("comparing results...")
-				errors = self.checkResult(q, d.convertToQuantumSparse(pow(2, int(qubits))))
-				for e in errors:
-					print("error - ", e, end="\n---\n")
-			return 0
+				errors = self.checkResult(q, d.convertToQuantumSparse(denseA.getSize()))
+				return len(errors)
 		else:
 			print("something wrong!")
 			return 1

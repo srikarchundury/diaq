@@ -1,0 +1,8 @@
+README.md
+setup.py
+qSparse/__init__.py
+qSparse.egg-info/PKG-INFO
+qSparse.egg-info/SOURCES.txt
+qSparse.egg-info/dependency_links.txt
+qSparse.egg-info/requires.txt
+qSparse.egg-info/top_level.txt

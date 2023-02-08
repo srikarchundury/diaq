@@ -18,9 +18,9 @@ class diagonal:
 		return self.values[i]
 
 	def print(self):
-		print("(dIndex=" + str(self.dIndex) + ") [", end ="")
-		print(self.values, sep=",", end="")
-		print("]")
+		print("(dIndex=" + str(self.dIndex) + ")", end =" ")
+		# print("(dLength=" + str(len(self.values)) + ")", end =" ")
+		print(self.values, sep=" ")
 	
 	def getValues(self):
 		return self.values
