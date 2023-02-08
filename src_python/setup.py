@@ -1,4 +1,6 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+
+packages = find_packages()
 
 setup(
     name='qSparse',
@@ -8,7 +10,7 @@ setup(
     author='Srikar Chundury',
     author_email='schundu3@ncsu.edu',
     license='BSD 2-clause',
-    packages=['qSparse'],
+    packages=packages,
     install_requires=['numpy',],
 
     classifiers=[
