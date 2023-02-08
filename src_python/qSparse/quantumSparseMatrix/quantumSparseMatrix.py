@@ -1,4 +1,5 @@
 from ..diagonal import diagonal
+from ..denseMatrix import denseMatrix
 
 class quantumSparseMatrix:
 	def __init__(self, s):
