@@ -77,7 +77,7 @@ def multiplyDiagonals(size, indexA, indexB, diagA, diagB):
 def product(A, B):
 	if A.getSize() != B.getSize():
 		return {"error": "unequal matrix sizes"}
-	result = quantumSparseMatrix(A.getSize())
+	result = quantumSparseMatrix()
 	mapA = A.getDiagonalMap()
 	mapB = B.getDiagonalMap()
 	for kA, vA in mapA.items():

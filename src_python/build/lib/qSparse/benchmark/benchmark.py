@@ -29,7 +29,7 @@ class benchmark:
 		matrices = []
 		for i in range(1, num_gates+1):
 			d = self.getDenseMatrix(dir + "gate_" + str(i) + ".npz")
-			m = d.convertToQuantumSparse(pow(2, int(qubits)))
+			m = d.convertToQuantumSparse()
 			matrices.append(m)
 		return matrices
 
@@ -113,7 +113,7 @@ class benchmark:
 	
 	def readAsSparse(self, filePath):
 		d = self.readAsDense(filePath)
-		return d.convertToQuantumSparse(d.getSize())
+		return d.convertToQuantumSparse()
 	
 	def run(self, type="supermarq", circuit="ghz", version="compare", qubits="5", file1="cryg2500", file2="cryg2500"):
 		if type in ["supermarq", "other"]:
@@ -136,7 +136,7 @@ class benchmark:
 				q = self.performMultiplications(sparseMatrices)
 				q.print()
 				print("comparing results...")
-				errors = self.checkResult(q, d.convertToQuantumSparse(pow(2, int(qubits))))
+				errors = self.checkResult(q, d.convertToQuantumSparse())
 				return len(errors)
 		elif type == "suitesparse":
 			if version == "dense":
@@ -157,7 +157,7 @@ class benchmark:
 				sparseB = self.readAsSparse(self.data_dir + "/suitesparse/" + file2 + ".mtx")
 				q = product(sparseA, sparseB)
 				print("comparing results...")
-				errors = self.checkResult(q, d.convertToQuantumSparse(denseA.getSize()))
+				errors = self.checkResult(q, d.convertToQuantumSparse())
 				return len(errors)
 		else:
 			print("something wrong!")

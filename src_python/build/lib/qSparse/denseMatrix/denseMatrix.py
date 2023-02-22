@@ -37,8 +37,20 @@ class denseMatrix:
 	def getTargetDiagIndex_onlydiags(self, i, j):
 		return j-i
 
-	def convertToQuantumSparse(self, matrixSize):
-		qm = quantumSparseMatrix(matrixSize)
+	def __mul__(self, B):
+		if self.getSize() != B.getSize():
+			return {"error": "unequal matrix sizes"}
+		n = self.getSize()
+		resArray = [0] * (n * n)
+		result = denseMatrix(n, resArray)
+		for i in range(n):
+			for j in range(n):
+				for k in range(n):
+					result.set(i, j, result.get(i, j) + self.get(i, k) * B.get(k, j))
+		return result
+
+	def convertToQuantumSparse(self):
+		qm = quantumSparseMatrix()
 		for i in range(self.size):
 			for j in range(self.size):
 				diagIndx = self.getTargetDiagIndex_onlydiags(i, j)

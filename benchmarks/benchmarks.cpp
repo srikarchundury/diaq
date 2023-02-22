@@ -1,7 +1,7 @@
 #include "cnpy.h"
 
-#include "../include/denseMatrix.hpp"
-#include "../include/matrixKernels.cpp"
+#include "../src/denseMatrix.hpp"
+#include "../src/matrixKernels.cpp"
 
 
 #include <string>

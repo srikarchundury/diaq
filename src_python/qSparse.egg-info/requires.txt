@@ -1,1 +1,5 @@
-numpy
+numpy>=1.7
+
+[tests]
+pytest
+pytest-cov

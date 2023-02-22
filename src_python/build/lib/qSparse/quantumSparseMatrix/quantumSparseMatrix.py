@@ -1,14 +1,15 @@
 from ..diagonal import diagonal
 from ..denseMatrix import denseMatrix
 
+from ..clib import qSparseLib
+
+
 class quantumSparseMatrix:
-	def __init__(self, s):
+	def __init__(self, diagonals={}, shape=None):
 		# mapping b/w diagonal index and a diagonal object
-		self.diagonalMap = {}
-		self.size = s
-	
-	def getSize(self):
-		return self.size
+		print(qSparseLib)
+		self.diagonalMap = diagonals
+		self.shape = shape
 
 	def getDiagonalMap(self):
 		return self.diagonalMap
@@ -73,7 +74,37 @@ class quantumSparseMatrix:
 				x = -1 * k
 				y = 0
 			for i in range(len(vals)):
-				data[self.size * x + y] = vals[i]
+				data[matrixSize * x + y] = vals[i]
 				x += 1
 				y += 1
 		return data
+	
+
+	def __mul__(self, other):
+    	# Check if the matrices are compatible for multiplication
+		if len(self.diagonalMap) == 0 or len(other.diagonalMap) == 0:
+			return quantumSparseMatrix({})
+		if max(self.diagonalMap.keys()) < -min(other.diagonalMap.keys()) or min(self.diagonalMap.keys()) > -max(other.diagonalMap.keys()):
+			return quantumSparseMatrix({})
+
+        # Create a dictionary to store the result
+		result = {}
+
+        # Multiply each diagonal of self with the diagonals of other
+		for diag1 in self.diagonalMap:
+			for diag2 in other.diagonalMap:
+				if diag1 + diag2 not in result:
+					result[diag1 + diag2] = []
+
+                # Multiply each pair of elements that lie on the same row and column
+				for i in range(len(self.diagonalMap[diag1].getValues())):
+					for j in range(len(other.diagonalMap[diag2].getValues())):
+						result[diag1 + diag2].append(self.diagonalMap[diag1].getValues()[i] * other.diagonalMap[diag2].getValues()[j])
+
+        # Create a new quantumSparseMatrix instance with the resulting dictionary
+		for k, v in result.items():
+			result[k] = diagonal(k, v)
+		return quantumSparseMatrix(result)
+	
+	def pack(self):
+		return qSparseLib
