@@ -1,6 +1,5 @@
 
-#include "../include/denseMatrix.hpp"
-#include "../include/matrixKernels.cpp"
+#include "../include/qSparse.hpp"
 
 
 std::map<int, diagonal> testdiagonal() {

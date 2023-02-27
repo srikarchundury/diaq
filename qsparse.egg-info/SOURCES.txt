@@ -1,0 +1,9 @@
+README.md
+setup.py
+include/pythonWrappers.cpp
+qsparse.egg-info/PKG-INFO
+qsparse.egg-info/SOURCES.txt
+qsparse.egg-info/dependency_links.txt
+qsparse.egg-info/not-zip-safe
+qsparse.egg-info/requires.txt
+qsparse.egg-info/top_level.txt

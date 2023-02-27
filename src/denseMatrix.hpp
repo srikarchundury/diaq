@@ -25,7 +25,7 @@ class denseMatrix {
         std::complex<double> get(int i, int j) {
             return data[size * i + j];
         }
-        void print(std::string sep="x") {
+        void print() {
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%size == 0) {
                     std::cout << data[i] << std::endl;
@@ -79,10 +79,10 @@ class denseMatrix {
         int getTargetDiagIndex_onlydiags(int i, int j) {
             return j-i;
         }
-        quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
+        quantumSparseMatrix convertToQuantumSparse() {
             // std::cout << "converting dense to sparse" << std::endl;
             std::map<int, diagonal> diagMap;
-            quantumSparseMatrix qm(diagMap, matrixSize);
+            quantumSparseMatrix qm(diagMap, size);
             for(int i=0; i < size; i++) {
                 for(int j=0; j < size; j++) {
                     int diagIndx = getTargetDiagIndex_onlydiags(i, j);

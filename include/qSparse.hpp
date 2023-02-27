@@ -11,7 +11,7 @@
 #include <complex>
 #include <assert.h>
 
-#define QSPARSE_VERSION 1
+#define QSPARSE_VERSION "0.0.1"
 
 	#include "../src/denseMatrix.hpp"
 	#include "../src/diagonal.hpp"
@@ -19,11 +19,5 @@
 	#include "../src/norms.hpp"
 	#include "../src/quantumSparseMatrix.hpp"
 	#include "../src/Vector.hpp"
-
-extern "C" {
-	void hello() {
-		printf("Srikar\n");
-	}
-}
 
 #endif
