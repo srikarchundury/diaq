@@ -725,10 +725,10 @@ int main() {
             denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
             // p.print();
             // std::cout << " --- " << std::endl;
-            quantumSparseMatrix dp = p.convertToQuantumSparse(testCases[i][0].getSize());
+            quantumSparseMatrix dp = p.convertToQuantumSparse();
             // dp.print();
             // std::cout << " --- " << std::endl;
-            quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(testCases[i][0].getSize()), testCases[i][1].convertToQuantumSparse(testCases[i][1].getSize()));
+            quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(), testCases[i][1].convertToQuantumSparse());
             // qp.print();
             std::string check = checkResult(dp, qp);
             std::cout << check << std::endl;

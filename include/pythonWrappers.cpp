@@ -60,6 +60,8 @@ PYBIND11_MODULE(qsparse, m) {
     // kernel functions
     m.def("product", &product);
     m.def("denseProduct", &denseProduct);
+    m.def("add", &add);
+    // m.def("trace", &trace);
 
     // TODO: einsum, tensordot routines
 }
