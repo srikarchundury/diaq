@@ -47,6 +47,9 @@ class diagonal {
         std::vector<std::complex<double> > getValues() {
             return values;
         }
+        int getSize() {
+            return values.size();
+        }
         // returns the start (x, y) of diagonal of the matrix
         int* getCoords(int matrixSize, int dIndex) {
             static int c[2];

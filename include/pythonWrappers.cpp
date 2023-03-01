@@ -26,6 +26,7 @@ PYBIND11_MODULE(qsparse, m) {
         .def("getValue", &diagonal::getValue, py::return_value_policy::reference)
         .def("print", &diagonal::print, py::return_value_policy::reference)
         .def("getValues", &diagonal::getValues, py::return_value_policy::reference)
+        .def("getSize", &diagonal::getSize, py::return_value_policy::reference)
         .def("getCoords", &diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diagonal::numNonZeros, py::return_value_policy::reference);
@@ -61,7 +62,7 @@ PYBIND11_MODULE(qsparse, m) {
     m.def("product", &product);
     m.def("denseProduct", &denseProduct);
     m.def("add", &add);
-    // m.def("trace", &trace);
-
-    // TODO: einsum, tensordot routines
+    m.def("trace", &trace);
+    // m.def("tensordot", &tensordot);
+    // m.def("einsum", &einsum);
 }

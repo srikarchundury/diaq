@@ -203,6 +203,7 @@ diagonal addElements(diagonal A, diagonal B) {
     }
     return diagonal(A.getIndex(), &valsA);
 }
+
 quantumSparseMatrix add(quantumSparseMatrix A, quantumSparseMatrix B) {
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
@@ -222,3 +223,19 @@ quantumSparseMatrix add(quantumSparseMatrix A, quantumSparseMatrix B) {
     // result->pruneMatrix();
     return *result;
 }
+
+
+std::complex<double> trace(quantumSparseMatrix A) {
+    std::complex<double> t;
+    std::map<int, diagonal>::iterator itA;
+    std::map<int, diagonal> mapA = A.getDiagonalMap();
+    itA = mapA.find(0);
+    if(itA == mapA.end()) {
+        return t;
+    }
+    for(int i=0; i < itA->second.getSize(); i++) {
+        t += itA->second.getValue(i);
+    }
+    return t;
+}
+
