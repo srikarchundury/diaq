@@ -239,3 +239,11 @@ std::complex<double> trace(quantumSparseMatrix A) {
     return t;
 }
 
+quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
+    // std::cout << "axes length = " << axes.size() << std::endl;
+    return product(A, B);
+}
+
+// quantumSparseMatrix einsum() {
+//     return res;
+// }

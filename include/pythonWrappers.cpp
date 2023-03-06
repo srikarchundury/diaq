@@ -59,10 +59,18 @@ PYBIND11_MODULE(qsparse, m) {
         .def("convertToQuantumSparse", &denseMatrix::convertToQuantumSparse, py::return_value_policy::reference);
 
     // kernel functions
-    m.def("product", &product);
-    m.def("denseProduct", &denseProduct);
-    m.def("add", &add);
-    m.def("trace", &trace);
-    // m.def("tensordot", &tensordot);
+    m.def("product", &product, py::return_value_policy::reference);
+    m.def("denseProduct", &denseProduct, py::return_value_policy::reference);
+    m.def("add", &add, py::return_value_policy::reference);
+    m.def("trace", &trace, py::return_value_policy::reference);
+    m.def(
+        "tensordot",
+        [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) { return tensordot(A, B, axes); },
+        py::arg(),
+        py::arg(),
+        py::kw_only(),
+        py::arg("axes"),
+        py::return_value_policy::reference
+    );
     // m.def("einsum", &einsum);
 }
