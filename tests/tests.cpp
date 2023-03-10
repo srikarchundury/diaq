@@ -1023,12 +1023,12 @@ int main() {
 
 
     for(int i = 0; i < testCases.size(); i++) {
-        // if(i == 37) {
+        if(i == 25) {
             std::cout << "test case - " << i;
             denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
-            // std::cout << std::endl << " ---- dense product ---- " << std::endl;
-            // p.print();
-            // std::cout << " ---- dense product ---- " << std::endl;
+            std::cout << std::endl << " ---- dense product ---- " << std::endl;
+            p.print();
+            std::cout << " ---- dense product ---- " << std::endl;
             quantumSparseMatrix dp = p.convertToQuantumSparse(p.getDims());
             // std::cout << " ---- correct answer ---- " << std::endl;
             // dp.print();
@@ -1047,7 +1047,10 @@ int main() {
             // std::cout << " -- qp -- " << std::endl;
             std::string check = checkResult(dp, qp);
             std::cout << " = " << check << std::endl;
-        // }
+            std::vector<int> d{6, 2};
+            quantumSparseMatrix reshaped_answer = reshape(qp, d);
+            reshaped_answer.print();
+        }
     }
     return 0;
 }
