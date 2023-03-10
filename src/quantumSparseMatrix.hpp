@@ -11,6 +11,14 @@ class quantumSparseMatrix {
             std::map<int, diagonal> d;
             diagonalMap = d;
             size = s;
+            dims.push_back(s);
+            dims.push_back(s);
+        }
+        quantumSparseMatrix(std::vector<int> *dimens) {
+            std::map<int, diagonal> d;
+            diagonalMap = d;
+            dims = *dimens;
+            size = dims[0];
         }
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
@@ -18,9 +26,25 @@ class quantumSparseMatrix {
                 diagonalMap.insert({it->first, it->second});
             }
             size = s;
+            dims.push_back(s);
+            dims.push_back(s);
+        }
+        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> d) {
+            std::map<int, diagonal>::iterator it;
+            for (it = dm.begin(); it != dm.end(); it++) {
+                diagonalMap.insert({it->first, it->second});
+            }
+            size = d[0];
+            dims = d;
         }
         int getSize() {
             return size;
+        }
+        int getDim(int i) {
+            return dims[i];
+        }
+        std::vector<int> getDims() {
+            return dims;
         }
         std::map<int, diagonal> getDiagonalMap() {
             return diagonalMap;
@@ -85,8 +109,15 @@ class quantumSparseMatrix {
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
-        std::vector<std::complex<double>> convertToDenseMatrix(int matrixSize) {
-            std::vector<std::complex<double>> data(matrixSize * matrixSize);
+        int denseCapacity() {
+            int c = 1;
+            for(int i = 0; i < dims.size(); i++) {
+                c = c * dims[i];
+            }
+            return c;
+        }
+        std::vector<std::complex<double>> convertToDenseMatrix() {
+            std::vector<std::complex<double>> data(denseCapacity());
             std::map<int, diagonal>::iterator it;
             int x, y;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
@@ -114,6 +145,7 @@ class quantumSparseMatrix {
     private:
         int size;
         std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
+        std::vector<int> dims; // as of now, this is always a 2 element array
 };
 
 #endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP

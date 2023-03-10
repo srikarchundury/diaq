@@ -20,4 +20,9 @@
 	#include "../src/quantumSparseMatrix.hpp"
 	#include "../src/Vector.hpp"
 
+#define LOG_LEVEL 2
+// INFO = 0
+// DEBUG = 1
+// DEEP DEBUG = 2
+
 #endif

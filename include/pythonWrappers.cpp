@@ -63,6 +63,7 @@ PYBIND11_MODULE(qsparse, m) {
     m.def("denseProduct", &denseProduct, py::return_value_policy::reference);
     m.def("add", &add, py::return_value_policy::reference);
     m.def("trace", &trace, py::return_value_policy::reference);
+    m.def("reshape", &reshape, py::return_value_policy::reference);
     m.def(
         "tensordot",
         [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) { return tensordot(A, B, axes); },

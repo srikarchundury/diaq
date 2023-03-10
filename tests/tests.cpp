@@ -44,14 +44,14 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
         }
         if(itB->second.getValues().size() != itA->second.getValues().size()) { 
             // A.print();
-            std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+            // std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
             return "false - 3";
         }
         else {
             for(int i = 0; i < itA->second.getValues().size(); i++) {
                 if(itB->second.getValue(i) != itA->second.getValue(i)) {
                     // A.print();
-                    std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+                    // std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
                     return "false - 4";
                 }
             }
@@ -719,19 +719,334 @@ int main() {
     testCase23.push_back(B23);
     testCases.push_back(testCase23);
 
+    // -----------------------------------------
+    std::vector<int> dimsA24{3, 6};
+    denseMatrix A24(&dimsA24, {
+        1,2,3,4,5,6,
+        7,8,9,10,11,12,
+        13,14,15,16,17,18,
+    });
+    std::vector<int> dimsB24{6, 2};
+    denseMatrix B24(&dimsB24, {
+        1,2,
+        3,4,
+        5,6,
+        7,8,
+        9,10,
+        11,12,
+    });
+    std::vector<denseMatrix> testCase24;
+    testCase24.push_back(A24);
+    testCase24.push_back(B24);
+    testCases.push_back(testCase24);
+
+    // -----------------------------------------
+    std::vector<int> dimsA25{3, 6};
+    denseMatrix A25(&dimsA25, {
+        1,2,3,4,6,7,
+        8,9,10,11,12,13,
+        14,15,16,17,18,19,
+    });
+    std::vector<int> dimsB25{6,4};
+    denseMatrix B25(&dimsB25, {
+        20,21,22,23,
+        24,25,26,27,
+        28,29,30,31,
+        32,33,34,35,
+        36,37,38,39,
+        40,41,42,43,
+    });
+    std::vector<denseMatrix> testCase25;
+    testCase25.push_back(A25);
+    testCase25.push_back(B25);
+    testCases.push_back(testCase25);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA26{3, 6};
+    denseMatrix A26(&dimsA26, {
+        0,0,0,1,0,0,
+        0,0,0,0,2,0,
+        0,0,0,0,0,3,
+    });
+    std::vector<int> dimsB26{6,4};
+    denseMatrix B26(&dimsB26, {
+        0,4,0,0,
+        0,0,5,0,
+        0,0,0,6,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase26;
+    testCase26.push_back(A26);
+    testCase26.push_back(B26);
+    testCases.push_back(testCase26);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA27{3, 6};
+    denseMatrix A27(&dimsA27, {
+        0,0,0,1,0,0,
+        0,0,0,0,2,0,
+        0,0,0,0,0,3,
+    });
+    std::vector<int> dimsB27{6,4};
+    denseMatrix B27(&dimsB27, {
+        0,0,0,0,
+        0,0,0,0,
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+    });
+    std::vector<denseMatrix> testCase27;
+    testCase27.push_back(A27);
+    testCase27.push_back(B27);
+    testCases.push_back(testCase27);
+
+    // -----------------------------------------
+    std::vector<int> dimsA28{3, 6};
+    denseMatrix A28(&dimsA28, {
+        0,0,0,1,0,0,
+        0,0,0,0,2,0,
+        0,0,0,0,0,3,
+    });
+    std::vector<int> dimsB28{6,4};
+    denseMatrix B28(&dimsB28, {
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase28;
+    testCase28.push_back(A28);
+    testCase28.push_back(B28);
+    testCases.push_back(testCase28);
+
+
+        // -----------------------------------------
+    std::vector<int> dimsA29{3, 6};
+    denseMatrix A29(&dimsA29, {
+        0,0,0,0,0,0,
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+    });
+    std::vector<int> dimsB29{6,4};
+    denseMatrix B29(&dimsB29, {
+        0,4,0,0,
+        0,0,5,0,
+        0,0,0,6,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase29;
+    testCase29.push_back(A29);
+    testCase29.push_back(B29);
+    testCases.push_back(testCase29);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA30{3, 6};
+    denseMatrix A30(&dimsA30, {
+        0,0,0,0,0,0,
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+    });
+    std::vector<int> dimsB30{6,4};
+    denseMatrix B30(&dimsB30, {
+        0,0,0,0,
+        0,0,0,0,
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+    });
+    std::vector<denseMatrix> testCase30;
+    testCase30.push_back(A30);
+    testCase30.push_back(B30);
+    testCases.push_back(testCase30);
+
+    // -----------------------------------------
+    std::vector<int> dimsA31{3, 6};
+    denseMatrix A31(&dimsA31, {
+        0,0,0,0,0,0,
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+    });
+    std::vector<int> dimsB31{6,4};
+    denseMatrix B31(&dimsB31, {
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase31;
+    testCase31.push_back(A31);
+    testCase31.push_back(B31);
+    testCases.push_back(testCase31);
+    
+
+        // -----------------------------------------
+    std::vector<int> dimsA32{3, 6};
+    denseMatrix A32(&dimsA32, {
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+        0,0,3,0,0,0,
+    });
+    std::vector<int> dimsB32{6,4};
+    denseMatrix B32(&dimsB32, {
+        0,4,0,0,
+        0,0,5,0,
+        0,0,0,6,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase32;
+    testCase32.push_back(A32);
+    testCase32.push_back(B32);
+    testCases.push_back(testCase32);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA33{3, 6};
+    denseMatrix A33(&dimsA33, {
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+        0,0,3,0,0,0,
+    });
+    std::vector<int> dimsB33{6,4};
+    denseMatrix B33(&dimsB33, {
+        0,0,0,0,
+        0,0,0,0,
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+    });
+    std::vector<denseMatrix> testCase33;
+    testCase33.push_back(A33);
+    testCase33.push_back(B33);
+    testCases.push_back(testCase33);
+
+    // -----------------------------------------
+    std::vector<int> dimsA34{3, 6};
+    denseMatrix A34(&dimsA34, {
+        1,0,0,0,0,0,
+        0,2,0,0,0,0,
+        0,0,3,0,0,0,
+    });
+    std::vector<int> dimsB34{6,4};
+    denseMatrix B34(&dimsB34, {
+        4,0,0,0,
+        0,5,0,0,
+        0,0,6,0,
+        0,0,0,7,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase34;
+    testCase34.push_back(A34);
+    testCase34.push_back(B34);
+    testCases.push_back(testCase34);
+
+    // -----------------------------------------
+    std::vector<int> dimsA35{3, 6};
+    denseMatrix A35(&dimsA35, {
+        0,0,0,0,5,0,
+        0,0,0,0,0,6,
+        0,0,0,0,0,0,
+    });
+    std::vector<int> dimsB35{6, 2};
+    denseMatrix B35(&dimsB35, {
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        4,0,
+    });
+    std::vector<denseMatrix> testCase35;
+    testCase35.push_back(A35);
+    testCase35.push_back(B35);
+    testCases.push_back(testCase35);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA36{3, 6};
+    denseMatrix A36(&dimsA36, {
+        0,0,0,0,0,0,
+        0,0,0,0,0,0,
+        5,0,0,0,0,0,
+    });
+    std::vector<int> dimsB36{6,4};
+    denseMatrix B36(&dimsB36, {
+        0,0,0,10,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+    });
+    std::vector<denseMatrix> testCase36;
+    testCase36.push_back(A36);
+    testCase36.push_back(B36);
+    testCases.push_back(testCase36);
+
+
+    // -----------------------------------------
+    std::vector<int> dimsA37{3, 6};
+    denseMatrix A37(&dimsA37, {
+        0,0,0,0,0,0,
+        0,0,0,0,0,0,
+        1,0,0,0,0,0,
+    });
+    std::vector<int> dimsB37{6,2};
+    denseMatrix B37(&dimsB37, {
+        0,2,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+    });
+    std::vector<denseMatrix> testCase37;
+    testCase37.push_back(A37);
+    testCase37.push_back(B37);
+    testCases.push_back(testCase37);
+
+
     for(int i = 0; i < testCases.size(); i++) {
-        // if(i == 20) {
-            std::cout << "test case " << i << std::endl;
+        // if(i == 37) {
+            std::cout << "test case - " << i;
             denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+            // std::cout << std::endl << " ---- dense product ---- " << std::endl;
             // p.print();
-            // std::cout << " --- " << std::endl;
-            quantumSparseMatrix dp = p.convertToQuantumSparse();
+            // std::cout << " ---- dense product ---- " << std::endl;
+            quantumSparseMatrix dp = p.convertToQuantumSparse(p.getDims());
+            // std::cout << " ---- correct answer ---- " << std::endl;
             // dp.print();
-            // std::cout << " --- " << std::endl;
-            quantumSparseMatrix qp = product(testCases[i][0].convertToQuantumSparse(), testCases[i][1].convertToQuantumSparse());
+            // std::cout << " ---- correct answer ---- " << std::endl;
+            quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].getDims());
+            // std::cout << " -- first -- " << std::endl;
+            // first.print();
+            // std::cout << " -- first -- " << std::endl;
+            quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].getDims());
+            // std::cout << " -- second -- " << std::endl;
+            // second.print();
+            // std::cout << " -- second -- " << std::endl;
+            quantumSparseMatrix qp = product(first, second);
+            // std::cout << " -- qp -- " << std::endl;
             // qp.print();
+            // std::cout << " -- qp -- " << std::endl;
             std::string check = checkResult(dp, qp);
-            std::cout << check << std::endl;
+            std::cout << " = " << check << std::endl;
         // }
     }
     return 0;
