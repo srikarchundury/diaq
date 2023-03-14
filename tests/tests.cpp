@@ -722,14 +722,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase23);
 
     // -----------------------------------------
-    std::vector<int> dimsA24{3, 6};
-    denseMatrix A24(&dimsA24, {
+    std::vector<int> shapeA24{3, 6};
+    denseMatrix A24(&shapeA24, {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18,
     });
-    std::vector<int> dimsB24{6, 2};
-    denseMatrix B24(&dimsB24, {
+    std::vector<int> shapeB24{6, 2};
+    denseMatrix B24(&shapeB24, {
         1,2,
         3,4,
         5,6,
@@ -743,14 +743,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase24);
 
     // -----------------------------------------
-    std::vector<int> dimsA25{3, 6};
-    denseMatrix A25(&dimsA25, {
+    std::vector<int> shapeA25{3, 6};
+    denseMatrix A25(&shapeA25, {
         1,2,3,4,6,7,
         8,9,10,11,12,13,
         14,15,16,17,18,19,
     });
-    std::vector<int> dimsB25{6,4};
-    denseMatrix B25(&dimsB25, {
+    std::vector<int> shapeB25{6,4};
+    denseMatrix B25(&shapeB25, {
         20,21,22,23,
         24,25,26,27,
         28,29,30,31,
@@ -765,14 +765,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA26{3, 6};
-    denseMatrix A26(&dimsA26, {
+    std::vector<int> shapeA26{3, 6};
+    denseMatrix A26(&shapeA26, {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     });
-    std::vector<int> dimsB26{6,4};
-    denseMatrix B26(&dimsB26, {
+    std::vector<int> shapeB26{6,4};
+    denseMatrix B26(&shapeB26, {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -787,14 +787,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA27{3, 6};
-    denseMatrix A27(&dimsA27, {
+    std::vector<int> shapeA27{3, 6};
+    denseMatrix A27(&shapeA27, {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     });
-    std::vector<int> dimsB27{6,4};
-    denseMatrix B27(&dimsB27, {
+    std::vector<int> shapeB27{6,4};
+    denseMatrix B27(&shapeB27, {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -808,14 +808,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase27);
 
     // -----------------------------------------
-    std::vector<int> dimsA28{3, 6};
-    denseMatrix A28(&dimsA28, {
+    std::vector<int> shapeA28{3, 6};
+    denseMatrix A28(&shapeA28, {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     });
-    std::vector<int> dimsB28{6,4};
-    denseMatrix B28(&dimsB28, {
+    std::vector<int> shapeB28{6,4};
+    denseMatrix B28(&shapeB28, {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -830,14 +830,14 @@ int main(int argc, char **argv) {
 
 
         // -----------------------------------------
-    std::vector<int> dimsA29{3, 6};
-    denseMatrix A29(&dimsA29, {
+    std::vector<int> shapeA29{3, 6};
+    denseMatrix A29(&shapeA29, {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     });
-    std::vector<int> dimsB29{6,4};
-    denseMatrix B29(&dimsB29, {
+    std::vector<int> shapeB29{6,4};
+    denseMatrix B29(&shapeB29, {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -852,14 +852,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA30{3, 6};
-    denseMatrix A30(&dimsA30, {
+    std::vector<int> shapeA30{3, 6};
+    denseMatrix A30(&shapeA30, {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     });
-    std::vector<int> dimsB30{6,4};
-    denseMatrix B30(&dimsB30, {
+    std::vector<int> shapeB30{6,4};
+    denseMatrix B30(&shapeB30, {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -873,14 +873,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase30);
 
     // -----------------------------------------
-    std::vector<int> dimsA31{3, 6};
-    denseMatrix A31(&dimsA31, {
+    std::vector<int> shapeA31{3, 6};
+    denseMatrix A31(&shapeA31, {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     });
-    std::vector<int> dimsB31{6,4};
-    denseMatrix B31(&dimsB31, {
+    std::vector<int> shapeB31{6,4};
+    denseMatrix B31(&shapeB31, {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -895,14 +895,14 @@ int main(int argc, char **argv) {
     
 
         // -----------------------------------------
-    std::vector<int> dimsA32{3, 6};
-    denseMatrix A32(&dimsA32, {
+    std::vector<int> shapeA32{3, 6};
+    denseMatrix A32(&shapeA32, {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     });
-    std::vector<int> dimsB32{6,4};
-    denseMatrix B32(&dimsB32, {
+    std::vector<int> shapeB32{6,4};
+    denseMatrix B32(&shapeB32, {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -917,14 +917,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA33{3, 6};
-    denseMatrix A33(&dimsA33, {
+    std::vector<int> shapeA33{3, 6};
+    denseMatrix A33(&shapeA33, {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     });
-    std::vector<int> dimsB33{6,4};
-    denseMatrix B33(&dimsB33, {
+    std::vector<int> shapeB33{6,4};
+    denseMatrix B33(&shapeB33, {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -938,14 +938,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase33);
 
     // -----------------------------------------
-    std::vector<int> dimsA34{3, 6};
-    denseMatrix A34(&dimsA34, {
+    std::vector<int> shapeA34{3, 6};
+    denseMatrix A34(&shapeA34, {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     });
-    std::vector<int> dimsB34{6,4};
-    denseMatrix B34(&dimsB34, {
+    std::vector<int> shapeB34{6,4};
+    denseMatrix B34(&shapeB34, {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -959,14 +959,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase34);
 
     // -----------------------------------------
-    std::vector<int> dimsA35{3, 6};
-    denseMatrix A35(&dimsA35, {
+    std::vector<int> shapeA35{3, 6};
+    denseMatrix A35(&shapeA35, {
         0,0,0,0,5,0,
         0,0,0,0,0,6,
         0,0,0,0,0,0,
     });
-    std::vector<int> dimsB35{6, 2};
-    denseMatrix B35(&dimsB35, {
+    std::vector<int> shapeB35{6, 2};
+    denseMatrix B35(&shapeB35, {
         0,0,
         0,0,
         0,0,
@@ -981,14 +981,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA36{3, 6};
-    denseMatrix A36(&dimsA36, {
+    std::vector<int> shapeA36{3, 6};
+    denseMatrix A36(&shapeA36, {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         5,0,0,0,0,0,
     });
-    std::vector<int> dimsB36{6,4};
-    denseMatrix B36(&dimsB36, {
+    std::vector<int> shapeB36{6,4};
+    denseMatrix B36(&shapeB36, {
         0,0,0,10,
         0,0,0,0,
         0,0,0,0,
@@ -1003,14 +1003,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> dimsA37{3, 6};
-    denseMatrix A37(&dimsA37, {
+    std::vector<int> shapeA37{3, 6};
+    denseMatrix A37(&shapeA37, {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         1,0,0,0,0,0,
     });
-    std::vector<int> dimsB37{6,2};
-    denseMatrix B37(&dimsB37, {
+    std::vector<int> shapeB37{6,2};
+    denseMatrix B37(&shapeB37, {
         0,2,
         0,0,
         0,0,
@@ -1031,15 +1031,15 @@ int main(int argc, char **argv) {
                 // std::cout << std::endl << " ---- dense product ---- " << std::endl;
                 // p.print();
                 // std::cout << " ---- dense product ---- " << std::endl;
-                quantumSparseMatrix dp = p.convertToQuantumSparse(p.getDims());
+                quantumSparseMatrix dp = p.convertToQuantumSparse(p.getShape());
                 // std::cout << " ---- correct answer ---- " << std::endl;
                 // dp.print();
                 // std::cout << " ---- correct answer ---- " << std::endl;
-                quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].getDims());
+                quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].getShape());
                 // std::cout << " -- first -- " << std::endl;
                 // first.print();
                 // std::cout << " -- first -- " << std::endl;
-                quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].getDims());
+                quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].getShape());
                 // std::cout << " -- second -- " << std::endl;
                 // second.print();
                 // std::cout << " -- second -- " << std::endl;
@@ -1055,11 +1055,25 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "1") == 0) {
         // testing reshaping operations
         B8.print();
+        std::cout << " -- " << std::endl;
         std::vector<int> dims{8,8};
         quantumSparseMatrix q_B8 = B8.convertToQuantumSparse(dims);
+        q_B8.tensor_shape = std::vector<int>{4,2,8};
+        q_B8.print();
+        std::cout << " -- " << std::endl;
+
         std::vector<int> new_dims{32,2};
         quantumSparseMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
-        reshaped_q_B8.convertToDenseMatrix(new_dims).print();
+        reshaped_q_B8.tensor_shape = std::vector<int>{2,2,2,2,2,2};
+        reshaped_q_B8.print();
+        std::cout << " -- " << std::endl;
+
+        std::vector<int> axes_1{1,0};
+        std::vector<int> axes_2{3,0};
+        std::vector<std::vector<int> > axes{axes_1, axes_2};
+        quantumSparseMatrix res = tensordot(q_B8, reshaped_q_B8, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
     }
     return 0;
 }

@@ -4,21 +4,25 @@
 #include "diagonal.hpp"
 #include <map>
 
+class denseMatrix; // telling this class exists w/o defining it here
+
 
 class quantumSparseMatrix {
     public:
+        std::vector<int> shape; // as of now, this is always a 2 element array
+        std::vector<int> tensor_shape{0,0,0,0,0,0};
         quantumSparseMatrix(int s) {
             std::map<int, diagonal> d;
             diagonalMap = d;
             size = s;
-            dims.push_back(s);
-            dims.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
         }
         quantumSparseMatrix(std::vector<int> *dimens) {
             std::map<int, diagonal> d;
             diagonalMap = d;
-            dims = *dimens;
-            size = dims[0];
+            shape = *dimens;
+            size = shape[0];
         }
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
@@ -26,8 +30,8 @@ class quantumSparseMatrix {
                 diagonalMap.insert({it->first, it->second});
             }
             size = s;
-            dims.push_back(s);
-            dims.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
         }
         quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> d) {
             std::map<int, diagonal>::iterator it;
@@ -35,21 +39,31 @@ class quantumSparseMatrix {
                 diagonalMap.insert({it->first, it->second});
             }
             size = d[0];
-            dims = d;
+            shape = d;
         }
         int getSize() {
             return size;
         }
         int getDim(int i) {
-            return dims[i];
+            return shape[i];
         }
-        std::vector<int> getDims() {
-            return dims;
+        std::vector<int> getShape() {
+            return shape;
         }
         std::map<int, diagonal> getDiagonalMap() {
             return diagonalMap;
         }
         void print() {
+            std::cout << "matrix shape (";
+            for(int i = 0; i < shape.size()-1; i++) {
+                std::cout << shape[i] << ",";
+            }
+            std::cout << shape[shape.size()-1] << ")" << std::endl;
+            std::cout << "tensor_shape (";
+            for(int i = 0; i < tensor_shape.size()-1; i++) {
+                std::cout << tensor_shape[i] << ",";
+            }
+            std::cout << tensor_shape[tensor_shape.size()-1] << ")" << std::endl;
             std::map<int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.print();
@@ -111,16 +125,15 @@ class quantumSparseMatrix {
         }
         int denseCapacity() {
             int c = 1;
-            for(int i = 0; i < dims.size(); i++) {
-                c = c * dims[i];
+            for(int i = 0; i < shape.size(); i++) {
+                c = c * shape[i];
             }
             return c;
         }
-        denseMatrix convertToDenseMatrix(std::vector<int> new_dims);
+        denseMatrix convertToDenseMatrix(std::vector<int> new_shape);
     private:
         int size;
         std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>
-        std::vector<int> dims; // as of now, this is always a 2 element array
 };
 
 #endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP

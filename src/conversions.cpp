@@ -1,6 +1,6 @@
 #include "denseMatrix.hpp"
 
-denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_dims) {
+denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape) {
     std::vector<std::complex<double>> data(denseCapacity());
     std::map<int, diagonal>::iterator it;
     int x, y;
@@ -19,29 +19,29 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_dims)
             y = 0;
         }
         for (int i = 0; i < vals.size(); i++) {
-            data[ dims[1] * x + y ] = vals[i];
+            data[ shape[1] * x + y ] = vals[i];
             x++;
             y++;
         }
     }
-    denseMatrix d(&new_dims, data);
+    denseMatrix d(&new_shape, data);
     return d;
 }
 
-quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_dims) {
+quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_shape) {
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // int s = 0;
-    // for(int i = 0; i < new_dims.size(); i++) {
-    //     s = s + new_dims[i];
+    // for(int i = 0; i < new_shape.size(); i++) {
+    //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
     std::map<int, diagonal> diagMap;
-    quantumSparseMatrix qm(diagMap, new_dims);
-    for(int i=0; i < dims[0]; i++) {
-        for(int j=0; j < dims[1]; j++) {
+    quantumSparseMatrix qm(diagMap, new_shape);
+    for(int i=0; i < shape[0]; i++) {
+        for(int j=0; j < shape[1]; j++) {
             int diagIndx = getTargetDiagIndex_onlydiags(i, j);
             // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-            qm.addToDiagonal(diagIndx, data[i * new_dims[1] + j]);
+            qm.addToDiagonal(diagIndx, data[i * new_shape[1] + j]);
         }
     }
     qm.pruneMatrix();

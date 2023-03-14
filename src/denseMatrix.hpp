@@ -8,42 +8,44 @@
 #include <complex>
 
 
-class denseMatrix; // telling this class exists w/o defining it here
-
 #include "quantumSparseMatrix.hpp"
 
 
 class denseMatrix {
     public:
+        std::vector<int> shape;
         denseMatrix(const int s, std::vector<std::complex<double>> array) {
             size = s;
             data = array;
-            dims.push_back(s);
-            dims.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
         }
         denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array) {
             data = array;
-            dims = *d;
-            size = dims[0];
+            shape = *d;
+            size = shape[0];
+        }
+        std::vector<std::complex<double> > getData() {
+            return data;
         }
         int getSize() {
             return size;
         }
         int getDim(int i) {
-            return dims[i];
+            return shape[i];
         }
-        std::vector<int> getDims() {
-            return dims;
+        std::vector<int> getShape() {
+            return shape;
         }
         void set(int i, int j, std::complex<double> val) {
-            data[dims[1] * i + j] = val;
+            data[shape[1] * i + j] = val;
         }
         std::complex<double> get(int i, int j) {
-            return data[dims[1] * i + j];
+            return data[shape[1] * i + j];
         }
         void print() {
             for (int i = 0; i < data.size(); i++) {
-                if((i+1)%dims[1] == 0) {
+                if((i+1)%shape[1] == 0) {
                     std::cout << data[i] << std::endl;
                 }
                 else {
@@ -97,16 +99,15 @@ class denseMatrix {
         }
         int denseCapacity() {
             int c = 1;
-            for(int i = 0; i < dims.size(); i++) {
-                c = c * dims[i];
+            for(int i = 0; i < shape.size(); i++) {
+                c = c * shape[i];
             }
             return c;
         }
-        quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_dims);
+        quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_shape);
     private:
         int size;
         std::vector<std::complex<double>> data;
-        std::vector<int> dims;
 };
 
 #endif // SPARSE_TNQS_DENSEMATRIX_HPP
