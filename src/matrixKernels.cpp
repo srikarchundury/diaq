@@ -1,12 +1,6 @@
-// implement all functions here
-// UPDATE: Implement Kernels in include/kernels.hpp
-
 #include "quantumSparseMatrix.hpp"
 #include "denseMatrix.hpp"
 
-
-unsigned long long int sparse_add_counter = 0;
-unsigned long long int sparse_mul_counter = 0;
 
 // ----------------------------------------------------------------
 //
@@ -24,19 +18,29 @@ unsigned long long int sparse_mul_counter = 0;
  * 
  * @return NULL if zero, else diagonal C
  */
-diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, diagonal diagB) {
+diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
-    if(indexA + indexB >= size) {
+    if(indexA + indexB >= shapeB[0]) {
         return diagonal(0);
     }
-    else if(indexA + indexB <= -1 * size) {
+    else if(indexA + indexB <= -1 * shapeA[0]) {
         return diagonal(0);
     }
     diagonal res(indexA + indexB);
-    int lenDiagA = size - abs(indexA);
-    int lenDiagB = size - abs(indexB);
-    int lenRes = size - abs(indexA + indexB);
+    int lenDiagA = diagA.getSize();
+    int lenDiagB = diagB.getSize();
+    // result matrix has dimensions {shapeA[0], shapeB[1]}
+    // TODO
+    int lenRes;
+    if(indexA + indexB < 0) {
+        lenRes = shapeA[0] + indexA + indexB;
+    } else if(indexA + indexB > 0) {
+        lenRes = shapeB[1] - indexA - indexB;
+    }  else {
+        lenRes = (shapeA[0] > shapeB[1])?shapeB[1]:shapeA[0];
+    }
+    // std::cout << "diagonal length = " << lenRes << std::endl;
     int offsetA = abs(indexA);
     int offsetB = abs(indexB);
     int jump = 0;
@@ -73,7 +77,11 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
                 jump = lenRes - lenDiagA;
             }
             else {
-                jump = abs(indexA);
+                if(indexA + indexB < 0) {
+                    jump = abs(indexA) - abs(shapeA[0] - shapeB[1]);
+                } else {
+                    jump = abs(indexA);
+                }
             }
             offsetA = 0;
             offsetB = 0;
@@ -113,7 +121,6 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
     while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
         res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
         k++;
-        sparse_mul_counter++;
     }
     while(k < lenRes) {
         res.addElement(0);
@@ -131,12 +138,11 @@ diagonal multiplyDiagonals(int size, int indexA, int indexB, diagonal diagA, dia
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
-    sparse_add_counter = 0;
-    sparse_mul_counter = 0;
-    if(A.getSize() != B.getSize()) {
-        throw std::invalid_argument("input matrices are of different dimensions, not compatible");
+    if(A.getDim(1) != B.getDim(0)) {
+        throw std::invalid_argument("input matrices are not multiplyable");
     }
-    quantumSparseMatrix* result = new quantumSparseMatrix(A.getSize());
+    std::vector<int> d{A.getDim(0), B.getDim(1)};
+    quantumSparseMatrix* result = new quantumSparseMatrix(&d);
     // quantumSparseMatrix* resptr = &result;
     std::map<int, diagonal> mapA = A.getDiagonalMap();
     std::map<int, diagonal> mapB = B.getDiagonalMap();
@@ -148,16 +154,17 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // itB->second.print();
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
-            diagonal diagNew = multiplyDiagonals(A.getSize(), itA->first, itB->first, itA->second, itB->second);
+            diagonal diagNew = multiplyDiagonals(A.getShape(), B.getShape(), itA->first, itB->first, itA->second, itB->second);
             if(diagNew.getValues().size() != 0) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
                 result->addDiagonal(itA->first + itB->first, diagNew);
-                sparse_add_counter += (A.getSize() - abs(itA->first + itB->first));
                 // std::cout << " ------ result ------ " << std::endl;
                 // result->print();
                 // std::cout << " ------ result ------ " << std::endl;
+            } else {
+                // std::cout << "diagonal does not exist" << std::endl;
             }
         }
     }
@@ -165,7 +172,6 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
-    std::cout << "Additions: " << sparse_add_counter << " Multiplications: " << sparse_mul_counter << std::endl;
     return *result;
 }
 
@@ -178,26 +184,141 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
  * @return denseMatrix  C
  */
 denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
-    unsigned long long int add_counter = 0;
-    unsigned long long int mul_counter = 0;
+    std::vector<int> shape_a = A.getShape();
+    std::vector<int> shape_b = B.getShape();
+    if(shape_a[1] != shape_b[0]) {
+        throw std::invalid_argument("input matrices are not multiplyable");
+    }
+    std::vector<std::complex<double>> resArray;
+    for(int i = 0; i < shape_a[0] * shape_b[1]; i++) {
+        resArray.push_back(0);
+    }
+    std::vector<int> d{A.getDim(0), B.getDim(1)};
+    denseMatrix result(&d, resArray);
+    for(int i = 0; i < shape_a[0]; i++) {
+        for(int k = 0; k < shape_b[1]; k++) {
+            std::complex<double> res = 0.0;
+            for(int j = 0; j < shape_b[0]; j++) {
+                res += A.get(i, j) * B.get(j, k);
+            }
+            result.set(i, k, res);
+        }
+    }
+    return result;
+}
+
+/**
+* @brief adds two quantumSparseMatrix matrices (C = A + B)
+* @param A quantumSparseMatrix
+* @param B quantumSparseMatrix
+* @return quantumSparseMatrix C
+*/
+diagonal addElements(diagonal A, diagonal B) {
+    std::vector<std::complex<double> > valsA = A.getValues();
+    std::vector<std::complex<double> > valsB = B.getValues();
+    if(valsA.size() != valsB.size() ) {
+        throw std::invalid_argument("diagonals are of different lengths!");
+    }
+    for(int i=0; i < valsA.size(); i++) {
+        valsA[i] = valsA[i] + valsB[i];
+    }
+    return diagonal(A.getIndex(), &valsA);
+}
+
+quantumSparseMatrix add(quantumSparseMatrix A, quantumSparseMatrix B) {
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
-    int n = A.getSize();
-    std::vector<std::complex<double>> resArray;
-    for(int i = 0; i < n * n; i++) {
-        resArray.push_back(0);
-    }
-    denseMatrix result(n, resArray);
-    for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            for(int k = 0; k < n; k++) {
-                result.set(i, j, result.get(i, j) + A.get(i, k) * B.get(k, j));
-                add_counter++;
-                mul_counter++;
-            }
+    quantumSparseMatrix* result = new quantumSparseMatrix(A.getSize());
+    std::map<int, diagonal> mapA = A.getDiagonalMap();
+    std::map<int, diagonal> mapB = B.getDiagonalMap();
+    std::map<int, diagonal>::iterator itA, itB;
+    for (itA = mapA.begin(); itA != mapA.end(); itA++) {
+        itB = mapB.find(itA->first);
+        if (itB == mapB.end()) {
+            result->addDiagonal(itA->first, itA->second);
+        } else {
+            result->addDiagonal(itA->first, addElements(itA->second, itB->second));
         }
     }
-    std::cout << "Additions: " << add_counter << " Multiplications: " << mul_counter << std::endl;
-    return result;
+    // result->pruneMatrix();
+    return *result;
 }
+
+
+std::complex<double> trace(quantumSparseMatrix A) {
+    std::complex<double> t;
+    std::map<int, diagonal>::iterator itA;
+    std::map<int, diagonal> mapA = A.getDiagonalMap();
+    itA = mapA.find(0);
+    if(itA == mapA.end()) {
+        return t;
+    }
+    for(int i=0; i < itA->second.getSize(); i++) {
+        t += itA->second.getValue(i);
+    }
+    return t;
+}
+
+quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> shape) {
+    // TODO: redo this without denseMatrix conversion in between.
+    denseMatrix d = A.convertToDenseMatrix(shape);
+    return d.convertToQuantumSparse(shape);
+}
+std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, int axis_A, int axis_B) {
+    std::vector<int> res;
+    for(int i = 0; i < tensor_shape_A.size(); i++) {
+        if(i != axis_A) {
+            res.push_back(tensor_shape_A[i]);
+        }
+    }
+    for(int i = 0; i < tensor_shape_B.size(); i++) {
+        if(i != axis_B) {
+            res.push_back(tensor_shape_B[i]);
+        }
+    }
+    return res;
+}
+quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
+    std::cout << "tensordot called for A - " << std::endl;
+    A.print();
+    std::cout << "and B - " << std::endl;
+    B.print();
+    std::cout << "with axes - " << axes[0][0] << " and " << axes[1][0] << std::endl;
+
+    quantumSparseMatrix res = quantumSparseMatrix(0);
+
+    /* calculate tensordot*/
+    int totalA = A.shape[0] * A.shape[1];
+    int totalB = B.shape[0] * B.shape[1];
+    std::vector<int> new_shape_a{totalA / A.tensor_shape[axes[0][0]], A.tensor_shape[axes[0][0]]};
+    std::vector<int> new_shape_b{B.tensor_shape[axes[1][0]], totalB / B.tensor_shape[axes[1][0]]};
+    quantumSparseMatrix reshaped_A = reshape(A, new_shape_a);
+    quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
+    res = product(reshaped_A, reshaped_B);
+    /* calculate tensordot*/
+
+    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0][0], axes[1][0]);
+    return res;
+}
+
+quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
+    std::cout << "transpose called for A - " << std::endl;
+    A.print();
+    std::cout << "with axes - ";
+    for(int i = 0; i < axes.size(); i++)
+        std::cout << axes[i] << " ";
+    std::cout << std::endl;
+    return A;
+}
+
+quantumSparseMatrix array(quantumSparseMatrix A) {
+    std::cout << "array called for A - " << std::endl;
+    std::cout << "A.shape - (" << A.shape[0] << "," << A.shape[1] << ")" << std::endl;
+    A.print();
+    return A;
+}
+
+// quantumSparseMatrix einsum() {
+//     return res;
+// }

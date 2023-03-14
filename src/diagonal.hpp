@@ -31,7 +31,8 @@ class diagonal {
             // std::cout << "here" << std::endl;
             return values[i];
         }
-        void print(std::string sep=",") {
+        void print() {
+            std::string sep=",";
             // int *coords= this->getCoords(matrixSize, this->dIndex);
             std::cout << "(dIndex=" << dIndex << ") ";
             std::cout << "[" << "";
@@ -45,6 +46,9 @@ class diagonal {
         }
         std::vector<std::complex<double> > getValues() {
             return values;
+        }
+        int getSize() {
+            return values.size();
         }
         // returns the start (x, y) of diagonal of the matrix
         int* getCoords(int matrixSize, int dIndex) {

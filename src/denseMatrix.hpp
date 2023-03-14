@@ -7,27 +7,45 @@
 #include <cmath>
 #include <complex>
 
+
 #include "quantumSparseMatrix.hpp"
 
 
 class denseMatrix {
     public:
+        std::vector<int> shape;
         denseMatrix(const int s, std::vector<std::complex<double>> array) {
             size = s;
             data = array;
+            shape.push_back(s);
+            shape.push_back(s);
+        }
+        denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array) {
+            data = array;
+            shape = *d;
+            size = shape[0];
+        }
+        std::vector<std::complex<double> > getData() {
+            return data;
         }
         int getSize() {
             return size;
         }
+        int getDim(int i) {
+            return shape[i];
+        }
+        std::vector<int> getShape() {
+            return shape;
+        }
         void set(int i, int j, std::complex<double> val) {
-            data[size * i + j] = val;
+            data[shape[1] * i + j] = val;
         }
         std::complex<double> get(int i, int j) {
-            return data[size * i + j];
+            return data[shape[1] * i + j];
         }
-        void print(std::string sep="x") {
+        void print() {
             for (int i = 0; i < data.size(); i++) {
-                if((i+1)%size == 0) {
+                if((i+1)%shape[1] == 0) {
                     std::cout << data[i] << std::endl;
                 }
                 else {
@@ -79,20 +97,14 @@ class denseMatrix {
         int getTargetDiagIndex_onlydiags(int i, int j) {
             return j-i;
         }
-        quantumSparseMatrix convertToQuantumSparse(int matrixSize) {
-            // std::cout << "converting dense to sparse" << std::endl;
-            std::map<int, diagonal> diagMap;
-            quantumSparseMatrix qm(diagMap, matrixSize);
-            for(int i=0; i < size; i++) {
-                for(int j=0; j < size; j++) {
-                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
-                    // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-                    qm.addToDiagonal(diagIndx, data[i * size + j]);
-                }
+        int denseCapacity() {
+            int c = 1;
+            for(int i = 0; i < shape.size(); i++) {
+                c = c * shape[i];
             }
-            qm.pruneMatrix();
-            return qm;
+            return c;
         }
+        quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_shape);
     private:
         int size;
         std::vector<std::complex<double>> data;
