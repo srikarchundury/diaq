@@ -1,3 +1,5 @@
+#include <cstring>
+
 
 #include "../include/qSparse.hpp"
 
@@ -62,7 +64,7 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
 }
 
 
-int main() {
+int main(int argc, char **argv) {
     std::vector<std::vector<denseMatrix> > testCases;
 
     // test case 0
@@ -1021,36 +1023,44 @@ int main() {
     testCase37.push_back(B37);
     testCases.push_back(testCase37);
 
-
-    for(int i = 0; i < testCases.size(); i++) {
-        if(i == 25) {
-            std::cout << "test case - " << i;
-            denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
-            std::cout << std::endl << " ---- dense product ---- " << std::endl;
-            p.print();
-            std::cout << " ---- dense product ---- " << std::endl;
-            quantumSparseMatrix dp = p.convertToQuantumSparse(p.getDims());
-            // std::cout << " ---- correct answer ---- " << std::endl;
-            // dp.print();
-            // std::cout << " ---- correct answer ---- " << std::endl;
-            quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].getDims());
-            // std::cout << " -- first -- " << std::endl;
-            // first.print();
-            // std::cout << " -- first -- " << std::endl;
-            quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].getDims());
-            // std::cout << " -- second -- " << std::endl;
-            // second.print();
-            // std::cout << " -- second -- " << std::endl;
-            quantumSparseMatrix qp = product(first, second);
-            // std::cout << " -- qp -- " << std::endl;
-            // qp.print();
-            // std::cout << " -- qp -- " << std::endl;
-            std::string check = checkResult(dp, qp);
-            std::cout << " = " << check << std::endl;
-            std::vector<int> d{6, 2};
-            quantumSparseMatrix reshaped_answer = reshape(qp, d);
-            reshaped_answer.print();
+    if(argc == 1) {
+        for(int i = 0; i < testCases.size(); i++) {
+            // if(i == 25) {
+                std::cout << "test case - " << i;
+                denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+                // std::cout << std::endl << " ---- dense product ---- " << std::endl;
+                // p.print();
+                // std::cout << " ---- dense product ---- " << std::endl;
+                quantumSparseMatrix dp = p.convertToQuantumSparse(p.getDims());
+                // std::cout << " ---- correct answer ---- " << std::endl;
+                // dp.print();
+                // std::cout << " ---- correct answer ---- " << std::endl;
+                quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].getDims());
+                // std::cout << " -- first -- " << std::endl;
+                // first.print();
+                // std::cout << " -- first -- " << std::endl;
+                quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].getDims());
+                // std::cout << " -- second -- " << std::endl;
+                // second.print();
+                // std::cout << " -- second -- " << std::endl;
+                quantumSparseMatrix qp = product(first, second);
+                // std::cout << " -- qp -- " << std::endl;
+                // qp.print();
+                // std::cout << " -- qp -- " << std::endl;
+                std::string check = checkResult(dp, qp);
+                std::cout << " = " << check << std::endl;
+            // }
         }
+    }
+    else if(strcmp(argv[1], "1") == 0) {
+        // testing reshaping operations
+        B8.print();
+        std::vector<int> dims{8,8};
+        quantumSparseMatrix q_B8 = B8.convertToQuantumSparse(dims);
+        q_B8.print();
+        std::vector<int> new_dims{32,2};
+        quantumSparseMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
+        reshaped_q_B8.print();
     }
     return 0;
 }

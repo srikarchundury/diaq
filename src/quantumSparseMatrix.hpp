@@ -135,7 +135,7 @@ class quantumSparseMatrix {
                     y = 0;
                 }
                 for (int i = 0; i < vals.size(); i++) {
-                    data[ size * x + y ] = vals[i];
+                    data[ dims[1] * x + y ] = vals[i];
                     x++;
                     y++;
                 }
