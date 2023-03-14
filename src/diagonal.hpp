@@ -19,6 +19,9 @@ class diagonal {
         int getIndex() {
             return dIndex;
         }
+        void setIndex(int newIndex) {
+            dIndex = newIndex;
+        }
         bool addElement(std::complex<double> value) {
             values.push_back(value);
             return true;
