@@ -1057,10 +1057,9 @@ int main(int argc, char **argv) {
         B8.print();
         std::vector<int> dims{8,8};
         quantumSparseMatrix q_B8 = B8.convertToQuantumSparse(dims);
-        q_B8.print();
         std::vector<int> new_dims{32,2};
         quantumSparseMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
-        reshaped_q_B8.print();
+        reshaped_q_B8.convertToDenseMatrix(new_dims).print();
     }
     return 0;
 }

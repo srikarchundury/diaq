@@ -261,9 +261,7 @@ std::complex<double> trace(quantumSparseMatrix A) {
 }
 
 quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> dims) {
-    std::vector<std::complex<double>> vals = A.convertToDenseMatrix();
-    denseMatrix d(&dims, vals);
-    // d.print();
+    denseMatrix d = A.convertToDenseMatrix(dims);
     return d.convertToQuantumSparse(dims);
 }
 

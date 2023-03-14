@@ -116,32 +116,7 @@ class quantumSparseMatrix {
             }
             return c;
         }
-        std::vector<std::complex<double>> convertToDenseMatrix() {
-            std::vector<std::complex<double>> data(denseCapacity());
-            std::map<int, diagonal>::iterator it;
-            int x, y;
-            for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                std::vector<std::complex<double> > vals = it->second.getValues();
-                if (it->first == 0) {
-                    x = 0;
-                    y = 0;
-                }
-                else if (it->first > 0) {
-                    x = 0;
-                    y = it->first;
-                }
-                else {
-                    x = -1 * it->first;
-                    y = 0;
-                }
-                for (int i = 0; i < vals.size(); i++) {
-                    data[ dims[1] * x + y ] = vals[i];
-                    x++;
-                    y++;
-                }
-            }
-            return data;
-        }
+        denseMatrix convertToDenseMatrix(std::vector<int> new_dims);
     private:
         int size;
         std::map<int, diagonal> diagonalMap; // map <dIndex, diagonal object>

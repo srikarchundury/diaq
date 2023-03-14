@@ -48,6 +48,7 @@ PYBIND11_MODULE(qsparse, m) {
     // denseMatrix class
     py::class_<denseMatrix>(m, "denseMatrix")
         .def(py::init<int, std::vector<std::complex<double> > >())
+        .def(py::init<std::vector<int> *, std::vector<std::complex<double> > >())
         .def("getSize", &denseMatrix::getSize, py::return_value_policy::reference)
         .def("set", &denseMatrix::set, py::return_value_policy::reference)
         .def("get", &denseMatrix::get, py::return_value_policy::reference)

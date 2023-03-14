@@ -7,6 +7,9 @@
 #include <cmath>
 #include <complex>
 
+
+class denseMatrix; // telling this class exists w/o defining it here
+
 #include "quantumSparseMatrix.hpp"
 
 
@@ -99,39 +102,7 @@ class denseMatrix {
             }
             return c;
         }
-        // quantumSparseMatrix convertToQuantumSparse() {
-        //     // std::cout << "converting dense to sparse" << std::endl;
-        //     std::map<int, diagonal> diagMap;
-        //     quantumSparseMatrix qm(diagMap, size);
-        //     for(int i=0; i < size; i++) {
-        //         for(int j=0; j < size; j++) {
-        //             int diagIndx = getTargetDiagIndex_onlydiags(i, j);
-        //             // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-        //             qm.addToDiagonal(diagIndx, data[i * size + j]);
-        //         }
-        //     }
-        //     qm.pruneMatrix();
-        //     return qm;
-        // }
-        quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_dims) {
-            // counting the number of diagonals in a matrix that isn't a perfect square.
-            // int s = 0;
-            // for(int i = 0; i < new_dims.size(); i++) {
-            //     s = s + new_dims[i];
-            // }
-            // std::cout << "converting dense to sparse" << std::endl;
-            std::map<int, diagonal> diagMap;
-            quantumSparseMatrix qm(diagMap, new_dims);
-            for(int i=0; i < dims[0]; i++) {
-                for(int j=0; j < dims[1]; j++) {
-                    int diagIndx = getTargetDiagIndex_onlydiags(i, j);
-                    // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-                    qm.addToDiagonal(diagIndx, data[i * new_dims[1] + j]);
-                }
-            }
-            qm.pruneMatrix();
-            return qm;
-        }
+        quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_dims);
     private:
         int size;
         std::vector<std::complex<double>> data;
