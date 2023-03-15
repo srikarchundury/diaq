@@ -21,7 +21,7 @@
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
-    if(indexA + indexB >= shapeB[0]) {
+    if(indexA + indexB >= shapeB[1]) {
         return diagonal(0);
     }
     else if(indexA + indexB <= -1 * shapeA[0]) {
@@ -78,7 +78,8 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
             }
             else {
                 if(indexA + indexB < 0) {
-                    jump = abs(indexA) - abs(shapeA[0] - shapeB[1]);
+                    // jump = abs(indexA) - abs(shapeA[0] - shapeB[1]);
+                    jump = abs(indexB);
                 } else {
                     jump = abs(indexA);
                 }
@@ -117,7 +118,7 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         k++;
     }
     // std::cout << k << std::endl;
-    // std::cout << "jump,offsetA,offsetB " << jump << "," << offsetA << "," << offsetB << std::endl;
+    // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
     while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
         res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
         k++;
@@ -155,7 +156,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
             diagonal diagNew = multiplyDiagonals(A.getShape(), B.getShape(), itA->first, itB->first, itA->second, itB->second);
-            if(diagNew.getValues().size() != 0) {
+            if(diagNew.getValues().size() != 0 && !diagNew.isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
@@ -184,8 +185,8 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
  * @return denseMatrix  C
  */
 denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
-    std::vector<int> shape_a = A.getShape();
-    std::vector<int> shape_b = B.getShape();
+    std::vector<int> shape_a = A.shape;
+    std::vector<int> shape_b = B.shape;
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -280,11 +281,13 @@ std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int
     return res;
 }
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
+    std::cout << "--" << std::endl;
     std::cout << "tensordot called for A - " << std::endl;
     A.print();
     std::cout << "and B - " << std::endl;
     B.print();
     std::cout << "with axes - " << axes[0][0] << " and " << axes[1][0] << std::endl;
+    std::cout << "--" << std::endl;
 
     quantumSparseMatrix res = quantumSparseMatrix(0);
 
@@ -295,10 +298,10 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     std::vector<int> new_shape_b{B.tensor_shape[axes[1][0]], totalB / B.tensor_shape[axes[1][0]]};
     quantumSparseMatrix reshaped_A = reshape(A, new_shape_a);
     quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
-    std::cout << "after reshape A - " << std::endl;
-    reshaped_A.convertToDenseMatrix(reshaped_A.shape).print();
-    std::cout << "and B - " << std::endl;
-    reshaped_B.convertToDenseMatrix(reshaped_B.shape).print();
+    // std::cout << "after reshape A - " << std::endl;
+    // reshaped_A.convertToDenseMatrix(reshaped_A.shape).print();
+    // std::cout << "and B - " << std::endl;
+    // reshaped_B.convertToDenseMatrix(reshaped_B.shape).print();
     res = product(reshaped_A, reshaped_B);
     /* calculate tensordot*/
 
@@ -338,9 +341,9 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
     // std::cout << "transpose called for A - " << std::endl;
     // A.print();
     // std::cout << "with axes - ";
-    for(int i = 0; i < axes.size(); i++)
-        std::cout << axes[i] << " ";
-    std::cout << std::endl;
+    // for(int i = 0; i < axes.size(); i++)
+    //     std::cout << axes[i] << " ";
+    // std::cout << std::endl;
     // transpose -> sign switch all diagonals
     // TODO: switch according to the given axes? -- confused here
     std::map<int, diagonal> diagMap = A.getDiagonalMap();
@@ -352,16 +355,15 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
         newDiagMap.insert({ni, it->second});
     }
     std::vector<int> newShape{A.shape[1], A.shape[0]};
-    return quantumSparseMatrix(newDiagMap, newShape);
+    return quantumSparseMatrix(newDiagMap, newShape, A.tensor_shape);
 }
 
 quantumSparseMatrix array(quantumSparseMatrix A) {
     // std::cout << "array called for A - " << std::endl;
-    // std::cout << "A.shape - (" << A.shape[0] << "," << A.shape[1] << ")" << std::endl;
     // A.print();
     return A;
 }
 
-// quantumSparseMatrix einsum() {
-//     return res;
-// }
+quantumSparseMatrix einsum(quantumSparseMatrix A, std::vector<int> axes) {
+    return A;
+}

@@ -41,6 +41,15 @@ class quantumSparseMatrix {
             size = d[0];
             shape = d;
         }
+        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> d, std::vector<int> ts) {
+            std::map<int, diagonal>::iterator it;
+            for (it = dm.begin(); it != dm.end(); it++) {
+                diagonalMap.insert({it->first, it->second});
+            }
+            size = d[0];
+            shape = d;
+            tensor_shape = ts;
+        }
         int getSize() {
             return size;
         }

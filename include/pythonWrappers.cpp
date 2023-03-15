@@ -53,6 +53,7 @@ PYBIND11_MODULE(qsparse, m) {
         .def(py::init<std::vector<int> *, std::vector<std::complex<double> > >())
         .def_readwrite("shape", &denseMatrix::shape)
         .def("getSize", &denseMatrix::getSize, py::return_value_policy::reference)
+        .def("getData", &denseMatrix::getData, py::return_value_policy::reference)
         .def("set", &denseMatrix::set, py::return_value_policy::reference)
         .def("get", &denseMatrix::get, py::return_value_policy::reference)
         .def("print", &denseMatrix::print, py::return_value_policy::reference)
@@ -81,6 +82,13 @@ PYBIND11_MODULE(qsparse, m) {
     m.def(
         "transpose",
         [](quantumSparseMatrix A, std::vector<int> axes) { return transpose(A, axes); },
+        py::arg(),
+        py::arg("axes"),
+        py::return_value_policy::reference
+    );
+    m.def(
+        "einsum",
+        [](quantumSparseMatrix A, std::vector<int> axes) { return einsum(A, axes); },
         py::arg(),
         py::arg("axes"),
         py::return_value_policy::reference

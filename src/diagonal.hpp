@@ -34,6 +34,12 @@ class diagonal {
             // std::cout << "here" << std::endl;
             return values[i];
         }
+        bool isEmpty() {
+            for(int i=0; i < values.size(); i++) {
+                if(values[i] != 0.0) return false;
+            }
+            return true;
+        }
         void print() {
             std::string sep=",";
             // int *coords= this->getCoords(matrixSize, this->dIndex);
