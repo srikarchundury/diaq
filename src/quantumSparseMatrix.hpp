@@ -54,7 +54,7 @@ class quantumSparseMatrix {
             return diagonalMap;
         }
         void print() {
-            std::cout << "matrix shape (";
+            std::cout << "matrix_shape (";
             for(int i = 0; i < shape.size()-1; i++) {
                 std::cout << shape[i] << ",";
             }

@@ -44,6 +44,11 @@ class denseMatrix {
             return data[shape[1] * i + j];
         }
         void print() {
+            std::cout << "matrix_shape (";
+            for(int i = 0; i < shape.size()-1; i++) {
+                std::cout << shape[i] << ",";
+            }
+            std::cout << shape[shape.size()-1] << ")" << std::endl;
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%shape[1] == 0) {
                     std::cout << data[i] << std::endl;
