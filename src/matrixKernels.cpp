@@ -266,6 +266,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> shape) {
     denseMatrix d = A.convertToDenseMatrix(shape);
     return d.convertToQuantumSparse(shape);
 }
+
 std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, int axis_A, int axis_B) {
     std::vector<int> res;
     for(int i = 0; i < tensor_shape_A.size(); i++) {
@@ -280,6 +281,28 @@ std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int
     }
     return res;
 }
+
+quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
+    // std::cout << "transpose called for A - " << std::endl;
+    // A.print();
+    // std::cout << "with axes - ";
+    // for(int i = 0; i < axes.size(); i++)
+    //     std::cout << axes[i] << " ";
+    // std::cout << std::endl;
+    // transpose -> sign switch all diagonals
+    // TODO: switch according to the given axes? -- confused here
+    std::map<int, diagonal> diagMap = A.getDiagonalMap();
+    std::map<int, diagonal> newDiagMap;
+    std::map<int, diagonal>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        int ni = -1 * it->second.getIndex();
+        it->second.setIndex(ni);
+        newDiagMap.insert({ni, it->second});
+    }
+    std::vector<int> newShape{A.shape[1], A.shape[0]};
+    return quantumSparseMatrix(newDiagMap, newShape, A.tensor_shape);
+}
+
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
     std::cout << "--" << std::endl;
     std::cout << "tensordot called for A - " << std::endl;
@@ -294,14 +317,25 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     /* calculate tensordot - 1*/
     int totalA = A.shape[0] * A.shape[1];
     int totalB = B.shape[0] * B.shape[1];
+    
     std::vector<int> new_shape_a{totalA / A.tensor_shape[axes[0][0]], A.tensor_shape[axes[0][0]]};
     std::vector<int> new_shape_b{B.tensor_shape[axes[1][0]], totalB / B.tensor_shape[axes[1][0]]};
+    // std::vector<int> new_shape_a{A.tensor_shape[axes[0][0]], totalA / A.tensor_shape[axes[0][0]]};
+    // std::vector<int> new_shape_b{totalB / B.tensor_shape[axes[1][0]], B.tensor_shape[axes[1][0]]};
+
+    // permute first
+
     quantumSparseMatrix reshaped_A = reshape(A, new_shape_a);
     quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
+
     // std::cout << "after reshape A - " << std::endl;
     // reshaped_A.convertToDenseMatrix(reshaped_A.shape).print();
     // std::cout << "and B - " << std::endl;
     // reshaped_B.convertToDenseMatrix(reshaped_B.shape).print();
+
+    // reshaped_A = transpose(reshaped_A, axes[0]);
+    // reshaped_B = transpose(reshaped_B, axes[1]);
+
     res = product(reshaped_A, reshaped_B);
     /* calculate tensordot*/
 
@@ -335,27 +369,6 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
 
     res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0][0], axes[1][0]);
     return res;
-}
-
-quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
-    // std::cout << "transpose called for A - " << std::endl;
-    // A.print();
-    // std::cout << "with axes - ";
-    // for(int i = 0; i < axes.size(); i++)
-    //     std::cout << axes[i] << " ";
-    // std::cout << std::endl;
-    // transpose -> sign switch all diagonals
-    // TODO: switch according to the given axes? -- confused here
-    std::map<int, diagonal> diagMap = A.getDiagonalMap();
-    std::map<int, diagonal> newDiagMap;
-    std::map<int, diagonal>::iterator it;
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        int ni = -1 * it->second.getIndex();
-        it->second.setIndex(ni);
-        newDiagMap.insert({ni, it->second});
-    }
-    std::vector<int> newShape{A.shape[1], A.shape[0]};
-    return quantumSparseMatrix(newDiagMap, newShape, A.tensor_shape);
 }
 
 quantumSparseMatrix array(quantumSparseMatrix A) {
