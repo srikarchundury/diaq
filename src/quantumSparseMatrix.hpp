@@ -10,19 +10,23 @@ class denseMatrix; // telling this class exists w/o defining it here
 class quantumSparseMatrix {
     public:
         std::vector<int> shape; // as of now, this is always a 2 element array
-        std::vector<int> tensor_shape{0,0,0,0,0,0};
+        std::vector<int> tensor_shape;
+
         quantumSparseMatrix(int s) {
             std::map<int, diagonal> d;
             diagonalMap = d;
             size = s;
             shape.push_back(s);
             shape.push_back(s);
+            tensor_shape.push_back(s);
+            tensor_shape.push_back(s);
         }
         quantumSparseMatrix(std::vector<int> *dimens) {
             std::map<int, diagonal> d;
             diagonalMap = d;
             shape = *dimens;
             size = shape[0];
+            tensor_shape = *dimens;
         }
         quantumSparseMatrix(std::map<int, diagonal> dm, int s) {
             std::map<int, diagonal>::iterator it;
@@ -32,23 +36,26 @@ class quantumSparseMatrix {
             size = s;
             shape.push_back(s);
             shape.push_back(s);
+            tensor_shape.push_back(s);
+            tensor_shape.push_back(s);
         }
-        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> d) {
+        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> *d) {
             std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
-            size = d[0];
-            shape = d;
+            shape = *d;
+            size = shape[0];
+            tensor_shape = *d;
         }
-        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> d, std::vector<int> ts) {
+        quantumSparseMatrix(std::map<int, diagonal> dm, std::vector<int> *d, std::vector<int> *ts) {
             std::map<int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
-            size = d[0];
-            shape = d;
-            tensor_shape = ts;
+            shape = *d;
+            tensor_shape = *ts;
+            size = shape[0];
         }
         int getSize() {
             return size;

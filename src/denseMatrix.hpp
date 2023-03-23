@@ -14,16 +14,26 @@
 class denseMatrix {
     public:
         std::vector<int> shape;
+        std::vector<int> tensor_shape;
         denseMatrix(const int s, std::vector<std::complex<double>> array) {
             size = s;
             data = array;
             shape.push_back(s);
             shape.push_back(s);
+            tensor_shape.push_back(s);
+            tensor_shape.push_back(s);
         }
         denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array) {
             data = array;
             shape = *d;
             size = shape[0];
+            tensor_shape = *d;
+        }
+        denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array, std::vector<int> *ts) {
+            data = array;
+            shape = *d;
+            size = shape[0];
+            tensor_shape = *ts;
         }
         std::vector<std::complex<double> > getData() {
             return data;

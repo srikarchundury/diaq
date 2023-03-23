@@ -25,6 +25,7 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
         }
     }
     denseMatrix d(&new_shape, data);
+    d.tensor_shape = tensor_shape;
     return d;
 }
 
@@ -36,7 +37,7 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     // }
     // std::cout << "converting dense to sparse" << std::endl;
     std::map<int, diagonal> diagMap;
-    quantumSparseMatrix qm(diagMap, new_shape);
+    quantumSparseMatrix qm(diagMap, &new_shape);
     for(int i=0; i < shape[0]; i++) {
         for(int j=0; j < shape[1]; j++) {
             int diagIndx = getTargetDiagIndex_onlydiags(i, j);
@@ -45,5 +46,40 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
         }
     }
     qm.pruneMatrix();
+    qm.tensor_shape = tensor_shape;
     return qm;
+}
+
+// conversion from numpy to our format
+quantumSparseMatrix from_numpy(std::vector<std::complex<double>> vals, std::vector<int> shape) {
+    int l = shape.size();
+    if(l>2) {
+        std::vector<int> orig_shape = shape;
+        // if(l%2 != 0 && shape[l/2]%2 == 0) {
+        //     shape.push_back(1);
+        //     int k = l / 2;
+        //     for(int i = k+2; i < shape.size() ; i++) {
+        //         shape[i] = shape[i-1];
+        //     }
+        //     shape[k] = shape[k] / 2;
+        //     shape[k+1] = shape[k];
+        // }
+        l = shape.size();
+        std::vector<int> new_shape{1,1};
+        int i = l / 2;
+        for(int r = 0; r<i ; r++) {
+            new_shape[0] = new_shape[0] * shape[r];
+        }
+        for(int r = i; r<l ; r++) {
+            new_shape[1] = new_shape[1] * shape[r];
+        }
+        return denseMatrix(&new_shape, vals, &orig_shape).convertToQuantumSparse(new_shape);
+    }
+    else {
+        return denseMatrix(&shape, vals, &shape).convertToQuantumSparse(shape);
+    }
+}
+
+std::vector<std::complex<double>> to_numpy(quantumSparseMatrix A) {
+    return A.convertToDenseMatrix(A.shape).getData();
 }

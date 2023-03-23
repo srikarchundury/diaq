@@ -282,15 +282,50 @@ std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int
     return res;
 }
 
-quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
+std::vector<int> modifyTensorShape(std::vector<int> tShape, std::vector<int> axes) {
+    std::vector<int> nShape;
+    if(axes.size() == 0) {
+        for(int i = tShape.size()-1; i >= 0; i--) {
+            nShape.push_back(tShape[i]);
+        }
+    }
+    else {
+        for(int i = 0; i < axes.size(); i++) {
+            nShape.push_back(tShape[axes[i]]);
+        }
+    }
+    return nShape;
+}
+
+quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order) {
     // std::cout << "transpose called for A - " << std::endl;
     // A.print();
     // std::cout << "with axes - ";
     // for(int i = 0; i < axes.size(); i++)
     //     std::cout << axes[i] << " ";
     // std::cout << std::endl;
-    // transpose -> sign switch all diagonals
-    // TODO: switch according to the given axes? -- confused here
+
+    // shape of result
+    std::vector<int> new_tensor_shape = modifyTensorShape(A.tensor_shape, new_order);
+
+    // permute A to axes
+    std::cout << "new_tensor_shape (";
+    for(int i = 0; i < new_tensor_shape.size()-1; i++) {
+        std::cout << new_tensor_shape[i] << ",";
+    }
+    std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
+
+    // needs some permutation here
+    // A = permute(A, axes);
+
+    // initial shape based on result shape
+    // int last = new_tensor_shape[new_tensor_shape.size()-1];
+    // int total = A.shape[0] * A.shape[1];
+    // std::vector<int> newShape{last, total/last};
+    std::vector<int> newShape{A.shape[1], A.shape[0]};
+    // A = reshape(A,newShape);
+
+    // tranpose of the diagonals
     std::map<int, diagonal> diagMap = A.getDiagonalMap();
     std::map<int, diagonal> newDiagMap;
     std::map<int, diagonal>::iterator it;
@@ -299,18 +334,17 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> axes) {
         it->second.setIndex(ni);
         newDiagMap.insert({ni, it->second});
     }
-    std::vector<int> newShape{A.shape[1], A.shape[0]};
-    return quantumSparseMatrix(newDiagMap, newShape, A.tensor_shape);
+    return quantumSparseMatrix(newDiagMap, &newShape, &new_tensor_shape);
 }
 
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
-    std::cout << "--" << std::endl;
-    std::cout << "tensordot called for A - " << std::endl;
-    A.print();
-    std::cout << "and B - " << std::endl;
-    B.print();
-    std::cout << "with axes - " << axes[0][0] << " and " << axes[1][0] << std::endl;
-    std::cout << "--" << std::endl;
+    // std::cout << "--" << std::endl;
+    // std::cout << "tensordot called for A - " << std::endl;
+    // A.print();
+    // std::cout << "and B - " << std::endl;
+    // B.print();
+    // std::cout << "with axes - " << axes[0][0] << " and " << axes[1][0] << std::endl;
+    // std::cout << "--" << std::endl;
 
     quantumSparseMatrix res = quantumSparseMatrix(0);
 
@@ -323,7 +357,9 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     // std::vector<int> new_shape_a{A.tensor_shape[axes[0][0]], totalA / A.tensor_shape[axes[0][0]]};
     // std::vector<int> new_shape_b{totalB / B.tensor_shape[axes[1][0]], B.tensor_shape[axes[1][0]]};
 
-    // permute first
+    // permute first -- get back to this if transpose does not solve our problem
+    // A = permute(A, order_A);
+    // B = permute(B, order_B);
 
     quantumSparseMatrix reshaped_A = reshape(A, new_shape_a);
     quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
@@ -369,6 +405,10 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
 
     res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0][0], axes[1][0]);
     return res;
+}
+
+quantumSparseMatrix permute(quantumSparseMatrix A, std::vector<int> new_order) {
+    return A;
 }
 
 quantumSparseMatrix array(quantumSparseMatrix A) {

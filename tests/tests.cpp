@@ -1344,11 +1344,11 @@ int main(int argc, char **argv) {
 
         std::vector<int> dims{3,6};
         quantumSparseMatrix q_A24 = A24.convertToQuantumSparse(dims);
-        q_A24.tensor_shape = std::vector<int>{4,2,8};
+        q_A24.tensor_shape = std::vector<int>{3,3,2};
         q_A24.print();
         std::cout << " -- " << std::endl;
 
-        std::vector<int> axes{1,0};
+        std::vector<int> axes{};
         quantumSparseMatrix res = transpose(q_A24, axes);
         res.print();
         std::cout << " -- " << std::endl;

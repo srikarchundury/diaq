@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 #include <pybind11/chrono.h>
+#include <pybind11/numpy.h>
 
 #include "qSparse.hpp"
 
@@ -52,6 +53,7 @@ PYBIND11_MODULE(qsparse, m) {
         .def(py::init<int, std::vector<std::complex<double> > >())
         .def(py::init<std::vector<int> *, std::vector<std::complex<double> > >())
         .def_readwrite("shape", &denseMatrix::shape)
+        .def_readwrite("tensor_shape", &denseMatrix::tensor_shape)
         .def("getSize", &denseMatrix::getSize, py::return_value_policy::reference)
         .def("getData", &denseMatrix::getData, py::return_value_policy::reference)
         .def("set", &denseMatrix::set, py::return_value_policy::reference)
@@ -62,6 +64,10 @@ PYBIND11_MODULE(qsparse, m) {
         .def("getTargetDiagIndex", &denseMatrix::getTargetDiagIndex, py::return_value_policy::reference)
         .def("getTargetDiagIndex_onlydiags", &denseMatrix::getTargetDiagIndex_onlydiags, py::return_value_policy::reference)
         .def("convertToQuantumSparse", &denseMatrix::convertToQuantumSparse, py::return_value_policy::reference);
+
+    // conversion from numpy
+    m.def("from_numpy", &from_numpy, py::return_value_policy::reference);
+    m.def("to_numpy", &to_numpy, py::return_value_policy::reference);
 
     // kernel functions
     m.def("product", &product, py::return_value_policy::reference);
@@ -81,9 +87,9 @@ PYBIND11_MODULE(qsparse, m) {
     );
     m.def(
         "transpose",
-        [](quantumSparseMatrix A, std::vector<int> axes) { return transpose(A, axes); },
+        [](quantumSparseMatrix A, std::vector<int> new_order) { return transpose(A, new_order); },
         py::arg(),
-        py::arg("axes"),
+        py::arg("axes") = std::vector<int>{},
         py::return_value_policy::reference
     );
     m.def(
