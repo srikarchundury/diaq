@@ -81,8 +81,7 @@ PYBIND11_MODULE(qsparse, m) {
         [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) { return tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
-        py::kw_only(),
-        py::arg("axes"),
+        py::arg("axes") = std::vector<int>{},
         py::return_value_policy::reference
     );
     m.def(
