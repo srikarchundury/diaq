@@ -38,6 +38,13 @@ class denseMatrix {
         std::vector<std::complex<double> > getData() {
             return data;
         }
+        std::complex<double> getItem(std::vector<int> ten_pos) {
+            int flat_index = 0;
+            for(int i=0;i<tensor_shape.size();i++) {
+                flat_index = flat_index + tensor_shape[i] * ten_pos[i];
+            }
+            return data[flat_index];
+        }
         int getSize() {
             return size;
         }
@@ -59,6 +66,11 @@ class denseMatrix {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
+            std::cout << "tensor_shape (";
+            for(int i = 0; i < tensor_shape.size()-1; i++) {
+                std::cout << tensor_shape[i] << ",";
+            }
+            std::cout << tensor_shape[tensor_shape.size()-1] << ")" << std::endl;
             for (int i = 0; i < data.size(); i++) {
                 if((i+1)%shape[1] == 0) {
                     std::cout << data[i] << std::endl;

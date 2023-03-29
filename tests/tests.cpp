@@ -1356,6 +1356,28 @@ int main(int argc, char **argv) {
         res.convertToDenseMatrix(res.shape).print();
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "3") == 0) {
+        // testing getMatrixPosition and getTensorPosition
+        A24.tensor_shape = std::vector<int>{3,3,2};
+        A24.print();
+        std::cout << " -- " << std::endl;
+        std::vector<int> dims{3,6};
+        quantumSparseMatrix q_A24 = A24.convertToQuantumSparse(dims);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+
+        int di = 1;
+        int dp = 2;
+
+        std::cout << "getting element in diagonal idx = " << di << " position = " << dp << std::endl;
+        std::vector<int> mat_pos = q_A24.getMatrixPosition(di, dp);
+        std::cout << mat_pos[0] << "," << mat_pos[1] << std::endl;
+
+        std::vector<int> ten_pos = q_A24.getTensorPosition(di, dp);
+        std::cout << ten_pos[0] << "," << ten_pos[1] << "," << ten_pos[2] << std::endl;
+
+        std::cout << "reading element from dense version: " << A24.getItem(ten_pos) << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         int i = std::stoi(str_i);

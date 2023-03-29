@@ -3,6 +3,7 @@
 
 #include "diagonal.hpp"
 #include <map>
+#include <numeric>
 
 class denseMatrix; // telling this class exists w/o defining it here
 
@@ -120,6 +121,47 @@ class quantumSparseMatrix {
                     it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
                 }
             }
+        }
+        std::vector<int> getMatrixPosition(int diagonal_idx, int diagonal_pos) {
+            std::vector<int> mat_pos;
+            if(diagonal_idx == 0) {
+                mat_pos.push_back(diagonal_pos);
+                mat_pos.push_back(diagonal_pos);
+            }
+            else {
+                if(diagonal_idx < 0) {
+                    mat_pos.push_back(abs(diagonal_idx));
+                    mat_pos.push_back(0);
+                }
+                else {
+                    mat_pos.push_back(0);
+                    mat_pos.push_back(abs(diagonal_idx));
+                }
+                mat_pos[0] += (diagonal_pos-1);
+                mat_pos[1] += (diagonal_pos-1);
+            }
+            if(mat_pos[0] >= shape[0] || mat_pos[1] >= shape[1]) {
+                throw std::length_error("out of matrix");
+            }
+            return mat_pos;
+        }
+        std::vector<int> getTensorPosition(int diagonal_idx, int diagonal_pos) {
+            std::vector<int> mat_pos = getMatrixPosition(diagonal_idx, diagonal_pos);
+            int total_elements = shape[0] * shape[1];
+            int ndim = tensor_shape.size();
+            int flat_index = mat_pos[0] * shape[1] + mat_pos[1];
+            std::vector<int> ten_pos(ndim);
+            int prod = 1;
+            int remaining;
+            for (int i = ndim-1; i > 0; i--) {
+                prod *= tensor_shape[i];
+                remaining = total_elements / prod;
+                std::cout << "flat_index = " << flat_index << " prod = " << prod << " rem = " << remaining << " " << std::endl;
+                ten_pos[i] = flat_index % remaining;
+                flat_index = flat_index / tensor_shape[i];
+            }
+            ten_pos[0] = flat_index;
+            return ten_pos;
         }
         void pruneMatrix() {
             std::vector<int> toDelete;
