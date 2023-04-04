@@ -139,10 +139,10 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
-    if(A.getDim(1) != B.getDim(0)) {
+    if(A.shape[1] != B.shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
-    std::vector<int> d{A.getDim(0), B.getDim(1)};
+    std::vector<int> d{A.shape[0], B.shape[1]};
     quantumSparseMatrix* result = new quantumSparseMatrix(&d);
     // quantumSparseMatrix* resptr = &result;
     std::map<int, diagonal> mapA = A.getDiagonalMap();
@@ -155,7 +155,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // itB->second.print();
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
-            diagonal diagNew = multiplyDiagonals(A.getShape(), B.getShape(), itA->first, itB->first, itA->second, itB->second);
+            diagonal diagNew = multiplyDiagonals(A.shape, B.shape, itA->first, itB->first, itA->second, itB->second);
             if(diagNew.getValues().size() != 0 && !diagNew.isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.print();
@@ -194,7 +194,7 @@ denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
     for(int i = 0; i < shape_a[0] * shape_b[1]; i++) {
         resArray.push_back(0);
     }
-    std::vector<int> d{A.getDim(0), B.getDim(1)};
+    std::vector<int> d{A.shape[0], B.shape[1]};
     denseMatrix result(&d, resArray);
     for(int i = 0; i < shape_a[0]; i++) {
         for(int k = 0; k < shape_b[1]; k++) {
@@ -298,46 +298,72 @@ std::vector<int> modifyTensorShape(std::vector<int> tShape, std::vector<int> axe
 }
 
 quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order) {
-    std::cout << "transpose called for - " << std::endl;
+    std::cout << "transpose called " << std::endl;
     A.print();
-    std::cout << "with axes - ";
-    for(int i = 0; i < new_order.size(); i++)
-        std::cout << new_order[i] << " ";
-    std::cout << std::endl;
 
+    // tranpose of the diagonals
+    if(A.tensor_shape.size() == 2) {
+        std::vector<int> newShape{A.shape[1], A.shape[0]};
+        std::map<int, diagonal> diagMap = A.getDiagonalMap();
+        std::map<int, diagonal> newDiagMap;
+        std::map<int, diagonal>::iterator it;
+        for (it = diagMap.begin(); it != diagMap.end(); it++) {
+            int ni = -1 * it->second.getIndex();
+            it->second.setIndex(ni);
+            newDiagMap.insert({ni, it->second});
+        }
+        quantumSparseMatrix p(newDiagMap, &newShape, &newShape);
+        std::cout << "transpose result " << std::endl;
+        p.print();
+        return p;
+    }
+    // otherwise
+    if(new_order.size() == 0) {
+        for(int i = 0; i < A.tensor_shape.size(); i++) {
+            new_order.push_back(A.tensor_shape[A.tensor_shape.size()-1-i]);
+        }
+    }
+    std::cout << "with new_order (";
+    for(int i = 0; i < new_order.size(); i++)
+        std::cout << new_order[i] << ",";
+    std::cout << new_order[new_order.size()-1] << ")" << std::endl;
     // shape of result
     std::vector<int> new_tensor_shape = modifyTensorShape(A.tensor_shape, new_order);
-
-    // permute A to axes
     std::cout << "new_tensor_shape (";
     for(int i = 0; i < new_tensor_shape.size()-1; i++) {
         std::cout << new_tensor_shape[i] << ",";
     }
     std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
-
-    // needs some permutation here
-    // A = permute(A, axes);
-
-    // initial shape based on result shape
-    // int last = new_tensor_shape[new_tensor_shape.size()-1];
-    // int total = A.shape[0] * A.shape[1];
-    // std::vector<int> newShape{last, total/last};
-    std::vector<int> newShape{A.shape[1], A.shape[0]};
-    // A = reshape(A,newShape);
-
-    // tranpose of the diagonals
-    std::map<int, diagonal> diagMap = A.getDiagonalMap();
+    // now, let's perform the transpose element by element
     std::map<int, diagonal> newDiagMap;
-    std::map<int, diagonal>::iterator it;
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        int ni = -1 * it->second.getIndex();
-        it->second.setIndex(ni);
-        newDiagMap.insert({ni, it->second});
+    int l = new_tensor_shape.size();
+    std::vector<int> new_shape{1,1};
+    int i = l / 2;
+    for(int r = 0; r<i ; r++) {
+        new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
-    quantumSparseMatrix p(newDiagMap, &newShape, &new_tensor_shape);
-    std::cout << "transpose result - " << std::endl;
-    p.print();
-    return p;
+    for(int r = i; r<l ; r++) {
+        new_shape[1] = new_shape[1] * new_tensor_shape[r];
+    }
+    // res matrix/tensor
+    quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
+    // iterate over all diagonals
+    std::map<int, diagonal>::iterator it;
+    std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
+    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+        std::vector<std::complex<double> > vals = it->second.getValues();
+        for(int i = 0; i < vals.size(); i++) {
+            std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
+            std::cout << "element = " << vals[i] << std::endl;
+            std::vector<int> ten_pos = A.getTensorPosition(it->first, i);
+            std::cout << "tensor index = (";
+            for(int i = 0; i < ten_pos.size()-1; i++) {
+                std::cout << ten_pos[i] << ",";
+            }
+            std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
+        }
+    }
+    return res;
 }
 
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {

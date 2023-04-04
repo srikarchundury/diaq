@@ -61,12 +61,6 @@ class quantumSparseMatrix {
         int getSize() {
             return size;
         }
-        int getDim(int i) {
-            return shape[i];
-        }
-        std::vector<int> getShape() {
-            return shape;
-        }
         std::map<int, diagonal> getDiagonalMap() {
             return diagonalMap;
         }
@@ -137,8 +131,8 @@ class quantumSparseMatrix {
                     mat_pos.push_back(0);
                     mat_pos.push_back(abs(diagonal_idx));
                 }
-                mat_pos[0] += (diagonal_pos-1);
-                mat_pos[1] += (diagonal_pos-1);
+                mat_pos[0] += (diagonal_pos);
+                mat_pos[1] += (diagonal_pos);
             }
             if(mat_pos[0] >= shape[0] || mat_pos[1] >= shape[1]) {
                 throw std::length_error("out of matrix");
@@ -152,16 +146,44 @@ class quantumSparseMatrix {
             int flat_index = mat_pos[0] * shape[1] + mat_pos[1];
             std::vector<int> ten_pos(ndim);
             int prod = 1;
-            int remaining;
-            for (int i = ndim-1; i > 0; i--) {
+            // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
+            for (int i = 0; i < ndim; i++) {
                 prod *= tensor_shape[i];
-                remaining = total_elements / prod;
-                std::cout << "flat_index = " << flat_index << " prod = " << prod << " rem = " << remaining << " " << std::endl;
-                ten_pos[i] = flat_index % remaining;
-                flat_index = flat_index / tensor_shape[i];
+                // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
+                ten_pos[i] = (flat_index / (total_elements / prod)) % tensor_shape[i];
+                flat_index = flat_index - (total_elements / prod) * ten_pos[i];
             }
-            ten_pos[0] = flat_index;
             return ten_pos;
+        }
+        int getFlatIndex(std::vector<int> ten_pos) {
+            int total_elements = 1;
+            for(int i = 0;i<tensor_shape.size();i++)
+                total_elements = total_elements * tensor_shape[i];
+            int flat_index = 0;
+            int prod = 1;
+            int remaining;
+            for(int i = 0; i < tensor_shape.size() ; i++) {
+                prod *= tensor_shape[i];
+                flat_index = flat_index + (total_elements / prod) * ten_pos[i];
+            }
+            return flat_index;
+        }
+        std::vector<int> getDiagonalPosition(std::vector<int> ten_pos) {
+            // returns {diagonal_idx, position_in_this_idx}
+            int flatIndex = getFlatIndex(ten_pos);
+            int mat_x = flatIndex / shape[0];
+            int mat_y = flatIndex % shape[1];
+            std::vector<int> res;
+            // diagonal index is just j - i
+            int d_idx = mat_y - mat_x;
+            res.push_back(d_idx);
+            // getting the position in that diagonal
+            if(d_idx <= 0){
+                res.push_back(mat_y);
+            } else{
+                res.push_back(mat_y - d_idx);
+            }
+            return res;
         }
         void pruneMatrix() {
             std::vector<int> toDelete;

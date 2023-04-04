@@ -1338,13 +1338,12 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "2") == 0) {
-        // testing transpose operation
+        // testing matrix transposition operation
         A24.print();
         std::cout << " -- " << std::endl;
 
         std::vector<int> dims{3,6};
         quantumSparseMatrix q_A24 = A24.convertToQuantumSparse(dims);
-        q_A24.tensor_shape = std::vector<int>{3,3,2};
         q_A24.print();
         std::cout << " -- " << std::endl;
 
@@ -1366,17 +1365,31 @@ int main(int argc, char **argv) {
         q_A24.print();
         std::cout << " -- " << std::endl;
 
-        int di = 1;
+        int di = 2;
         int dp = 2;
 
         std::cout << "getting element in diagonal idx = " << di << " position = " << dp << std::endl;
         std::vector<int> mat_pos = q_A24.getMatrixPosition(di, dp);
-        std::cout << mat_pos[0] << "," << mat_pos[1] << std::endl;
+        std::cout << "matrix position - " << mat_pos[0] << "," << mat_pos[1] << std::endl;
 
         std::vector<int> ten_pos = q_A24.getTensorPosition(di, dp);
-        std::cout << ten_pos[0] << "," << ten_pos[1] << "," << ten_pos[2] << std::endl;
+        std::cout << "tensor position - " << ten_pos[0] << "," << ten_pos[1] << "," << ten_pos[2] << std::endl;
 
         std::cout << "reading element from dense version: " << A24.getItem(ten_pos) << std::endl;
+    }
+    else if(strcmp(argv[1], "4") == 0) {
+        // testing tensor transposition operation
+        A24.print();
+        std::cout << " -- " << std::endl;
+
+        std::vector<int> dims{3,6};
+        quantumSparseMatrix q_A24 = A24.convertToQuantumSparse(dims);
+        q_A24.tensor_shape = std::vector<int>{3,3,2};
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+
+        std::vector<int> axes{};
+        quantumSparseMatrix res = transpose(q_A24, axes);
     }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
