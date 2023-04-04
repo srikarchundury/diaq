@@ -1388,8 +1388,12 @@ int main(int argc, char **argv) {
         q_A24.print();
         std::cout << " -- " << std::endl;
 
-        std::vector<int> axes{};
-        quantumSparseMatrix res = transpose(q_A24, axes);
+        std::vector<int> order{};
+        quantumSparseMatrix res = transpose(q_A24, order);
+        std::cout << " -- " << std::endl;
+        res.print();
+        std::cout << " -- " << std::endl;
+        res.convertToDenseMatrix(res.shape).print();
     }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];

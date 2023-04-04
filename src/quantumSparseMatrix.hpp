@@ -95,6 +95,14 @@ class quantumSparseMatrix {
                 return &it->second;
             }
         }
+        void setDiagonalElement(int dIndex, int dPos, int dLen, std::complex<double> val) {
+            auto it = diagonalMap.find(dIndex);
+            if(it == diagonalMap.end()) {
+                diagonal newDiag(dIndex, dLen);
+                this->diagonalMap.insert({dIndex, newDiag});
+            }
+            (&it->second)->setValue(dPos, val);
+        }
         void addToDiagonal(int dIndex, std::complex<double> val) {
             diagonal* d = this->getDiagonal(dIndex);
             d->addElement(val);
@@ -171,8 +179,12 @@ class quantumSparseMatrix {
         std::vector<int> getDiagonalPosition(std::vector<int> ten_pos) {
             // returns {diagonal_idx, position_in_this_idx}
             int flatIndex = getFlatIndex(ten_pos);
-            int mat_x = flatIndex / shape[0];
+            // std::cout << "flatIndex = " << flatIndex << std::endl;
+            // std::cout << "shape = " << shape[0] << "," << shape[1] << std::endl;
+            int mat_x = flatIndex / shape[1];
+            flatIndex = flatIndex - shape[1] * mat_x;
             int mat_y = flatIndex % shape[1];
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl; 
             std::vector<int> res;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;

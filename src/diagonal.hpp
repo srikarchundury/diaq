@@ -12,6 +12,11 @@ class diagonal {
         diagonal(int di) {
             dIndex = di;
         }
+        diagonal(int di, int dLen) {
+            dIndex = di;
+            std::vector<std::complex<double> > vals(dLen, 0);
+            values = vals;
+        }
         diagonal(int di, std::vector<std::complex<double> >* vals) {
             dIndex = di;
             values = *vals;

@@ -18,6 +18,19 @@
  * 
  * @return NULL if zero, else diagonal C
  */
+int getDiagonalLength(int dIndex, std::vector<int> shape) {
+    std::cout << "diag_Index = " << dIndex << " ";
+    int lenRes;
+    if(dIndex < 0) {
+        lenRes = shape[0] + dIndex;
+    } else if(dIndex > 0) {
+        lenRes = shape[1] - dIndex;
+    }  else {
+        lenRes = (shape[0] > shape[1])?shape[1]:shape[0];
+    }
+    std::cout << "lenRes = " << lenRes << std::endl;
+    return lenRes;
+}
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
@@ -31,15 +44,8 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
     int lenDiagA = diagA.getSize();
     int lenDiagB = diagB.getSize();
     // result matrix has dimensions {shapeA[0], shapeB[1]}
-    // TODO
-    int lenRes;
-    if(indexA + indexB < 0) {
-        lenRes = shapeA[0] + indexA + indexB;
-    } else if(indexA + indexB > 0) {
-        lenRes = shapeB[1] - indexA - indexB;
-    }  else {
-        lenRes = (shapeA[0] > shapeB[1])?shapeB[1]:shapeA[0];
-    }
+    std::vector<int> res_dims{shapeA[0], shapeB[1]};
+    int lenRes = getDiagonalLength(indexA + indexB, res_dims);
     // std::cout << "diagonal length = " << lenRes << std::endl;
     int offsetA = abs(indexA);
     int offsetB = abs(indexB);
@@ -320,11 +326,11 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // otherwise
     if(new_order.size() == 0) {
         for(int i = 0; i < A.tensor_shape.size(); i++) {
-            new_order.push_back(A.tensor_shape[A.tensor_shape.size()-1-i]);
+            new_order.push_back(A.tensor_shape.size()-i-1);
         }
     }
     std::cout << "with new_order (";
-    for(int i = 0; i < new_order.size(); i++)
+    for(int i = 0; i < new_order.size()-1; i++)
         std::cout << new_order[i] << ",";
     std::cout << new_order[new_order.size()-1] << ")" << std::endl;
     // shape of result
@@ -335,17 +341,17 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     }
     std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
     // now, let's perform the transpose element by element
-    std::map<int, diagonal> newDiagMap;
     int l = new_tensor_shape.size();
     std::vector<int> new_shape{1,1};
     int i = l / 2;
-    for(int r = 0; r<i ; r++) {
+    for(int r = 0; r<=i ; r++) {
         new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
-    for(int r = i; r<l ; r++) {
+    for(int r = i+1; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
     // res matrix/tensor
+    std::map<int, diagonal> newDiagMap;
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;
@@ -361,6 +367,16 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
                 std::cout << ten_pos[i] << ",";
             }
             std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
+
+            // modify ten_pos  to perform the transposition using the new_order
+            // TODO: here!!
+
+            std::vector<int> d_pos = A.getDiagonalPosition(ten_pos);
+            // std::vector<int> d_pos = res.getDiagonalPosition(ten_pos);
+            std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
+            std::cout << " -- " << std::endl;
+            int d_len = getDiagonalLength(d_pos[0], A.shape);
+            // res.setDiagonalElement(d_pos[0], d_pos[1], d_len, vals[i]);
         }
     }
     return res;
