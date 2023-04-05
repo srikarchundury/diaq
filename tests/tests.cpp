@@ -1283,6 +1283,51 @@ int main(int argc, char **argv) {
     testCase45.push_back(B45);
     testCases.push_back(testCase45);
 
+    // -----------------------------------------
+    std::vector<int> shapeA46{32, 2};
+    denseMatrix A46(&shapeA46, {
+        1,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        1,0,
+        0,1,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,1,
+        0,0,
+        0,1,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        0,1,
+        0,0,
+        0,0,
+        1,0,
+        0,0,
+        0,0,
+        0,0,
+        0,0,
+        1,0,
+        0,0,
+    });
+    std::vector<int> shapeB46{2,8};
+    denseMatrix B46(&shapeB46, {
+        1,0,0,1,0,0,0,0,
+        0,0,0,0,0,1,1,0,
+    });
+    std::vector<denseMatrix> testCase46;
+    testCase46.push_back(A46);
+    testCase46.push_back(B46);
+    testCases.push_back(testCase46);
 
     if(argc == 1) {
         for(int i = 0; i < testCases.size(); i++) {
