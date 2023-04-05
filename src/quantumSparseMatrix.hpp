@@ -61,6 +61,16 @@ class quantumSparseMatrix {
         int getSize() {
             return size;
         }
+        std::complex<double> getItem(std::vector<int> ten_pos) {
+            std::vector<int> d_pos = getDiagonalPosition(ten_pos);
+            auto it = diagonalMap.find(d_pos[0]);
+            if(it == diagonalMap.end()) {
+                throw std::length_error("out of bounds");
+            }
+            else {
+                return it->second.getValue(d_pos[1]);
+            }
+        }
         std::map<int, diagonal> getDiagonalMap() {
             return diagonalMap;
         }
@@ -96,12 +106,17 @@ class quantumSparseMatrix {
             }
         }
         void setDiagonalElement(int dIndex, int dPos, int dLen, std::complex<double> val) {
+            // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                diagonal newDiag(dIndex, dLen);
+                std::vector<std::complex<double> > vals(dLen, 0);
+                vals[dPos] = val;
+                diagonal newDiag(dIndex, &vals);
                 this->diagonalMap.insert({dIndex, newDiag});
             }
-            (&it->second)->setValue(dPos, val);
+            else {
+                it->second.setValue(dPos, val);
+            }
         }
         void addToDiagonal(int dIndex, std::complex<double> val) {
             diagonal* d = this->getDiagonal(dIndex);

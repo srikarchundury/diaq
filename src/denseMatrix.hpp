@@ -54,12 +54,6 @@ class denseMatrix {
         int getSize() {
             return size;
         }
-        int getDim(int i) {
-            return shape[i];
-        }
-        std::vector<int> getShape() {
-            return shape;
-        }
         void set(int i, int j, std::complex<double> val) {
             data[shape[1] * i + j] = val;
         }
