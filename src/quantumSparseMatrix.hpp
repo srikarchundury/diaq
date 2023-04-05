@@ -158,6 +158,8 @@ class quantumSparseMatrix {
                 mat_pos[1] += (diagonal_pos);
             }
             if(mat_pos[0] >= shape[0] || mat_pos[1] >= shape[1]) {
+                std::cout << "diagonal pos (" << diagonal_idx << "," << diagonal_pos << ") in matrix of size (" << shape[0] << "," << shape[1] << ")" << std::endl;
+                std::cout << "got pos (" << mat_pos[0] << "," << mat_pos[1] << ") in matrix of size (" << shape[0] << "," << shape[1] << ")" << std::endl;
                 throw std::length_error("out of matrix");
             }
             return mat_pos;
