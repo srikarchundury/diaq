@@ -285,16 +285,21 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> shape) {
 
 std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, int axis_A, int axis_B) {
     std::vector<int> res;
+    // std::cout << "axis_A " << axis_A << std::endl;
     for(int i = 0; i < tensor_shape_A.size(); i++) {
         if(i != axis_A) {
             res.push_back(tensor_shape_A[i]);
         }
     }
+    // std::cout << "axis_B " << axis_B << std::endl;
     for(int i = 0; i < tensor_shape_B.size(); i++) {
         if(i != axis_B) {
             res.push_back(tensor_shape_B[i]);
         }
     }
+    // for(int i =0;i<res.size();i++)
+    // std::cout << res[i] << " ";
+    // std::cout << std::endl;
     return res;
 }
 
@@ -362,6 +367,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     for(int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
+    // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
     std::map<int, diagonal> newDiagMap;
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
@@ -452,7 +458,7 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     res = product(reshaped_A, reshaped_B);
 
     // calculating result's tensor_shape
-    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[1][0], axes[0][0]);
+    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0][0], axes[1][0]);
     res.pruneMatrix();
     // std::cout << "dot result = " << std::endl;
     // res.print();
