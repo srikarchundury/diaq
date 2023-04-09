@@ -31,6 +31,9 @@ int getDiagonalLength(int dIndex, std::vector<int> shape) {
     if (lenRes > shape[0]) {
         lenRes = shape[0];
     }
+    else if(lenRes > shape[1]) {
+        lenRes = shape[1];
+    }
     // std::cout << "lenRes = " << lenRes << std::endl;
     return lenRes;
 }
@@ -148,8 +151,8 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
-    A.print();
-    B.print();
+    // A.print();
+    // B.print();
     if(A.shape[1] != B.shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -184,7 +187,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
-    result->print();
+    // result->print();
     return *result;
 }
 
