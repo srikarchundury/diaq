@@ -369,7 +369,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // for(int i = 0; i < new_tensor_shape.size()-1; i++) {
     //     std::cout << new_tensor_shape[i] << ",";
     // }
-    std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
+    // std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
     // now, let's perform the transpose element by element
     int l = new_tensor_shape.size();
     // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
