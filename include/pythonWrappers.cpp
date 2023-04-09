@@ -4,6 +4,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/chrono.h>
 #include <pybind11/numpy.h>
+#include <pybind11/operators.h>
 
 #include "qSparse.hpp"
 
@@ -50,7 +51,14 @@ PYBIND11_MODULE(qsparse, m) {
         .def("setDiagonal", &quantumSparseMatrix::setDiagonal, py::return_value_policy::reference)
         .def("addDiagonal", &quantumSparseMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &quantumSparseMatrix::pruneMatrix, py::return_value_policy::reference)
-        .def("convertToDenseMatrix", &quantumSparseMatrix::convertToDenseMatrix, py::return_value_policy::reference);
+        .def("convertToDenseMatrix", &quantumSparseMatrix::convertToDenseMatrix, py::return_value_policy::reference)
+        // operator bindings
+        .def("__mul__", [](const quantumSparseMatrix &a, const quantumSparseMatrix &b){
+            return a * b;
+        }, py::is_operator())
+        .def("__add__", [](const quantumSparseMatrix &a, const quantumSparseMatrix &b){
+            return a + b;
+        }, py::is_operator());
 
     // denseMatrix class
     py::class_<denseMatrix>(m, "denseMatrix")

@@ -1440,6 +1440,33 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         res.convertToDenseMatrix(res.shape).print();
     }
+    else if(strcmp(argv[1], "5") == 0) {
+        const std::string str_i = "30";
+        int i = std::stoi(str_i);
+        std::cout << "test case - " << i;
+        denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+        std::cout << std::endl << " ---- dense product ---- " << std::endl;
+        p.print();
+        std::cout << " ---- dense product ---- " << std::endl;
+        quantumSparseMatrix dp = p.convertToQuantumSparse(p.shape);
+        std::cout << " ---- correct answer ---- " << std::endl;
+        dp.print();
+        std::cout << " ---- correct answer ---- " << std::endl;
+        quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].shape);
+        std::cout << " -- first -- " << std::endl;
+        first.print();
+        std::cout << " -- first -- " << std::endl;
+        quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].shape);
+        std::cout << " -- second -- " << std::endl;
+        second.print();
+        std::cout << " -- second -- " << std::endl;
+        quantumSparseMatrix qp = first * second;
+        std::cout << " -- qp -- " << std::endl;
+        qp.print();
+        std::cout << " -- qp -- " << std::endl;
+        std::string check = checkResult(dp, qp);
+        std::cout << " = " << check << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         int i = std::stoi(str_i);
