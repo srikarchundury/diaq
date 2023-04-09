@@ -148,6 +148,8 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
+    A.print();
+    B.print();
     if(A.shape[1] != B.shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -182,6 +184,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
+    result->print();
     return *result;
 }
 
@@ -382,7 +385,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
 
             std::vector<int> d_pos = res.getDiagonalPosition(new_ten_pos);
             // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-            int d_len = getDiagonalLength(d_pos[0], res.shape);
+            int d_len = getDiagonalLength(d_pos[0], new_shape);
             res.setDiagonalElement(d_pos[0], d_pos[1], d_len, vals[i]);
             // std::cout << " -- " << std::endl;
         }
@@ -401,7 +404,6 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     // std::cout << "--" << std::endl;
 
     quantumSparseMatrix res = quantumSparseMatrix(0);
-
     // move axes
     std::vector<int> order_A;
     std::vector<int> order_B{axes[1][0]};
@@ -447,8 +449,10 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     res = product(reshaped_A, reshaped_B);
 
     // calculating result's tensor_shape
-    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0][0], axes[1][0]);
+    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[1][0], axes[0][0]);
     res.pruneMatrix();
+    // std::cout << "dot result = " << std::endl;
+    // res.print();
     return res;
 }
 
