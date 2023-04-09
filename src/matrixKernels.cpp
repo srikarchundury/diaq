@@ -461,3 +461,11 @@ quantumSparseMatrix array(quantumSparseMatrix A) {
 quantumSparseMatrix einsum(quantumSparseMatrix A, std::vector<int> axes) {
     return A;
 }
+
+// overloading operators
+quantumSparseMatrix operator*(const quantumSparseMatrix &A, const quantumSparseMatrix &B) {
+    return product(A, B);
+}
+quantumSparseMatrix operator+(const quantumSparseMatrix &A, const quantumSparseMatrix &B) {
+    return add(A, B);
+}
