@@ -365,10 +365,10 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
     // shape of result
     std::vector<int> new_tensor_shape = modifyTensorShape(A.tensor_shape, new_order);
-    std::cout << "gives new_tensor_shape (";
-    for(int i = 0; i < new_tensor_shape.size()-1; i++) {
-        std::cout << new_tensor_shape[i] << ",";
-    }
+    // std::cout << "gives new_tensor_shape (";
+    // for(int i = 0; i < new_tensor_shape.size()-1; i++) {
+    //     std::cout << new_tensor_shape[i] << ",";
+    // }
     std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
     // now, let's perform the transpose element by element
     int l = new_tensor_shape.size();
