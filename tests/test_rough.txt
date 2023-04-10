@@ -1,65 +1,29 @@
-// matrix_shape (32,2)
-// tensor_shape (2,2,2,2,2,2)
-// (dIndex=-30) [(1,0),(0,0)]
-// (dIndex=-25) [(1,0),(0,0)]
-// (dIndex=-21) [(0,0),(1,0)]
-// (dIndex=-16) [(0,0),(1,0)]
-// (dIndex=-14) [(0,0),(1,0)]
-// (dIndex=-7) [(1,0),(1,0)]
-// (dIndex=0) [(1,0),(0,0)]
-
-//dot
-
-// matrix_shape (2,8)
-// tensor_shape (2,2,2,2)
-// (dIndex=0) [(1,0),(0,0)]
-// (dIndex=3) [(1,0),(0,0)]
-// (dIndex=4) [(0,0),(1,0)]
-// (dIndex=5) [(0,0),(1,0)]
+matrix_shape (8,2)
+tensor_shape (2,2,2,2,2)
+(dIndex=-7) [(0.707107,0.707107)]
+(dIndex=-4) [(0,0),(0.707107,-0.707107)]
+(dIndex=-1) [(0,0),(0.707107,-0.707107)]
+(dIndex=0) [(0.707107,0.707107),(0,0)]
 
 
 // -----------------------------------------
-    std::vector<int> shapeA46{32, 2};
-    denseMatrix A46(&shapeA46, {
-        1,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        1,0,
-        0,1,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,1,
-        0,0,
-        0,1,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        0,1,
-        0,0,
-        0,0,
-        1,0,
-        0,0,
-        0,0,
-        0,0,
-        0,0,
-        1,0,
-        0,0,
+    std::vector<int> shapeA47{2,2};
+    denseMatrix A46(&shapeA47, {
+        0.707107,0,
+        0,-0.707107,
     });
-    std::vector<int> shapeB46{2,8};
-    denseMatrix B46(&shapeB46, {
-        1,0,0,1,0,0,0,0,
-        0,0,0,0,0,1,1,0,
+    std::vector<int> shapeB47{8, 2};
+    denseMatrix B47(&shapeB47, {
+        0.707107,0,
+        0,0,
+        0,0.707107,
+        0,0,
+        0,0,
+        0,0.707107,
+        0,0,
+        0.707107,0,
     });
-    std::vector<denseMatrix> testCase46;
-    testCase46.push_back(A46);
-    testCase46.push_back(B46);
-    testCases.push_back(testCase46);
+    std::vector<denseMatrix> testCase47;
+    testCase46.push_back(A47);
+    testCase46.push_back(B47);
+    testCases.push_back(testCase47);

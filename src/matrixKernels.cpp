@@ -283,15 +283,28 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> shape) {
     return d.convertToQuantumSparse(shape);
 }
 
-std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, int axis_A, int axis_B) {
+std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, std::vector<int> axis_A, std::vector<int> axis_B) {
     std::vector<int> res;
     for(int i = 0; i < tensor_shape_A.size(); i++) {
-        if(i != axis_A) {
+        int notin = 1;
+        for(int p = 0; p < axis_A.size(); p++) {
+            if(i == axis_A[p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
             res.push_back(tensor_shape_A[i]);
         }
     }
+    // std::cout << "axis_B " << axis_B << std::endl;
     for(int i = 0; i < tensor_shape_B.size(); i++) {
-        if(i != axis_B) {
+        int notin = 1;
+        for(int p = 0; p < axis_B.size(); p++) {
+            if(i == axis_B[p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
             res.push_back(tensor_shape_B[i]);
         }
     }
@@ -316,6 +329,12 @@ std::vector<int> modifyTensorShape(std::vector<int> tShape, std::vector<int> axe
 quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order) {
     // std::cout << "transpose called for " << std::endl;
     // A.print();
+
+    // std::cout << "new_order (";
+    // for(int i = 0; i < new_order.size()-1; i++) {
+    //     std::cout << new_order[i] << ",";
+    // }
+    // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
 
     // tranpose of the diagonals
     if(A.tensor_shape.size() == 2) {
@@ -362,6 +381,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     for(int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
+    // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
     std::map<int, diagonal> newDiagMap;
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
@@ -403,24 +423,46 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     // A.print();
     // std::cout << "and B - " << std::endl;
     // B.print();
-    // std::cout << "with axes - " << axes[0][0] << " and " << axes[1][0] << std::endl;
+    // std::cout << "with axes - " << " (";
+    // int i=0;
+    // for(i=0; i<axes[0].size()-1; i++)
+    //     std::cout << axes[0][i] << ",";
+    // std::cout << axes[0][i] << ") and (";
+    // for(i=0; i<axes[1].size()-1; i++)
+    //     std::cout << axes[1][i] << ",";
+    // std::cout << axes[1][i] << ")" << std::endl;
     // std::cout << "--" << std::endl;
 
     quantumSparseMatrix res = quantumSparseMatrix(0);
     // move axes
     std::vector<int> order_A;
-    std::vector<int> order_B{axes[1][0]};
-    for(int i=0;i<A.tensor_shape.size();i++) {
-        if(i != axes[0][0]) {
+    std::vector<int> order_B;
+    for(int i=0;i<axes[1].size();i++)
+        order_B.push_back(axes[1][i]);
+    for(int i = 0; i < A.tensor_shape.size(); i++) {
+        int notin = 1;
+        for(int p = 0; p < axes[0].size(); p++) {
+            if(i == axes[0][p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
             order_A.push_back(i);
         }
     }
-    for(int i=0;i<B.tensor_shape.size();i++) {
-        if(i != axes[1][0]) {
+    for(int i=0; i < B.tensor_shape.size(); i++) {
+        int notin = 1;
+        for(int p = 0; p < axes[1].size(); p++) {
+            if(i == axes[1][p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
             order_B.push_back(i);
         }
     }
-    order_A.push_back(axes[0][0]);
+    for(int i=0;i<axes[0].size();i++)
+        order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
     // for(int i = 0; i < order_A.size()-1; i++)
     //     std::cout << order_A[i] << ",";
@@ -438,8 +480,19 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     int totalA = A.shape[0] * A.shape[1];
     int totalB = B.shape[0] * B.shape[1];
     
-    std::vector<int> new_shape_a{totalA / A.tensor_shape[axes[0][0]], A.tensor_shape[axes[0][0]]};
-    std::vector<int> new_shape_b{B.tensor_shape[axes[1][0]], totalB / B.tensor_shape[axes[1][0]]};
+    int axes_0_product = 1;
+    for(int i=0;i<axes[0].size();i++) axes_0_product *= A.tensor_shape[axes[0][i]];
+    int axes_1_product = 1;
+    for(int i=0;i<axes[1].size();i++) axes_1_product *= B.tensor_shape[axes[1][i]];
+
+    // std::cout << "axes_0_product = " << axes_0_product << " axes_1_product = " << axes_1_product << std::endl;
+    // These have to be equal right? Let's add a check
+    if(axes_1_product != axes_0_product) {
+        throw std::invalid_argument("invalid axes, can't perform tensordot");
+    }
+
+    std::vector<int> new_shape_a{totalA / axes_0_product, axes_0_product};
+    std::vector<int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
     quantumSparseMatrix reshaped_A = reshape(A, new_shape_a);
     quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
@@ -452,10 +505,12 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     res = product(reshaped_A, reshaped_B);
 
     // calculating result's tensor_shape
-    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[1][0], axes[0][0]);
+    res.tensor_shape = newTensorShape(A.tensor_shape, B.tensor_shape, axes[0], axes[1]);
     res.pruneMatrix();
     // std::cout << "dot result = " << std::endl;
     // res.print();
+    // std::cout << "---" << std::endl;
+    // res = reshape(res, old_shape);
     return res;
 }
 

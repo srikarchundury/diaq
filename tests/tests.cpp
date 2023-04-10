@@ -1329,6 +1329,29 @@ int main(int argc, char **argv) {
     testCase46.push_back(B46);
     testCases.push_back(testCase46);
 
+
+    // -----------------------------------------
+    std::vector<int> shapeA47{2,2};
+    denseMatrix A47(&shapeA47, {
+        0.707107,0,
+        0,-0.707107,
+    });
+    std::vector<int> shapeB47{8, 2};
+    denseMatrix B47(&shapeB47, {
+        0.707107,0,
+        0,0,
+        0,0.707107,
+        0,0,
+        0,0,
+        0,0.707107,
+        0,0,
+        0.707107,0,
+    });
+    std::vector<denseMatrix> testCase47;
+    testCase47.push_back(A47);
+    testCase47.push_back(B47);
+    testCases.push_back(testCase47);
+
     if(argc == 1) {
         for(int i = 0; i < testCases.size(); i++) {
             std::cout << "test case - " << i;
@@ -1439,8 +1462,25 @@ int main(int argc, char **argv) {
         res.print();
         std::cout << " -- " << std::endl;
         res.convertToDenseMatrix(res.shape).print();
+
+        // another example
+        // testing tensor transposition operation
+        B47.print();
+        std::cout << " -- " << std::endl;
+
+        quantumSparseMatrix q_B47 = B47.convertToQuantumSparse(B47.shape);
+        q_B47.tensor_shape = std::vector<int>{2,2,2,2};
+        q_B47.print();
+        std::cout << " -- " << std::endl;
+
+        res = transpose(q_B47, order);
+        std::cout << " -- " << std::endl;
+        res.print();
+        std::cout << " -- " << std::endl;
+        res.convertToDenseMatrix(res.shape).print();
     }
     else if(strcmp(argv[1], "5") == 0) {
+        // testing operator overloading
         const std::string str_i = "30";
         int i = std::stoi(str_i);
         std::cout << "test case - " << i;
