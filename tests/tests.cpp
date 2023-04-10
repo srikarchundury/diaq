@@ -1331,21 +1331,21 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<int> shapeA47{2,2};
+    std::vector<int> shapeA47{8, 2};
     denseMatrix A47(&shapeA47, {
         0.707107,0,
-        0,-0.707107,
+        0,0,
+        0,0.707107,
+        0,0,
+        0,0,
+        0,0.707107,
+        0,0,
+        0.707107,0,
     });
-    std::vector<int> shapeB47{8, 2};
+    std::vector<int> shapeB47{2,2};
     denseMatrix B47(&shapeB47, {
         0.707107,0,
-        0,0,
-        0,0.707107,
-        0,0,
-        0,0,
-        0,0.707107,
-        0,0,
-        0.707107,0,
+        0,-0.707107,
     });
     std::vector<denseMatrix> testCase47;
     testCase47.push_back(A47);
@@ -1465,15 +1465,15 @@ int main(int argc, char **argv) {
 
         // another example
         // testing tensor transposition operation
-        B47.print();
+        A47.print();
         std::cout << " -- " << std::endl;
 
-        quantumSparseMatrix q_B47 = B47.convertToQuantumSparse(B47.shape);
-        q_B47.tensor_shape = std::vector<int>{2,2,2,2};
-        q_B47.print();
+        quantumSparseMatrix q_A47 = A47.convertToQuantumSparse(A47.shape);
+        q_A47.tensor_shape = std::vector<int>{2,2,2,2};
+        q_A47.print();
         std::cout << " -- " << std::endl;
 
-        res = transpose(q_B47, order);
+        res = transpose(q_A47, order);
         std::cout << " -- " << std::endl;
         res.print();
         std::cout << " -- " << std::endl;
