@@ -1398,8 +1398,8 @@ int main(int argc, char **argv) {
         reshaped_q_B8.convertToDenseMatrix(reshaped_q_B8.shape).print();
         std::cout << " -- " << std::endl;
 
-        std::vector<int> axes_1{0,0};
-        std::vector<int> axes_2{3,0};
+        std::vector<int> axes_1{0,1};
+        std::vector<int> axes_2{3,4};
         std::vector<std::vector<int> > axes{axes_1, axes_2};
         quantumSparseMatrix res = tensordot(q_B8, reshaped_q_B8, axes);
         res.print();
