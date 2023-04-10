@@ -418,20 +418,20 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
 }
 
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) {
-    std::cout << "--" << std::endl;
-    std::cout << "tensordot called for A - " << std::endl;
-    A.print();
-    std::cout << "and B - " << std::endl;
-    B.print();
-    std::cout << "with axes - " << " (";
-    int i=0;
-    for(i=0; i<axes[0].size()-1; i++)
-        std::cout << axes[0][i] << ",";
-    std::cout << axes[0][i] << ") and (";
-    for(i=0; i<axes[1].size()-1; i++)
-        std::cout << axes[1][i] << ",";
-    std::cout << axes[1][i] << ")" << std::endl;
-    std::cout << "--" << std::endl;
+    // std::cout << "--" << std::endl;
+    // std::cout << "tensordot called for A - " << std::endl;
+    // A.print();
+    // std::cout << "and B - " << std::endl;
+    // B.print();
+    // std::cout << "with axes - " << " (";
+    // int i=0;
+    // for(i=0; i<axes[0].size()-1; i++)
+    //     std::cout << axes[0][i] << ",";
+    // std::cout << axes[0][i] << ") and (";
+    // for(i=0; i<axes[1].size()-1; i++)
+    //     std::cout << axes[1][i] << ",";
+    // std::cout << axes[1][i] << ")" << std::endl;
+    // std::cout << "--" << std::endl;
 
     quantumSparseMatrix res = quantumSparseMatrix(0);
     // move axes
@@ -478,9 +478,9 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     for(int i=0;i<axes[1].size();i++) axes_1_product *= B.tensor_shape[axes[1][i]];
 
     A = transpose(A, order_A);
-    A.print();
+    // A.print();
     B = transpose(B, order_B);
-    B.print();
+    // B.print();
 
     int totalA = A.shape[0] * A.shape[1];
     int totalB = B.shape[0] * B.shape[1];
