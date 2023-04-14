@@ -4,6 +4,8 @@
 #include "diagonal.hpp"
 #include <map>
 #include <numeric>
+#include <omp.h>
+
 
 class denseMatrix; // telling this class exists w/o defining it here
 
@@ -213,6 +215,25 @@ class quantumSparseMatrix {
                 res.push_back(mat_y - d_idx);
             }
             return res;
+        }
+        int getDiagonalLength(int dIndex) {
+            // std::cout << "diag_Index = " << dIndex << " ";
+            int lenRes;
+            if(dIndex < 0) {
+                lenRes = shape[0] + dIndex;
+            } else if(dIndex > 0) {
+                lenRes = shape[1] - dIndex;
+            }  else {
+                lenRes = (shape[0] > shape[1])?shape[1]:shape[0];
+            }
+            if (lenRes > shape[0]) {
+                lenRes = shape[0];
+            }
+            else if(lenRes > shape[1]) {
+                lenRes = shape[1];
+            }
+            // std::cout << "lenRes = " << lenRes << std::endl;
+            return lenRes;
         }
         void pruneMatrix() {
             std::vector<int> toDelete;
