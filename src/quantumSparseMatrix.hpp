@@ -238,6 +238,7 @@ class quantumSparseMatrix {
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
+            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
                 std::vector<std::complex<double> > vals = it->second.getValues();
@@ -246,12 +247,15 @@ class quantumSparseMatrix {
                     else {break;}
                 }
                 if(counter == vals.size()) {
-                   toDelete.push_back(it->first);
+                    toDelete.push_back(it->first);
                 }
             }
-            for(int i=0;i < toDelete.size(); i++) {
+            #pragma omp parallel for
+            for(int i = 0; i < toDelete.size(); i++) {
+                #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
+            #pragma omp barrier
         }
         int denseCapacity() {
             int c = 1;
