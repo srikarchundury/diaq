@@ -301,6 +301,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
         new_shape = new_tensor_shape;
     }
     std::map<int, diagonal> newDiagMap;
+    // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
@@ -428,6 +429,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
     std::map<int, diagonal> newDiagMap;
+    // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;

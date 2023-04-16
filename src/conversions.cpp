@@ -38,8 +38,13 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::map<int, diagonal> diagMap;
+    std::map<int, diagonal> diagMap;    
     quantumSparseMatrix qm(diagMap, &new_shape);
+    for(int i = -1 * qm.shape[0]; i < qm.shape[1]; i++) {
+        std::vector<std::complex<double> > vals(qm.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        qm.setDiagonal(i, newDiag);
+    }
     #pragma omp parallel
     for(int i=0; i < shape[0]; i++) {
         #pragma omp for
@@ -48,10 +53,9 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
             std::vector<int> pos{i, j};
             std::vector<int> d_pos = qm.getDiagonalPosition(pos);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
-            #pragma omp critical
+            // #pragma omp critical
             qm.setDiagonalElement(d_pos[0], d_pos[1], qm.getDiagonalLength(d_pos[0]), data[i * new_shape[1] + j]);
         }
-        // #pragma omp barrier
     }
     #pragma omp barrier
     qm.pruneMatrix();
