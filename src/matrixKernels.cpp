@@ -276,11 +276,55 @@ std::complex<double> trace(quantumSparseMatrix A) {
     return t;
 }
 
-quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> shape) {
-    // TODO: redo this without denseMatrix conversion in between.
-    // TODO: need to re-write for tensor_shape, instead of shape.
-    denseMatrix d = A.convertToDenseMatrix(shape);
-    return d.convertToQuantumSparse(shape);
+quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_shape) {
+    int old_product = 1;
+    for(int i=0; i < A.tensor_shape.size(); i++) old_product *= A.tensor_shape[i];
+    int new_product = 1;
+    for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
+    if(old_product != new_product) {
+        throw std::invalid_argument("cannot reshape into given shape");
+    }
+    int l = new_tensor_shape.size();
+    // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
+    std::vector<int> new_shape;
+    if(l > 2) {
+        std::vector<int> temp{1,1};
+        new_shape = temp;
+        int i = l / 2;
+        for(int r = 0; r<i ; r++) {
+            new_shape[0] = new_shape[0] * new_tensor_shape[r];
+        }
+        for(int r = i; r<l ; r++) {
+            new_shape[1] = new_shape[1] * new_tensor_shape[r];
+        }
+    } else {
+        new_shape = new_tensor_shape;
+    }
+    std::map<int, diagonal> newDiagMap;
+    quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
+    std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
+    std::map<int, diagonal>::iterator it;
+    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+        std::vector<std::complex<double> > vals = it->second.getValues();
+        for(int i = 0; i < vals.size(); i++) {
+            // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
+            // std::cout << "element = " << vals[i] << std::endl;
+            std::vector<int> ten_pos = A.getTensorPosition(it->first, i);
+            // std::cout << "tensor index = (";
+            // for(int i = 0; i < ten_pos.size()-1; i++) {
+            //     std::cout << ten_pos[i] << ",";
+            // }
+            // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
+
+            std::vector<int> d_pos = res.getDiagonalPositionByFlatIndex(A.getFlatIndex(ten_pos));
+            // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
+            int d_len = getDiagonalLength(d_pos[0], res.shape);
+            res.setDiagonalElement(d_pos[0], d_pos[1], d_len, vals[i]);
+            // std::cout << " -- " << std::endl;
+        }
+    }
+    res.pruneMatrix();
+    return res;
 }
 
 std::vector<int> newTensorShape(std::vector<int> tensor_shape_A, std::vector<int> tensor_shape_B, std::vector<int> axis_A, std::vector<int> axis_B) {
