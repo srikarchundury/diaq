@@ -182,13 +182,29 @@ class quantumSparseMatrix {
             }
             return ten_pos;
         }
+        std::vector<int> getDiagonalPositionByFlatIndex(int flatIndex) {
+            int mat_x = flatIndex / shape[1];
+            flatIndex = flatIndex - shape[1] * mat_x;
+            int mat_y = flatIndex % shape[1];
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
+            std::vector<int> res;
+            // diagonal index is just j - i
+            int d_idx = mat_y - mat_x;
+            res.push_back(d_idx);
+            // getting the position in that diagonal
+            if(d_idx <= 0) {
+                res.push_back(mat_y);
+            } else {
+                res.push_back(mat_y - d_idx);
+            }
+            return res;
+        } 
         int getFlatIndex(std::vector<int> ten_pos) {
             int total_elements = 1;
-            for(int i = 0;i<tensor_shape.size();i++)
+            for(int i = 0;i < tensor_shape.size(); i++)
                 total_elements = total_elements * tensor_shape[i];
             int flat_index = 0;
             int prod = 1;
-            int remaining;
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
@@ -203,15 +219,15 @@ class quantumSparseMatrix {
             int mat_x = flatIndex / shape[1];
             flatIndex = flatIndex - shape[1] * mat_x;
             int mat_y = flatIndex % shape[1];
-            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl; 
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
             std::vector<int> res;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;
             res.push_back(d_idx);
             // getting the position in that diagonal
-            if(d_idx <= 0){
+            if(d_idx <= 0) {
                 res.push_back(mat_y);
-            } else{
+            } else {
                 res.push_back(mat_y - d_idx);
             }
             return res;
