@@ -235,9 +235,12 @@ diagonal addElements(diagonal A, diagonal B) {
     if(valsA.size() != valsB.size() ) {
         throw std::invalid_argument("diagonals are of different lengths!");
     }
+    std::vector<std::complex<double> > valsC(valsA.size(), 0);
+    #pragma omp parallel for
     for(int i=0; i < valsA.size(); i++) {
-        valsA[i] = valsA[i] + valsB[i];
+        valsC[i] = valsA[i] + valsB[i];
     }
+    #pragma omp barrier
     return diagonal(A.getIndex(), &valsA);
 }
 
@@ -305,8 +308,14 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
+    for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        res.setDiagonal(i, newDiag);
+    }
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
+        #pragma omp parallel for
         for(int i = 0; i < vals.size(); i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -324,6 +333,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
             // std::cout << " -- " << std::endl;
         }
     }
+    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }
@@ -434,8 +444,14 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
+    for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        res.setDiagonal(i, newDiag);
+    }
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
+        #pragma omp parallel for
         for(int i = 0; i < vals.size(); i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -459,6 +475,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
             // std::cout << " -- " << std::endl;
         }
     }
+    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }
