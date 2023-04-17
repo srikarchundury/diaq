@@ -40,6 +40,7 @@ int getDiagonalLength(int dIndex, std::vector<int> shape) {
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
+    // TODO: SIMD: store these in __m128 vectors
     if(indexA + indexB >= shapeB[1]) {
         return diagonal(0);
     }
@@ -123,22 +124,34 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         }
     }
     int k = 0;
-    int jump_cpy = jump;
-    while(jump) {
-        res.addElement(0);
-        jump--;
-        k++;
+    // int jump_cpy = jump;
+    // while(jump) {
+    //     res.addElement(0);
+    //     jump--;
+    //     k++;
+    // }
+    if(jump != 0) {
+        k += jump;
+        std::vector<std::complex<double> > zeros(jump, 0);
+        res.addElements(zeros);
     }
-    // std::cout << k << std::endl;
+    // std::cout << k << " " << lenRes << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
-        res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
+    while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
+        res.addElement(valuesA[k + offsetA - jump] * valuesB[k + offsetB - jump]);
         k++;
     }
-    while(k < lenRes) {
-        res.addElement(0);
-        k++;
+    // std::cout << k << " " << lenRes << std::endl;
+    // while(k < lenRes) {
+    //     c++;
+    //     res.addElement(0);
+    //     k++;
+    // }
+    if(k < lenRes) {
+        std::vector<std::complex<double> > zeros2(lenRes-k, 0);
+        res.addElements(zeros2);
     }
+    // std::cout << "---" << std::endl;
     return res;
 }
 
