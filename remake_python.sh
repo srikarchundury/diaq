@@ -1,3 +1,3 @@
 rm -rf build/*
 rm -rf qsparse.egg-info
-pip install --no-cache-dir .
+CFLAGS="-O3 -fopenmp" pip install --no-cache-dir .
