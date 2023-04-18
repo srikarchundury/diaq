@@ -321,11 +321,15 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
+    #pragma omp parallel for
     for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+        // printf("Thread: %d\n", omp_get_thread_num());
         std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
         diagonal newDiag(i, &vals);
+        #pragma omp critical
         res.setDiagonal(i, newDiag);
     }
+    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
         #pragma omp parallel for
@@ -457,11 +461,14 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
+    #pragma omp parallel for
     for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
         std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
         diagonal newDiag(i, &vals);
+        #pragma omp critical
         res.setDiagonal(i, newDiag);
     }
+    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
         #pragma omp parallel for
