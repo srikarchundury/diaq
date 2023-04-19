@@ -282,7 +282,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     int new_product = 1;
     for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
-        // throw std::invalid_argument("cannot reshape into given shape");
+        throw std::invalid_argument("cannot reshape into given shape");
     }
     int l = new_tensor_shape.size();
     // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
