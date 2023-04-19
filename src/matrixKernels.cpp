@@ -277,9 +277,9 @@ std::complex<double> trace(quantumSparseMatrix A) {
 }
 
 quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_shape) {
-    int old_product = 1;
+    long int old_product = 1;
     for(int i=0; i < A.tensor_shape.size(); i++) old_product *= A.tensor_shape[i];
-    int new_product = 1;
+    long int new_product = 1;
     for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
         throw std::invalid_argument("cannot reshape into given shape");
