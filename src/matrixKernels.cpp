@@ -282,6 +282,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     long int new_product = 1;
     for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
+        std::cout << old_product << "!=" << new_product << std::endl;
         throw std::invalid_argument("cannot reshape into given shape");
     }
     int l = new_tensor_shape.size();
