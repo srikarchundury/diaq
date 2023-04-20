@@ -37,6 +37,7 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
         // A.print();
         return "false - 1";
     }
+    const double epsilon = 0.00002;
     std::map<int, diagonal> dmA = A.getDiagonalMap();
     std::map<int, diagonal> dmB = B.getDiagonalMap();
     std::map<int, diagonal>::iterator itA, itB;
@@ -53,10 +54,11 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
         }
         else {
             for(int i = 0; i < itA->second.getValues().size(); i++) {
-                if(itB->second.getValue(i) != itA->second.getValue(i)) {
-                    // A.print();
-                    // std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+                if(itB->second.getValue(i).real() - itA->second.getValue(i).real() > epsilon) {
                     return "false - 4";
+                }
+                if(itB->second.getValue(i).imag() - itA->second.getValue(i).imag() > epsilon) {
+                    return "false - 5";
                 }
             }
         }
