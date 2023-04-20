@@ -1,6 +1,27 @@
 #include "quantumSparseMatrix.hpp"
 #include "denseMatrix.hpp"
 
+// SIMD
+#include <immintrin.h>
+/* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
+__m128 load_partial(int n, float const *p) {
+    __m128 t1, t2, xmm;
+    switch (n) {
+    case 1:
+        xmm = _mm_load_ss(p); break;
+    case 2:
+        xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
+    case 3:
+        t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
+        t2 = _mm_load_ss(p + 2);
+        xmm = _mm_movelh_ps(t1, t2); break;
+    case 4:
+        xmm = _mm_loadu_ps(p); break;
+    default:
+        xmm = _mm_setzero_ps();
+    }
+    return xmm;
+}
 
 // ----------------------------------------------------------------
 //
@@ -123,21 +144,54 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         }
     }
     int k = 0;
-    int jump_cpy = jump;
-    while(jump) {
-        res.addElement(0);
-        jump--;
-        k++;
+    if(jump != 0) {
+        k += jump;
+        std::vector<std::complex<double> > zeros(jump, 0);
+        res.addElements(zeros);
     }
     // std::cout << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    while(k < lenRes && k + offsetA - jump_cpy < lenDiagA && k + offsetB - jump_cpy < lenDiagB) {
-        res.addElement(valuesA[k + offsetA - jump_cpy] * valuesB[k + offsetB - jump_cpy]);
-        k++;
+    // SIMD vectorization
+    int loop_count = 0;
+    int k_cpy = k;
+    while(k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        loop_count++;
+        k_cpy++;
     }
-    while(k < lenRes) {
-        res.addElement(0);
-        k++;
+    std::cout << "loop_count=" << loop_count << std::endl;
+    // while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
+    //     res.addElement(valuesA[k + offsetA - jump] * valuesB[k + offsetB - jump]);
+    //     k++;
+    // }
+    __m128 a, b; // a for valuesA and b for valuesB
+    int left_overs = loop_count - ((loop_count / 4) * 4);
+    float *real_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
+    float *imag_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
+    float *real_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
+    float *imag_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
+    #pragma omp parallel
+    #pragma omp for
+    for(int i=0; i < valuesA.size(); i++) {
+        real_vals_a[i] = valuesA[i].real();
+        imag_vals_a[i] = valuesA[i].imag();
+    }
+    #pragma omp for
+    for(int i=0; i < valuesB.size(); i++) {
+        real_vals_b[i] = valuesB[i].real();
+        imag_vals_b[i] = valuesB[i].imag();
+    }
+    #pragma omp barrier
+    while(k < loop_count) {
+        a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
+        b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
+        res.addElements();
+        k += 4;
+    }
+    // partial load left_overs
+    // TODO
+    if(k < lenRes) {
+        std::vector<std::complex<double> > zeros2(lenRes-k, 0);
+        res.addElements(zeros2);
     }
     return res;
 }
