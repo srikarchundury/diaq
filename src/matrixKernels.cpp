@@ -149,7 +149,7 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         std::vector<std::complex<double> > zeros(jump, 0);
         res.addElements(zeros);
     }
-    // std::cout << k << std::endl;
+    // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
     // SIMD vectorization
     int loop_count = 0;
@@ -158,37 +158,82 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         loop_count++;
         k_cpy++;
     }
-    std::cout << "loop_count=" << loop_count << std::endl;
+    // std::cout << "loop_count=" << loop_count << std::endl;
     // while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
     //     res.addElement(valuesA[k + offsetA - jump] * valuesB[k + offsetB - jump]);
     //     k++;
     // }
-    __m128 a, b; // a for valuesA and b for valuesB
+    __m128 real_a, real_b; // a for valuesA and b for valuesB
+    __m128 imag_a, imag_b; // a for valuesA and b for valuesB
+    __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
     int left_overs = loop_count - ((loop_count / 4) * 4);
+    int vec_loop = (loop_count / 4);
+    int left_overs_start_at_A = k + offsetA - jump + 4*(loop_count / 4);
+    int left_overs_start_at_B = k + offsetB - jump + 4*(loop_count / 4);
+    // std::cout << "left_overs=" << left_overs << std::endl;
+    // std::cout << "left_overs_start_at_A=" << left_overs_start_at_A << std::endl;
+    // std::cout << "left_overs_start_at_B=" << left_overs_start_at_B << std::endl;
     float *real_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
     float *imag_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
     float *real_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
     float *imag_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
-    #pragma omp parallel
-    #pragma omp for
     for(int i=0; i < valuesA.size(); i++) {
         real_vals_a[i] = valuesA[i].real();
         imag_vals_a[i] = valuesA[i].imag();
     }
-    #pragma omp for
     for(int i=0; i < valuesB.size(); i++) {
         real_vals_b[i] = valuesB[i].real();
         imag_vals_b[i] = valuesB[i].imag();
     }
-    #pragma omp barrier
-    while(k < loop_count) {
-        a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
-        b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
-        res.addElements();
+    while(vec_loop--) {
+        // std::cout << "loop k=" << k << std::endl;
+        real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
+        imag_a = _mm_loadu_ps(&imag_vals_a[k + offsetA - jump]);
+        real_b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
+        imag_b = _mm_loadu_ps(&imag_vals_b[k + offsetB - jump]);
+        // Using SIMD intrinsics to multiply
+        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
+        real_reala_realb = _mm_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
+        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
+        // Storing back to res diagonal - TODO: find a better way to do this.
+        // quick thought: Change the entire diagonal class to store 2 different arrays for real and imag.
+        std::vector<std::complex<double> > diag_values(4, 0);
+        for(int i = 0; i < 4; i++) {
+            diag_values[i] = std::complex<double>(real_res[i], imag_res[i]);
+        }
+        res.addElements(diag_values);
+        // std::cout << "after 4 " << std::endl;
+        // res.print();
         k += 4;
     }
-    // partial load left_overs
-    // TODO
+    if(left_overs != 0) {
+        // std::cout << "partial k=" << k << std::endl;
+        // partial load left_overs
+        real_a = load_partial(left_overs, &real_vals_a[left_overs_start_at_A]);
+        imag_a = load_partial(left_overs, &imag_vals_a[left_overs_start_at_A]);
+        real_b = load_partial(left_overs, &real_vals_b[left_overs_start_at_B]);
+        imag_b = load_partial(left_overs, &imag_vals_b[left_overs_start_at_B]);
+        // Using SIMD intrinsics to multiply
+        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real)
+        real_reala_realb = _mm_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
+        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
+        // Storing back to res diagonal - TODO: find a better way to do this.
+        // quick thought: Change the entire diagonal class to store 2 different arrays for real and imag.
+        std::vector<std::complex<double> > diag_values(left_overs, 0);
+        for(int i = 0; i < left_overs; i++) {
+            diag_values[i] = std::complex<double>(real_res[i], imag_res[i]);
+        }
+        res.addElements(diag_values);
+        k += left_overs;
+    }
     if(k < lenRes) {
         std::vector<std::complex<double> > zeros2(lenRes-k, 0);
         res.addElements(zeros2);
