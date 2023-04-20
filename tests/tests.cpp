@@ -1385,24 +1385,12 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         std::vector<int> dims{8,8};
         quantumSparseMatrix q_B8 = B8.convertToQuantumSparse(dims);
-        q_B8.tensor_shape = std::vector<int>{4,2,8};
         q_B8.print();
         std::cout << " -- " << std::endl;
 
         std::vector<int> new_dims{4,16};
         quantumSparseMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
-        reshaped_q_B8.tensor_shape = std::vector<int>{2,2,2,4,2};
         reshaped_q_B8.print();
-        std::cout << " -- " << std::endl;
-
-        reshaped_q_B8.convertToDenseMatrix(reshaped_q_B8.shape).print();
-        std::cout << " -- " << std::endl;
-
-        std::vector<int> axes_1{0,1};
-        std::vector<int> axes_2{3,4};
-        std::vector<std::vector<int> > axes{axes_1, axes_2};
-        quantumSparseMatrix res = tensordot(q_B8, reshaped_q_B8, axes);
-        res.print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "2") == 0) {

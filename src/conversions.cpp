@@ -1,5 +1,7 @@
 #include "denseMatrix.hpp"
 
+#include <omp.h>
+
 denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape) {
     std::vector<std::complex<double>> data(denseCapacity());
     std::map<int, diagonal>::iterator it;
@@ -36,15 +38,26 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::map<int, diagonal> diagMap;
+    std::map<int, diagonal> diagMap;    
     quantumSparseMatrix qm(diagMap, &new_shape);
+    for(int i = -1 * qm.shape[0]; i < qm.shape[1]; i++) {
+        std::vector<std::complex<double> > vals(qm.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        qm.setDiagonal(i, newDiag);
+    }
+    #pragma omp parallel
     for(int i=0; i < shape[0]; i++) {
+        #pragma omp for
         for(int j=0; j < shape[1]; j++) {
-            int diagIndx = getTargetDiagIndex_onlydiags(i, j);
-            // std::cout << "(" << i << "," << j << ")" << " " << diagIndx << std::endl;
-            qm.addToDiagonal(diagIndx, data[i * new_shape[1] + j]);
+            //  std::cout << "In thread: " << omp_get_thread_num() << std::endl;
+            std::vector<int> pos{i, j};
+            std::vector<int> d_pos = qm.getDiagonalPosition(pos);
+            // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
+            // #pragma omp critical
+            qm.setDiagonalElement(d_pos[0], d_pos[1], qm.getDiagonalLength(d_pos[0]), data[i * new_shape[1] + j]);
         }
     }
+    #pragma omp barrier
     qm.pruneMatrix();
     qm.tensor_shape = tensor_shape;
     return qm;
@@ -67,12 +80,15 @@ quantumSparseMatrix from_numpy(std::vector<std::complex<double>> vals, std::vect
         l = shape.size();
         std::vector<int> new_shape{1,1};
         int i = l / 2;
-        for(int r = 0; r<i ; r++) {
+        #pragma omp parallel for
+        for(int r = 0; r < i ; r++) {
             new_shape[0] = new_shape[0] * shape[r];
         }
-        for(int r = i; r<l ; r++) {
+        #pragma omp parallel for
+        for(int r = i; r < l ; r++) {
             new_shape[1] = new_shape[1] * shape[r];
         }
+        #pragma omp barrier
         return denseMatrix(&new_shape, vals, &orig_shape).convertToQuantumSparse(new_shape);
     }
     else {

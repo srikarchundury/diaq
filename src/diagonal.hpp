@@ -26,6 +26,10 @@ class diagonal {
             values.push_back(value);
             return true;
         }
+        bool addElements(std::vector<std::complex<double> > vals) {
+            values.insert(values.end(), vals.begin(), vals.end());
+            return true;
+        }
         void setValue(int i, std::complex<double> val) {
             // std::cout << "there" << std::endl;
             values[i] = val;
