@@ -20,12 +20,14 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
             x = -1 * it->first;
             y = 0;
         }
+        #pragma omp parallel for
         for (int i = 0; i < vals.size(); i++) {
             data[ shape[1] * x + y ] = vals[i];
             x++;
             y++;
         }
     }
+    #pragma omp barrier
     denseMatrix d(&new_shape, data);
     d.tensor_shape = tensor_shape;
     return d;
@@ -40,15 +42,17 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     // std::cout << "converting dense to sparse" << std::endl;
     std::map<int, diagonal> diagMap;    
     quantumSparseMatrix qm(diagMap, &new_shape);
+    #pragma omp parallel for
     for(int i = -1 * qm.shape[0]; i < qm.shape[1]; i++) {
         std::vector<std::complex<double> > vals(qm.getDiagonalLength(i), 0);
         diagonal newDiag(i, &vals);
+        #pragma omp critical
         qm.setDiagonal(i, newDiag);
     }
-    #pragma omp parallel
-    for(int i=0; i < shape[0]; i++) {
+    #pragma omp barrier
+    for(int i = 0; i < shape[0]; i++) {
         #pragma omp for
-        for(int j=0; j < shape[1]; j++) {
+        for(int j = 0; j < shape[1]; j++) {
             //  std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<int> pos{i, j};
             std::vector<int> d_pos = qm.getDiagonalPosition(pos);
@@ -80,15 +84,14 @@ quantumSparseMatrix from_numpy(std::vector<std::complex<double>> vals, std::vect
         l = shape.size();
         std::vector<int> new_shape{1,1};
         int i = l / 2;
-        #pragma omp parallel for
+        #pragma unroll
         for(int r = 0; r < i ; r++) {
             new_shape[0] = new_shape[0] * shape[r];
         }
-        #pragma omp parallel for
+        #pragma unroll
         for(int r = i; r < l ; r++) {
             new_shape[1] = new_shape[1] * shape[r];
         }
-        #pragma omp barrier
         return denseMatrix(&new_shape, vals, &orig_shape).convertToQuantumSparse(new_shape);
     }
     else {
