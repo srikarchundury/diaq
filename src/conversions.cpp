@@ -51,9 +51,9 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     }
     #pragma omp barrier
     for(int i = 0; i < shape[0]; i++) {
-        #pragma omp for
+        #pragma omp parallel for
         for(int j = 0; j < shape[1]; j++) {
-            //  std::cout << "In thread: " << omp_get_thread_num() << std::endl;
+            // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<int> pos{i, j};
             std::vector<int> d_pos = qm.getDiagonalPosition(pos);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
