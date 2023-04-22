@@ -4,6 +4,8 @@
 #include "diagonal.hpp"
 #include <map>
 #include <numeric>
+#include <omp.h>
+
 
 class denseMatrix; // telling this class exists w/o defining it here
 
@@ -180,13 +182,29 @@ class quantumSparseMatrix {
             }
             return ten_pos;
         }
+        std::vector<int> getDiagonalPositionByFlatIndex(int flatIndex) {
+            int mat_x = flatIndex / shape[1];
+            flatIndex = flatIndex - shape[1] * mat_x;
+            int mat_y = flatIndex % shape[1];
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
+            std::vector<int> res;
+            // diagonal index is just j - i
+            int d_idx = mat_y - mat_x;
+            res.push_back(d_idx);
+            // getting the position in that diagonal
+            if(d_idx <= 0) {
+                res.push_back(mat_y);
+            } else {
+                res.push_back(mat_y - d_idx);
+            }
+            return res;
+        } 
         int getFlatIndex(std::vector<int> ten_pos) {
             int total_elements = 1;
-            for(int i = 0;i<tensor_shape.size();i++)
+            for(int i = 0;i < tensor_shape.size(); i++)
                 total_elements = total_elements * tensor_shape[i];
             int flat_index = 0;
             int prod = 1;
-            int remaining;
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
@@ -201,22 +219,42 @@ class quantumSparseMatrix {
             int mat_x = flatIndex / shape[1];
             flatIndex = flatIndex - shape[1] * mat_x;
             int mat_y = flatIndex % shape[1];
-            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl; 
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
             std::vector<int> res;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;
             res.push_back(d_idx);
             // getting the position in that diagonal
-            if(d_idx <= 0){
+            if(d_idx <= 0) {
                 res.push_back(mat_y);
-            } else{
+            } else {
                 res.push_back(mat_y - d_idx);
             }
             return res;
         }
+        int getDiagonalLength(int dIndex) {
+            // std::cout << "diag_Index = " << dIndex << " ";
+            int lenRes;
+            if(dIndex < 0) {
+                lenRes = shape[0] + dIndex;
+            } else if(dIndex > 0) {
+                lenRes = shape[1] - dIndex;
+            }  else {
+                lenRes = (shape[0] > shape[1])?shape[1]:shape[0];
+            }
+            if (lenRes > shape[0]) {
+                lenRes = shape[0];
+            }
+            else if(lenRes > shape[1]) {
+                lenRes = shape[1];
+            }
+            // std::cout << "lenRes = " << lenRes << std::endl;
+            return lenRes;
+        }
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
+            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
                 std::vector<std::complex<double> > vals = it->second.getValues();
@@ -225,12 +263,15 @@ class quantumSparseMatrix {
                     else {break;}
                 }
                 if(counter == vals.size()) {
-                   toDelete.push_back(it->first);
+                    toDelete.push_back(it->first);
                 }
             }
-            for(int i=0;i < toDelete.size(); i++) {
+            #pragma omp parallel for
+            for(int i = 0; i < toDelete.size(); i++) {
+                #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
+            #pragma omp barrier
         }
         int denseCapacity() {
             int c = 1;
