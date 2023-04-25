@@ -20,7 +20,7 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
             x = -1 * it->first;
             y = 0;
         }
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (int i = 0; i < vals.size(); i++) {
             data[ shape[1] * x + y ] = vals[i];
             x++;
