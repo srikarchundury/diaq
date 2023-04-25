@@ -4,6 +4,8 @@
 #include "diagonal.hpp"
 #include <map>
 #include <numeric>
+#include <omp.h>
+
 
 class denseMatrix; // telling this class exists w/o defining it here
 
@@ -230,9 +232,29 @@ class quantumSparseMatrix {
             }
             return res;
         }
+        int getDiagonalLength(int dIndex) {
+            // std::cout << "diag_Index = " << dIndex << " ";
+            int lenRes;
+            if(dIndex < 0) {
+                lenRes = shape[0] + dIndex;
+            } else if(dIndex > 0) {
+                lenRes = shape[1] - dIndex;
+            }  else {
+                lenRes = (shape[0] > shape[1])?shape[1]:shape[0];
+            }
+            if (lenRes > shape[0]) {
+                lenRes = shape[0];
+            }
+            else if(lenRes > shape[1]) {
+                lenRes = shape[1];
+            }
+            // std::cout << "lenRes = " << lenRes << std::endl;
+            return lenRes;
+        }
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
+            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
                 std::vector<std::complex<double> > vals = it->second.getValues();
@@ -241,12 +263,15 @@ class quantumSparseMatrix {
                     else {break;}
                 }
                 if(counter == vals.size()) {
-                   toDelete.push_back(it->first);
+                    toDelete.push_back(it->first);
                 }
             }
-            for(int i=0;i < toDelete.size(); i++) {
+            #pragma omp parallel for
+            for(int i = 0; i < toDelete.size(); i++) {
+                #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
+            #pragma omp barrier
         }
         int denseCapacity() {
             int c = 1;

@@ -61,6 +61,7 @@ int getDiagonalLength(int dIndex, std::vector<int> shape) {
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     std::vector<std::complex<double> > valuesA = diagA.getValues();
     std::vector<std::complex<double> > valuesB = diagB.getValues();
+    // TODO: SIMD: store these in __m128 vectors
     if(indexA + indexB >= shapeB[1]) {
         return diagonal(0);
     }
@@ -238,6 +239,7 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         std::vector<std::complex<double> > zeros2(lenRes-k, 0);
         res.addElements(zeros2);
     }
+    // std::cout << "---" << std::endl;
     return res;
 }
 
@@ -334,9 +336,12 @@ diagonal addElements(diagonal A, diagonal B) {
     if(valsA.size() != valsB.size() ) {
         throw std::invalid_argument("diagonals are of different lengths!");
     }
+    std::vector<std::complex<double> > valsC(valsA.size(), 0);
+    #pragma omp parallel for
     for(int i=0; i < valsA.size(); i++) {
-        valsA[i] = valsA[i] + valsB[i];
+        valsC[i] = valsA[i] + valsB[i];
     }
+    #pragma omp barrier
     return diagonal(A.getIndex(), &valsA);
 }
 
@@ -401,11 +406,22 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
         new_shape = new_tensor_shape;
     }
     std::map<int, diagonal> newDiagMap;
+    // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
+    #pragma omp parallel for
+    for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+        // printf("Thread: %d\n", omp_get_thread_num());
+        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        #pragma omp critical
+        res.setDiagonal(i, newDiag);
+    }
+    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
+        #pragma omp parallel for
         for(int i = 0; i < vals.size(); i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -423,6 +439,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
             // std::cout << " -- " << std::endl;
         }
     }
+    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }
@@ -528,12 +545,22 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
     std::map<int, diagonal> newDiagMap;
+    // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
+    #pragma omp parallel for
+    for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
+        diagonal newDiag(i, &vals);
+        #pragma omp critical
+        res.setDiagonal(i, newDiag);
+    }
+    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         std::vector<std::complex<double> > vals = it->second.getValues();
+        #pragma omp parallel for
         for(int i = 0; i < vals.size(); i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -557,6 +584,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
             // std::cout << " -- " << std::endl;
         }
     }
+    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }
