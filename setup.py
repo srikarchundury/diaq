@@ -15,11 +15,13 @@ __version__ = "0.0.1"
 #   reproducible builds (https://github.com/pybind/python_example/pull/53)
 
 ext_modules = [
-    Pybind11Extension("qsparse",
+    Pybind11Extension(
+        "qsparse",
         ["include/pythonWrappers.cpp"],
-        # Example: passing in the version to the compiled code
         define_macros = [('VERSION_INFO', __version__)],
-        ),
+        extra_compile_args=["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"],
+        extra_link_args=['-lgomp'],
+    ),
 ]
 
 setup(
