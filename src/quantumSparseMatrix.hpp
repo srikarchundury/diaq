@@ -266,12 +266,12 @@ class quantumSparseMatrix {
                     toDelete.push_back(it->first);
                 }
             }
-            #pragma omp parallel for
+            // #pragma omp parallel for
             for(int i = 0; i < toDelete.size(); i++) {
-                #pragma omp critical
+                // #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
-            #pragma omp barrier
+            // #pragma omp barrier
         }
         int denseCapacity() {
             int c = 1;
