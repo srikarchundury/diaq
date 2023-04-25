@@ -141,12 +141,6 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         res.addElement(valuesA[k + offsetA - jump] * valuesB[k + offsetB - jump]);
         k++;
     }
-    // std::cout << k << " " << lenRes << std::endl;
-    // while(k < lenRes) {
-    //     c++;
-    //     res.addElement(0);
-    //     k++;
-    // }
     if(k < lenRes) {
         std::vector<std::complex<double> > zeros2(lenRes-k, 0);
         res.addElements(zeros2);
@@ -298,6 +292,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     int new_product = 1;
     for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
+        std::cout << old_product << "!=" << new_product << std::endl;
         throw std::invalid_argument("cannot reshape into given shape");
     }
     int l = new_tensor_shape.size();
