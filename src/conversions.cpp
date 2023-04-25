@@ -27,7 +27,6 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
             y++;
         }
     }
-    #pragma omp barrier
     denseMatrix d(&new_shape, data);
     d.tensor_shape = tensor_shape;
     return d;
