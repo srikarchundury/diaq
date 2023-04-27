@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A6(8, a6);
-    float a6[64] = {
+    float b6[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,1,0,0,
     };
-    denseMatrix B6(8, a6);
+    denseMatrix B6(8, b6);
     std::vector<denseMatrix> testCase6;
     testCase6.push_back(A6);
     testCase6.push_back(B6);
