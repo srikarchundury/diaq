@@ -22,6 +22,11 @@ __m128 load_partial(int n, float const *p) {
     }
     return xmm;
 }
+void store_partial(int n, float *loc, __m128 vec) {
+    for(int i = 0; i < n; i++){
+        loc[i] = vec[i];
+    }
+}
 
 // ----------------------------------------------------------------
 //
@@ -59,21 +64,18 @@ int getDiagonalLength(int dIndex, std::vector<int> shape) {
     return lenRes;
 }
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
-    std::vector<std::complex<double> > valuesA = diagA.getValues();
-    std::vector<std::complex<double> > valuesB = diagB.getValues();
-    // TODO: SIMD: store these in __m128 vectors
     if(indexA + indexB >= shapeB[1]) {
         return diagonal(0);
     }
     else if(indexA + indexB <= -1 * shapeA[0]) {
         return diagonal(0);
     }
-    diagonal res(indexA + indexB);
-    int lenDiagA = diagA.getSize();
-    int lenDiagB = diagB.getSize();
+    int lenDiagA = diagA.dLength;
+    int lenDiagB = diagB.dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
     std::vector<int> res_dims{shapeA[0], shapeB[1]};
     int lenRes = getDiagonalLength(indexA + indexB, res_dims);
+    diagonal res(indexA + indexB, lenRes);
     // std::cout << "diagonal length = " << lenRes << std::endl;
     int offsetA = abs(indexA);
     int offsetB = abs(indexB);
@@ -147,8 +149,6 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
     int k = 0;
     if(jump != 0) {
         k += jump;
-        std::vector<std::complex<double> > zeros(jump, 0);
-        res.addElements(zeros);
     }
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
@@ -174,18 +174,13 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
     // std::cout << "left_overs=" << left_overs << std::endl;
     // std::cout << "left_overs_start_at_A=" << left_overs_start_at_A << std::endl;
     // std::cout << "left_overs_start_at_B=" << left_overs_start_at_B << std::endl;
-    float *real_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
-    float *imag_vals_a = (float *)malloc(sizeof(float) * lenDiagA);
-    float *real_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
-    float *imag_vals_b = (float *)malloc(sizeof(float) * lenDiagB);
-    for(int i=0; i < valuesA.size(); i++) {
-        real_vals_a[i] = valuesA[i].real();
-        imag_vals_a[i] = valuesA[i].imag();
-    }
-    for(int i=0; i < valuesB.size(); i++) {
-        real_vals_b[i] = valuesB[i].real();
-        imag_vals_b[i] = valuesB[i].imag();
-    }
+    float *real_vals_a = diagA.getRealValues();
+    float *imag_vals_a = diagA.getImagValues();
+    float *real_vals_b = diagB.getRealValues();
+    float *imag_vals_b = diagB.getImagValues();
+
+    float *real_vals_final = res.getRealValues();
+    float *imag_vals_final = res.getImagValues();
     while(vec_loop--) {
         // std::cout << "loop k=" << k << std::endl;
         real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
@@ -200,13 +195,9 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
         imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
         imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-        // Storing back to res diagonal - TODO: find a better way to do this.
-        // quick thought: Change the entire diagonal class to store 2 different arrays for real and imag.
-        std::vector<std::complex<double> > diag_values(4, 0);
-        for(int i = 0; i < 4; i++) {
-            diag_values[i] = std::complex<double>(real_res[i], imag_res[i]);
-        }
-        res.addElements(diag_values);
+        // Storing back to res diagonal
+        store_partial(4, &real_vals_final[k], real_res);
+        store_partial(4, &imag_vals_final[k], imag_res);
         // std::cout << "after 4 " << std::endl;
         // res.print();
         k += 4;
@@ -219,27 +210,20 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         real_b = load_partial(left_overs, &real_vals_b[left_overs_start_at_B]);
         imag_b = load_partial(left_overs, &imag_vals_b[left_overs_start_at_B]);
         // Using SIMD intrinsics to multiply
-        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real)
+        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
         real_reala_realb = _mm_mul_ps(real_a, real_b);
         real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
         real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
         imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
         imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
         imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-        // Storing back to res diagonal - TODO: find a better way to do this.
-        // quick thought: Change the entire diagonal class to store 2 different arrays for real and imag.
-        std::vector<std::complex<double> > diag_values(left_overs, 0);
-        for(int i = 0; i < left_overs; i++) {
-            diag_values[i] = std::complex<double>(real_res[i], imag_res[i]);
-        }
-        res.addElements(diag_values);
+        // Storing back to res diagonal
+        store_partial(left_overs, &real_vals_final[k], real_res);
+        store_partial(left_overs, &imag_vals_final[k], imag_res);
         k += left_overs;
     }
-    if(k < lenRes) {
-        std::vector<std::complex<double> > zeros2(lenRes-k, 0);
-        res.addElements(zeros2);
-    }
     // std::cout << "---" << std::endl;
+    // res.setElements(real_vals_final, imag_vals_final);
     return res;
 }
 
@@ -271,7 +255,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
             diagonal diagNew = multiplyDiagonals(A.shape, B.shape, itA->first, itB->first, itA->second, itB->second);
-            if(diagNew.getValues().size() != 0 && !diagNew.isEmpty()) {
+            if(diagNew.dLength != 0 && !diagNew.isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
@@ -306,15 +290,13 @@ denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
-    std::vector<std::complex<double>> resArray;
-    for(int i = 0; i < shape_a[0] * shape_b[1]; i++) {
-        resArray.push_back(0);
-    }
+    float *real_res = (float *)calloc(shape_a[0] * shape_b[1], sizeof(float));
+    float *imag_res = (float *)calloc(shape_a[0] * shape_b[1], sizeof(float));
     std::vector<int> d{A.shape[0], B.shape[1]};
-    denseMatrix result(&d, resArray);
+    denseMatrix result(&d, real_res, imag_res);
     for(int i = 0; i < shape_a[0]; i++) {
         for(int k = 0; k < shape_b[1]; k++) {
-            std::complex<double> res = 0.0;
+            std::complex<float> res = 0.0;
             for(int j = 0; j < shape_b[0]; j++) {
                 res += A.get(i, j) * B.get(j, k);
             }
@@ -331,18 +313,21 @@ denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
 * @return quantumSparseMatrix C
 */
 diagonal addElements(diagonal A, diagonal B) {
-    std::vector<std::complex<double> > valsA = A.getValues();
-    std::vector<std::complex<double> > valsB = B.getValues();
-    if(valsA.size() != valsB.size() ) {
+    float *real_valsA = A.getRealValues();
+    float *imag_valsA = A.getImagValues();
+    float *real_valsB = B.getRealValues();
+    float *imag_valsB = B.getImagValues();
+    if(A.dLength != B.dLength ) {
         throw std::invalid_argument("diagonals are of different lengths!");
     }
-    std::vector<std::complex<double> > valsC(valsA.size(), 0);
+    float *real_valsC = (float *)calloc(A.dLength, sizeof(float));
+    float *imag_valsC = (float *)calloc(A.dLength, sizeof(float));
     #pragma omp parallel for
-    for(int i=0; i < valsA.size(); i++) {
-        valsC[i] = valsA[i] + valsB[i];
+    for(int i=0; i < A.dLength; i++) {
+        real_valsC[i] = real_valsA[i] + real_valsB[i];
+        imag_valsC[i] = imag_valsA[i] + imag_valsB[i];
     }
-    #pragma omp barrier
-    return diagonal(A.getIndex(), &valsA);
+    return diagonal(A.dIndex, A.dLength, real_valsC, imag_valsC);
 }
 
 quantumSparseMatrix add(quantumSparseMatrix A, quantumSparseMatrix B) {
@@ -366,8 +351,8 @@ quantumSparseMatrix add(quantumSparseMatrix A, quantumSparseMatrix B) {
 }
 
 
-std::complex<double> trace(quantumSparseMatrix A) {
-    std::complex<double> t;
+std::complex<float> trace(quantumSparseMatrix A) {
+    std::complex<float> t;
     std::map<int, diagonal>::iterator itA;
     std::map<int, diagonal> mapA = A.getDiagonalMap();
     itA = mapA.find(0);
@@ -410,19 +395,14 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
-    #pragma omp parallel for
     for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
         // printf("Thread: %d\n", omp_get_thread_num());
-        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
-        diagonal newDiag(i, &vals);
-        #pragma omp critical
-        res.setDiagonal(i, newDiag);
+        res.createDiagonal(i);
     }
-    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        std::vector<std::complex<double> > vals = it->second.getValues();
-        #pragma omp parallel for
-        for(int i = 0; i < vals.size(); i++) {
+        float *real_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getRealValues();
+        for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
             std::vector<int> ten_pos = A.getTensorPosition(it->first, i);
@@ -435,11 +415,10 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
             std::vector<int> d_pos = res.getDiagonalPositionByFlatIndex(A.getFlatIndex(ten_pos));
             // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
             int d_len = getDiagonalLength(d_pos[0], res.shape);
-            res.setDiagonalElement(d_pos[0], d_pos[1], d_len, vals[i]);
+            res.setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
             // std::cout << " -- " << std::endl;
         }
     }
-    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }
@@ -550,18 +529,13 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // iterate over all diagonals
     std::map<int, diagonal>::iterator it;
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
-    #pragma omp parallel for
     for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
-        std::vector<std::complex<double> > vals(res.getDiagonalLength(i), 0);
-        diagonal newDiag(i, &vals);
-        #pragma omp critical
-        res.setDiagonal(i, newDiag);
+        res.createDiagonal(i);
     }
-    #pragma omp barrier
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        std::vector<std::complex<double> > vals = it->second.getValues();
-        #pragma omp parallel for
-        for(int i = 0; i < vals.size(); i++) {
+        float *real_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getRealValues();
+        for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
             std::vector<int> ten_pos = A.getTensorPosition(it->first, i);
@@ -580,11 +554,10 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
             std::vector<int> d_pos = res.getDiagonalPosition(new_ten_pos);
             // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
             int d_len = getDiagonalLength(d_pos[0], new_shape);
-            res.setDiagonalElement(d_pos[0], d_pos[1], d_len, vals[i]);
+            res.setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
             // std::cout << " -- " << std::endl;
         }
     }
-    #pragma omp barrier
     res.pruneMatrix();
     return res;
 }

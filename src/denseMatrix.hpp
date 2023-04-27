@@ -15,28 +15,55 @@ class denseMatrix {
     public:
         std::vector<int> shape;
         std::vector<int> tensor_shape;
-        denseMatrix(const int s, std::vector<std::complex<double>> array) {
-            size = s;
-            data = array;
+        int size;
+        denseMatrix(const int s, float *real_data) {
+            size = s*s;
+            realData = real_data;
+            imagData = (float *)calloc(size, sizeof(float));
             shape.push_back(s);
             shape.push_back(s);
             tensor_shape.push_back(s);
             tensor_shape.push_back(s);
         }
-        denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array) {
-            data = array;
+        denseMatrix(const int s, float *real_data, float *imag_data) {
+            size = s*s;
+            realData = real_data;
+            imagData = imag_data;
+            shape.push_back(s);
+            shape.push_back(s);
+            tensor_shape.push_back(s);
+            tensor_shape.push_back(s);
+        }
+        denseMatrix(std::vector<int> *d, float *real_data) {
             shape = *d;
-            size = shape[0];
+            size = shape[0] * shape[1];
+            realData = real_data;
+            imagData = (float *)calloc(size, sizeof(float));
             tensor_shape = *d;
         }
-        denseMatrix(std::vector<int> *d, std::vector<std::complex<double>> array, std::vector<int> *ts) {
-            data = array;
+        denseMatrix(std::vector<int> *d, float *real_data, float *imag_data) {
+            realData = real_data;
+            imagData = imag_data;
             shape = *d;
-            size = shape[0];
+            size = shape[0] * shape[1];
+            tensor_shape = *d;
+        }
+        denseMatrix(std::vector<int> *d, float *real_data, float *imag_data, std::vector<int> *ts) {
+            realData = real_data;
+            imagData = imag_data;
+            shape = *d;
+            size = shape[0] * shape[1];
             tensor_shape = *ts;
         }
-        std::vector<std::complex<double> > getData() {
-            return data;
+        std::complex<float> *getData() {
+            std::complex<float> *res = (std::complex<float> *)malloc(size * sizeof(std::complex<float>));
+            for(int i = 0; i < size; i++) {
+                res[i] = std::complex<float>{realData[i], imagData[i]};
+            }
+            return res;
+        }
+        float *getRealData() {
+            return realData;
         }
         int getFlatIndex(std::vector<int> ten_pos) {
             int flat_index = 0;
@@ -44,21 +71,24 @@ class denseMatrix {
             int remaining;
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
-                flat_index = flat_index + (data.size() / prod) * ten_pos[i];
+                flat_index = flat_index + (size / prod) * ten_pos[i];
             }
             return flat_index;
         }
-        std::complex<double> getItem(std::vector<int> ten_pos) {
-            return data[getFlatIndex(ten_pos)];
+        std::complex<float> getItem(std::vector<int> ten_pos) {
+            std::complex<float> ans{realData[getFlatIndex(ten_pos)], imagData[getFlatIndex(ten_pos)]};
+            return ans;
         }
         int getSize() {
             return size;
         }
-        void set(int i, int j, std::complex<double> val) {
-            data[shape[1] * i + j] = val;
+        void set(int i, int j, std::complex<float> val) {
+            realData[shape[1] * i + j] = val.real();
+            imagData[shape[1] * i + j] = val.imag();
         }
-        std::complex<double> get(int i, int j) {
-            return data[shape[1] * i + j];
+        std::complex<float> get(int i, int j) {
+            std::complex<float> ans{realData[shape[1] * i + j], imagData[shape[1] * i + j]};
+            return ans;
         }
         void print() {
             std::cout << "matrix_shape (";
@@ -71,12 +101,12 @@ class denseMatrix {
                 std::cout << tensor_shape[i] << ",";
             }
             std::cout << tensor_shape[tensor_shape.size()-1] << ")" << std::endl;
-            for (int i = 0; i < data.size(); i++) {
+            for (int i = 0; i < size; i++) {
                 if((i+1)%shape[1] == 0) {
-                    std::cout << data[i] << std::endl;
+                    std::cout << "(" << realData[i] << "," << imagData[i] << ")" << std::endl;
                 }
                 else {
-                    std::cout << data[i] << ",";
+                    std::cout << "(" << realData[i] << "," << imagData[i] << ")" << ",";
                 }
             }
         }
@@ -89,12 +119,12 @@ class denseMatrix {
         }
         float sparsity() {
             int z = 0;
-            for(int i = 0; i < data.size(); i++) {
-                if(data[i] == 0.0) {
+            for(int i = 0; i < size; i++) {
+                if(realData[i] == 0.0 && imagData[i] == 0.0) {
                     z++;
                 }
             }
-            return ((float)z/(float)data.size()) * 100;
+            return ((float)z/(float)size) * 100;
         }
         // currently un-used!
         // given a point in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
@@ -124,17 +154,10 @@ class denseMatrix {
         int getTargetDiagIndex_onlydiags(int i, int j) {
             return j-i;
         }
-        int denseCapacity() {
-            int c = 1;
-            for(int i = 0; i < shape.size(); i++) {
-                c = c * shape[i];
-            }
-            return c;
-        }
         quantumSparseMatrix convertToQuantumSparse(std::vector<int> new_shape);
     private:
-        int size;
-        std::vector<std::complex<double>> data;
+        float *realData;
+        float *imagData;
 };
 
 #endif // SPARSE_TNQS_DENSEMATRIX_HPP

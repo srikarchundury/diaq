@@ -6,26 +6,6 @@
 #include "../include/qSparse.hpp"
 
 
-std::map<int, diagonal> testdiagonal() {
-    // cout << "Testing diagonal class" << endl;
-    diagonal aDiag(0);
-    aDiag.addElement(1);
-    aDiag.addElement(1);
-    aDiag.addElement(1);
-    aDiag.addElement(1);
-    // aDiag.print(6);
-
-    // anti-diagonal
-    diagonal bDiag(9);
-    bDiag.addElement(1);
-    bDiag.addElement(-1);
-    // bDiag.print(6);
-    std::map<int, diagonal> dm;
-    dm.insert({0, aDiag});
-    dm.insert({9, bDiag});
-    return dm;
-}
-
 quantumSparseMatrix testQuantumSparseMatrix(std::map<int, diagonal> dm) {
     quantumSparseMatrix m = quantumSparseMatrix(dm, 6);
     m.print();
@@ -47,17 +27,17 @@ std::string checkResult(quantumSparseMatrix A, quantumSparseMatrix B) {
             // A.print();
             return "false - 2";
         }
-        if(itB->second.getValues().size() != itA->second.getValues().size()) { 
+        if(itB->second.dLength != itA->second.dLength) { 
             // A.print();
             // std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
             return "false - 3";
         }
         else {
-            for(int i = 0; i < itA->second.getValues().size(); i++) {
-                if(itB->second.getValue(i).real() - itA->second.getValue(i).real() > epsilon) {
+            for(int i = 0; i < itA->second.dLength; i++) {
+                if(itB->second.getRealValue(i) - itA->second.getRealValue(i) > epsilon) {
                     return "false - 4";
                 }
-                if(itB->second.getValue(i).imag() - itA->second.getValue(i).imag() > epsilon) {
+                if(itB->second.getImagValue(i) - itA->second.getImagValue(i) > epsilon) {
                     return "false - 5";
                 }
             }
@@ -72,40 +52,44 @@ int main(int argc, char **argv) {
     std::vector<std::vector<denseMatrix> > testCases;
 
     // test case 0
-    denseMatrix A0(5, {
+    float a0[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
-    });
-    denseMatrix B0(5, {
+    };
+    denseMatrix A0(5, a0);
+    float b0[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
         0,0,0,5,0,
         0,0,0,0,6,
-    });
+    };
+    denseMatrix B0(5, b0);
     std::vector<denseMatrix> testCase0;
     testCase0.push_back(A0);
     testCase0.push_back(B0);
     testCases.push_back(testCase0);
 
-    // test case 1
-    denseMatrix A1(5, {
+    // // test case 1
+    float a1[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
-    });
-    denseMatrix B1(5, {
+    };
+    denseMatrix A1(5, a1);
+    float b1[25] = {
         0,0,2,0,0,
         0,0,0,3,0,
         0,0,0,0,4,
         0,0,0,0,0,
         0,0,0,0,0,
-    });
+    };
+    denseMatrix B1(5, b1);
     std::vector<denseMatrix> testCase1;
     testCase1.push_back(A1);
     testCase1.push_back(B1);
@@ -113,42 +97,45 @@ int main(int argc, char **argv) {
 
 
     // test case 2
-    denseMatrix A2(5, {
+    float a2[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
-    });
-    denseMatrix B2(5, {
+    };
+    denseMatrix A2(5, a2);
+    float b2[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
         0,0,3,0,0,
         0,0,0,4,0,
-    });
+    };
+    denseMatrix B2(5, b2);
     std::vector<denseMatrix> testCase2;
     testCase2.push_back(A2);
     testCase2.push_back(B2);
     testCases.push_back(testCase2);
 
 
-
     // test case 3
-    denseMatrix A3(5, {
+    float a3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
         0,0,1,0,0,
         0,0,0,1,0,
-    });
-    denseMatrix B3(5, {
+    };
+    denseMatrix A3(5, a3);
+    float b3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
         0,0,3,0,0,
         0,0,0,4,0,
-    });
+    };
+    denseMatrix B3(5, b3);
     std::vector<denseMatrix> testCase3;
     testCase3.push_back(A3);
     testCase3.push_back(B3);
@@ -157,20 +144,22 @@ int main(int argc, char **argv) {
 
 
     // test case 4
-    denseMatrix A4(5, {
+    float a4[25] = {
         0,0,1,0,0,
         0,0,0,1,0,
         0,0,0,0,1,
         0,0,0,0,0,
         0,0,0,0,0,
-    });
-    denseMatrix B4(5, {
+    };
+    denseMatrix A4(5, a4);
+    float b4[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
         0,0,0,5,0,
         0,0,0,0,6,
-    });
+    };
+    denseMatrix B4(5, b4);
     std::vector<denseMatrix> testCase4;
     testCase4.push_back(A4);
     testCase4.push_back(B4);
@@ -178,7 +167,7 @@ int main(int argc, char **argv) {
 
 
     // test case 5 - GHZ 3 qubit unitary simulation
-    denseMatrix A5(8, {
+    float a5[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -187,8 +176,9 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,1,
         0,0,0,0,0,0,1,0,
         0,0,0,0,0,1,0,0,
-    });
-    denseMatrix B5(8, {
+    };
+    denseMatrix A5(8, a5);
+    float b5[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,
@@ -197,7 +187,8 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
         0,0,1,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
-    });
+    };
+    denseMatrix B5(8, b5);
     std::vector<denseMatrix> testCase5;
     testCase5.push_back(A5);
     testCase5.push_back(B5);
@@ -205,7 +196,7 @@ int main(int argc, char **argv) {
 
 
     // test case 6
-    denseMatrix A6(8, {
+    float a6[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -214,8 +205,9 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
-    });
-    denseMatrix B6(8, {
+    };
+    denseMatrix A6(8, a6);
+    float a6[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -224,7 +216,8 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,1,0,0,
-    });
+    };
+    denseMatrix B6(8, a6);
     std::vector<denseMatrix> testCase6;
     testCase6.push_back(A6);
     testCase6.push_back(B6);
@@ -232,7 +225,7 @@ int main(int argc, char **argv) {
 
 
     // test case 7
-    denseMatrix A7(8, {
+    float a7[64] = {
         0,0,2,0,0,0,0,0,
         0,0,0,3,0,0,0,0,
         0,0,0,0,4,0,0,0,
@@ -241,8 +234,9 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,7,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
-    });
-    denseMatrix B7(8, {
+    };
+    denseMatrix A7(8, a7);
+    float b7[64] = {
         0,0,0,0,8,0,0,0,
         0,0,0,0,0,9,0,0,
         0,0,0,0,0,0,10,0,
@@ -251,7 +245,8 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
-    });
+    };
+    denseMatrix B7(8, b7);
     std::vector<denseMatrix> testCase7;
     testCase7.push_back(A7);
     testCase7.push_back(B7);
@@ -259,7 +254,7 @@ int main(int argc, char **argv) {
 
 
     // test case 8
-    denseMatrix A8(8, {
+    float a8[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         2,0,0,0,0,0,0,0,
@@ -268,8 +263,9 @@ int main(int argc, char **argv) {
         0,0,0,5,0,0,0,0,
         0,0,0,0,6,0,0,0,
         0,0,0,0,0,7,0,0,
-    });
-    denseMatrix B8(8, {
+    };
+    denseMatrix A8(8, a8);
+    float b8[64] = {
         8,0,0,0,0,0,0,0,
         0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,
@@ -278,14 +274,15 @@ int main(int argc, char **argv) {
         0,0,0,0,0,13,0,0,
         0,0,0,0,0,0,14,0,
         0,0,0,0,0,0,0,15,
-    });
+    };
+    denseMatrix B8(8, b8);
     std::vector<denseMatrix> testCase8;
     testCase8.push_back(A8);
     testCase8.push_back(B8);
     testCases.push_back(testCase8);
 
     // test case 9
-    denseMatrix A9(8, {
+    float a9[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -294,8 +291,9 @@ int main(int argc, char **argv) {
         0,2,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,
         0,0,0,4,0,0,0,0,
-    });
-    denseMatrix B9(8, {
+    };
+    denseMatrix A9(8, a9);
+    float b9[64] = {
         0,0,5,0,0,0,0,0,
         0,0,0,6,0,0,0,0,
         0,0,0,0,7,0,0,0,
@@ -304,7 +302,8 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,10,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
-    });
+    };
+    denseMatrix B9(8, b9);
     std::vector<denseMatrix> testCase9;
     testCase9.push_back(A9);
     testCase9.push_back(B9);
