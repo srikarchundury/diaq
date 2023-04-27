@@ -79,9 +79,6 @@ class denseMatrix {
             std::complex<float> ans{realData[getFlatIndex(ten_pos)], imagData[getFlatIndex(ten_pos)]};
             return ans;
         }
-        int getSize() {
-            return size;
-        }
         void set(int i, int j, std::complex<float> val) {
             realData[shape[1] * i + j] = val.real();
             imagData[shape[1] * i + j] = val.imag();
