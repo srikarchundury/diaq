@@ -1,0 +1,1 @@
+#define NUMBER_OF_OMP_THREADS 16

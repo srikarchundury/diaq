@@ -310,8 +310,10 @@ std::complex<float> trace(quantumSparseMatrix A) {
 
 quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_shape) {
     int old_product = 1;
+    #pragma unroll
     for(int i=0; i < A.tensor_shape.size(); i++) old_product *= A.tensor_shape[i];
     int new_product = 1;
+    #pragma unroll
     for(int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
         std::cout << old_product << "!=" << new_product << std::endl;
@@ -324,9 +326,11 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
         std::vector<int> temp{1,1};
         new_shape = temp;
         int i = l / 2;
+        #pragma unroll
         for(int r = 0; r<i ; r++) {
             new_shape[0] = new_shape[0] * new_tensor_shape[r];
         }
+        #pragma unroll
         for(int r = i; r<l ; r++) {
             new_shape[1] = new_shape[1] * new_tensor_shape[r];
         }
@@ -338,10 +342,12 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     quantumSparseMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<int, diagonal>::iterator it;
+
+    // Can't parallize this currently, .insert is thread-unsafe.
     for(int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
-        // printf("Thread: %d\n", omp_get_thread_num());
         res.createDiagonal(i);
     }
+
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getRealValues();
@@ -458,9 +464,11 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
     std::vector<int> new_shape{1,1};
     int i = l / 2;
+    #pragma unroll
     for(int r = 0; r<i ; r++) {
         new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
+    #pragma unroll
     for(int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
@@ -606,10 +614,12 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
 quantumSparseMatrix array(quantumSparseMatrix A) {
     // std::cout << "array called for A - " << std::endl;
     // A.print();
+    // TODO: unclear as of now what this mehthod should be doing
     return A;
 }
 
 quantumSparseMatrix einsum(quantumSparseMatrix A, std::vector<int> axes) {
+    // TODO
     return A;
 }
 

@@ -5,6 +5,7 @@
 #include <map>
 #include <numeric>
 #include <omp.h>
+#include "config.hpp"
 
 
 class denseMatrix; // telling this class exists w/o defining it here
@@ -176,6 +177,7 @@ class quantumSparseMatrix {
             std::vector<int> ten_pos(ndim);
             int prod = 1;
             // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
+            #pragma unroll
             for (int i = 0; i < ndim; i++) {
                 prod *= tensor_shape[i];
                 // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
@@ -207,6 +209,7 @@ class quantumSparseMatrix {
                 total_elements = total_elements * tensor_shape[i];
             int flat_index = 0;
             int prod = 1;
+            #pragma unroll
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
@@ -270,6 +273,7 @@ class quantumSparseMatrix {
                 }
             }
             for(int i = 0; i < toDelete.size(); i++) {
+                // TODO: again, same case as createDiagonal; .erase is thread-unsafe; makes it tough to use omp
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
