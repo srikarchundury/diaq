@@ -76,8 +76,6 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
     std::vector<int> res_dims{shapeA[0], shapeB[1]};
     int lenRes = getDiagonalLength(indexA + indexB, res_dims);
     diagonal res(indexA + indexB, lenRes);
-    float *real_vals_res = res.getRealValues();
-    float *imag_vals_res = res.getImagValues();
     // std::cout << "diagonal length = " << lenRes << std::endl;
     int offsetA = abs(indexA);
     int offsetB = abs(indexB);
@@ -154,16 +152,70 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
     }
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    float *real_vals_A = diagA.getRealValues();
-    float *imag_vals_A = diagA.getImagValues();
-    float *real_vals_B = diagB.getRealValues();
-    float *imag_vals_B = diagB.getImagValues();
-    while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
-        int locA = k + offsetA - jump;
-        int locB = k + offsetB - jump;
-        real_vals_res[k] = real_vals_A[locA] * real_vals_B[locB] - imag_vals_A[locA] * imag_vals_B[locB];
-        imag_vals_res[k] = real_vals_A[locA] * imag_vals_B[locB] + imag_vals_A[locA] * real_vals_B[locB];
-        k++;
+    // SIMD vectorization
+    int loop_count = 0;
+    int k_cpy = k;
+    while(k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        loop_count++;
+        k_cpy++;
+    }
+    __m128 real_a, real_b; // a for valuesA and b for valuesB
+    __m128 imag_a, imag_b; // a for valuesA and b for valuesB
+    __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+    int left_overs = loop_count - ((loop_count / 4) * 4);
+    int vec_loop = (loop_count / 4);
+    int left_overs_start_at_A = k + offsetA - jump + 4*(loop_count / 4);
+    int left_overs_start_at_B = k + offsetB - jump + 4*(loop_count / 4);
+    // std::cout << "left_overs=" << left_overs << std::endl;
+    // std::cout << "left_overs_start_at_A=" << left_overs_start_at_A << std::endl;
+    // std::cout << "left_overs_start_at_B=" << left_overs_start_at_B << std::endl;
+    float *real_vals_a = diagA.getRealValues();
+    float *imag_vals_a = diagA.getImagValues();
+    float *real_vals_b = diagB.getRealValues();
+    float *imag_vals_b = diagB.getImagValues();
+
+    float *real_vals_final = res.getRealValues();
+    float *imag_vals_final = res.getImagValues();
+    while(vec_loop--) {
+        // std::cout << "loop k=" << k << std::endl;
+        real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
+        imag_a = _mm_loadu_ps(&imag_vals_a[k + offsetA - jump]);
+        real_b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
+        imag_b = _mm_loadu_ps(&imag_vals_b[k + offsetB - jump]);
+        // Using SIMD intrinsics to multiply
+        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
+        real_reala_realb = _mm_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
+        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
+        // Storing back to res diagonal
+        store_partial(4, &real_vals_final[k], real_res);
+        store_partial(4, &imag_vals_final[k], imag_res);
+        // std::cout << "after 4 " << std::endl;
+        // res.print();
+        k += 4;
+    }
+    if(left_overs != 0) {
+        // std::cout << "partial k=" << k << std::endl;
+        // partial load left_overs
+        real_a = load_partial(left_overs, &real_vals_a[left_overs_start_at_A]);
+        imag_a = load_partial(left_overs, &imag_vals_a[left_overs_start_at_A]);
+        real_b = load_partial(left_overs, &real_vals_b[left_overs_start_at_B]);
+        imag_b = load_partial(left_overs, &imag_vals_b[left_overs_start_at_B]);
+        // Using SIMD intrinsics to multiply
+        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
+        real_reala_realb = _mm_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
+        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
+        // Storing back to res diagonal
+        store_partial(left_overs, &real_vals_final[k], real_res);
+        store_partial(left_overs, &imag_vals_final[k], imag_res);
+        k += left_overs;
     }
     // std::cout << "---" << std::endl;
     // res.setElements(real_vals_final, imag_vals_final);
