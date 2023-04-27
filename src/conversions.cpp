@@ -3,8 +3,8 @@
 #include <omp.h>
 
 denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape) {
-    float *real_data = (float *)malloc(shape[0] * shape[1] * sizeof(float));
-    float *imag_data = (float *)malloc(shape[0] * shape[1] * sizeof(float));
+    float *real_data = (float *)calloc(shape[0] * shape[1], sizeof(float));
+    float *imag_data = (float *)calloc(shape[0] * shape[1], sizeof(float));
     std::map<int, diagonal>::iterator it;
     int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
@@ -23,6 +23,7 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
             y = 0;
         }
         for (int i = 0; i < it->second.dLength; i++) {
+            // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ shape[1] * x + y ] = real_vals[i];
             imag_data[ shape[1] * x + y ] = imag_vals[i];
             x++;

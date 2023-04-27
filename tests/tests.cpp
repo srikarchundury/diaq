@@ -1515,6 +1515,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "4") == 0) {
         // testing tensor transposition operation
+        std::cout << " --example1-- " << std::endl;
         A24.print();
         std::cout << " -- " << std::endl;
 
@@ -1533,6 +1534,7 @@ int main(int argc, char **argv) {
 
         // another example
         // testing tensor transposition operation
+        std::cout << " --example2-- " << std::endl;
         A47.print();
         std::cout << " -- " << std::endl;
 
