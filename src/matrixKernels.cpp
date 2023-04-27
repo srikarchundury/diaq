@@ -302,7 +302,7 @@ std::complex<float> trace(quantumSparseMatrix A) {
     if(itA == mapA.end()) {
         return t;
     }
-    for(int i=0; i < itA->second.getSize(); i++) {
+    for(int i=0; i < itA->second.dLength; i++) {
         t += itA->second.getValue(i);
     }
     return t;
@@ -350,7 +350,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
 
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         float *real_vals = it->second.getRealValues();
-        float *imag_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getImagValues();
         for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -432,7 +432,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
         std::map<int, diagonal> newDiagMap;
         std::map<int, diagonal>::iterator it;
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
-            int ni = -1 * it->second.getIndex();
+            int ni = -1 * it->second.dIndex;
             it->second.setIndex(ni);
             newDiagMap.insert({ni, it->second});
         }
@@ -619,7 +619,7 @@ quantumSparseMatrix array(quantumSparseMatrix A) {
 }
 
 quantumSparseMatrix einsum(quantumSparseMatrix A, std::vector<int> axes) {
-    // TODO
+    std::cout << axes[0] << std::endl;
     return A;
 }
 
