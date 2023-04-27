@@ -65,10 +65,10 @@ int getDiagonalLength(int dIndex, std::vector<int> shape) {
 }
 diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int indexA, int indexB, diagonal diagA, diagonal diagB) {
     if(indexA + indexB >= shapeB[1]) {
-        return diagonal(0);
+        return diagonal(0, 0);
     }
     else if(indexA + indexB <= -1 * shapeA[0]) {
-        return diagonal(0);
+        return diagonal(0, 0);
     }
     int lenDiagA = diagA.dLength;
     int lenDiagB = diagB.dLength;
@@ -159,11 +159,6 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         loop_count++;
         k_cpy++;
     }
-    // std::cout << "loop_count=" << loop_count << std::endl;
-    // while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
-    //     res.addElement(valuesA[k + offsetA - jump] * valuesB[k + offsetB - jump]);
-    //     k++;
-    // }
     __m128 real_a, real_b; // a for valuesA and b for valuesB
     __m128 imag_a, imag_b; // a for valuesA and b for valuesB
     __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
