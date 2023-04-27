@@ -30,7 +30,6 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<int> new_shape
         }
     }
     denseMatrix d(&new_shape, real_data, imag_data);
-    denseMatrix d(&new_shape, data);
     d.tensor_shape = tensor_shape;
     return d;
 }
