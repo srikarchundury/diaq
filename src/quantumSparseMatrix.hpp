@@ -4,6 +4,8 @@
 #include "diagonal.hpp"
 #include <map>
 #include <numeric>
+#include <omp.h>
+
 
 class denseMatrix; // telling this class exists w/o defining it here
 
@@ -61,7 +63,7 @@ class quantumSparseMatrix {
         int getSize() {
             return size;
         }
-        std::complex<double> getItem(std::vector<int> ten_pos) {
+        std::complex<float> getItem(std::vector<int> ten_pos) {
             std::vector<int> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
@@ -91,10 +93,10 @@ class quantumSparseMatrix {
             }
         }
         void createDiagonal(int dIndex) {
-            diagonal newDiag(dIndex);
+            diagonal newDiag(dIndex, getDiagonalLength(dIndex));
             this->diagonalMap.insert({dIndex, newDiag});
         }
-        diagonal* getDiagonal(int dIndex) {
+        diagonal *getDiagonal(int dIndex) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 createDiagonal(dIndex);
@@ -105,22 +107,20 @@ class quantumSparseMatrix {
                 return &it->second;
             }
         }
-        void setDiagonalElement(int dIndex, int dPos, int dLen, std::complex<double> val) {
+        void setDiagonalElement(int dIndex, int dPos, int dLen, float real_val, float imag_val) {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                std::vector<std::complex<double> > vals(dLen, 0);
-                vals[dPos] = val;
-                diagonal newDiag(dIndex, &vals);
+                float *real_vals = (float *)calloc(dLen, sizeof(float));
+                float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                real_vals[dPos] = real_val;
+                imag_vals[dPos] = imag_val;
+                diagonal newDiag(dIndex, dLen, real_vals, imag_vals);
                 this->diagonalMap.insert({dIndex, newDiag});
             }
             else {
-                it->second.setValue(dPos, val);
+                it->second.setValue(dPos, real_val, imag_val);
             }
-        }
-        void addToDiagonal(int dIndex, std::complex<double> val) {
-            diagonal* d = this->getDiagonal(dIndex);
-            d->addElement(val);
         }
         void setDiagonal(int dIndex, diagonal diagNew) {
             this->diagonalMap.erase(dIndex);
@@ -134,8 +134,12 @@ class quantumSparseMatrix {
             }
             else {
                 // std::cout << "already exists, overwrite" << std::endl;
-                for(int i = 0; i < it->second.getValues().size(); i++) {
-                    it->second.setValue(i, it->second.getValue(i) + diagNew.getValue(i));
+                for(int i = 0; i < it->second.dLength; i++) {
+                    it->second.setValue(
+                        i,
+                        it->second.getRealValue(i) + diagNew.getRealValue(i),
+                        it->second.getImagValue(i) + diagNew.getImagValue(i)
+                    );
                 }
             }
         }
@@ -230,30 +234,44 @@ class quantumSparseMatrix {
             }
             return res;
         }
+        int getDiagonalLength(int dIndex) {
+            // std::cout << "diag_Index = " << dIndex << " ";
+            int lenRes;
+            if(dIndex < 0) {
+                lenRes = shape[0] + dIndex;
+            } else if(dIndex > 0) {
+                lenRes = shape[1] - dIndex;
+            }  else {
+                lenRes = (shape[0] > shape[1])?shape[1]:shape[0];
+            }
+            if (lenRes > shape[0]) {
+                lenRes = shape[0];
+            }
+            else if(lenRes > shape[1]) {
+                lenRes = shape[1];
+            }
+            // std::cout << "lenRes = " << lenRes << std::endl;
+            return lenRes;
+        }
         void pruneMatrix() {
             std::vector<int> toDelete;
             std::map<int, diagonal>::iterator it;
+            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 int counter = 0;
-                std::vector<std::complex<double> > vals = it->second.getValues();
-                for (int i = 0; i < vals.size(); i++) {
-                    if(vals[i] == 0.0) { counter++; }
+                float *real_vals = it->second.getRealValues();
+                float *imag_vals = it->second.getImagValues();
+                for (int i = 0; i < it->second.dLength; i++) {
+                    if(real_vals[i] == 0.0 && imag_vals[i] == 0.0) { counter++; }
                     else {break;}
                 }
-                if(counter == vals.size()) {
-                   toDelete.push_back(it->first);
+                if(counter == it->second.dLength) {
+                    toDelete.push_back(it->first);
                 }
             }
-            for(int i=0;i < toDelete.size(); i++) {
+            for(int i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
             }
-        }
-        int denseCapacity() {
-            int c = 1;
-            for(int i = 0; i < shape.size(); i++) {
-                c = c * shape[i];
-            }
-            return c;
         }
         denseMatrix convertToDenseMatrix(std::vector<int> new_shape);
     private:
