@@ -344,7 +344,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     }
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         float *real_vals = it->second.getRealValues();
-        float *imag_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getImagValues();
         for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
