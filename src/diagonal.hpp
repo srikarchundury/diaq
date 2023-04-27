@@ -28,9 +28,6 @@ class diagonal {
             imagValues = imagVals;
             dLength = dl;
         }
-        int getIndex() {
-            return dIndex;
-        }
         void setIndex(int newIndex) {
             dIndex = newIndex;
         }
@@ -83,9 +80,6 @@ class diagonal {
         }
         float *getImagValues() {
             return imagValues;
-        }
-        int getSize() {
-            return dLength;
         }
         // returns the start (x, y) of diagonal of the matrix
         int* getCoords(int matrixSize, int dIndex) {

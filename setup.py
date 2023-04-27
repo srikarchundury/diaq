@@ -18,7 +18,7 @@ ext_modules = [
         ["include/pythonWrappers.cpp"],
         define_macros = [('VERSION_INFO', __version__)],
         extra_compile_args=["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"],
-        extra_link_args=['-lgomp'],
+        extra_link_args=['-lgomp', '-lpthread'],
     ),
 ]
 
