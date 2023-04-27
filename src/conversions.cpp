@@ -44,10 +44,13 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<int> new_sha
     // std::cout << "converting dense to sparse" << std::endl;
     std::map<int, diagonal> diagMap;    
     quantumSparseMatrix qm(diagMap, &new_shape);
+    #pragma omp parallel for
     for(int i = -1 * qm.shape[0]; i < qm.shape[1]; i++) {
         qm.createDiagonal(i);
     }
+    #pragma omp parallel
     for(int i = 0; i < shape[0]; i++) {
+        #pragma omp for
         for(int j = 0; j < shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<int> pos{i, j};
