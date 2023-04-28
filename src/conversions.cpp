@@ -90,6 +90,7 @@ quantumSparseMatrix from_numpy(std::vector<std::complex<float>> vals, std::vecto
     }
 }
 
-std::complex<float> *to_numpy(quantumSparseMatrix A) {
-    return A.convertToDenseMatrix(A.shape).getData();
+std::vector<std::complex<float> > to_numpy(quantumSparseMatrix A) {
+    denseMatrix d = A.convertToDenseMatrix(A.shape);
+    return d.getData_forPy();
 }
