@@ -55,6 +55,13 @@ class denseMatrix {
             size = shape[0] * shape[1];
             tensor_shape = *ts;
         }
+        std::vector<std::complex<float> > getData_forPy() {
+            std::vector<std::complex<float> > res(size, 0);
+            for(int i = 0; i < size; i++) {
+                res[i] = std::complex<float>{realData[i], imagData[i]};
+            }
+            return res;
+        }
         std::complex<float> *getData() {
             std::complex<float> *res = (std::complex<float> *)malloc(size * sizeof(std::complex<float>));
             for(int i = 0; i < size; i++) {
