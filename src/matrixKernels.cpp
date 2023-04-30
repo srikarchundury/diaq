@@ -265,7 +265,7 @@ diagonal addElements(diagonal A, diagonal B) {
     }
     float *real_valsC = (float *)calloc(A.dLength, sizeof(float));
     float *imag_valsC = (float *)calloc(A.dLength, sizeof(float));
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(int i=0; i < A.dLength; i++) {
         real_valsC[i] = real_valsA[i] + real_valsB[i];
         imag_valsC[i] = imag_valsA[i] + imag_valsB[i];
@@ -351,6 +351,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<int> new_tensor_s
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getImagValues();
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -486,6 +487,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<int> new_order)
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getImagValues();
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
