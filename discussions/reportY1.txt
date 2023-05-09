@@ -1,0 +1,195 @@
+internal:
+=========
+
+The funding is spent to support one MS  student and my summer
+salary according to the budget. The student was newly recruited to my
+group and was switched from (prior) TA to RA (now) to work on the RQS
+project.
+
+accomplishments:
+================
+
+major goals:
+------------
+
+This work aims to study sparsity in widely-used tensor networks by
+introducing constraints, regularization, dictionary, and/or domain
+knowledge for better data compression, faster computation, lower
+memory storage, along with better interpretability.
+
+major activities:
+-----------------
+
+Activities are reported in several parts:
+1. We provide an overview of the general research objectives.
+2. We briefly summarize results from past reporting periods.
+3. We report new results obtained during the current period.
+
+specific objectives:
+--------------------
+
+The objective of this work is:
+
+1) To propose memory hierarchy and microarchitecture-aware
+representations and effective yet efficient data (re-)arranging;
+
+2) to design memory hierarchy-aware and balanced algorithm with
+smart page arrangement;
+
+3) to erase the curse of dimensionality through memoization and
+intelligent data allocation;
+
+4) to explore specialized architecture on GPU and FPGA.
+
+We will accelerate six application scenarios by leveraging the
+scalable and highly optimized sparse tensor network on distributed
+heterogeneous systems.
+
+The objective of the following work is to assess benefits and
+potential pitfalls of performing quantum computationals of one
+vs. multiple circuits simultaneously on a given quantum device subject
+to noise. 
+
+significant results:
+--------------------
+
+In year 1, research activities have produced X papers, X
+Masters/PhD theses, and ...
+Key findings included: (should be short paragraphs from papers etc.)
+
+1. Identified a specific sparsity pattern (only diagonally dense) pertaining to unitary evolution in quantum circuits; analytically verified using SupermarQ's benchmark suite.
+
+2. Measured the number of additions and multiplications needed to perform chain matrix multiplication of intermediate unitaries found in SupermarQ's benchmark circuits. Saw significantly fewer operations compared to the dense O(n^3) version.
+
+3. Found that converting first and then multiplying was faster than just running the O(n^3) algorithm.
+
+4. Studied requirements to integrate with modern quantum libraries like CTF/Koala, Quimb (opt_einsum) for tensor-network based quantum simulation. Identified operations needed, like reshape, transpose, trace among others.
+
+5. Identified the need to go beyond 2D matrices. Analyzed intermediate tensors in tensor-network based simulation, identified a way to matricize them for efficient storage (diagonals only).
+
+6. Identified bottlenecks in performance of tensor-network based simulation - format conversion from other formats (numpy) to our format. Found scope for multi-threading using OMP for this bottleneck. Found that the use of complex arrays curtails vectorization using SSE4.2 intrinsics.
+
+key outcomes:
+-------------
+
+In Y1, the X PIs, X Ph.D students, and X M.S. student were actively
+involved in this project. They have produced the following key
+results:
+
+1. Developed a new sparse data structure that exploits the found sparsity pattern to improve memory requirements and compute requirements for operations like contraction/decomposition. This new data structure stores all diagonals as a map, indexed by their indices, and values are contiguous arrays. The new sparse data structure allows the simulation of very wide circuits with memory demands that grow linearly (or close to) with qubits and matrix multiplication that becomes big-oh linear (or factor of it) for a small number of diagonals.
+
+3. Developed a numerical library that realizes this data structure.
+
+4. Modified the numerical library to work for higher order tensors using matricization in a way that maximizes the number of diagonals to work better for the new data structure. Implemented reshape, transpose, trace, sum for tensors, and internally efficiently stored them as matrices.
+
+5. Exposed a pip installable python interface of the C++ library using pybind11.
+
+6. Integrated the numerical library and the "sparse" library (Scipy, COO format) with opt_einsum package for testing with Quimb.
+
+7. Tested supermarQ benchmark circuits' tn-simulation using jax, numpy, tensorflow, torch, sparse, and our new library.
+
+8. Multi-threading helped reduce the time taken to format convert by ~64.9% (for 16 threads).
+
+9. To address the issue of complex arrays curtailing vectorization using SSE4.2 intrinsics, we now store two separate arrays for real and imaginary numbers within the new data structure. This improved the matrix multiplication performance by ~13.7% (for 26 qubit GHZ simulation).
+
+
+educational activities:
+-----------------------
+
+Educational Activities:
+
+Educational activities include coverage of X in two graduate classes,
+namely, X and X. The classes place strong emphasis on recent research
+in X. Students receive critical skills for careers in these
+areas. Industry contacts confirm that these skills are highly valued.
+
+dissemination:
+--------------
+
+see publications
+
+Internet:
+
+http://moss.csc.ncsu.edu/~mueller/...
+
+This site will disseminate publications, abstracts and talks for this project.
+
+plan for next period
+--------------------
+
+(no change)
+
+products:
+=========
+
+pubs:
+-----
+
+journals, conferences, workshops, WIPs, TRs, theses, talks (w/o paper)
+
+websites:
+---------
+
+http://moss.csc.ncsu.edu/~mueller/...
+
+This site will disseminate publications, abstracts and talks for this project.
+
+
+participants:
+=============
+
+contribution: design and implementation
+
+impact:
+=======
+
+on principle discipline:
+------------------------
+
+(from proposal)
+
+on other disciplines:
+---------------------
+
+on human resources:
+-------------------
+
+This project contributes to human resource development by educating
+students through research, providing new educational materials in the
+classroom, and giving students the communication and writing skills
+needed to advance science and engineering for future
+generations. Hands-on computer systems and new educational materials
+effectively integrate research and teaching.
+
+In the first year, X M.S. students were trained in conjunction with
+this project. In the second year, ...
+
+Skills acquired through the project are in the area of
+team work, communication and writing, the latter through contributing
+to paper publications. This includes presentation skills (invited
+talks, poster presentations at a premier conference, and thesis
+defenses). Furthermore, a number of independent studies were
+supervised by the PIs in related areas emphasizing problem solving,
+design and implementation as well as writing skills.
+
+on institutional resources:
+---------------------------
+
+(if special hardware/software was deployed)
+
+Hardware and software has been installed to facilitate high-throughput
+simulation and is managed by the PIs and students.  The new
+infrastructure benefits the PIs' departments and colleges beyond the
+scope of the project.
+
+on information resources:
+-------------------------
+
+on tech transfer:
+-----------------
+
+on society:
+-----------
+
+changes:
+========
