@@ -25,7 +25,7 @@ __m128 load_partial(int n, float const *p) {
 void store_partial(int n, float *loc, __m128 vec) {
     #pragma unroll
     for(int i = 0; i < n; i++){
-        loc[i] = float(vec[i]);
+        loc[i] = vec[i];
     }
 }
 

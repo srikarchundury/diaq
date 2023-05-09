@@ -208,7 +208,7 @@ class quantumSparseMatrix {
             for(int i = 0;i < tensor_shape.size(); i++)
                 total_elements = total_elements * tensor_shape[i];
             int flat_index = 0;
-            int prod = 1;
+            long int prod = 1;
             #pragma unroll
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
