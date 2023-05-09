@@ -23,8 +23,9 @@ __m128 load_partial(int n, float const *p) {
     return xmm;
 }
 void store_partial(int n, float *loc, __m128 vec) {
+    #pragma unroll
     for(int i = 0; i < n; i++){
-        loc[i] = vec[i];
+        loc[i] = float(vec[i]);
     }
 }
 
@@ -191,6 +192,7 @@ diagonal multiplyDiagonals(std::vector<int> shapeA, std::vector<int> shapeB, int
         imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
         imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
         // Storing back to res diagonal
+        // TODO: Find a better way to do this, I currently loop over all 4 and store one by one "maybe" is inefficient although I loop unroll.
         store_partial(4, &real_vals_final[k], real_res);
         store_partial(4, &imag_vals_final[k], imag_res);
         // std::cout << "after 4 " << std::endl;
