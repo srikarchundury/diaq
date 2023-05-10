@@ -175,7 +175,7 @@ class quantumSparseMatrix {
             int ndim = tensor_shape.size();
             int flat_index = mat_pos[0] * shape[1] + mat_pos[1];
             std::vector<int> ten_pos(ndim);
-            int prod = 1;
+            long int prod = 1;
             // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
             #pragma unroll
             for (int i = 0; i < ndim; i++) {
