@@ -74,7 +74,7 @@ class denseMatrix {
         }
         int getFlatIndex(std::vector<int> ten_pos) {
             int flat_index = 0;
-            int prod = 1;
+            long int prod = 1;
             int remaining;
             for(int i = 0; i < tensor_shape.size() ; i++) {
                 prod *= tensor_shape[i];
