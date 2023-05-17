@@ -4,8 +4,8 @@
 #include <omp.h>
 
 denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
-    float *real_data = (float *)calloc(shape[0] * shape[1], sizeof(float));
-    float *imag_data = (float *)calloc(shape[0] * shape[1], sizeof(float));
+    float *real_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
+    float *imag_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
     std::map<long int, diagonal>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
@@ -26,8 +26,8 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<long int> new_
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
-            real_data[ shape[1] * (x+i) + (y+i) ] = real_vals[i];
-            imag_data[ shape[1] * (x+i) + (y+i) ] = imag_vals[i];
+            real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
+            imag_data[ matrix_shape[1] * (x+i) + (y+i) ] = imag_vals[i];
         }
     }
     denseMatrix d(&new_shape, real_data, imag_data);
@@ -45,16 +45,16 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> ne
     std::map<long int, diagonal> diagMap;    
     quantumSparseMatrix qm(diagMap, &new_shape);
     // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = -1 * qm.shape[0]; i < qm.shape[1]; i++) {
+    for(long int i = -1 * qm.matrix_shape[0]; i < qm.matrix_shape[1]; i++) {
         // TODO: This function calls .insert on a std::map and hence is thread-unsafe; need to think of a parallel insert
         // in std::map, else replace with some other datastructure.
         qm.createDiagonal(i);
     }
     // #pragma omp barrier
     #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = 0; i < shape[0]; i++) {
+    for(long int i = 0; i < matrix_shape[0]; i++) {
         #pragma omp for
-        for(long int j = 0; j < shape[1]; j++) {
+        for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<long int> pos{i, j};
             std::vector<long int> d_pos = qm.getDiagonalPosition(pos);
@@ -98,6 +98,6 @@ quantumSparseMatrix from_numpy(std::vector<std::complex<float>> vals, std::vecto
 }
 
 std::vector<std::complex<float> > to_numpy(quantumSparseMatrix A) {
-    denseMatrix d = A.convertToDenseMatrix(A.shape);
+    denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
     return d.getData_forPy();
 }

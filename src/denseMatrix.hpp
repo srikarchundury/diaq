@@ -13,15 +13,15 @@
 
 class denseMatrix {
     public:
-        std::vector<long int> shape;
+        std::vector<long int> matrix_shape;
         std::vector<long int> tensor_shape;
         long int size;
         denseMatrix(const long int s, float *real_data) {
             size = s*s;
             realData = real_data;
             imagData = (float *)calloc(size, sizeof(float));
-            shape.push_back(s);
-            shape.push_back(s);
+            matrix_shape.push_back(s);
+            matrix_shape.push_back(s);
             tensor_shape.push_back(s);
             tensor_shape.push_back(s);
         }
@@ -29,14 +29,14 @@ class denseMatrix {
             size = s*s;
             realData = real_data;
             imagData = imag_data;
-            shape.push_back(s);
-            shape.push_back(s);
+            matrix_shape.push_back(s);
+            matrix_shape.push_back(s);
             tensor_shape.push_back(s);
             tensor_shape.push_back(s);
         }
         denseMatrix(std::vector<long int> *d, float *real_data) {
-            shape = *d;
-            size = shape[0] * shape[1];
+            matrix_shape = *d;
+            size = matrix_shape[0] * matrix_shape[1];
             realData = real_data;
             imagData = (float *)calloc(size, sizeof(float));
             tensor_shape = *d;
@@ -44,15 +44,15 @@ class denseMatrix {
         denseMatrix(std::vector<long int> *d, float *real_data, float *imag_data) {
             realData = real_data;
             imagData = imag_data;
-            shape = *d;
-            size = shape[0] * shape[1];
+            matrix_shape = *d;
+            size = matrix_shape[0] * matrix_shape[1];
             tensor_shape = *d;
         }
         denseMatrix(std::vector<long int> *d, float *real_data, float *imag_data, std::vector<long int> *ts) {
             realData = real_data;
             imagData = imag_data;
-            shape = *d;
-            size = shape[0] * shape[1];
+            matrix_shape = *d;
+            size = matrix_shape[0] * matrix_shape[1];
             tensor_shape = *ts;
         }
         std::vector<std::complex<float> > getData_forPy() {
@@ -87,26 +87,26 @@ class denseMatrix {
             return ans;
         }
         void set(long int i, long int j, std::complex<float> val) {
-            realData[shape[1] * i + j] = val.real();
-            imagData[shape[1] * i + j] = val.imag();
+            realData[matrix_shape[1] * i + j] = val.real();
+            imagData[matrix_shape[1] * i + j] = val.imag();
         }
         std::complex<float> get(long int i, long int j) {
-            std::complex<float> ans{realData[shape[1] * i + j], imagData[shape[1] * i + j]};
+            std::complex<float> ans{realData[matrix_shape[1] * i + j], imagData[matrix_shape[1] * i + j]};
             return ans;
         }
         void print() {
             std::cout << "matrix_shape (";
-            for(long int i = 0; i < shape.size()-1; i++) {
-                std::cout << shape[i] << ",";
+            for(long int i = 0; i < matrix_shape.size()-1; i++) {
+                std::cout << matrix_shape[i] << ",";
             }
-            std::cout << shape[shape.size()-1] << ")" << std::endl;
+            std::cout << matrix_shape[matrix_shape.size()-1] << ")" << std::endl;
             std::cout << "tensor_shape (";
             for(long int i = 0; i < tensor_shape.size()-1; i++) {
                 std::cout << tensor_shape[i] << ",";
             }
             std::cout << tensor_shape[tensor_shape.size()-1] << ")" << std::endl;
             for (long int i = 0; i < size; i++) {
-                if((i+1)%shape[1] == 0) {
+                if((i+1)%matrix_shape[1] == 0) {
                     std::cout << "(" << realData[i] << "," << imagData[i] << ")" << std::endl;
                 }
                 else {

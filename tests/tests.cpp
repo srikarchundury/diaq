@@ -1439,15 +1439,15 @@ int main(int argc, char **argv) {
             // std::cout << std::endl << " ---- dense product ---- " << std::endl;
             // p.print();
             // std::cout << " ---- dense product ---- " << std::endl;
-            quantumSparseMatrix dp = p.convertToQuantumSparse(p.shape);
+            quantumSparseMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
             // std::cout << " ---- correct answer ---- " << std::endl;
             // dp.print();
             // std::cout << " ---- correct answer ---- " << std::endl;
-            quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].shape);
+            quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
             // std::cout << " -- first -- " << std::endl;
             // first.print();
             // std::cout << " -- first -- " << std::endl;
-            quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].shape);
+            quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
             // std::cout << " -- second -- " << std::endl;
             // second.print();
             // std::cout << " -- second -- " << std::endl;
@@ -1488,7 +1488,7 @@ int main(int argc, char **argv) {
         res.print();
         std::cout << " -- " << std::endl;
 
-        res.convertToDenseMatrix(res.shape).print();
+        res.convertToDenseMatrix(res.matrix_shape).print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "3") == 0) {
@@ -1530,7 +1530,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         res.print();
         std::cout << " -- " << std::endl;
-        res.convertToDenseMatrix(res.shape).print();
+        res.convertToDenseMatrix(res.matrix_shape).print();
 
         // another example
         // testing tensor transposition operation
@@ -1538,7 +1538,7 @@ int main(int argc, char **argv) {
         A47.print();
         std::cout << " -- " << std::endl;
 
-        quantumSparseMatrix q_A47 = A47.convertToQuantumSparse(A47.shape);
+        quantumSparseMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
         q_A47.tensor_shape = std::vector<long int>{2,2,2,2};
         q_A47.print();
         std::cout << " -- " << std::endl;
@@ -1547,7 +1547,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         res.print();
         std::cout << " -- " << std::endl;
-        res.convertToDenseMatrix(res.shape).print();
+        res.convertToDenseMatrix(res.matrix_shape).print();
     }
     else if(strcmp(argv[1], "5") == 0) {
         // testing operator overloading
@@ -1558,15 +1558,15 @@ int main(int argc, char **argv) {
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p.print();
         std::cout << " ---- dense product ---- " << std::endl;
-        quantumSparseMatrix dp = p.convertToQuantumSparse(p.shape);
+        quantumSparseMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp.print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].shape);
+        quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first.print();
         std::cout << " -- first -- " << std::endl;
-        quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].shape);
+        quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second.print();
         std::cout << " -- second -- " << std::endl;
@@ -1585,15 +1585,15 @@ int main(int argc, char **argv) {
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p.print();
         std::cout << " ---- dense product ---- " << std::endl;
-        quantumSparseMatrix dp = p.convertToQuantumSparse(p.shape);
+        quantumSparseMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp.print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].shape);
+        quantumSparseMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first.print();
         std::cout << " -- first -- " << std::endl;
-        quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].shape);
+        quantumSparseMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second.print();
         std::cout << " -- second -- " << std::endl;

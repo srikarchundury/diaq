@@ -36,7 +36,7 @@ PYBIND11_MODULE(qsparse, m) {
     // quantumSparseMatrix class
     py::class_<quantumSparseMatrix>(m, "quantumSparseMatrix")
         .def(py::init<std::map<long int, diagonal>, long int>())
-        .def_readwrite("shape", &quantumSparseMatrix::shape)
+        .def_readwrite("matrix_shape", &quantumSparseMatrix::matrix_shape)
         .def_readwrite("tensor_shape", &quantumSparseMatrix::tensor_shape)
         .def("getItem", &quantumSparseMatrix::getItem, py::return_value_policy::reference)
         .def("getMatrixPosition", &quantumSparseMatrix::getMatrixPosition, py::return_value_policy::reference)
@@ -65,7 +65,7 @@ PYBIND11_MODULE(qsparse, m) {
         .def(py::init<std::vector<long int> *, float *>())
         .def(py::init<std::vector<long int> *, float *, float *>())
         .def_readwrite("size", &denseMatrix::size)
-        .def_readwrite("shape", &denseMatrix::shape)
+        .def_readwrite("matrix_shape", &denseMatrix::matrix_shape)
         .def_readwrite("tensor_shape", &denseMatrix::tensor_shape)
         .def("getItem", &denseMatrix::getItem, py::return_value_policy::reference)
         .def("getData", &denseMatrix::getData, py::return_value_policy::reference)

@@ -235,10 +235,10 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     // A.prlong int();
     // B.prlong int();
-    if(A.shape[1] != B.shape[0]) {
+    if(A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
-    std::vector<long int> d{A.shape[0], B.shape[1]};
+    std::vector<long int> d{A.matrix_shape[0], B.matrix_shape[1]};
     quantumSparseMatrix* result = new quantumSparseMatrix(&d);
     // quantumSparseMatrix* resptr = &result;
     std::map<long int, diagonal> mapA = A.getDiagonalMap();
@@ -251,7 +251,7 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
             // itB->second.prlong int();
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
-            diagonal diagNew = multiplyDiagonals(A.shape, B.shape, itA->first, itB->first, itA->second, itB->second);
+            diagonal diagNew = multiplyDiagonals(A.matrix_shape, B.matrix_shape, itA->first, itB->first, itA->second, itB->second);
             if(diagNew.dLength != 0 && !diagNew.isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.prlong int();
@@ -282,14 +282,14 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
  * @return denseMatrix  C
  */
 denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
-    std::vector<long int> shape_a = A.shape;
-    std::vector<long int> shape_b = B.shape;
+    std::vector<long int> shape_a = A.matrix_shape;
+    std::vector<long int> shape_b = B.matrix_shape;
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
     float *real_res = (float *)calloc(shape_a[0] * shape_b[1], sizeof(float));
     float *imag_res = (float *)calloc(shape_a[0] * shape_b[1], sizeof(float));
-    std::vector<long int> d{A.shape[0], B.shape[1]};
+    std::vector<long int> d{A.matrix_shape[0], B.matrix_shape[1]};
     denseMatrix result(&d, real_res, imag_res);
     for(long int i = 0; i < shape_a[0]; i++) {
         for(long int k = 0; k < shape_b[1]; k++) {
@@ -398,7 +398,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<long int> new_ten
     std::map<long int, diagonal>::iterator it;
 
     // Can't parallize this currently, .insert is thread-unsafe.
-    for(long int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+    for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
         res.createDiagonal(i);
     }
 
@@ -418,7 +418,7 @@ quantumSparseMatrix reshape(quantumSparseMatrix A, std::vector<long int> new_ten
 
             std::vector<long int> d_pos = res.getDiagonalPositionByFlatIndex(A.getFlatIndex(ten_pos));
             // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-            long int d_len = getDiagonalLength(d_pos[0], res.shape);
+            long int d_len = getDiagonalLength(d_pos[0], res.matrix_shape);
             res.setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
             // std::cout << " -- " << std::endl;
         }
@@ -482,7 +482,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<long int> new_o
 
     // tranpose of the diagonals
     if(A.tensor_shape.size() == 2) {
-        std::vector<long int> newShape{A.shape[1], A.shape[0]};
+        std::vector<long int> newShape{A.matrix_shape[1], A.matrix_shape[0]};
         std::map<long int, diagonal> diagMap = A.getDiagonalMap();
         std::map<long int, diagonal> newDiagMap;
         std::map<long int, diagonal>::iterator it;
@@ -535,7 +535,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<long int> new_o
     // iterate over all diagonals
     std::map<long int, diagonal>::iterator it;
     std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
-    for(long int i = -1 * res.shape[0]; i < res.shape[1]; i++) {
+    for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
         res.createDiagonal(i);
     }
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
@@ -634,8 +634,8 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     B = transpose(B, order_B);
     // B.prlong int();
 
-    long int totalA = A.shape[0] * A.shape[1];
-    long int totalB = B.shape[0] * B.shape[1];
+    long int totalA = A.matrix_shape[0] * A.matrix_shape[1];
+    long int totalB = B.matrix_shape[0] * B.matrix_shape[1];
 
     // std::cout << "axes_0_product = " << axes_0_product << " axes_1_product = " << axes_1_product << std::endl;
     // These have to be equal right? Let's add a check
