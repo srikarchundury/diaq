@@ -21,33 +21,31 @@ PYBIND11_MODULE(qsparse, m) {
 
     // diagonal class and it's routines
     py::class_<diagonal>(m, "diagonal")
-        .def(py::init<int>())
-        .def("getIndex", &diagonal::getIndex, py::return_value_policy::reference)
-        .def("addElement", &diagonal::addElement, py::return_value_policy::reference)
+        .def(py::init<long int>())
+        .def_readwrite("dIndex", &diagonal::dIndex)
+        .def_readwrite("dLength", &diagonal::dLength)
         .def("setValue", &diagonal::setValue, py::return_value_policy::reference)
         .def("getValue", &diagonal::getValue, py::return_value_policy::reference)
         .def("print", &diagonal::print, py::return_value_policy::reference)
-        .def("getValues", &diagonal::getValues, py::return_value_policy::reference)
-        .def("getSize", &diagonal::getSize, py::return_value_policy::reference)
+        .def("getRealValues", &diagonal::getRealValues, py::return_value_policy::reference)
+        .def("getImagValues", &diagonal::getImagValues, py::return_value_policy::reference)
         .def("getCoords", &diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diagonal::numNonZeros, py::return_value_policy::reference);
     
     // quantumSparseMatrix class
     py::class_<quantumSparseMatrix>(m, "quantumSparseMatrix")
-        .def(py::init<std::map<int, diagonal>, int>())
+        .def(py::init<std::map<long int, diagonal>, long int>())
+        .def_readwrite("matrix_shape", &quantumSparseMatrix::matrix_shape)
         .def_readwrite("shape", &quantumSparseMatrix::shape)
-        .def_readwrite("tensor_shape", &quantumSparseMatrix::tensor_shape)
         .def("getItem", &quantumSparseMatrix::getItem, py::return_value_policy::reference)
         .def("getMatrixPosition", &quantumSparseMatrix::getMatrixPosition, py::return_value_policy::reference)
         .def("getDiagonalPosition", &quantumSparseMatrix::getDiagonalPosition, py::return_value_policy::reference)
-        .def("getSize", &quantumSparseMatrix::getSize, py::return_value_policy::reference)
         .def("getSize", &quantumSparseMatrix::getSize, py::return_value_policy::reference)
         .def("getDiagonalMap", &quantumSparseMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &quantumSparseMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &quantumSparseMatrix::print, py::return_value_policy::reference)
         .def("getDiagonal", &quantumSparseMatrix::getDiagonal, py::return_value_policy::reference)
-        .def("addToDiagonal", &quantumSparseMatrix::addToDiagonal, py::return_value_policy::reference)
         .def("setDiagonal", &quantumSparseMatrix::setDiagonal, py::return_value_policy::reference)
         .def("addDiagonal", &quantumSparseMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &quantumSparseMatrix::pruneMatrix, py::return_value_policy::reference)
@@ -62,12 +60,14 @@ PYBIND11_MODULE(qsparse, m) {
 
     // denseMatrix class
     py::class_<denseMatrix>(m, "denseMatrix")
-        .def(py::init<int, std::vector<std::complex<double> > >())
-        .def(py::init<std::vector<int> *, std::vector<std::complex<double> > >())
+        .def(py::init<long int, float *>())
+        .def(py::init<long int, float *, float *>())
+        .def(py::init<std::vector<long int> *, float *>())
+        .def(py::init<std::vector<long int> *, float *, float *>())
+        .def_readwrite("size", &denseMatrix::size)
+        .def_readwrite("matrix_shape", &denseMatrix::matrix_shape)
         .def_readwrite("shape", &denseMatrix::shape)
-        .def_readwrite("tensor_shape", &denseMatrix::tensor_shape)
         .def("getItem", &denseMatrix::getItem, py::return_value_policy::reference)
-        .def("getSize", &denseMatrix::getSize, py::return_value_policy::reference)
         .def("getData", &denseMatrix::getData, py::return_value_policy::reference)
         .def("set", &denseMatrix::set, py::return_value_policy::reference)
         .def("get", &denseMatrix::get, py::return_value_policy::reference)
@@ -91,22 +91,22 @@ PYBIND11_MODULE(qsparse, m) {
     m.def("array", &array, py::return_value_policy::reference);
     m.def(
         "tensordot",
-        [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<int> > axes) { return tensordot(A, B, axes); },
+        [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<long int> > axes) { return tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
-        py::arg("axes") = std::vector<int>{},
+        py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
     m.def(
         "transpose",
-        [](quantumSparseMatrix A, std::vector<int> new_order) { return transpose(A, new_order); },
+        [](quantumSparseMatrix A, std::vector<long int> new_order) { return transpose(A, new_order); },
         py::arg(),
-        py::arg("axes") = std::vector<int>{},
+        py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
     m.def(
         "einsum",
-        [](quantumSparseMatrix A, std::vector<int> axes) { return einsum(A, axes); },
+        [](quantumSparseMatrix A, std::vector<long int> axes) { return einsum(A, axes); },
         py::arg(),
         py::arg("axes"),
         py::return_value_policy::reference

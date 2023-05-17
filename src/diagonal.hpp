@@ -9,59 +9,81 @@
 
 class diagonal {
     public:
-        diagonal(int di) {
+        long int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
+        long int dLength;
+        diagonal(long int di) {
             dIndex = di;
         }
-        diagonal(int di, std::vector<std::complex<double> >* vals) {
+        diagonal(long int di, long int dl) {
             dIndex = di;
-            values = *vals;
+            dLength = dl;
+            float *realVals = (float *)calloc(dl, sizeof(float));
+            float *imagVals = (float *)calloc(dl, sizeof(float));
+            realValues = realVals;
+            imagValues = imagVals;
         }
-        int getIndex() {
-            return dIndex;
+        diagonal(long int di, long int dl, float *realVals, float *imagVals) {
+            dIndex = di;
+            realValues = realVals;
+            imagValues = imagVals;
+            dLength = dl;
         }
-        void setIndex(int newIndex) {
+        void setIndex(long int newIndex) {
             dIndex = newIndex;
         }
-        bool addElement(std::complex<double> value) {
-            values.push_back(value);
-            return true;
+        void setElements(float *new_realVals, float *new_imagVals) {
+            realValues = new_realVals;
+            imagValues = new_imagVals;
         }
-        void setValue(int i, std::complex<double> val) {
+        void addElements(float *new_realVals, float *new_imagVals, long int from_index, long int to_index) {
+            for(long int i = from_index; i<=to_index; i++) {
+                realValues[i] = new_realVals[i];
+                imagValues[i] = new_imagVals[i];
+            }
+        }
+        void setValue(long int i, float real_val, float imag_val) {
             // std::cout << "there" << std::endl;
-            values[i] = val;
+            realValues[i] = real_val;
+            imagValues[i] = imag_val;
         }
-        std::complex<double> getValue(int i) {
-            // std::cout << "here" << std::endl;
-            return values[i];
+        std::complex<float> getValue(long int i) {
+            std::complex<float> ans{realValues[i], imagValues[i]};
+            return ans;
+        }
+        float getRealValue(long int i) {
+            return realValues[i];
+        }
+        float getImagValue(long int i) {
+            return imagValues[i];
         }
         bool isEmpty() {
-            for(int i=0; i < values.size(); i++) {
-                if(values[i] != 0.0) return false;
+            for(long int i=0; i < dLength; i++) {
+                if(realValues[i] != 0.0 or imagValues[i] != 0.0) return false;
             }
             return true;
         }
         void print() {
             std::string sep=",";
-            // int *coords= this->getCoords(matrixSize, this->dIndex);
+            // long int *coords= this->getCoords(matrixSize, this->dIndex);
             std::cout << "(dIndex=" << dIndex << ") ";
             std::cout << "[" << "";
-            int n = values.size();
-            for (int i = 0; i < n-1; i++) {
-                std::cout << values[i] << sep;
+            long int n = dLength;
+            for (long int i = 0; i < n-1; i++) {
+                std::cout <<  "(" << realValues[i] << "," << imagValues[i] << ")" << sep;
             }
-            std::cout << values[n-1] << "";
+            std::cout <<  "(" << realValues[n-1] << "," << imagValues[n-1] << ")" << "";
             std::cout << "]" << "";
             std::cout << std::endl;
         }
-        std::vector<std::complex<double> > getValues() {
-            return values;
+        float *getRealValues() {
+            return realValues;
         }
-        int getSize() {
-            return values.size();
+        float *getImagValues() {
+            return imagValues;
         }
         // returns the start (x, y) of diagonal of the matrix
-        int* getCoords(int matrixSize, int dIndex) {
-            static int c[2];
+        long int* getCoords(long int matrixSize, long int dIndex) {
+            static long int c[2];
             if(dIndex >= matrixSize) {
                 c[0] = dIndex - matrixSize + 1; c[1] = matrixSize - 1;
             }
@@ -77,7 +99,7 @@ class diagonal {
             return c;
         }
         // returns the dIndex based on start coords
-        int getDIndex(int *coords, int matrixSize) {
+        long int getDIndex(long int *coords, long int matrixSize) {
             if(coords[0] == 0){
                 return coords[1];
             }
@@ -88,18 +110,18 @@ class diagonal {
             }
             return coords[1];
         }
-        int numNonZeros() {
-            int count = 0;
-            for(int i = 0; i < values.size(); i++) {
-                if(std::real(values[i]) != 0 || std::imag(values[i]) != 0) {
+        long int numNonZeros() {
+            long int count = 0;
+            for(long int i = 0; i < dLength; i++) {
+                if(realValues[i] != 0 || imagValues[i] != 0) {
                     count++;
                 }
             }
             return count;
         }
     private:
-        int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
-        std::vector<std::complex<double> > values; // most things are -1, 0, 1.
+        float* realValues; // real number array
+        float* imagValues; // real number array
 };
 
 #endif // SPARSE_TNQS_DIAGONAL_HPP
