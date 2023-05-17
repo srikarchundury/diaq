@@ -14,7 +14,7 @@ class denseMatrix; // telling this class exists w/o defining it here
 class quantumSparseMatrix {
     public:
         std::vector<long int> matrix_shape; // as of now, this is always a 2 element array
-        std::vector<long int> tensor_shape;
+        std::vector<long int> shape;
 
         quantumSparseMatrix(long int s) {
             std::map<long int, diagonal> d;
@@ -22,15 +22,15 @@ class quantumSparseMatrix {
             size = s;
             matrix_shape.push_back(s);
             matrix_shape.push_back(s);
-            tensor_shape.push_back(s);
-            tensor_shape.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
         }
         quantumSparseMatrix(std::vector<long int> *dimens) {
             std::map<long int, diagonal> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
-            tensor_shape = *dimens;
+            shape = *dimens;
         }
         quantumSparseMatrix(std::map<long int, diagonal> dm, long int s) {
             std::map<long int, diagonal>::iterator it;
@@ -40,8 +40,8 @@ class quantumSparseMatrix {
             size = s;
             matrix_shape.push_back(s);
             matrix_shape.push_back(s);
-            tensor_shape.push_back(s);
-            tensor_shape.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
         }
         quantumSparseMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
             std::map<long int, diagonal>::iterator it;
@@ -50,7 +50,7 @@ class quantumSparseMatrix {
             }
             matrix_shape = *d;
             size = matrix_shape[0];
-            tensor_shape = *d;
+            shape = *d;
         }
         quantumSparseMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             std::map<long int, diagonal>::iterator it;
@@ -58,7 +58,7 @@ class quantumSparseMatrix {
                 diagonalMap.insert({it->first, it->second});
             }
             matrix_shape = *d;
-            tensor_shape = *ts;
+            shape = *ts;
             size = matrix_shape[0];
         }
         long int getSize() {
@@ -84,10 +84,10 @@ class quantumSparseMatrix {
             }
             std::cout << matrix_shape[matrix_shape.size()-1] << ")" << std::endl;
             std::cout << "tensor_shape (";
-            for(long int i = 0; i < tensor_shape.size()-1; i++) {
-                std::cout << tensor_shape[i] << ",";
+            for(long int i = 0; i < shape.size()-1; i++) {
+                std::cout << shape[i] << ",";
             }
-            std::cout << tensor_shape[tensor_shape.size()-1] << ")" << std::endl;
+            std::cout << shape[shape.size()-1] << ")" << std::endl;
             std::map<long int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.print();
@@ -172,16 +172,16 @@ class quantumSparseMatrix {
         std::vector<long int> getTensorPosition(long int diagonal_idx, long int diagonal_pos) {
             std::vector<long int> mat_pos = getMatrixPosition(diagonal_idx, diagonal_pos);
             long int total_elements = matrix_shape[0] * matrix_shape[1];
-            long int ndim = tensor_shape.size();
+            long int ndim = shape.size();
             long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
             std::vector<long int> ten_pos(ndim);
             long long int prod = 1;
             // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
             #pragma unroll
             for (long int i = 0; i < ndim; i++) {
-                prod *= tensor_shape[i];
+                prod *= shape[i];
                 // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
-                ten_pos[i] = (flat_index / (total_elements / prod)) % tensor_shape[i];
+                ten_pos[i] = (flat_index / (total_elements / prod)) % shape[i];
                 flat_index = flat_index - (total_elements / prod) * ten_pos[i];
             }
             return ten_pos;
@@ -205,13 +205,13 @@ class quantumSparseMatrix {
         } 
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int total_elements = 1;
-            for(long int i = 0;i < tensor_shape.size(); i++)
-                total_elements = total_elements * tensor_shape[i];
+            for(long int i = 0;i < shape.size(); i++)
+                total_elements = total_elements * shape[i];
             long int flat_index = 0;
             long long int prod = 1;
             #pragma unroll
-            for(long int i = 0; i < tensor_shape.size() ; i++) {
-                prod *= tensor_shape[i];
+            for(long int i = 0; i < shape.size() ; i++) {
+                prod *= shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
             }
             return flat_index;

@@ -1493,7 +1493,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "3") == 0) {
         // testing getMatrixPosition and getTensorPosition
-        A24.tensor_shape = std::vector<long int>{3,3,2};
+        A24.shape = std::vector<long int>{3,3,2};
         A24.print();
         std::cout << " -- " << std::endl;
         std::vector<long int> dims{3,6};
@@ -1521,7 +1521,7 @@ int main(int argc, char **argv) {
 
         std::vector<long int> dims{3,6};
         quantumSparseMatrix q_A24 = A24.convertToQuantumSparse(dims);
-        q_A24.tensor_shape = std::vector<long int>{3,3,2};
+        q_A24.shape = std::vector<long int>{3,3,2};
         q_A24.print();
         std::cout << " -- " << std::endl;
 
@@ -1539,7 +1539,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         quantumSparseMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
-        q_A47.tensor_shape = std::vector<long int>{2,2,2,2};
+        q_A47.shape = std::vector<long int>{2,2,2,2};
         q_A47.print();
         std::cout << " -- " << std::endl;
 
