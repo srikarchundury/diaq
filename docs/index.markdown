@@ -2,11 +2,13 @@
 # Feel free to add content and custom Front Matter to this file.
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 layout: home
-title: Quantum Sparse Matrices
 ---
-<head><link rel="stylesheet" href="style.css"></head>
+<head><link rel="stylesheet" href="style.css"> </head>
 <!-- Side navigation -->
 <div class="sidenav">
+	<hr/>
+		<b> Tensor-Network based Quantum Simulation (TNQS) </b>
+	<hr/>
   <a href="#1">Motivation</a>
   <a href="#2">Scope of this project</a>
   <a href="#3">Problem Statement</a>
@@ -15,36 +17,57 @@ title: Quantum Sparse Matrices
   <a href="#8">QAOA - Max Cut</a>
   <a href="#5">Literature Survey</a>
   <a href="#6">Note</a>
+	<hr/>
+	<b> Project Info </b>
+	<hr/>
+	<div class="sub_link">
+	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank"> Git Organisation (TNQS)</a>
+	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions" target="_blank" class="sub_link"> All Reports (requires NCSU creds)</a>
+	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
+	<hr/>
+	<b> Group Info </b>
+	<hr/>
+	<a href="https://arcb.csc.ncsu.edu/~mueller/" target="_blank" class="sub_link"> Dr. Frank Mueller</a>
+	<a href="http://fruitfly1026.github.io/" target="_blank" class="sub_link"> Dr. Jiajia Li</a>
+	<a href="https://www.linkedin.com/in/srikarchundury/" target="_blank" class="sub_link"> Srikar Chundury</a>
+	<a href="https://www.linkedin.com/in/blake-burgstahler/" target="_blank" class="sub_link"> Blake Burgstahler</a>
+		<hr/>
+		<a href="https://arcb.csc.ncsu.edu/~mueller/cross.html" target="_blank"> <b> More Info </b> </a>
+		<hr/>
+	</div>
 </div>
 
-# Tensor-Network based Quantum Simulation #
 
-* [Git SRC](https://github.ncsu.edu/tnqs/sparse-tnqs/ "git") <br/>
+<div class="main_content">
 
-* [Final Report](https://github.ncsu.edu/tnqs/sparse-tnqs/blob/main/discussions/report3.pdf "PDF") <br/>
-
-* Download Project Presentation - [PDF](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pdf) | [PPTX](https://github.ncsu.edu/tnqs/sparse-tnqs/raw/main/discussions/qc_presentation.pptx) <br/>
-
-* Download Library [zip](https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip) <br/>
-
-
-*This is part of Dr.Frank Mueller's quantum computing course: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
-
-
-## Team ##
-* Srikar Chundury (schundu3)
-* Blake Burgstahler (bburgst)
-
+<br/>
 <hr id="1" />
 
 ## Motivation ##
 * Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits. Example- <br/>
-<img src="images/circuit_example.png" width="300"> &nbsp; <img src="images/tn_example.png" width="300"> <br/>
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/circuit_example.png" width="300">
+		<figcaption>GHZ circuit from supermarQ</figcaption>
+	</figure>
+		&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/tn_example.png" width="300">
+		<figcaption>Qiskit-generated DAG</figcaption>
+	</figure>
+</center>
+<br/>
 * The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
 * The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
 * There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
 * Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit. As seen below-<br/>
-<img src="images/tn_post_contraction.png" width="300"> <br/>
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/tn_post_contraction.png" width="300">
+		<figcaption>GHZ tensor network after contraction</figcaption>
+	</figure>
+</center>
+<br/>
 
 <hr id="2" />
 
@@ -134,3 +157,6 @@ Dense(numPy) vs Diagonal(our approach comparison)- <br/>
 
 ## Note ##
 * Please refer [Reports/Discussion](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions "Discussion") for timeline and progress so far.
+
+<br/>
+</div>
