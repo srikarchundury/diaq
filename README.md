@@ -4,7 +4,7 @@ Sparse Tensor Network based Quantum Simulation
 * This repo hosts the high performance numerical library that is tailored to work best for the sparsity seen in most quantum simulations.
 
 ### About this Project ###
-* <a href="https://pages.github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank"> TNQS </a>.
+* <a href="https://pages.github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank">TNQS</a>
 * [Overleaf](https://www.overleaf.com/project/634d7c5f9cdfe07d6b005919)
 
 ## Installation ##
