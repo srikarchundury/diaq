@@ -10,19 +10,16 @@ layout: my_default
 		<b> Tensor-Network based Quantum Simulation (TNQS) </b>
 	<hr/>
   <a href="#1">Motivation</a>
-  <a href="#2">Scope of this project</a>
-  <a href="#3">Problem Statement</a>
-  <a href="#4">Progress - update #1</a>
-  <a href="#7">Progress - update #2</a>
-  <a href="#8">QAOA - Max Cut</a>
-  <a href="#5">Literature Survey</a>
-  <a href="#6">Note</a>
+  <a href="#2">Problem Statement</a>
+  <a href="#3">Empirical/Visual Analysis</a>
+  <a href="#4">Key Outcomes</a>
+  <a href="#5">Preliminary Results</a>
+  <a href="#6">Future Scope</a>
 	<hr/>
 	<b> Project Info </b>
 	<hr/>
 	<div class="sub_link">
-	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank"> Git Organisation (TNQS)</a>
-	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions" target="_blank" class="sub_link"> All Reports (requires NCSU creds)</a>
+	<a href="https://github.ncsu.edu/tnqs/" target="_blank"> Git Organisation (TNQS)</a>
 	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
 	<hr/>
 	<b> Group Info </b>
@@ -31,10 +28,15 @@ layout: my_default
 	<a href="http://fruitfly1026.github.io/" target="_blank" class="sub_link"> Dr. Jiajia Li</a>
 	<a href="https://www.linkedin.com/in/srikarchundury/" target="_blank" class="sub_link"> Srikar Chundury</a>
 	<a href="https://www.linkedin.com/in/blake-burgstahler/" target="_blank" class="sub_link"> Blake Burgstahler</a>
-		<hr/>
-		<a href="https://arcb.csc.ncsu.edu/~mueller/cross.html" target="_blank"> <b> More Info </b> </a>
-		<hr/>
+	<hr/>
+	<b> More Info </b>
+	<hr/>
+	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey" target="_blank" class="sub_link"> Literature Survey</a>
+	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions" target="_blank" class="sub_link"> Reports/Discussions</a>
 	</div>
+	<hr/>
+	<a href="https://arcb.csc.ncsu.edu/~mueller/cross.html" target="_blank"> <b> About PPoSS project </b> </a>
+	<hr/>
 </div>
 
 
@@ -56,12 +58,27 @@ layout: my_default
 		<figcaption>Qiskit-generated DAG</figcaption>
 	</figure>
 </center>
+
 <br/>
+
+### State-Vector and Unitary Simulation ###
+
 * The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
 * The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
+* Despite its promise, simulating large quantum circuits is a daunting task due to the exponential growth of the state space. Hence there can be times when a single tensor is too huge to be stored as it is. Here is where tensor-networks come handy.
+
+### Tensor Network Simulation ###
+
+* Tensors, as we know, are multi-dimensional maps or functions, with a 2-dimensional tensor equivalent to a matrix. Tensor networks are modeled as graphs, with tensors as vertices and tensor methods, like contraction and decomposition, as edges. They have broad implications in various fields, including applied mathematics, chemistry, physics, and machine learning etc.
 * There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
-* Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit. As seen below-<br/>
+* Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit. As seen below (notice the increase in dimensionality after contraction)-<br/>
+Note: In this example, the circles represent tensors in the network, for instance, the yellow circle represents the Hadamard gate and all the green ones represent CNOT gates. The lines (edges) represent bond interactions. The measurements have been removed, since this is a unitary simulation. In the notation "i{x}_qq({y})", x represents the time step and y represents the qubit that tensor acts on.
 <center>
+	<figure style="display: inline-block;">
+		<img src="images/ghz_tn.png" width="500" height="200">
+		<figcaption>GHZ tensor network before contraction</figcaption>
+	</figure>
+	&nbsp;
 	<figure style="display: inline-block;">
 		<img src="images/tn_post_contraction.png" width="300">
 		<figcaption>GHZ tensor network after contraction</figcaption>
@@ -69,28 +86,67 @@ layout: my_default
 </center>
 <br/>
 
+* Tensor Networks can be grouped into classes based on topology- MPS, TTN, PEPS, MERA and more.
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/mps.png" width="500">
+		<figcaption>Matrix Product State</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/peps.png" width="300">
+		<figcaption>Projected Entangled Pair State</figcaption>
+	</figure>
+</center>
+<br/>
+
+* For more information related to tensor networks, refer to <a href="http://tensornetwork.org/" target="_blank"> Tensor-Networks</a>.
+
 <hr id="2" />
 
-## Scope of this project ##
-* We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
+## Quantum Sparsity - Problem Statement ##
+Explore and analyze the sparsity in the above-mentioned simulations and exploit it to reduce the overall simulation time.
+
+Approach:
+* Numerical Library: "qsparse" (placeholder name)
+* Quantum Algorithm-level Library: TODO
 
 <hr id="3" />
 
-## Problem Statement ##
-* Analyze intermediate unitaries for sparsity. [&check;]
-    * Follow the contraction path (opt_einsum) and analyze how the unitary of the circuit evolves over time steps.
-* New data structure format to store sparse unitaries efficiently.[&check;]
-    * Make use of diagonals and anti-diagonals. 
-    * Estimate the time and space complexities for kernel algorithmics involved (Matrix-Vector, Matrix-Matrix).
-* Implement the new data structure and kernels in c++ and expose as a custom library. [In-progress]
-    * Handle Conversions between this new format and numPy.
-    * Kernels:
-        * Vector to Vector multiplication [delayed, removed from scope of qc-22 course project]
-        * Vector to Matrix multiplication [delayed, removed from scope of qc-22 course project]
-        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations). [&check;]
-    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers). [In-progess, compared #flops algorithmically]
+## Preliminary Empirical Analysis (Fall '22) ##
+
+
 
 <hr id="4" />
+
+## Key Outcomes (so far) ##
+
+* Developed a new sparse data structure that exploits the found sparsity pattern to improve memory requirements and compute requirements for operations like contraction/decomposition. This new data structure stores all diagonals as a map, indexed by their indices, and values are contiguous arrays. The new sparse data structure allows the simulation of very wide circuits with memory demands that grow linearly (or close to) with qubits and matrix multiplication that becomes big-oh linear (or factor of it) for a small number of diagonals.
+* Developed a numerical library that realizes this data structure.
+* Modified the numerical library to work for higher order tensors using matricization in a way that maximizes the number of diagonals to work better for the new data structure. Implemented reshape, transpose, trace, sum for tensors, and internally efficiently stored them as matrices.
+* Exposed a pip installable python interface of the C++ library using pybind11.
+* Integrated the numerical library and the "sparse" library (Scipy, COO format) with opt_einsum package for testing with Quimb.
+* Tested supermarQ benchmark circuits' tn-simulation using jax, numpy, tensorflow, torch, sparse, and our new library.
+* Multi-threading helped reduce the time taken to format convert by ~64.9% (for 16 threads).
+* To address the issue of complex arrays curtailing vectorization using SSE4.2 intrinsics, we now store two separate arrays for real and imaginary numbers within the new data structure. This improved the matrix multiplication performance by ~13.7% (for 26 qubit GHZ simulation).
+
+
+<hr id="5" />
+
+## Preliminary Results (Spring '23) ##
+
+
+<hr id="6" />
+
+## Future Plans (Fall '23) ##
+
+* Move away from SSE and towards AVX.
+* Compare the library's implementation with state-of-the-art dense kernels like that of open BLAS 3's cGEMM implementation.
+* Explore better utilization of cache through techniques like blocking. It is anticipated that utilizing the library will enable simulation of very large qubit circuits (>20) that cause other libraries like numpy to run out of memory.
+* Develop a quantum algorithm level library like Koala/Qiskit/Quimb that is tailored to our numerical library and stores gates in our library's format would eliminate the need for any format conversions and is expected to result in the greatest performance gains.
+* Explore the possibility of identifying sub-circuits that can be efficiently simulated using the data structure through techniques like memoization.
+
+<hr id="5" />
 
 ## Progress Update 1 ##
 * Analyzed sparsity of quantum circuits represented as unitaries.    
@@ -150,13 +206,6 @@ Dense(numPy) vs Diagonal(our approach comparison)- <br/>
 
 <hr id="5" />
 
-## Literature Survey ##
-[Paper List](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey "Papers")
-
-<hr id="6" />
-
-## Note ##
-* Please refer [Reports/Discussion](https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions "Discussion") for timeline and progress so far.
 
 <br/>
 </div>
