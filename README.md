@@ -1,36 +1,11 @@
 # sparse-tnqs #
 Sparse Tensor Network based Quantum Simulation
 
-### Links ###
-* [GIT IO PAGE](https://pages.github.ncsu.edu/tnqs/sparse-tnqs/)
+* This repo hosts the high performance numerical library that is tailored to work best for the sparsity seen in most quantum simulations.
+
+### About this Project ###
+* <a href="https://pages.github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank"> TNQS </a>.
 * [Overleaf](https://www.overleaf.com/project/634d7c5f9cdfe07d6b005919)
-
-*As of now, this project is only for a custom numeric library tweaked to work best for sparse tensor-network based quantum simulations. This is part of Dr. Frank's quantum computing course project: [QC-22](https://pages.github.ncsu.edu/fmuelle/qc22/ "QC-22")*
-
-## Motivation ##
-* Quantum circuit simulation can be posed as a directed graph problem, where each node is a "tensor" representing the quantum gate (unitary matrix) operation on a set of input qubits.
-* The state of these input qubits evolves as the quantum circuit proceeds in time steps. With each state evolution, we are essentially performing a "contraction" (multiplication) of the input tensor (vector/matrix) with a gate tensor (X, Y, Z, CX, CCX etc) until we reach the end of the circuit.
-* The order in which is contraction is performed is crucial for performance; just like how order of n matrix multiplications is crucial for performance.
-* There are algorithms to get the most optimal path (like opt_einsum). Read "Algorithms for Tensor Network Contraction Ordering" under literature_survey.
-* Once an optimal path is chosen, the complex quantum circuit which had multiple intermediate gates/tensors, boils down to just one big really sparse unitary matrix. Modern simulation tools like qiskit have methods to get this unitary for any given quantum circuit.
-
-## Scope of this project ##
-* We focus only on the sparsity introduced in above-mentioned simulation and create a new library that performs the "contraction" better in terms of memory, thereby reducing overall quantum simulation time.
-
-## Problem Statement ##
-* Analyze intermediate unitaries for sparsity. [:heavy_check_mark:]
-    * Follow the contraction path (opt_einsum) and analyze how the unitary of the circuit evolves over time steps.
-* New data structure format to store sparse unitaries efficiently.
-    * Make use of diagonals and anti-diagonals. [:heavy_check_mark:]
-    * Estimate the time and space complexities for kernel algorithmics involved (Matrix-Vector, Matrix-Matrix). [:heavy_check_mark:]
-* Implement the new data structure and kernels in c++ and expose as a custom library.
-    * Handle Conversions between this new format and numPy. [:heavy_check_mark:]
-    * Kernels:
-        * Vector to Vector multiplication [delayed, removed from scope of qc-22 course project]
-        * Vector to Matrix multiplication [delayed, removed from scope of qc-22 course project]
-        * Matrix to Matrix multiplication - (used in contraction in tensor-network based simulations). [:heavy_check_mark:]
-    * Compare performance using metrics- #flops, memory (kB) and #intops (number of floats/doubles that can be represented with just integers). [In-progess, compared #flops algorithmically]
-
 
 ## Installation ##
 * Clone this repo and get data required for testing (this data is generated using qiskit's unitary simulator)
