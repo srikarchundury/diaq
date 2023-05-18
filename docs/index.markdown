@@ -12,9 +12,10 @@ layout: my_default
   <a href="#1">Motivation</a>
   <a href="#2">Problem Statement</a>
   <a href="#3">Empirical/Visual Analysis</a>
-  <a href="#4">Key Outcomes</a>
-  <a href="#5">Preliminary Results</a>
-  <a href="#6">Future Scope</a>
+  <a href="#4">Algorithms and Data Structures</a>
+  <a href="#5">Key Outcomes</a>
+  <a href="#6">Preliminary Results</a>
+  <a href="#7">Future Scope</a>
 	<hr/>
 	<b> Project Info </b>
 	<hr/>
@@ -113,11 +114,125 @@ Approach:
 
 <hr id="3" />
 
-## Preliminary Empirical Analysis (Fall '22) ##
+## Preliminary Empirical/Visual Analysis (Fall '22) ##
 
+* Obtained final unitaries using quimb, qiskit (unitary simulator) for quantum circuit benchmarks described in the supermarQ paper (refer literature survey below). Some results (for 3 qubit benchmark circuits):
 
+	<center>
+	<figure style="display: inline-block;">
+		<img src="images/ghz_circuit.png" height="160">
+		<figcaption>GHZ circuit</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/ghz_unitary.png" width="600">
+		<figcaption>GHZ unitary matrix</figcaption>
+	</figure>
+	<hr width="80%"/>
+	<figure style="display: inline-block;">
+		<img src="images/ham_circuit.png" height="140" width="450">
+		<figcaption>Hamiltonian circuit</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/ham_unitary.png" width="600">
+		<figcaption>Hamiltonian unitary matrix</figcaption>
+	</figure>
+	<hr width="80%"/>
+	<figure style="display: inline-block;">
+		<img src="images/mermin_bell_circuit.png" height="140" width="450">
+		<figcaption>Mermin Bell Pair Generation circuit</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/mermin_bell_unitary.png" width="600">
+		<figcaption>Mermin Bell Pair Generation unitary matrix</figcaption>
+	</figure>
+	<hr width="80%"/>
+	</center>
+<br/>
+
+* Final unitaries can be compactly represented using just the diagonals and anti-diagonals.
+* Final unitaries' range of values is limited and can easily be written as constant times a matrix with just +1,0,-1 paving scope for reducing #flops in contraction kernels.
+* The intermediate matrices in the contration path also have similar sparsity patterns.
+* We then designed a new sparse data structure-
+    * A quantum sparse matrix (QSM) is a collection of "diagonals" stored as a hashmap, with each diagonal's index as the key (0 for main diagonal, 1 for super diagonal, -1 for sub diagonal and so on.)
+    * Each diagonal is represented using 2 arrays (one for indices and one for the actual values) that store only non-zero values; diagonal is also sparse.
+    * Each value is a complex number. We later moved away from this approach; to store real and imaginary numbers separately.
+
+	<center>
+	<figure style="display: inline-block;">
+	<img src="images/vqe_prep_circuit.png" width="60%">
+	<figcaption>VQE preparation circuit - taken from Qiskit textbook</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+	<img src="images/vqe_prep_unitary.png" width="600">
+	<figcaption>Unitary of this circuit</figcaption>
+	</figure>
+	</center>
 
 <hr id="4" />
+
+* Kernel Algorithms-
+    * Any square matrix of size n has 2n-1 principal diagonals.
+    * Any square matrix can be written as a sum of 2n-1 matrices (each matrix with just one diagonal).
+    * Matrix-Matrix (A.B) multiplication algorithm: can be divided into subproblems like so-
+        * (A<sub>-n</sub> + ... + A<sub>0</sub> + A<sub>1</sub> + ... + A<sub>n</sub>) . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>)
+        * A<sub>-n</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + A<sub>-(n-1)</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + ...
+        * A<sub>-n</sub> . B<sub>-n</sub> + A<sub>-n</sub> . (B<sub>-(n-1)</sub> + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
+        * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
+        * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
+        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (See VQE example above, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
+
+<hr  width="80%"/>
+
+* Data Structures-
+	* 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
+    * Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
+    * Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
+	* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
+	* We implemented the "Sparse Diagonal" format using c++11.
+    * Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 16. Later, we also generated data for circuits >16 qubits and were able to test till 26 qubits on the ARC cluster's Cascade machine.
+	<center>
+	<figure style="display: inline-block;">
+		<img src="images/ghz_flops_comparison.png" width="400">
+		<figcaption>GHZ FLOPS comparison</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/ham_flops_comparison.png" width="400">
+		<figcaption>HAM FLOPS comparison</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/mermin_bell_flops_comparison.png" width="400">
+		<figcaption>MERMIN_BELL FLOPS comparison</figcaption>
+	</figure>
+	</center>
+
+* QAOA Max-Cut- Consider the below circuit that uses QAOA to find max-cut of a square, after stripping off measurements and Hadamards) <a href="https://qiskit.org/textbook/ch-applications/qaoa.html" target="_blank"> Qiskit Ref</a>.
+	<center>
+	<figure style="display: inline-block;">
+		<img src="images/qaoa_maxcut_circuit.png" width="600">
+		<figcaption>MAX-CUT Circuit</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/maxcut.gif" width="400">
+		<figcaption>Intermediate Unitaries (this is a GIF)</figcaption>
+	</figure>
+	</center>
+
+	* Simulating this QAOA example (MAX-CUT)- Numpy vs our approach-
+	<center>
+	<figure style="display: inline-block;">
+		<img src="images/qaoa_maxcut_flops_comparison.png" width="400">
+		<figcaption>FLOPS comparison (Dense vs our approach)</figcaption>
+	</figure>
+
+
+<hr id="5" />
 
 ## Key Outcomes (so far) ##
 
@@ -131,12 +246,12 @@ Approach:
 * To address the issue of complex arrays curtailing vectorization using SSE4.2 intrinsics, we now store two separate arrays for real and imaginary numbers within the new data structure. This improved the matrix multiplication performance by ~13.7% (for 26 qubit GHZ simulation).
 
 
-<hr id="5" />
+<hr id="6" />
 
 ## Preliminary Results (Spring '23) ##
 
 
-<hr id="6" />
+<hr id="7" />
 
 ## Future Plans (Fall '23) ##
 
@@ -146,66 +261,8 @@ Approach:
 * Develop a quantum algorithm level library like Koala/Qiskit/Quimb that is tailored to our numerical library and stores gates in our library's format would eliminate the need for any format conversions and is expected to result in the greatest performance gains.
 * Explore the possibility of identifying sub-circuits that can be efficiently simulated using the data structure through techniques like memoization.
 
-<hr id="5" />
-
-## Progress Update 1 ##
-* Analyzed sparsity of quantum circuits represented as unitaries.    
-    * Obtained final unitaries using quimb, qiskit (unitary simulator) for quantum circuit benchmarks described in the supermarQ paper (refer literature survey below). Some results (for 3 qubit benchmark circuits) look like this-
-        * GHZ circuit <br/> <img src="images/ghz_unitary.png" width="600"> &nbsp; <img src="images/ghz_circuit.png" width="300"> <br/>
-        * Hamiltonian circuit <br/> <img src="images/ham_unitary.png" width="600"> &nbsp; <img src="images/ham_circuit.png" width="400"> <br/>
-        * Mermin Bell circuit <br/> <img src="images/mermin_bell_unitary.png" width="600"> &nbsp; <img src="images/mermin_bell_circuit.png" width="400"> <br/>
-    
-    * Some observations:
-        * Final unitaries can be compactly represented using just the diagonals and anti-diagonals.
-        * Final unitaries' range of values is limited and can easily be written as constant times a matrix with just +1,0,-1 paving scope for reducing #flops in contraction kernels.
-    
-    * Claim (yet to prove): The intermediate matrices in the contration path have similar sparsity patterns. Support for this claim: the same benchmark ciruits when run for smaller/higher number of qubits result in unitaries looking very similar.
-
-* New sparse data structure-
-    * A quantum sparse matrix (QSM) is a collection of "diagonals" stored as a hashmap, with each diagonal's index as the key (0 for main diagonal, 1 for super diagonal, -1 for sub diagonal and so on.)
-    * Each diagonal is represented using 2 arrays (one for indices and one for the actual values) that store only non-zero values; diagonal is also sparse.
-    * Each value is a complex number
-
-* Kernel algorithms and their complexities-
-    * Any square matrix of size n has 2n-1 principal diagonals.
-    * Any square matrix can be written as a sum of 2n-1 matrices (each matrix with just one diagonal).
-    * Matrix-Matrix (A.B) multiplication algorithm: can be divided into subproblems like so-
-        * (A<sub>-n</sub> + ... + A<sub>0</sub> + A<sub>1</sub> + ... + A<sub>n</sub>) . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>)
-        * A<sub>-n</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + A<sub>-(n-1)</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + ...
-        * A<sub>-n</sub> . B<sub>-n</sub> + A<sub>-n</sub> . (B<sub>-(n-1)</sub> + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
-        * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
-        * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
-        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (for example, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
-
-<hr id="7" />
-
-## Progress Update 2 ##
-* Jotted down M-M algorithms for 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
-    * Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
-    * Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
-* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
-* We implemented the "Sparse Diagonal" format using c++11.
-    * Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 11. In the future, we plan to also run for >18 qubits on the ARC cluster.
-    * GHZ circuit <br/> <img src="images/ghz_flops_comparison.png" width="300"> <br/>
-    * Hamiltonian circuit <br/> <img src="images/ham_flops_comparison.png" width="300"> <br/>
-    * Mermin Bell circuit <br/> <img src="images/mermin_bell_flops_comparison.png" width="300"> <br/>
-
+<br/>
 
 <hr id="8" />
 
-## QAOA Max-Cut ##
-
-Consider the below circuit that uses QAOA to find max-cut of a square, after stripping off measurements and Hadamards) ([Qiskit Ref](https://qiskit.org/textbook/ch-applications/qaoa.html))
-<img src="images/qaoa_maxcut_circuit.png" width="400"> <br/>
-
-This is how the intermediate unitaries look like- <br/>
-<img src="images/maxcut.gif" width="400"> <br/>
-
-Dense(numPy) vs Diagonal(our approach comparison)- <br/> 
-<img src="images/qaoa_maxcut_flops_comparison.png" width="400"> <br/>
-
-<hr id="5" />
-
-
-<br/>
 </div>
