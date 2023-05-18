@@ -1,37 +1,39 @@
 .sidenav {
     height: 100%;
-    width: 25%;
+    width: 20%;
     position: fixed;
+	float: left;
     z-index: 1;
     top: 0;
     left: 0;
     background-color: #111;
-    overflow-x: hidden;
-    padding-top: 20px;
+    overflow-x: scroll;
+	overflow-y: scroll;
+    padding-top: 1rem;
   }
 
   .main_content {
-	border-width: medium 10px;
+	border-width: medium 1rem;
 	border-color: #111;
-	height: 90%;
-	width: 70%;
+	height: 95%;
+	width: 80%;
+	float: right;
 	text-decoration: none;
-    font-size: 18px;
+    font-size: 1rem;
     color: #334642;
     display: block;
-	top: 7%;
-	padding-left: 0%;
+	top: 2%;
+	bottom: 2%;
 	position: fixed;
+	padding-left: 21%;
 	overflow-y: scroll;
     overflow-x: scroll;
-	/* text-align: center; */
-	justify-content: center;
   }
   
   .sidenav a {
-    padding: 6px 6px 8px 18px;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
     text-decoration: none;
-    font-size: 20px;
+    font-size: 1rem;
     color: #6f6f84;
     display: block;
   }
@@ -42,7 +44,7 @@
 
   .sidenav b {
     text-decoration: none;
-    font-size: 18px;
+    font-size: 1rem;
     color: #6b928b;
     display: block;
 	text-align: center;
@@ -51,8 +53,8 @@
 	color: #76817f;
   }
   
-  @media screen and (max-height: 450px) {
-    .sidenav {padding-top: 15px;}
-    .sidenav a {font-size: 18px;}
-	.main_content {font-size: 14px;}
+  @media screen and (max-height: 5rem) {
+    .sidenav {padding-top: 2rem;}
+    .sidenav a {font-size: 2rem;}
+	.main_content {font-size: 1rem;}
   }
