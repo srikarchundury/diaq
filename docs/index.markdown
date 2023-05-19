@@ -12,6 +12,7 @@ layout: my_default
   <a href="#1">Motivation</a>
   <a href="#2">Problem Statement</a>
   <a href="#3">Empirical/Visual Analysis</a>
+  <a href="#8">Sparsity Analysis</a>
   <a href="#4">Algorithms and Data Structures</a>
   <a href="#5">Key Outcomes</a>
   <a href="#6">Preliminary Results</a>
@@ -172,44 +173,84 @@ Approach:
 	</figure>
 	</center>
 
+
+<hr id="8" />
+
+### Sparsity Analysis ###
+
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/ghz_diagonal_before.png" width="400">
+		<figcaption>GHZ</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/ghz_diagonal_during.png" width="400">
+		<figcaption>During left to right contraction</figcaption>
+	</figure>
+	<hr width="80%"/>
+	<figure style="display: inline-block;">
+		<img src="images/ham_diagonal_before.png" width="400">
+		<figcaption>HAM</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/ham_diagonal_during.png" width="400">
+		<figcaption>During left to right contraction</figcaption>
+	</figure>
+	<hr width="80%"/>
+	<figure style="display: inline-block;">
+		<img src="images/mermin_diagonal_before.png" width="400">
+		<figcaption>Mermin Bell</figcaption>
+	</figure>
+	&nbsp;
+	<figure style="display: inline-block;">
+		<img src="images/mermin_diagonal_during.png" width="400">
+		<figcaption>During left to right contraction</figcaption>
+	</figure>
+	<hr width="80%"/>
+	</center>
+<br/>
+
+
 <hr id="4" />
 
-* Kernel Algorithms-
-    * Any square matrix of size n has 2n-1 principal diagonals.
-    * Any square matrix can be written as a sum of 2n-1 matrices (each matrix with just one diagonal).
-    * Matrix-Matrix (A.B) multiplication algorithm: can be divided into subproblems like so-
-        * (A<sub>-n</sub> + ... + A<sub>0</sub> + A<sub>1</sub> + ... + A<sub>n</sub>) . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>)
-        * A<sub>-n</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + A<sub>-(n-1)</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + ...
-        * A<sub>-n</sub> . B<sub>-n</sub> + A<sub>-n</sub> . (B<sub>-(n-1)</sub> + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
-        * Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
-        * So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
-        * In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (See VQE example above, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
+### Kernel Algorithms ###
+* Any square matrix of size n has 2n-1 principal diagonals.
+* Any square matrix can be written as a sum of 2n-1 matrices (each matrix with just one diagonal).
+* Matrix-Matrix (A.B) multiplication algorithm: can be divided into subproblems like so-
+	* (A<sub>-n</sub> + ... + A<sub>0</sub> + A<sub>1</sub> + ... + A<sub>n</sub>) . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>)
+	* A<sub>-n</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + A<sub>-(n-1)</sub> . (B<sub>-n</sub> + ... + B<sub>0</sub> + B<sub>1</sub> + ... + B<sub>n</sub>) + ...
+	* A<sub>-n</sub> . B<sub>-n</sub> + A<sub>-n</sub> . (B<sub>-(n-1)</sub> + ... + ...  [ (2n-1) (2n-1) terms, 2n-1 is the number of diagonals ]
+	* Each of the above multiplication takes linear time and is independent of any other term in the summation and hence is parallelizable.
+	* So, overall time complexity would be of the order O(n\*d\*d) where n is the length of each diagonal, d is the number of diagonals.
+	* In quantum simulations, as we've seen from the analysis, the number of diagonals is far smaller than the size of the matrix (See VQE example above, the vqe prep for 4 qubits results in a 16x16 matrix, but with elements only on 4 anti-diagonals). Hence, we claim that this approach significantly improves the multiplication operation (a.k.a the contraction step).
 
 <hr  width="80%"/>
 
-* Data Structures-
-	* 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
-    * Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
-    * Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
-	* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
-	* We implemented the "Sparse Diagonal" format using c++11.
-    * Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 16. Later, we also generated data for circuits >16 qubits and were able to test till 26 qubits on the ARC cluster's Cascade machine.
-	<center>
-	<figure style="display: inline-block;">
-		<img src="images/ghz_flops_comparison.png" width="400">
-		<figcaption>GHZ FLOPS comparison</figcaption>
-	</figure>
-	&nbsp;
-	<figure style="display: inline-block;">
-		<img src="images/ham_flops_comparison.png" width="400">
-		<figcaption>HAM FLOPS comparison</figcaption>
-	</figure>
-	&nbsp;
-	<figure style="display: inline-block;">
-		<img src="images/mermin_bell_flops_comparison.png" width="400">
-		<figcaption>MERMIN_BELL FLOPS comparison</figcaption>
-	</figure>
-	</center>
+### Data Structures ###
+* 2 variations of diagonal matrix formats- Sparse Diagonal and Compressed Sparse Diagonal.
+* Sparse Diagonal: Diagonals are represented using their index (gives us the position) and their a vector of their values. (half leveraging quantum sparsity)
+* Compressed Sparse Diagonal: The sparsity within diagonals is leveraged to store the vectors in a compressed fashion (like with CSR). So, a digonal here has an index, an array that stores non-zero indices within the diagonal and another array that stores the actual complex values.
+* In both versions, matrices are a map of diagonal indices to respective diagonal objects.
+* We implemented the "Sparse Diagonal" format using c++11.
+* Tested using supermarq (refer literature survey) benchmark circuits and counter the number of #flops for different cases. We ran for different sizes of these circuits from 3 to 16. Later, we also generated data for circuits >16 qubits and were able to test till 26 qubits on the ARC cluster's Cascade machine.
+<center>
+<figure style="display: inline-block;">
+	<img src="images/ghz_flops_comparison.png" width="400">
+	<figcaption>GHZ FLOPS comparison</figcaption>
+</figure>
+&nbsp;
+<figure style="display: inline-block;">
+	<img src="images/ham_flops_comparison.png" width="400">
+	<figcaption>HAM FLOPS comparison</figcaption>
+</figure>
+&nbsp;
+<figure style="display: inline-block;">
+	<img src="images/mermin_bell_flops_comparison.png" width="400">
+	<figcaption>MERMIN_BELL FLOPS comparison</figcaption>
+</figure>
+</center>
 
 * QAOA Max-Cut- Consider the below circuit that uses QAOA to find max-cut of a square, after stripping off measurements and Hadamards) <a href="https://qiskit.org/textbook/ch-applications/qaoa.html" target="_blank"> Qiskit Ref</a>.
 	<center>
@@ -249,6 +290,21 @@ Approach:
 <hr id="6" />
 
 ## Preliminary Results (Spring '23) ##
+
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/dense_qsparse.png" width="60%">
+		<figcaption>Unitary Contraction (Numpy vs Our Format)</figcaption>
+	</figure>
+</center>
+
+
+<center>
+	<figure style="display: inline-block;">
+		<img src="images/quimb_detailed_analysis.png" width="85%">
+		<figcaption>QUIMB Unitary Contraction</figcaption>
+	</figure>
+</center>
 
 
 <hr id="7" />
