@@ -28,7 +28,7 @@ layout: my_default
 	<hr/>
 	<a href="https://arcb.csc.ncsu.edu/~mueller/" target="_blank" class="sub_link"> Dr. Frank Mueller</a>
 	<a href="http://fruitfly1026.github.io/" target="_blank" class="sub_link"> Dr. Jiajia Li</a>
-	<a href="https://www.linkedin.com/in/srikarchundury/" target="_blank" class="sub_link"> Srikar Chundury</a>
+	<a href="https://srikarchundury.github.io" target="_blank" class="sub_link"> Srikar Chundury</a>
 	<a href="https://www.linkedin.com/in/blake-burgstahler/" target="_blank" class="sub_link"> Blake Burgstahler</a>
 	<hr/>
 	<b> More Info </b>
