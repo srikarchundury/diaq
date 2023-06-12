@@ -2,32 +2,34 @@
 #include "denseMatrix.hpp"
 
 // SIMD
-#include <immintrin.h>
-/* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
-__m128 load_partial(long int n, float const *p) {
-    __m128 t1, t2, xmm;
-    switch (n) {
-    case 1:
-        xmm = _mm_load_ss(p); break;
-    case 2:
-        xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
-    case 3:
-        t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
-        t2 = _mm_load_ss(p + 2);
-        xmm = _mm_movelh_ps(t1, t2); break;
-    case 4:
-        xmm = _mm_loadu_ps(p); break;
-    default:
-        xmm = _mm_setzero_ps();
-    }
-    return xmm;
-}
-void store_partial(long int n, float *loc, __m128 vec) {
-    #pragma unroll
-    for(long int i = 0; i < n; i++){
-        loc[i] = vec[i];
-    }
-}
+#ifdef VECTORIZATION
+	#include <immintrin.h>
+	/* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
+	__m128 load_partial(long int n, float const *p) {
+		__m128 t1, t2, xmm;
+		switch (n) {
+		case 1:
+			xmm = _mm_load_ss(p); break;
+		case 2:
+			xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
+		case 3:
+			t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
+			t2 = _mm_load_ss(p + 2);
+			xmm = _mm_movelh_ps(t1, t2); break;
+		case 4:
+			xmm = _mm_loadu_ps(p); break;
+		default:
+			xmm = _mm_setzero_ps();
+		}
+		return xmm;
+	}
+	void store_partial(long int n, float *loc, __m128 vec) {
+		#pragma unroll
+		for(long int i = 0; i < n; i++){
+			loc[i] = vec[i];
+		}
+	}
+#endif
 
 // ----------------------------------------------------------------
 //
@@ -151,9 +153,16 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     if(jump != 0) {
         k += jump;
     }
+	float *real_vals_a = diagA.getRealValues();
+    float *imag_vals_a = diagA.getImagValues();
+    float *real_vals_b = diagB.getRealValues();
+    float *imag_vals_b = diagB.getImagValues();
+	float *real_vals_final = res.getRealValues();
+    float *imag_vals_final = res.getImagValues();
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    // SIMD vectorization
+    #ifdef VECTORIZATION
+	// SIMD vectorization
     long int loop_count = 0;
     long int k_cpy = k;
     while(k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -170,13 +179,6 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     // std::cout << "left_overs=" << left_overs << std::endl;
     // std::cout << "left_overs_start_at_A=" << left_overs_start_at_A << std::endl;
     // std::cout << "left_overs_start_at_B=" << left_overs_start_at_B << std::endl;
-    float *real_vals_a = diagA.getRealValues();
-    float *imag_vals_a = diagA.getImagValues();
-    float *real_vals_b = diagB.getRealValues();
-    float *imag_vals_b = diagB.getImagValues();
-
-    float *real_vals_final = res.getRealValues();
-    float *imag_vals_final = res.getImagValues();
     while(vec_loop--) {
         // std::cout << "loop k=" << k << std::endl;
         real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
@@ -219,8 +221,22 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
         store_partial(left_overs, &imag_vals_final[k], imag_res);
         k += left_overs;
     }
-    // std::cout << "---" << std::endl;
+	// std::cout << "---" << std::endl;
     // res.setElements(real_vals_final, imag_vals_final);
+	#endif
+	#ifndef VECTORIZATION
+	// no vectorization
+    while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
+        // std::cout << "loop k=" << k << std::endl;
+		float real_a = real_vals_a[k + offsetA - jump];
+        float imag_a = imag_vals_a[k + offsetA - jump];
+        float real_b = real_vals_b[k + offsetB - jump];
+        float imag_b = imag_vals_b[k + offsetB - jump];
+		real_vals_final[k] = real_a * real_b - imag_a * imag_b;
+		imag_vals_final[k] = real_a * imag_b + imag_a * real_b;
+        k += 1;
+    }
+	#endif
     return res;
 }
 
