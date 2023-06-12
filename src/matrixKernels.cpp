@@ -2,7 +2,7 @@
 #include "denseMatrix.hpp"
 
 // SIMD
-#ifdef VECTORIZATION
+#ifdef __SSE__
 	#include <immintrin.h>
 	/* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
 	__m128 load_partial(long int n, float const *p) {
@@ -161,7 +161,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     float *imag_vals_final = res.getImagValues();
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    #ifdef VECTORIZATION
+    #ifdef __SSE__
 	// SIMD vectorization
     long int loop_count = 0;
     long int k_cpy = k;
@@ -224,7 +224,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
 	// std::cout << "---" << std::endl;
     // res.setElements(real_vals_final, imag_vals_final);
 	#endif
-	#ifndef VECTORIZATION
+	#ifndef __SSE__
 	// no vectorization
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
