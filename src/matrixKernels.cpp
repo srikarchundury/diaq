@@ -198,7 +198,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
         store_partial(4, &real_vals_final[k], real_res);
         store_partial(4, &imag_vals_final[k], imag_res);
         // std::cout << "after 4 " << std::endl;
-        // res.prlong int();
+        // res.print();
         k += 4;
     }
     if(left_overs != 0) {
@@ -232,8 +232,8 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
         float imag_a = imag_vals_a[k + offsetA - jump];
         float real_b = real_vals_b[k + offsetB - jump];
         float imag_b = imag_vals_b[k + offsetB - jump];
-		real_vals_final[k] = real_a * real_b - imag_a * imag_b;
-		imag_vals_final[k] = real_a * imag_b + imag_a * real_b;
+		real_vals_final[k] = (float)((double)(real_a * real_b) - (double)(imag_a * imag_b));
+		imag_vals_final[k] = (float)((double)(real_a * imag_b) + (double)(imag_a * real_b));
         k += 1;
     }
 	#endif
@@ -249,8 +249,8 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
  * @return quantumSparseMatrix  C
  */
 quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
-    // A.prlong int();
-    // B.prlong int();
+    // A.print();
+    // B.print();
     if(A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -263,18 +263,18 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
             // std::cout << " ------ diags ------ " << std::endl;
-            // itA->second.prlong int();
-            // itB->second.prlong int();
+            // itA->second.print();
+            // itB->second.print();
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
             diagonal diagNew = multiplyDiagonals(A.matrix_shape, B.matrix_shape, itA->first, itB->first, itA->second, itB->second);
             if(diagNew.dLength != 0 && !diagNew.isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
-                // diagNew.prlong int();
+                // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
                 result->addDiagonal(itA->first + itB->first, diagNew);
                 // std::cout << " ------ result ------ " << std::endl;
-                // result->prlong int();
+                // result->print();
                 // std::cout << " ------ result ------ " << std::endl;
             } else {
                 // std::cout << "diagonal does not exist" << std::endl;
@@ -283,9 +283,9 @@ quantumSparseMatrix product(quantumSparseMatrix A, quantumSparseMatrix B) {
     }
     result->pruneMatrix();
     // std::cout << " ------ final result ------ " << std::endl;
-    // result->prlong int();
+    // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
-    // result->prlong int();
+    // result->print();
     return *result;
 }
 
@@ -488,7 +488,7 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 
 quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<long int> new_order) {
     // std::cout << "transpose called for " << std::endl;
-    // A.prlong int();
+    // A.print();
 
     // std::cout << "new_order (";
     // for(long int i = 0; i < new_order.size()-1; i++) {
@@ -509,7 +509,7 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<long int> new_o
         }
         quantumSparseMatrix p(newDiagMap, &newShape, &newShape);
         // std::cout << "transpose result " << std::endl;
-        // p.prlong int();
+        // p.print();
         p.pruneMatrix();
         return p;
     }
@@ -588,9 +588,9 @@ quantumSparseMatrix transpose(quantumSparseMatrix A, std::vector<long int> new_o
 quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<long int> > axes) {
     // std::cout << "--" << std::endl;
     // std::cout << "tensordot called for A - " << std::endl;
-    // A.prlong int();
+    // A.print();
     // std::cout << "and B - " << std::endl;
-    // B.prlong int();
+    // B.print();
     // std::cout << "with axes - " << " (";
     // long int i=0;
     // for(i=0; i<axes[0].size()-1; i++)
@@ -646,9 +646,9 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     for(long int i=0;i<axes[1].size();i++) axes_1_product *= B.shape[axes[1][i]];
 
     A = transpose(A, order_A);
-    // A.prlong int();
+    // A.print();
     B = transpose(B, order_B);
-    // B.prlong int();
+    // B.print();
 
     long int totalA = A.matrix_shape[0] * A.matrix_shape[1];
     long int totalB = B.matrix_shape[0] * B.matrix_shape[1];
@@ -667,9 +667,9 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     quantumSparseMatrix reshaped_B = reshape(B, new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
-    // reshaped_A.convertToDenseMatrix(reshaped_A.shape).prlong int();
+    // reshaped_A.convertToDenseMatrix(reshaped_A.shape).print();
     // std::cout << "and B - " << std::endl;
-    // reshaped_B.convertToDenseMatrix(reshaped_B.shape).prlong int();
+    // reshaped_B.convertToDenseMatrix(reshaped_B.shape).print();
 
     res = product(reshaped_A, reshaped_B);
 
@@ -677,7 +677,7 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
     res.shape = newTensorShape(A.shape, B.shape, axes[0], axes[1]);
     res.pruneMatrix();
     // std::cout << "dot result = " << std::endl;
-    // res.prlong int();
+    // res.print();
     // std::cout << "---" << std::endl;
     // res = reshape(res, old_shape);
     return res;
@@ -685,7 +685,7 @@ quantumSparseMatrix tensordot(quantumSparseMatrix A, quantumSparseMatrix B, std:
 
 quantumSparseMatrix array(quantumSparseMatrix A) {
     // std::cout << "array called for A - " << std::endl;
-    // A.prlong int();
+    // A.print();
     // TODO: unclear as of now what this mehthod should be doing
     return A;
 }
