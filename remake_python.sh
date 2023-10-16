@@ -1,3 +1,3 @@
 rm -rf build/*
-rm -rf qsparse.egg-info
+rm -rf dia_lite.egg-info
 pip install --no-cache-dir .

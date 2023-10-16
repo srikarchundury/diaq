@@ -1,5 +1,5 @@
-#ifndef __QSPARSE_HPP__
-#define __QSPARSE_HPP__
+#ifndef __DIA_LITE_HPP__
+#define __DIA_LITE_HPP__
 
 // #include <mpi.h>
 #include <stdio.h>
@@ -11,13 +11,13 @@
 #include <complex>
 #include <assert.h>
 
-#define QSPARSE_VERSION "0.0.1"
+#define DIA_LITE_VERSION "0.0.1"
 
 	#include "../src/denseMatrix.hpp"
 	#include "../src/diagonal.hpp"
 	#include "../src/kernels.hpp"
 	#include "../src/norms.hpp"
-	#include "../src/quantumSparseMatrix.hpp"
+	#include "../src/diaLiteMatrix.hpp"
 	#include "../src/Vector.hpp"
 
 #define LOG_LEVEL 2

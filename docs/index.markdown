@@ -110,7 +110,7 @@ Note: In this example, the circles represent tensors in the network, for instanc
 Explore and analyze the sparsity in the above-mentioned simulations and exploit it to reduce the overall simulation time.
 
 Approach:
-* Numerical Library: "qsparse" (placeholder name)
+* Numerical Library: "dia_lite" (placeholder name)
 * Quantum Algorithm-level Library: TODO
 
 <hr id="3" />

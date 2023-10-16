@@ -14,7 +14,7 @@ __version__ = "0.0.1"
 
 ext_modules = [
     Pybind11Extension(
-        "qsparse",
+        "dia_lite",
         ["include/pythonWrappers.cpp"],
         define_macros = [('VERSION_INFO', __version__)],
         extra_compile_args=["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"],
@@ -23,9 +23,9 @@ ext_modules = [
 ]
 
 setup(
-    name='qsparse',
+    name='dia_lite',
     version='0.0.1',
-    description='A numerical library for quantum contractions',
+    description='A WIP numerical library tailored for quantum contractions',
     author='Srikar Chundury',
     author_email='schundu3@ncsu.edu',
     url='https://github.ncsu.edu/tnqs/sparse-tnqs/',

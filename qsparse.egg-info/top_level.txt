@@ -1,1 +1,1 @@
-qsparse
+dia_lite
