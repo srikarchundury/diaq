@@ -3,7 +3,7 @@ A better DIA format that reduces storage compared to Scipy's DIA format. This nu
 
 ### About this Project ###
 <ul>
-<li> <a href="https://pages.github.ncsu.edu/qsparse" target="_blank"></a> </li>
+<li> <a href="https://pages.github.ncsu.edu/qsparse/dia_lite/" target="_blank"></a> QSparse </li>
 <li> <a href="https://www.overleaf.com/project/634d7c5f9cdfe07d6b005919" target="_blank">OVERLEAF</a> </li>
 </ul>
 
