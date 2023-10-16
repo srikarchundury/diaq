@@ -1,5 +1,5 @@
-#ifndef SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
-#define SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
+#ifndef QSPARSE_DIA_LITE_HPP
+#define QSPARSE_DIA_LITE_HPP
 
 #include "diagonal.hpp"
 #include <map>
@@ -11,12 +11,12 @@
 class denseMatrix; // telling this class exists w/o defining it here
 
 
-class quantumSparseMatrix {
+class diaLiteMatrix {
     public:
         std::vector<long int> matrix_shape; // as of now, this is always a 2 element array
         std::vector<long int> shape;
 
-        quantumSparseMatrix(long int s) {
+        diaLiteMatrix(long int s) {
             std::map<long int, diagonal> d;
             diagonalMap = d;
             size = s;
@@ -25,14 +25,14 @@ class quantumSparseMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        quantumSparseMatrix(std::vector<long int> *dimens) {
+        diaLiteMatrix(std::vector<long int> *dimens) {
             std::map<long int, diagonal> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
             shape = *dimens;
         }
-        quantumSparseMatrix(std::map<long int, diagonal> dm, long int s) {
+        diaLiteMatrix(std::map<long int, diagonal> dm, long int s) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -43,7 +43,7 @@ class quantumSparseMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        quantumSparseMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
+        diaLiteMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -52,7 +52,7 @@ class quantumSparseMatrix {
             size = matrix_shape[0];
             shape = *d;
         }
-        quantumSparseMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
+        diaLiteMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -283,4 +283,4 @@ class quantumSparseMatrix {
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
-#endif // SPARSE_TNQS_QUANTUMSPARSEMATRIX_HPP
+#endif // QSPARSE_DIA_LITE_HPP

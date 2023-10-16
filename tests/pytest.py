@@ -1,5 +1,5 @@
 import numpy as np
-import qsparse as qs
+import dia_lite as qs
 
 a1 = np.arange(16).reshape(2,2,2,2)
 a2 = np.arange(16,32).reshape(2,2,2,2)

@@ -3,7 +3,7 @@
 
 #include <omp.h>
 
-denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
+denseMatrix diaLiteMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     float *real_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
     float *imag_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
     std::map<long int, diagonal>::iterator it;
@@ -35,7 +35,7 @@ denseMatrix quantumSparseMatrix::convertToDenseMatrix(std::vector<long int> new_
     return d;
 }
 
-quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
+diaLiteMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // long int s = 0;
     // for(long int i = 0; i < new_shape.size(); i++) {
@@ -43,7 +43,7 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> ne
     // }
     // std::cout << "converting dense to sparse" << std::endl;
     std::map<long int, diagonal> diagMap;    
-    quantumSparseMatrix qm(diagMap, &new_shape);
+    diaLiteMatrix qm(diagMap, &new_shape);
     // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * qm.matrix_shape[0]; i < qm.matrix_shape[1]; i++) {
         // TODO: This function calls .insert on a std::map and hence is thread-unsafe; need to think of a parallel insert
@@ -68,7 +68,7 @@ quantumSparseMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> ne
 }
 
 // conversion from numpy to our format
-quantumSparseMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
+diaLiteMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
     float *real_vals = (float *)malloc(vals.size() * sizeof(float));
     float *imag_vals = (float *)malloc(vals.size() * sizeof(float));
     #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
@@ -97,7 +97,7 @@ quantumSparseMatrix from_numpy(std::vector<std::complex<float>> vals, std::vecto
     }
 }
 
-std::vector<std::complex<float> > to_numpy(quantumSparseMatrix A) {
+std::vector<std::complex<float> > to_numpy(diaLiteMatrix A) {
     denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
     return d.getData_forPy();
 }

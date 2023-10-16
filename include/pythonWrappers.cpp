@@ -6,16 +6,16 @@
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 
-#include "qSparse.hpp"
+#include "dia_lite.hpp"
 
 
 namespace py = pybind11;
 
 std::string version() {
-    return QSPARSE_VERSION;
+    return DIA_LITE_VERSION;
 }
 
-PYBIND11_MODULE(qsparse, m) {
+PYBIND11_MODULE(dia_lite, m) {
     m.doc() = "get C++ version"; // optional module docstring
     m.def("version", &version, "function returns the underneath C++ version");
 
@@ -33,28 +33,28 @@ PYBIND11_MODULE(qsparse, m) {
         .def("getDIndex", &diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diagonal::numNonZeros, py::return_value_policy::reference);
     
-    // quantumSparseMatrix class
-    py::class_<quantumSparseMatrix>(m, "quantumSparseMatrix")
+    // diaLiteMatrix class
+    py::class_<diaLiteMatrix>(m, "diaLiteMatrix")
         .def(py::init<std::map<long int, diagonal>, long int>())
-        .def_readwrite("matrix_shape", &quantumSparseMatrix::matrix_shape)
-        .def_readwrite("shape", &quantumSparseMatrix::shape)
-        .def("getItem", &quantumSparseMatrix::getItem, py::return_value_policy::reference)
-        .def("getMatrixPosition", &quantumSparseMatrix::getMatrixPosition, py::return_value_policy::reference)
-        .def("getDiagonalPosition", &quantumSparseMatrix::getDiagonalPosition, py::return_value_policy::reference)
-        .def("getSize", &quantumSparseMatrix::getSize, py::return_value_policy::reference)
-        .def("getDiagonalMap", &quantumSparseMatrix::getDiagonalMap, py::return_value_policy::reference)
-        .def("createDiagonal", &quantumSparseMatrix::createDiagonal, py::return_value_policy::reference)
-        .def("print", &quantumSparseMatrix::print, py::return_value_policy::reference)
-        .def("getDiagonal", &quantumSparseMatrix::getDiagonal, py::return_value_policy::reference)
-        .def("setDiagonal", &quantumSparseMatrix::setDiagonal, py::return_value_policy::reference)
-        .def("addDiagonal", &quantumSparseMatrix::addDiagonal, py::return_value_policy::reference)
-        .def("pruneMatrix", &quantumSparseMatrix::pruneMatrix, py::return_value_policy::reference)
-        .def("convertToDenseMatrix", &quantumSparseMatrix::convertToDenseMatrix, py::return_value_policy::reference)
+        .def_readwrite("matrix_shape", &diaLiteMatrix::matrix_shape)
+        .def_readwrite("shape", &diaLiteMatrix::shape)
+        .def("getItem", &diaLiteMatrix::getItem, py::return_value_policy::reference)
+        .def("getMatrixPosition", &diaLiteMatrix::getMatrixPosition, py::return_value_policy::reference)
+        .def("getDiagonalPosition", &diaLiteMatrix::getDiagonalPosition, py::return_value_policy::reference)
+        .def("getSize", &diaLiteMatrix::getSize, py::return_value_policy::reference)
+        .def("getDiagonalMap", &diaLiteMatrix::getDiagonalMap, py::return_value_policy::reference)
+        .def("createDiagonal", &diaLiteMatrix::createDiagonal, py::return_value_policy::reference)
+        .def("print", &diaLiteMatrix::print, py::return_value_policy::reference)
+        .def("getDiagonal", &diaLiteMatrix::getDiagonal, py::return_value_policy::reference)
+        .def("setDiagonal", &diaLiteMatrix::setDiagonal, py::return_value_policy::reference)
+        .def("addDiagonal", &diaLiteMatrix::addDiagonal, py::return_value_policy::reference)
+        .def("pruneMatrix", &diaLiteMatrix::pruneMatrix, py::return_value_policy::reference)
+        .def("convertToDenseMatrix", &diaLiteMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         // operator bindings
-        .def("__mul__", [](const quantumSparseMatrix &a, const quantumSparseMatrix &b){
+        .def("__mul__", [](const diaLiteMatrix &a, const diaLiteMatrix &b){
             return a * b;
         }, py::is_operator())
-        .def("__add__", [](const quantumSparseMatrix &a, const quantumSparseMatrix &b){
+        .def("__add__", [](const diaLiteMatrix &a, const diaLiteMatrix &b){
             return a + b;
         }, py::is_operator());
 
@@ -91,7 +91,7 @@ PYBIND11_MODULE(qsparse, m) {
     m.def("array", &array, py::return_value_policy::reference);
     m.def(
         "tensordot",
-        [](quantumSparseMatrix A, quantumSparseMatrix B, std::vector<std::vector<long int> > axes) { return tensordot(A, B, axes); },
+        [](diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vector<long int> > axes) { return tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
@@ -99,14 +99,14 @@ PYBIND11_MODULE(qsparse, m) {
     );
     m.def(
         "transpose",
-        [](quantumSparseMatrix A, std::vector<long int> new_order) { return transpose(A, new_order); },
+        [](diaLiteMatrix A, std::vector<long int> new_order) { return transpose(A, new_order); },
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
     m.def(
         "einsum",
-        [](quantumSparseMatrix A, std::vector<long int> axes) { return einsum(A, axes); },
+        [](diaLiteMatrix A, std::vector<long int> axes) { return einsum(A, axes); },
         py::arg(),
         py::arg("axes"),
         py::return_value_policy::reference
