@@ -7,7 +7,7 @@ layout: my_default
 <!-- Side navigation -->
 <div class="sidenav">
 	<hr/>
-		<b> Tensor-Network based Quantum Simulation (TNQS) </b>
+		<b> Sparsity in Quantum </b>
 	<hr/>
   <a href="#1">Motivation</a>
   <a href="#2">Problem Statement</a>
@@ -21,8 +21,8 @@ layout: my_default
 	<b> Project Info </b>
 	<hr/>
 	<div class="sub_link">
-	<a href="https://github.ncsu.edu/tnqs/" target="_blank"> Git Organisation (TNQS)</a>
-	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
+	<a href="https://github.ncsu.edu/qsparse/" target="_blank"> Git Organisation (qsparse)</a>
+	<a href="https://github.ncsu.edu/qsparse/dia_lite/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
 	<hr/>
 	<b> Group Info </b>
 	<hr/>
@@ -33,8 +33,8 @@ layout: my_default
 	<hr/>
 	<b> More Info </b>
 	<hr/>
-	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/literature_survey" target="_blank" class="sub_link"> Literature Survey</a>
-	<a href="https://github.ncsu.edu/tnqs/sparse-tnqs/tree/main/discussions" target="_blank" class="sub_link"> Reports/Discussions</a>
+	<a href="https://github.ncsu.edu/qsparse/dia_lite/tree/main/literature_survey" target="_blank" class="sub_link"> Literature Survey</a>
+	<a href="https://github.ncsu.edu/qsparse/dia_lite/tree/main/discussions" target="_blank" class="sub_link"> Reports/Discussions</a>
 	</div>
 	<hr/>
 	<a href="https://arcb.csc.ncsu.edu/~mueller/cross.html" target="_blank"> <b> About PPoSS project </b> </a>

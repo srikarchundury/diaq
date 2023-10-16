@@ -1,11 +1,9 @@
-# sparse-tnqs #
-Sparse Tensor Network based Quantum Simulation
-
-* This repo hosts the high performance numerical library that is tailored to work best for the sparsity seen in most quantum simulations.
+# DIA Lite #
+A better DIA format that reduces storage compared to Scipy's DIA format. This numerical library offers DIA_Lite matrices, matricized tensors, and a set of kernels specifically tailored for efficient quantum simulations.
 
 ### About this Project ###
 <ul>
-<li> <a href="https://pages.github.ncsu.edu/tnqs/sparse-tnqs/" target="_blank">TNQS</a> </li>
+<li> <a href="https://pages.github.ncsu.edu/qsparse" target="_blank"></a> </li>
 <li> <a href="https://www.overleaf.com/project/634d7c5f9cdfe07d6b005919" target="_blank">OVERLEAF</a> </li>
 </ul>
 

@@ -19,12 +19,12 @@
 # in the templates via {{ site.myvariable }}.
 
 markdown: GFM
-title: Sparse Quantum Simulation
+title: Sparsity in Quantum Simulations
 description: >- # this means to ignore newlines until "baseurl:"
-  Optimizing tensor network contractions leveraging the sparsity pattern seen in most quantum simulations.
+  Optimizing tensor contractions leveraging the sparsity pattern seen in most quantum simulations.
 baseurl: "/" # the subpath of your site, e.g. /blog
-url: "https://pages.github.ncsu.edu/tnqs" # the base hostname & protocol for your site, e.g. http://example.com
-repository: tnqs/sparse-tnqs
+url: "https://pages.github.ncsu.edu/qsparse" # the base hostname & protocol for your site, e.g. http://example.com
+# repository: 
 
 # Build settings
 # remote_theme: pages-themes/minimal@v0.2.0
