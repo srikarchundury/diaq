@@ -1,1 +1,1 @@
-g++ -O3 -Wall -std=c++11 -shared -fPIC pythonWrappers.cpp -o dia_lite$(python-config --extension-suffix) -fopenmp
+g++ -O3 -Wall -std=c++11 -shared -fPIC pythonWrappers.cpp -o diaq$(python-config --extension-suffix) -fopenmp

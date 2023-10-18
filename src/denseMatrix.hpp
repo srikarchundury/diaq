@@ -8,7 +8,7 @@
 #include <complex>
 
 
-#include "diaLiteMatrix.hpp"
+#include "diaQMatrix.hpp"
 
 
 class denseMatrix {
@@ -132,7 +132,7 @@ class denseMatrix {
         }
         // currently un-used!
         // given a polong int in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
-        long int getTargetDiagIndex(diaLiteMatrix *qm, long int i, long int j) {
+        long int getTargetDiagIndex(diaQMatrix *qm, long int i, long int j) {
             // every element will be part of 2 diagonals. We choose one of them based on sparsity in each.
             // get diagonal index, based on distance or number of elements.
             long int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
@@ -158,7 +158,7 @@ class denseMatrix {
         long int getTargetDiagIndex_onlydiags(long int i, long int j) {
             return j-i;
         }
-        diaLiteMatrix convertToQuantumSparse(std::vector<long int> new_shape);
+        diaQMatrix convertToQuantumSparse(std::vector<long int> new_shape);
     private:
         float *realData;
         float *imagData;

@@ -1,3 +1,3 @@
 rm -rf build/*
-rm -rf dia_lite.egg-info
+rm -rf diaq.egg-info
 pip install --no-cache-dir .

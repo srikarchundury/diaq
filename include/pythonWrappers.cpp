@@ -6,16 +6,16 @@
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 
-#include "dia_lite.hpp"
+#include "diaq.hpp"
 
 
 namespace py = pybind11;
 
 std::string version() {
-    return DIA_LITE_VERSION;
+    return DIAQ_VERSION;
 }
 
-PYBIND11_MODULE(dia_lite, m) {
+PYBIND11_MODULE(diaq, m) {
     m.doc() = "get C++ version"; // optional module docstring
     m.def("version", &version, "function returns the underneath C++ version");
 
@@ -33,28 +33,28 @@ PYBIND11_MODULE(dia_lite, m) {
         .def("getDIndex", &diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diagonal::numNonZeros, py::return_value_policy::reference);
     
-    // diaLiteMatrix class
-    py::class_<diaLiteMatrix>(m, "diaLiteMatrix")
+    // diaQMatrix class
+    py::class_<diaQMatrix>(m, "diaQMatrix")
         .def(py::init<std::map<long int, diagonal>, long int>())
-        .def_readwrite("matrix_shape", &diaLiteMatrix::matrix_shape)
-        .def_readwrite("shape", &diaLiteMatrix::shape)
-        .def("getItem", &diaLiteMatrix::getItem, py::return_value_policy::reference)
-        .def("getMatrixPosition", &diaLiteMatrix::getMatrixPosition, py::return_value_policy::reference)
-        .def("getDiagonalPosition", &diaLiteMatrix::getDiagonalPosition, py::return_value_policy::reference)
-        .def("getSize", &diaLiteMatrix::getSize, py::return_value_policy::reference)
-        .def("getDiagonalMap", &diaLiteMatrix::getDiagonalMap, py::return_value_policy::reference)
-        .def("createDiagonal", &diaLiteMatrix::createDiagonal, py::return_value_policy::reference)
-        .def("print", &diaLiteMatrix::print, py::return_value_policy::reference)
-        .def("getDiagonal", &diaLiteMatrix::getDiagonal, py::return_value_policy::reference)
-        .def("setDiagonal", &diaLiteMatrix::setDiagonal, py::return_value_policy::reference)
-        .def("addDiagonal", &diaLiteMatrix::addDiagonal, py::return_value_policy::reference)
-        .def("pruneMatrix", &diaLiteMatrix::pruneMatrix, py::return_value_policy::reference)
-        .def("convertToDenseMatrix", &diaLiteMatrix::convertToDenseMatrix, py::return_value_policy::reference)
+        .def_readwrite("matrix_shape", &diaQMatrix::matrix_shape)
+        .def_readwrite("shape", &diaQMatrix::shape)
+        .def("getItem", &diaQMatrix::getItem, py::return_value_policy::reference)
+        .def("getMatrixPosition", &diaQMatrix::getMatrixPosition, py::return_value_policy::reference)
+        .def("getDiagonalPosition", &diaQMatrix::getDiagonalPosition, py::return_value_policy::reference)
+        .def("getSize", &diaQMatrix::getSize, py::return_value_policy::reference)
+        .def("getDiagonalMap", &diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
+        .def("createDiagonal", &diaQMatrix::createDiagonal, py::return_value_policy::reference)
+        .def("print", &diaQMatrix::print, py::return_value_policy::reference)
+        .def("getDiagonal", &diaQMatrix::getDiagonal, py::return_value_policy::reference)
+        .def("setDiagonal", &diaQMatrix::setDiagonal, py::return_value_policy::reference)
+        .def("addDiagonal", &diaQMatrix::addDiagonal, py::return_value_policy::reference)
+        .def("pruneMatrix", &diaQMatrix::pruneMatrix, py::return_value_policy::reference)
+        .def("convertToDenseMatrix", &diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         // operator bindings
-        .def("__mul__", [](const diaLiteMatrix &a, const diaLiteMatrix &b){
+        .def("__mul__", [](const diaQMatrix &a, const diaQMatrix &b){
             return a * b;
         }, py::is_operator())
-        .def("__add__", [](const diaLiteMatrix &a, const diaLiteMatrix &b){
+        .def("__add__", [](const diaQMatrix &a, const diaQMatrix &b){
             return a + b;
         }, py::is_operator());
 
@@ -91,7 +91,7 @@ PYBIND11_MODULE(dia_lite, m) {
     m.def("array", &array, py::return_value_policy::reference);
     m.def(
         "tensordot",
-        [](diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vector<long int> > axes) { return tensordot(A, B, axes); },
+        [](diaQMatrix A, diaQMatrix B, std::vector<std::vector<long int> > axes) { return tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
@@ -99,14 +99,14 @@ PYBIND11_MODULE(dia_lite, m) {
     );
     m.def(
         "transpose",
-        [](diaLiteMatrix A, std::vector<long int> new_order) { return transpose(A, new_order); },
+        [](diaQMatrix A, std::vector<long int> new_order) { return transpose(A, new_order); },
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
     m.def(
         "einsum",
-        [](diaLiteMatrix A, std::vector<long int> axes) { return einsum(A, axes); },
+        [](diaQMatrix A, std::vector<long int> axes) { return einsum(A, axes); },
         py::arg(),
         py::arg("axes"),
         py::return_value_policy::reference

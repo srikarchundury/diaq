@@ -3,16 +3,16 @@
 #include <string>
 
 
-#include "../include/dia_lite.hpp"
+#include "../include/diaq.hpp"
 
 
-diaLiteMatrix testQuantumSparseMatrix(std::map<long int, diagonal> dm) {
-    diaLiteMatrix m = diaLiteMatrix(dm, 6);
+diaQMatrix testQuantumSparseMatrix(std::map<long int, diagonal> dm) {
+    diaQMatrix m = diaQMatrix(dm, 6);
     m.print();
     return m;
 }
 
-std::string checkResult(diaLiteMatrix A, diaLiteMatrix B) {
+std::string checkResult(diaQMatrix A, diaQMatrix B) {
     if(A.getSize() != B.getSize()) {
         // A.print();
         return "false - 1";
@@ -1439,19 +1439,19 @@ int main(int argc, char **argv) {
             // std::cout << std::endl << " ---- dense product ---- " << std::endl;
             // p.print();
             // std::cout << " ---- dense product ---- " << std::endl;
-            diaLiteMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
+            diaQMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
             // std::cout << " ---- correct answer ---- " << std::endl;
             // dp.print();
             // std::cout << " ---- correct answer ---- " << std::endl;
-            diaLiteMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
+            diaQMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
             // std::cout << " -- first -- " << std::endl;
             // first.print();
             // std::cout << " -- first -- " << std::endl;
-            diaLiteMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
+            diaQMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
             // std::cout << " -- second -- " << std::endl;
             // second.print();
             // std::cout << " -- second -- " << std::endl;
-            diaLiteMatrix qp = product(first, second);
+            diaQMatrix qp = product(first, second);
             // std::cout << " -- qp -- " << std::endl;
             // qp.print();
             // std::cout << " -- qp -- " << std::endl;
@@ -1464,12 +1464,12 @@ int main(int argc, char **argv) {
         B8.print();
         std::cout << " -- " << std::endl;
         std::vector<long int> dims{8,8};
-        diaLiteMatrix q_B8 = B8.convertToQuantumSparse(dims);
+        diaQMatrix q_B8 = B8.convertToQuantumSparse(dims);
         q_B8.print();
         std::cout << " -- " << std::endl;
 
         std::vector<long int> new_dims{4,16};
-        diaLiteMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
+        diaQMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
         reshaped_q_B8.print();
         std::cout << " -- " << std::endl;
     }
@@ -1479,12 +1479,12 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         std::vector<long int> dims{3,6};
-        diaLiteMatrix q_A24 = A24.convertToQuantumSparse(dims);
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(dims);
         q_A24.print();
         std::cout << " -- " << std::endl;
 
         std::vector<long int> axes{};
-        diaLiteMatrix res = transpose(q_A24, axes);
+        diaQMatrix res = transpose(q_A24, axes);
         res.print();
         std::cout << " -- " << std::endl;
 
@@ -1497,7 +1497,7 @@ int main(int argc, char **argv) {
         A24.print();
         std::cout << " -- " << std::endl;
         std::vector<long int> dims{3,6};
-        diaLiteMatrix q_A24 = A24.convertToQuantumSparse(dims);
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(dims);
         q_A24.print();
         std::cout << " -- " << std::endl;
 
@@ -1520,13 +1520,13 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         std::vector<long int> dims{3,6};
-        diaLiteMatrix q_A24 = A24.convertToQuantumSparse(dims);
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(dims);
         q_A24.shape = std::vector<long int>{3,3,2};
         q_A24.print();
         std::cout << " -- " << std::endl;
 
         std::vector<long int> order{};
-        diaLiteMatrix res = transpose(q_A24, order);
+        diaQMatrix res = transpose(q_A24, order);
         std::cout << " -- " << std::endl;
         res.print();
         std::cout << " -- " << std::endl;
@@ -1538,7 +1538,7 @@ int main(int argc, char **argv) {
         A47.print();
         std::cout << " -- " << std::endl;
 
-        diaLiteMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
+        diaQMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
         q_A47.shape = std::vector<long int>{2,2,2,2};
         q_A47.print();
         std::cout << " -- " << std::endl;
@@ -1558,19 +1558,19 @@ int main(int argc, char **argv) {
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p.print();
         std::cout << " ---- dense product ---- " << std::endl;
-        diaLiteMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
+        diaQMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp.print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        diaLiteMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
+        diaQMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first.print();
         std::cout << " -- first -- " << std::endl;
-        diaLiteMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
+        diaQMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second.print();
         std::cout << " -- second -- " << std::endl;
-        diaLiteMatrix qp = first * second;
+        diaQMatrix qp = first * second;
         std::cout << " -- qp -- " << std::endl;
         qp.print();
         std::cout << " -- qp -- " << std::endl;
@@ -1585,19 +1585,19 @@ int main(int argc, char **argv) {
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p.print();
         std::cout << " ---- dense product ---- " << std::endl;
-        diaLiteMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
+        diaQMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp.print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        diaLiteMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
+        diaQMatrix first = testCases[i][0].convertToQuantumSparse(testCases[i][0].matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first.print();
         std::cout << " -- first -- " << std::endl;
-        diaLiteMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
+        diaQMatrix second = testCases[i][1].convertToQuantumSparse(testCases[i][1].matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second.print();
         std::cout << " -- second -- " << std::endl;
-        diaLiteMatrix qp = product(first, second);
+        diaQMatrix qp = product(first, second);
         std::cout << " -- qp -- " << std::endl;
         qp.print();
         std::cout << " -- qp -- " << std::endl;

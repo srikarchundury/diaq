@@ -1,4 +1,4 @@
-#include "diaLiteMatrix.hpp"
+#include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
 
 // SIMD
@@ -243,20 +243,20 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
 /**
  * @brief quantum sparse matrix multiplication (C = A.B)
  * 
- * @param A diaLiteMatrix
- * @param B diaLiteMatrix
+ * @param A diaQMatrix
+ * @param B diaQMatrix
  * 
- * @return diaLiteMatrix  C
+ * @return diaQMatrix  C
  */
-diaLiteMatrix product(diaLiteMatrix A, diaLiteMatrix B) {
+diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     // A.print();
     // B.print();
     if(A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
     std::vector<long int> d{A.matrix_shape[0], B.matrix_shape[1]};
-    diaLiteMatrix* result = new diaLiteMatrix(&d);
-    // diaLiteMatrix* resptr = &result;
+    diaQMatrix* result = new diaQMatrix(&d);
+    // diaQMatrix* resptr = &result;
     std::map<long int, diagonal> mapA = A.getDiagonalMap();
     std::map<long int, diagonal> mapB = B.getDiagonalMap();
     std::map<long int, diagonal>::iterator itA, itB;
@@ -320,10 +320,10 @@ denseMatrix denseProduct(denseMatrix A, denseMatrix B) {
 }
 
 /**
-* @brief adds two diaLiteMatrix matrices (C = A + B)
-* @param A diaLiteMatrix
-* @param B diaLiteMatrix
-* @return diaLiteMatrix C
+* @brief adds two diaQMatrix matrices (C = A + B)
+* @param A diaQMatrix
+* @param B diaQMatrix
+* @return diaQMatrix C
 */
 diagonal addElements(diagonal A, diagonal B) {
     float *real_valsA = A.getRealValues();
@@ -343,11 +343,11 @@ diagonal addElements(diagonal A, diagonal B) {
     return diagonal(A.dIndex, A.dLength, real_valsC, imag_valsC);
 }
 
-diaLiteMatrix add(diaLiteMatrix A, diaLiteMatrix B) {
+diaQMatrix add(diaQMatrix A, diaQMatrix B) {
     if(A.getSize() != B.getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
-    diaLiteMatrix* result = new diaLiteMatrix(A.getSize());
+    diaQMatrix* result = new diaQMatrix(A.getSize());
     std::map<long int, diagonal> mapA = A.getDiagonalMap();
     std::map<long int, diagonal> mapB = B.getDiagonalMap();
     std::map<long int, diagonal>::iterator itA, itB;
@@ -364,7 +364,7 @@ diaLiteMatrix add(diaLiteMatrix A, diaLiteMatrix B) {
 }
 
 
-std::complex<float> trace(diaLiteMatrix A) {
+std::complex<float> trace(diaQMatrix A) {
     std::complex<float> t;
     std::map<long int, diagonal>::iterator itA;
     std::map<long int, diagonal> mapA = A.getDiagonalMap();
@@ -378,7 +378,7 @@ std::complex<float> trace(diaLiteMatrix A) {
     return t;
 }
 
-diaLiteMatrix reshape(diaLiteMatrix A, std::vector<long int> new_tensor_shape) {
+diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape) {
     long int old_product = 1;
     #pragma unroll
     for(long int i=0; i < A.shape.size(); i++) old_product *= A.shape[i];
@@ -409,7 +409,7 @@ diaLiteMatrix reshape(diaLiteMatrix A, std::vector<long int> new_tensor_shape) {
     }
     std::map<long int, diagonal> newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
-    diaLiteMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
+    diaQMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
     std::map<long int, diagonal>::iterator it;
 
@@ -486,7 +486,7 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
     return nShape;
 }
 
-diaLiteMatrix transpose(diaLiteMatrix A, std::vector<long int> new_order) {
+diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     // std::cout << "transpose called for " << std::endl;
     // A.print();
 
@@ -507,7 +507,7 @@ diaLiteMatrix transpose(diaLiteMatrix A, std::vector<long int> new_order) {
             it->second.setIndex(ni);
             newDiagMap.insert({ni, it->second});
         }
-        diaLiteMatrix p(newDiagMap, &newShape, &newShape);
+        diaQMatrix p(newDiagMap, &newShape, &newShape);
         // std::cout << "transpose result " << std::endl;
         // p.print();
         p.pruneMatrix();
@@ -547,7 +547,7 @@ diaLiteMatrix transpose(diaLiteMatrix A, std::vector<long int> new_order) {
     // res matrix/tensor
     std::map<long int, diagonal> newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
-    diaLiteMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
+    diaQMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     // iterate over all diagonals
     std::map<long int, diagonal>::iterator it;
     std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
@@ -585,7 +585,7 @@ diaLiteMatrix transpose(diaLiteMatrix A, std::vector<long int> new_order) {
     return res;
 }
 
-diaLiteMatrix tensordot(diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vector<long int> > axes) {
+diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long int> > axes) {
     // std::cout << "--" << std::endl;
     // std::cout << "tensordot called for A - " << std::endl;
     // A.print();
@@ -601,7 +601,7 @@ diaLiteMatrix tensordot(diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vecto
     // std::cout << axes[1][i] << ")" << std::endl;
     // std::cout << "--" << std::endl;
 
-    diaLiteMatrix res = diaLiteMatrix((long int)(0));
+    diaQMatrix res = diaQMatrix((long int)(0));
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
@@ -663,8 +663,8 @@ diaLiteMatrix tensordot(diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vecto
     std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
     std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
-    diaLiteMatrix reshaped_A = reshape(A, new_shape_a);
-    diaLiteMatrix reshaped_B = reshape(B, new_shape_b);
+    diaQMatrix reshaped_A = reshape(A, new_shape_a);
+    diaQMatrix reshaped_B = reshape(B, new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
     // reshaped_A.convertToDenseMatrix(reshaped_A.shape).print();
@@ -683,22 +683,22 @@ diaLiteMatrix tensordot(diaLiteMatrix A, diaLiteMatrix B, std::vector<std::vecto
     return res;
 }
 
-diaLiteMatrix array(diaLiteMatrix A) {
+diaQMatrix array(diaQMatrix A) {
     // std::cout << "array called for A - " << std::endl;
     // A.print();
     // TODO: unclear as of now what this mehthod should be doing
     return A;
 }
 
-diaLiteMatrix einsum(diaLiteMatrix A, std::vector<long int> axes) {
+diaQMatrix einsum(diaQMatrix A, std::vector<long int> axes) {
     std::cout << axes[0] << std::endl;
     return A;
 }
 
 // overloading operators
-diaLiteMatrix operator*(const diaLiteMatrix &A, const diaLiteMatrix &B) {
+diaQMatrix operator*(const diaQMatrix &A, const diaQMatrix &B) {
     return product(A, B);
 }
-diaLiteMatrix operator+(const diaLiteMatrix &A, const diaLiteMatrix &B) {
+diaQMatrix operator+(const diaQMatrix &A, const diaQMatrix &B) {
     return add(A, B);
 }

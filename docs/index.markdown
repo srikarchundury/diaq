@@ -22,7 +22,7 @@ layout: my_default
 	<hr/>
 	<div class="sub_link">
 	<a href="https://github.ncsu.edu/qsparse/" target="_blank"> Git Organisation (qsparse)</a>
-	<a href="https://github.ncsu.edu/qsparse/dia_lite/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
+	<a href="https://github.ncsu.edu/qsparse/diaq/archive/refs/heads/main.zip" class="sub_link"> Download Library (zip)</a>
 	<hr/>
 	<b> Group Info </b>
 	<hr/>
@@ -33,8 +33,8 @@ layout: my_default
 	<hr/>
 	<b> More Info </b>
 	<hr/>
-	<a href="https://github.ncsu.edu/qsparse/dia_lite/tree/main/literature_survey" target="_blank" class="sub_link"> Literature Survey</a>
-	<a href="https://github.ncsu.edu/qsparse/dia_lite/tree/main/discussions" target="_blank" class="sub_link"> Reports/Discussions</a>
+	<a href="https://github.ncsu.edu/qsparse/diaq/tree/main/literature_survey" target="_blank" class="sub_link"> Literature Survey</a>
+	<a href="https://github.ncsu.edu/qsparse/diaq/tree/main/discussions" target="_blank" class="sub_link"> Reports/Discussions</a>
 	</div>
 	<hr/>
 	<a href="https://arcb.csc.ncsu.edu/~mueller/cross.html" target="_blank"> <b> About PPoSS project </b> </a>
@@ -110,7 +110,7 @@ Note: In this example, the circles represent tensors in the network, for instanc
 Explore and analyze the sparsity in the above-mentioned simulations and exploit it to reduce the overall simulation time.
 
 Approach:
-* Numerical Library: "dia_lite" (placeholder name)
+* Numerical Library: "diaq" (placeholder name)
 * Quantum Algorithm-level Library: TODO
 
 <hr id="3" />

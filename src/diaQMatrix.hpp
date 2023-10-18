@@ -1,5 +1,5 @@
-#ifndef QSPARSE_DIA_LITE_HPP
-#define QSPARSE_DIA_LITE_HPP
+#ifndef QSPARSE_DIAQ_HPP
+#define QSPARSE_DIAQ_HPP
 
 #include "diagonal.hpp"
 #include <map>
@@ -11,12 +11,12 @@
 class denseMatrix; // telling this class exists w/o defining it here
 
 
-class diaLiteMatrix {
+class diaQMatrix {
     public:
         std::vector<long int> matrix_shape; // as of now, this is always a 2 element array
         std::vector<long int> shape;
 
-        diaLiteMatrix(long int s) {
+        diaQMatrix(long int s) {
             std::map<long int, diagonal> d;
             diagonalMap = d;
             size = s;
@@ -25,14 +25,14 @@ class diaLiteMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaLiteMatrix(std::vector<long int> *dimens) {
+        diaQMatrix(std::vector<long int> *dimens) {
             std::map<long int, diagonal> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
             shape = *dimens;
         }
-        diaLiteMatrix(std::map<long int, diagonal> dm, long int s) {
+        diaQMatrix(std::map<long int, diagonal> dm, long int s) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -43,7 +43,7 @@ class diaLiteMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaLiteMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
+        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -52,7 +52,7 @@ class diaLiteMatrix {
             size = matrix_shape[0];
             shape = *d;
         }
-        diaLiteMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
+        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             std::map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -283,4 +283,4 @@ class diaLiteMatrix {
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
-#endif // QSPARSE_DIA_LITE_HPP
+#endif // QSPARSE_DIAQ_HPP

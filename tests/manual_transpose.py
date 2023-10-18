@@ -1,5 +1,5 @@
 import numpy as np
-import dia_lite as qs
+import diaq as qs
 
 a = np.array([1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0]).reshape(2,2,2,2)
 b = np.array([1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0]).reshape(2,2,2,2)

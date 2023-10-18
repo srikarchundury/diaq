@@ -14,7 +14,7 @@ __version__ = "0.0.1"
 
 ext_modules = [
     Pybind11Extension(
-        "dia_lite",
+        "diaq",
         ["include/pythonWrappers.cpp"],
         define_macros = [('VERSION_INFO', __version__)],
         extra_compile_args=["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"],
@@ -23,7 +23,7 @@ ext_modules = [
 ]
 
 setup(
-    name='dia_lite',
+    name='diaq',
     version='0.0.1',
     description='A WIP numerical library tailored for quantum contractions',
     author='Srikar Chundury',

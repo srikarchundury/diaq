@@ -35,7 +35,7 @@ Vector &operator-=(Vector &x, const Vector &y);
 //
 // ----------------------------------------------------------------
 
-// diaLiteMatrix product(diaLiteMatrix A, diaLiteMatrix B);
+// diaQMatrix product(diaQMatrix A, diaQMatrix B);
 
 
 #endif // SPARSE_TNQS_KERNELS_HPP

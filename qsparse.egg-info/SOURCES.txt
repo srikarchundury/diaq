@@ -1,9 +1,9 @@
 README.md
 setup.py
 include/pythonWrappers.cpp
-dia_lite.egg-info/PKG-INFO
-dia_lite.egg-info/SOURCES.txt
-dia_lite.egg-info/dependency_links.txt
-dia_lite.egg-info/not-zip-safe
-dia_lite.egg-info/requires.txt
-dia_lite.egg-info/top_level.txt
+diaq.egg-info/PKG-INFO
+diaq.egg-info/SOURCES.txt
+diaq.egg-info/dependency_links.txt
+diaq.egg-info/not-zip-safe
+diaq.egg-info/requires.txt
+diaq.egg-info/top_level.txt
