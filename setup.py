@@ -12,13 +12,30 @@ __version__ = "0.0.1"
 #   Sort input source files if you glob sources to ensure bit-for-bit
 #   reproducible builds (https://github.com/pybind/python_example/pull/53)
 
+import os
+compile_args = []
+link_args = []
+if os.name == 'posix':  # Check if the OS is Linux or macOS
+    linux = True if os.uname().sysname == 'Linux' else False
+    mac = not linux
+    if linux:
+        compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"]
+        link_args = ['-lgomp', '-lpthread']
+    elif mac:
+        compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++"]
+        link_args = ['-lpthread']
+else:
+    # Handle other operating systems if needed
+    print("Not Linux or MAC, what are you doing dude?")
+    pass
+
 ext_modules = [
     Pybind11Extension(
         "diaq",
         ["include/pythonWrappers.cpp"],
         define_macros = [('VERSION_INFO', __version__)],
-        extra_compile_args=["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp"],
-        extra_link_args=['-lgomp', '-lpthread'],
+        extra_compile_args = compile_args,
+        extra_link_args = link_args,
     ),
 ]
 
@@ -28,7 +45,7 @@ setup(
     description='A WIP numerical library tailored for quantum contractions',
     author='Srikar Chundury',
     author_email='schundu3@ncsu.edu',
-    url='https://github.ncsu.edu/tnqs/sparse-tnqs/',
+    url='https://github.ncsu.edu/tnqs/diaq/',
     long_description="",
     ext_modules=ext_modules,
     extras_require={"test": "pytest"},
