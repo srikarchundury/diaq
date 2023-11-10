@@ -5,5 +5,8 @@ Summary: A WIP numerical library tailored for quantum contractions
 Home-page: https://github.ncsu.edu/tnqs/diaq/
 Author: Srikar Chundury
 Author-email: schundu3@ncsu.edu
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
 Requires-Python: >=3.8
 Provides-Extra: test

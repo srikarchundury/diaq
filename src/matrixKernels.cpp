@@ -4,26 +4,23 @@
 // SIMD
 #ifdef __AVX__
 	#include <immintrin.h>
-	/* Loads n elements and set the rest to 0. You can call this function for boundary cases. */
-	__m256 load_partial(long int n, const float* p) {
-        __m256 ymm;
-        switch (n) {
-            case 1:
-                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p))); break;
-            case 2:
-                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p + 2)), _mm_cvtss_f32(_mm_load_ss(p))); break;
-            case 3:
-                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p + 1)), _mm_cvtss_f32(_mm_load_ss(p + 2)), _mm_cvtss_f32(_mm_load_ss(p + 3)), _mm_cvtss_f32(_mm_load_ss(p))); break;
-            case 4:
-                ymm = _mm256_loadu_ps(p); break;
-            default:
-                ymm = _mm256_setzero_ps(); break;
-        }
+    __m256 load_partial(long int n, const float* p) {
+        // Initialize a mask with all bits set to 1
+        __m256i mask = _mm256_set1_epi32(-1);
+
+        // Create a mask based on the length 'n' of the array
+        // Set the corresponding bits to 0 for elements beyond the array length
+        int maskValue = (1 << n) - 1;
+        mask = _mm256_cmpgt_epi32(_mm256_set1_epi32(n), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+
+        // Load the array elements into the YMM register using the mask
+        __m256 ymm = _mm256_maskload_ps(p, mask);
+
         return ymm;
     }
 	void store_partial(long int n, float *loc, __m256 vec) {
 		#pragma unroll
-		for(long int i = 0; i < n; i++){
+		for(long int i = 0; i < n; i++) {
 			loc[i] = vec[i];
 		}
 	}
