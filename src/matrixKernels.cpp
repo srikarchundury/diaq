@@ -2,28 +2,26 @@
 #include "denseMatrix.hpp"
 
 // SIMD
-#ifdef __SSE__
+#ifdef __AVX__
 	#include <immintrin.h>
-	/* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
-	__m128 load_partial(long int n, float const *p) {
-		__m128 t1, t2, xmm;
-		switch (n) {
-		case 1:
-			xmm = _mm_load_ss(p); break;
-		case 2:
-			xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
-		case 3:
-			t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
-			t2 = _mm_load_ss(p + 2);
-			xmm = _mm_movelh_ps(t1, t2); break;
-		case 4:
-			xmm = _mm_loadu_ps(p); break;
-		default:
-			xmm = _mm_setzero_ps();
-		}
-		return xmm;
-	}
-	void store_partial(long int n, float *loc, __m128 vec) {
+	/* Loads n elements and set the rest to 0. You can call this function for boundary cases. */
+	__m256 load_partial(long int n, const float* p) {
+        __m256 ymm;
+        switch (n) {
+            case 1:
+                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p))); break;
+            case 2:
+                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p + 2)), _mm_cvtss_f32(_mm_load_ss(p))); break;
+            case 3:
+                ymm = _mm256_set_ps(0.0f, 0.0f, 0.0f, 0.0f, _mm_cvtss_f32(_mm_load_ss(p + 1)), _mm_cvtss_f32(_mm_load_ss(p + 2)), _mm_cvtss_f32(_mm_load_ss(p + 3)), _mm_cvtss_f32(_mm_load_ss(p))); break;
+            case 4:
+                ymm = _mm256_loadu_ps(p); break;
+            default:
+                ymm = _mm256_setzero_ps(); break;
+        }
+        return ymm;
+    }
+	void store_partial(long int n, float *loc, __m256 vec) {
 		#pragma unroll
 		for(long int i = 0; i < n; i++){
 			loc[i] = vec[i];
@@ -161,70 +159,65 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     float *imag_vals_final = res.getImagValues();
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    #ifdef __SSE__
-	// SIMD vectorization
+    #ifdef __AVX__
+    // SIMD vectorization
     long int loop_count = 0;
     long int k_cpy = k;
-    while(k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+    while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
         loop_count++;
         k_cpy++;
     }
-    __m128 real_a, real_b; // a for valuesA and b for valuesB
-    __m128 imag_a, imag_b; // a for valuesA and b for valuesB
-    __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-    long int left_overs = loop_count - ((loop_count / 4) * 4);
-    long int vec_loop = (loop_count / 4);
-    long int left_overs_start_at_A = k + offsetA - jump + 4*(loop_count / 4);
-    long int left_overs_start_at_B = k + offsetB - jump + 4*(loop_count / 4);
-    // std::cout << "left_overs=" << left_overs << std::endl;
-    // std::cout << "left_overs_start_at_A=" << left_overs_start_at_A << std::endl;
-    // std::cout << "left_overs_start_at_B=" << left_overs_start_at_B << std::endl;
-    while(vec_loop--) {
-        // std::cout << "loop k=" << k << std::endl;
-        real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
-        imag_a = _mm_loadu_ps(&imag_vals_a[k + offsetA - jump]);
-        real_b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
-        imag_b = _mm_loadu_ps(&imag_vals_b[k + offsetB - jump]);
-        // Using SIMD long intrinsics to multiply
-        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
-        real_reala_realb = _mm_mul_ps(real_a, real_b);
-        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
-        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
-        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
-        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
-        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-        // Storing back to res diagonal
-        // TODO: Find a better way to do this, I currently loop over all 4 and store one by one "maybe" is inefficient although I loop unroll.
-        store_partial(4, &real_vals_final[k], real_res);
-        store_partial(4, &imag_vals_final[k], imag_res);
-        // std::cout << "after 4 " << std::endl;
-        // res.print();
-        k += 4;
+
+    __m256 real_a, real_b; // a for valuesA and b for valuesB
+    __m256 imag_a, imag_b; // a for valuesA and b for valuesB
+    __m256 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+
+    long int left_overs = loop_count - ((loop_count / 8) * 8);
+    long int vec_loop = (loop_count / 8);
+    long int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
+    long int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+
+    while (vec_loop--) {
+        real_a = _mm256_loadu_ps(&real_vals_a[k + offsetA - jump]);
+        imag_a = _mm256_loadu_ps(&imag_vals_a[k + offsetA - jump]);
+        real_b = _mm256_loadu_ps(&real_vals_b[k + offsetB - jump]);
+        imag_b = _mm256_loadu_ps(&imag_vals_b[k + offsetB - jump]);
+
+        real_reala_realb = _mm256_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm256_mul_ps(imag_a, imag_b);
+        real_res = _mm256_sub_ps(real_reala_realb, real_imaga_imagb);
+
+        imag_reala_imagb = _mm256_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
+        imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
+
+        store_partial(8, &real_vals_final[k], real_res);
+        store_partial(8, &imag_vals_final[k], imag_res);
+
+        k += 8;
     }
-    if(left_overs != 0) {
-        // std::cout << "partial k=" << k << std::endl;
-        // partial load left_overs
+
+    if (left_overs != 0) {
         real_a = load_partial(left_overs, &real_vals_a[left_overs_start_at_A]);
         imag_a = load_partial(left_overs, &imag_vals_a[left_overs_start_at_A]);
         real_b = load_partial(left_overs, &real_vals_b[left_overs_start_at_B]);
         imag_b = load_partial(left_overs, &imag_vals_b[left_overs_start_at_B]);
-        // Using SIMD long intrinsics to multiply
-        // (real+imag)*(real+imag)=(real*real - imag*imag) + (real*imag + imag*real) 
-        real_reala_realb = _mm_mul_ps(real_a, real_b);
-        real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
-        real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
-        imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
-        imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
-        imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-        // Storing back to res diagonal
+
+        real_reala_realb = _mm256_mul_ps(real_a, real_b);
+        real_imaga_imagb = _mm256_mul_ps(imag_a, imag_b);
+        real_res = _mm256_sub_ps(real_reala_realb, real_imaga_imagb);
+
+        imag_reala_imagb = _mm256_mul_ps(real_a, imag_b);
+        imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
+        imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
+
         store_partial(left_overs, &real_vals_final[k], real_res);
         store_partial(left_overs, &imag_vals_final[k], imag_res);
+
         k += left_overs;
     }
-	// std::cout << "---" << std::endl;
-    // res.setElements(real_vals_final, imag_vals_final);
-	#endif
-	#ifndef __SSE__
+    #endif
+	#ifndef __AVX__
 	// no vectorization
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
