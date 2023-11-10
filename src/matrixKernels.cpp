@@ -379,6 +379,13 @@ std::complex<float> trace(diaQMatrix A) {
 }
 
 diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape) {
+
+    // std::cout << "diaq/reshape called with newshape (";
+    // for(long int i = 0; i < new_tensor_shape.size()-1; i++) {
+    //     std::cout << new_tensor_shape[i] << ",";
+    // }
+    // std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
+
     long int old_product = 1;
     #pragma unroll
     for(long int i=0; i < A.shape.size(); i++) old_product *= A.shape[i];
@@ -490,11 +497,11 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     // std::cout << "transpose called for " << std::endl;
     // A.print();
 
-    std::cout << "diaq/transpose called with axes (";
-    for(long int i = 0; i < new_order.size()-1; i++) {
-        std::cout << new_order[i] << ",";
-    }
-    std::cout << new_order[new_order.size()-1] << ")" << std::endl;
+    // std::cout << "diaq/transpose called with axes (";
+    // for(long int i = 0; i < new_order.size()-1; i++) {
+    //     std::cout << new_order[i] << ",";
+    // }
+    // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
 
     // tranpose of the diagonals
     if(A.shape.size() == 2) {
@@ -515,8 +522,10 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     }
     // otherwise
     if(new_order.size() == 0) {
+        new_order.resize(A.shape.size(), 1);
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < A.shape.size(); i++) {
-            new_order.push_back(A.shape.size()-i-1);
+            new_order[i] = A.shape.size() - i - 1;
         }
     }
     // std::cout << "with new_order (";
@@ -551,12 +560,18 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     // iterate over all diagonals
     std::map<long int, diagonal>::iterator it;
     std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
+
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
+        #pragma omp critical
         res.createDiagonal(i);
     }
+    
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getImagValues();
+
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < it->second.dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
@@ -569,9 +584,10 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
             // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
 
             // modify ten_pos to perform the transposition using the new_order
-            std::vector<long int> new_ten_pos;
+            std::vector<long int> new_ten_pos(new_order.size(), 1);
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i=0; i < new_order.size(); i++) {
-                new_ten_pos.push_back(ten_pos[new_order[i]]);
+                new_ten_pos[i] = ten_pos[new_order[i]];
             }
 
             std::vector<long int> d_pos = res.getDiagonalPosition(new_ten_pos);
