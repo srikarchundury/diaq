@@ -490,11 +490,11 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     // std::cout << "transpose called for " << std::endl;
     // A.print();
 
-    // std::cout << "new_order (";
-    // for(long int i = 0; i < new_order.size()-1; i++) {
-    //     std::cout << new_order[i] << ",";
-    // }
-    // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
+    std::cout << "diaq/transpose called with axes (";
+    for(long int i = 0; i < new_order.size()-1; i++) {
+        std::cout << new_order[i] << ",";
+    }
+    std::cout << new_order[new_order.size()-1] << ")" << std::endl;
 
     // tranpose of the diagonals
     if(A.shape.size() == 2) {
