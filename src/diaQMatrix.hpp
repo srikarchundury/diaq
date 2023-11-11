@@ -108,6 +108,9 @@ class diaQMatrix {
                 return &it->second;
             }
         }
+        void setDiagonalMap(std::map<long int, diagonal> dm) {
+            diagonalMap = dm;
+        }
         void setDiagonalElement(long int dIndex, long int dPos, long int dLen, float real_val, float imag_val) {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
@@ -255,6 +258,23 @@ class diaQMatrix {
             }
             // std::cout << "lenRes = " << lenRes << std::endl;
             return lenRes;
+        }
+        std::vector<std::complex<float>> flatten() {
+            std::vector<std::complex<float>> res(matrix_shape[0] * matrix_shape[1] , 1);
+            std::map<long int, diagonal>::iterator it;
+            for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                long int dIndex = it->first;
+                long int dLength = it->second.dLength;
+                float *real_vals = it->second.getRealValues();
+                float *imag_vals = it->second.getImagValues();
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for (long int i = 0; i < dLength; i++) {
+                    std::vector<long int> mat_pos = getMatrixPosition(dIndex, i);
+                    long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
+                    res[flat_index] = std::complex<float>(real_vals[i], imag_vals[i]);
+                }
+            }
+            return res;
         }
         void pruneMatrix() {
             std::vector<long int> toDelete;

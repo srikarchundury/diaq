@@ -67,32 +67,32 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     return qm;
 }
 
-// conversion from numpy to our format
 diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
     float *real_vals = (float *)malloc(vals.size() * sizeof(float));
     float *imag_vals = (float *)malloc(vals.size() * sizeof(float));
+    
     #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = 0; i < vals.size(); i++) {
         real_vals[i] = vals[i].real();
         imag_vals[i] = vals[i].imag();
     }
-    long int l = shape.size();
-    if(l>2) {
+
+    long int rank = shape.size();
+
+    if (rank > 2) {
+        // Flatten the first two dimensions while keeping the rest intact
+        long int x = shape[0] * shape[1];
+        long int y = 1;
+        
+        for (long int r = 2; r < rank; r++) {
+            y *= shape[r];
+        }
+
+        std::vector<long int> new_shape{x, y};
         std::vector<long int> orig_shape = shape;
-        l = shape.size();
-        std::vector<long int> new_shape{1,1};
-        long int i = l / 2;
-        #pragma unroll
-        for(long int r = 0; r < i ; r++) {
-            new_shape[0] = new_shape[0] * shape[r];
-        }
-        #pragma unroll
-        for(long int r = i; r < l ; r++) {
-            new_shape[1] = new_shape[1] * shape[r];
-        }
+
         return denseMatrix(&new_shape, real_vals, imag_vals, &orig_shape).convertToQuantumSparse(new_shape);
-    }
-    else {
+    } else {
         return denseMatrix(&shape, real_vals, imag_vals, &shape).convertToQuantumSparse(shape);
     }
 }

@@ -470,14 +470,19 @@ std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::
 
 std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vector<long int> axes) {
     std::vector<long int> nShape;
+    int tShapeSize = tShape.size();
     if(axes.size() == 0) {
-        for(long int i = tShape.size()-1; i >= 0; i--) {
-            nShape.push_back(tShape[i]);
+        nShape.resize(tShape.size(), 1);
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int i = 0; i < tShape.size(); i++) {
+            nShape[i] = tShape[tShapeSize - i - 1];
         }
     }
     else {
+        nShape.resize(axes.size(), 1);
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < axes.size(); i++) {
-            nShape.push_back(tShape[axes[i]]);
+            nShape[i] = tShape[axes[i]];
         }
     }
     return nShape;
@@ -497,18 +502,20 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     if(A.shape.size() == 2) {
         std::vector<long int> newShape{A.matrix_shape[1], A.matrix_shape[0]};
         std::map<long int, diagonal> diagMap = A.getDiagonalMap();
-        std::map<long int, diagonal> newDiagMap;
         std::map<long int, diagonal>::iterator it;
+        std::map<long int, diagonal> newDiagMap;
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
-            long int ni = -1 * it->second.dIndex;
-            it->second.setIndex(ni);
-            newDiagMap.insert({ni, it->second});
+            newDiagMap.insert(std::pair<long int, diagonal>(-1 * it->first, it->second));
         }
-        diaQMatrix p(newDiagMap, &newShape, &newShape);
-        // std::cout << "transpose result " << std::endl;
-        // p.print();
-        p.pruneMatrix();
-        return p;
+        A.setDiagonalMap(newDiagMap);
+        // swap A.shape[0] and A.shape[1] and similarly for matrix_shape.
+        long int temp = A.shape[0];
+        A.shape[0] = A.shape[1];
+        A.shape[1] = temp;
+        temp = A.matrix_shape[0];
+        A.matrix_shape[0] = A.matrix_shape[1];
+        A.matrix_shape[1] = temp;
+        return A;
     }
     // otherwise
     if(new_order.size() == 0) {

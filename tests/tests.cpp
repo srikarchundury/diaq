@@ -1577,6 +1577,21 @@ int main(int argc, char **argv) {
         std::string check = checkResult(dp, qp);
         std::cout << " = " << check << std::endl;
     }
+    else if(strcmp(argv[1], "6") == 0) {
+        // testing flatten operation
+        std::cout << " --example1-- " << std::endl;
+        A24.print();
+        std::cout << " -- " << std::endl;
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(A24.matrix_shape);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+        std::vector<std::complex<float>> values = q_A24.flatten();
+        for (long int i = 0; i < values.size(); i++) {
+            std::cout << values[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);
