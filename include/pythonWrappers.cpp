@@ -50,6 +50,9 @@ PYBIND11_MODULE(diaq, m) {
         .def("addDiagonal", &diaQMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("convertToDenseMatrix", &diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
+        .def("flatten", &diaQMatrix::flatten, py::return_value_policy::reference)
+        .def("reshape", &diaQMatrix::reshape, py::return_value_policy::reference)
+        .def("transpose", &diaQMatrix::transpose, py::return_value_policy::reference)
         // operator bindings
         .def("__mul__", [](const diaQMatrix &a, const diaQMatrix &b){
             return a * b;

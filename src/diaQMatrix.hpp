@@ -297,6 +297,8 @@ class diaQMatrix {
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
+        diaQMatrix reshape(std::vector<long int> new_tensor_shape);
+        diaQMatrix transpose(std::vector<long int> new_order);
         denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
     private:
         long int size;

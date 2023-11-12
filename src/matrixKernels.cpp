@@ -1,5 +1,6 @@
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
+#include "vector.hpp"
 
 // SIMD
 #ifdef __AVX__
@@ -560,10 +561,9 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
 
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
-        #pragma omp critical
         res.createDiagonal(i);
     }
-    
+
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
 
         float *real_vals = it->second.getRealValues();
@@ -714,4 +714,46 @@ diaQMatrix operator*(const diaQMatrix &A, const diaQMatrix &B) {
 }
 diaQMatrix operator+(const diaQMatrix &A, const diaQMatrix &B) {
     return add(A, B);
+}
+
+diaQMatrix diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
+    return ::reshape(*this, new_tensor_shape);
+}
+
+diaQMatrix diaQMatrix::transpose(std::vector<long int> new_order) {
+    return ::transpose(*this, new_order);
+}
+
+
+vector spMV(diaQMatrix A, vector x) {
+    if(A.matrix_shape[1] != x.num_rows()) {
+        throw std::invalid_argument("Not multiplyable");
+    }
+    vector y(A.matrix_shape[0]);
+    std::map<long int, diagonal> diagMap = A.getDiagonalMap();
+    std::map<long int, diagonal>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        long int dLength = it->second.dLength;
+        float *real_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getImagValues();
+        for (long int i = 0; i < it->second.dLength; i++) {
+            y[dIndex + i] += std::complex<float>(real_vals[i], imag_vals[i]) * x[dIndex + i];
+        }
+    }
+    return y;
+}
+
+vector MV(denseMatrix A, vector x) {
+    if(A.matrix_shape[1] != x.num_rows()) {
+        throw std::invalid_argument("Not multiplyable");
+    }
+    vector y(A.matrix_shape[0]);
+    for(long int i = 0; i < A.matrix_shape[0]; i++) {
+        std::complex<float> res = 0;
+        for(long int j = 0; j < A.matrix_shape[1]; j++) {
+            res += A.get(i, j) * x[j];
+        }
+    }
+    return y;
 }

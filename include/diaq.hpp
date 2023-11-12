@@ -18,7 +18,7 @@
 	#include "../src/kernels.hpp"
 	#include "../src/norms.hpp"
 	#include "../src/diaQMatrix.hpp"
-	#include "../src/Vector.hpp"
+	#include "../src/vector.hpp"
 
 #define LOG_LEVEL 2
 // INFO = 0

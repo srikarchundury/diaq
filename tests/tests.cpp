@@ -1592,6 +1592,35 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "7") == 0) {
+        // tranpose using matrix.transpose instead of transpose(matrix, order)
+        diaQMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
+        q_A47.shape = std::vector<long int>{2,2,2,2};
+        q_A47.print();
+        std::cout << " -- " << std::endl;
+        diaQMatrix res = q_A47.transpose(std::vector<long int>{});
+        res.print();
+        std::cout << " -- " << std::endl;
+        res.convertToDenseMatrix(res.matrix_shape).print();
+    }
+    else if(strcmp(argv[1], "8") == 0) {
+        // testing spMV here.
+        std::cout << " --matrix-- " << std::endl;
+        A25.print();
+        std::cout << " --sparse_matrix-- " << std::endl;
+        diaQMatrix q_A25 = A25.convertToQuantumSparse(A25.matrix_shape);
+        q_A25.print();
+        std::cout << " --x-- " << std::endl;
+        vector x(A25.matrix_shape[1], 1.0);
+        x.print();
+        std::cout << " --correct_answer-- " << std::endl;
+        vector dense_y = MV(A25, x);
+        dense_y.print();
+        std::cout << " --spMV-- " << std::endl;
+        vector y = spMV(q_A25, x);
+        y.print();
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);
