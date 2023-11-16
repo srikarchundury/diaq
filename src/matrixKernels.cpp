@@ -370,7 +370,6 @@ std::complex<float> trace(diaQMatrix A) {
 }
 
 diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape) {
-
     // std::cout << "diaq/reshape called with newshape (";
     // for(long int i = 0; i < new_tensor_shape.size()-1; i++) {
     //     std::cout << new_tensor_shape[i] << ",";
@@ -490,9 +489,13 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 }
 
 diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
-    // std::cout << "transpose called for " << std::endl;
-    // A.print();
-
+    if(new_order.size() == 0) {
+        new_order.resize(A.shape.size(), 1);
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int i = 0; i < A.shape.size(); i++) {
+            new_order[i] = A.shape.size() - i - 1;
+        }
+    }
     // std::cout << "diaq/transpose called with axes (";
     // for(long int i = 0; i < new_order.size()-1; i++) {
     //     std::cout << new_order[i] << ",";
@@ -518,18 +521,7 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
         A.matrix_shape[1] = temp;
         return A;
     }
-    // otherwise
-    if(new_order.size() == 0) {
-        new_order.resize(A.shape.size(), 1);
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int i = 0; i < A.shape.size(); i++) {
-            new_order[i] = A.shape.size() - i - 1;
-        }
-    }
-    // std::cout << "with new_order (";
-    // for(long int i = 0; i < new_order.size()-1; i++)
-    //     std::cout << new_order[i] << ",";
-    // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
+    // otherwise, we have to do a lot of work
     // shape of result
     std::vector<long int> new_tensor_shape = modifyTensorShape(A.shape, new_order);
     // std::cout << "gives new_tensor_shape (";
@@ -689,10 +681,6 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
     // calculating result's tensor_shape
     res.shape = newTensorShape(A.shape, B.shape, axes[0], axes[1]);
     res.pruneMatrix();
-    // std::cout << "dot result = " << std::endl;
-    // res.print();
-    // std::cout << "---" << std::endl;
-    // res = reshape(res, old_shape);
     return res;
 }
 

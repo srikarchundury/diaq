@@ -13,6 +13,8 @@ benchmarks/tool/*
 docs/.DS_Store
 docs/.DS_Store/*
 
+diaq.egg-info/PKG-INFO
+
 # Created by https://www.toptal.com/developers/gitignore/api/c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++
 

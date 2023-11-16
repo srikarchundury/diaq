@@ -1645,7 +1645,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "9") == 0) {
-        // testing getMatrixPosition and getTensorPosition
+        // testing tensordot operation
         A24.shape = std::vector<long int>{3,3,2};
         std::vector<long int> dims_A{3,6};
         diaQMatrix q_A24 = A24.convertToQuantumSparse(dims_A);
@@ -1660,6 +1660,64 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
         diaQMatrix res = tensordot(q_A24, q_B24, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "10") == 0) {
+        float first_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_first_m{4,4};
+        denseMatrix dfirst(&shape_first_m, first_m);
+        diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
+        q_first.shape = std::vector<long int>{2,2,2,2};
+        float second_m[4] = {
+            0.707107, 0,
+            0, -0.707107,
+        };
+        std::vector<long int> shape_second_m{2,2};
+        denseMatrix dsecond(&shape_second_m, second_m);
+        diaQMatrix q_second = dsecond.convertToQuantumSparse(dsecond.matrix_shape);
+        q_second.shape = std::vector<long int>{2,2};
+        std::vector<long int> axes_A{3};
+        std::vector<long int> axes_B{0};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_first, q_second, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "11") == 0) {
+        float first_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_first_m{4,4};
+        denseMatrix dfirst(&shape_first_m, first_m);
+        diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
+        q_first.shape = std::vector<long int>{2,2,2,2};
+        float second_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_second_m{4,4};
+        denseMatrix dsecond(&shape_second_m, second_m);
+        diaQMatrix q_second = dsecond.convertToQuantumSparse(dsecond.matrix_shape);
+        q_second.shape = std::vector<long int>{2,2,2,2};
+        std::vector<long int> axes_A{2};
+        std::vector<long int> axes_B{1};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_first, q_second, axes);
         res.print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;

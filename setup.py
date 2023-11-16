@@ -19,7 +19,7 @@ if os.name == 'posix':  # Check if the OS is Linux or macOS
     linux = True if os.uname().sysname == 'Linux' else False
     mac = not linux
     if linux:
-        compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-xSSE4.2"]
+        compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2"]
         link_args = ['-lgomp', '-lpthread']
     elif mac:
         compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++"]
