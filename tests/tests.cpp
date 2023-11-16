@@ -1460,7 +1460,7 @@ int main(int argc, char **argv) {
         }
     }
     else if(strcmp(argv[1], "1") == 0) {
-        // testing tensordot operations
+        // testing reshape operations
         B8.print();
         std::cout << " -- " << std::endl;
         std::vector<long int> dims{8,8};
@@ -1471,6 +1471,8 @@ int main(int argc, char **argv) {
         std::vector<long int> new_dims{4,16};
         diaQMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
         reshaped_q_B8.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "2") == 0) {
@@ -1489,6 +1491,8 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Matrix Transpose Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "3") == 0) {
@@ -1512,6 +1516,9 @@ int main(int argc, char **argv) {
         std::cout << "tensor position - " << ten_pos[0] << "," << ten_pos[1] << "," << ten_pos[2] << std::endl;
 
         std::cout << "reading element from dense version: " << A24.getItem(ten_pos) << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << " -- getMatrixPosition and getTensorPosition Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "4") == 0) {
         // testing tensor transposition operation
@@ -1548,6 +1555,9 @@ int main(int argc, char **argv) {
         res.print();
         std::cout << " -- " << std::endl;
         res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensor Transpose Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "5") == 0) {
         // testing operator overloading
@@ -1576,6 +1586,9 @@ int main(int argc, char **argv) {
         std::cout << " -- qp -- " << std::endl;
         std::string check = checkResult(dp, qp);
         std::cout << " = " << check << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Operator * Overloading Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "6") == 0) {
         // testing flatten operation
@@ -1591,6 +1604,8 @@ int main(int argc, char **argv) {
         }
         std::cout << std::endl;
         std::cout << " -- " << std::endl;
+        std::cout << " -- Flatten Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "7") == 0) {
         // tranpose using matrix.transpose instead of transpose(matrix, order)
@@ -1602,6 +1617,9 @@ int main(int argc, char **argv) {
         res.print();
         std::cout << " -- " << std::endl;
         res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Transpose Test Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "8") == 0) {
         // testing spMV here.
@@ -1622,6 +1640,29 @@ int main(int argc, char **argv) {
         std::cout << " --spMV-- " << std::endl;
         vector y = spMV(q_A25, x);
         y.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "9") == 0) {
+        // testing getMatrixPosition and getTensorPosition
+        A24.shape = std::vector<long int>{3,3,2};
+        std::vector<long int> dims_A{3,6};
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(dims_A);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+        B24.shape = std::vector<long int>{2,3,2};
+        std::vector<long int> dims_B{6,2};
+        diaQMatrix q_B24 = B24.convertToQuantumSparse(dims_B);
+        q_B24.print();
+        std::cout << " -- " << std::endl;
+        std::vector<long int> axes_A{2};
+        std::vector<long int> axes_B{0};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_A24, q_B24, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "test") == 0) {

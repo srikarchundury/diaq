@@ -618,7 +618,7 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
-    for(long int i=0;i<axes[1].size();i++)
+    for(long int i = 0; i < axes[1].size(); i++)
         order_B.push_back(axes[1][i]);
     for(long int i = 0; i < A.shape.size(); i++) {
         long int notin = 1;
@@ -631,7 +631,7 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
             order_A.push_back(i);
         }
     }
-    for(long int i=0; i < B.shape.size(); i++) {
+    for(long int i = 0; i < B.shape.size(); i++) {
         long int notin = 1;
         for(long int p = 0; p < axes[1].size(); p++) {
             if(i == axes[1][p]) {
@@ -642,7 +642,7 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
             order_B.push_back(i);
         }
     }
-    for(long int i=0;i<axes[0].size();i++)
+    for(long int i = 0; i < axes[0].size(); i++)
         order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
     // for(long int i = 0; i < order_A.size()-1; i++)
