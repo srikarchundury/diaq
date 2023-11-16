@@ -551,7 +551,7 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     std::map<long int, diagonal>::iterator it;
     std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
         res.createDiagonal(i);
     }
