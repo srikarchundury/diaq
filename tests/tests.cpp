@@ -1612,8 +1612,11 @@ int main(int argc, char **argv) {
         q_A25.print();
         std::cout << " --x-- " << std::endl;
         vector x(A25.matrix_shape[1], 1.0);
+        for(int i = 0; i < x.num_rows(); i++) {
+            x[i] = i;
+        }
         x.print();
-        std::cout << " --correct_answer-- " << std::endl;
+        std::cout << " --MV-- " << std::endl;
         vector dense_y = MV(A25, x);
         dense_y.print();
         std::cout << " --spMV-- " << std::endl;

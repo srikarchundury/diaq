@@ -737,8 +737,15 @@ vector spMV(diaQMatrix A, vector x) {
         long int dLength = it->second.dLength;
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getImagValues();
+        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < it->second.dLength; i++) {
-            y[dIndex + i] += std::complex<float>(real_vals[i], imag_vals[i]) * x[dIndex + i];
+            // std::cout << "dIndex=" << dIndex << "; dLength=" << dLength << "; i=" << i << std::endl;
+            long int x_idx = (dIndex < 0)? i : dIndex + i ;
+            long int y_idx = (dIndex < 0)? i - dIndex : i;
+            std::complex<float> c(real_vals[i], imag_vals[i]);
+            y[y_idx] += c * x[x_idx];
+            // std::cout << "y[" << y_idx << "] = " << c << " * x[" << x_idx << "]" << std::endl;
+            // std::cout << " -- " << std::endl;
         }
     }
     return y;
@@ -754,6 +761,7 @@ vector MV(denseMatrix A, vector x) {
         for(long int j = 0; j < A.matrix_shape[1]; j++) {
             res += A.get(i, j) * x[j];
         }
+        y[i] = res;
     }
     return y;
 }
