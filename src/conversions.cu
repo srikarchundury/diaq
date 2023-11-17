@@ -78,19 +78,24 @@ diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long in
     }
 
     long int rank = shape.size();
-
     if (rank > 2) {
-        // Flatten the first two dimensions while keeping the rest intact
-        long int x = shape[0] * shape[1];
-        long int y = 1;
-        
-        for (long int r = 2; r < rank; r++) {
-            y *= shape[r];
+        long int product = 1;
+        for (long int val : shape) {
+            product *= val;
         }
-
+        long int sqrtProduct = static_cast<long int>(std::sqrt(product));
+        // Find the closest factors of the product
+        long int x = 1;
+        long int y = product;
+        for (long int i = sqrtProduct; i > 0; --i) {
+            if (product % i == 0) {
+                x = i;
+                y = product / i;
+                break;
+            }
+        }
         std::vector<long int> new_shape{x, y};
         std::vector<long int> orig_shape = shape;
-
         return denseMatrix(&new_shape, real_vals, imag_vals, &orig_shape).convertToQuantumSparse(new_shape);
     } else {
         return denseMatrix(&shape, real_vals, imag_vals, &shape).convertToQuantumSparse(shape);
