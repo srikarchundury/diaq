@@ -610,6 +610,7 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
+    #pragma unroll
     for(long int i = 0; i < axes[1].size(); i++)
         order_B.push_back(axes[1][i]);
     for(long int i = 0; i < A.shape.size(); i++) {
@@ -634,6 +635,7 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
             order_B.push_back(i);
         }
     }
+    #pragma unroll
     for(long int i = 0; i < axes[0].size(); i++)
         order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
@@ -646,8 +648,10 @@ diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long in
     // std::cout << order_B[order_B.size()-1] << ")" << std::endl;
 
     long int axes_0_product = 1;
+    #pragma unroll
     for(long int i=0;i<axes[0].size();i++) axes_0_product *= A.shape[axes[0][i]];
     long int axes_1_product = 1;
+    #pragma unroll
     for(long int i=0;i<axes[1].size();i++) axes_1_product *= B.shape[axes[1][i]];
 
     A = transpose(A, order_A);

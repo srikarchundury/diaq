@@ -277,24 +277,25 @@ class diaQMatrix {
             return res;
         }
         void pruneMatrix() {
-            // std::cout << "pruning matrix" << std::endl;
             std::vector<long int> toDelete;
             std::map<long int, diagonal>::iterator it;
-            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                long int counter = 0;
                 float *real_vals = it->second.getRealValues();
                 float *imag_vals = it->second.getImagValues();
-                for (long int i = 0; i < it->second.dLength; i++) {
-                    if(real_vals[i] == 0.0 && imag_vals[i] == 0.0) { counter++; }
-                    else {break;}
+                long int i;
+                for (i = 0; i < it->second.dLength; i++) {
+                    if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) {
+                        break;
+                    }
                 }
-                if(counter == it->second.dLength) {
+                if(i == it->second.dLength) {
                     toDelete.push_back(it->first);
                 }
             }
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < toDelete.size(); i++) {
                 // TODO: again, same case as createDiagonal; .erase is thread-unsafe; makes it tough to use omp
+                // #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
         }

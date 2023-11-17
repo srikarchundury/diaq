@@ -3,7 +3,7 @@
 
 // #include "Vector.hpp"
 #include "matrixKernels.cpp"
-#include "conversions.cpp"
+#include "conversions.cu"
 
 // ----------------------------------------------------------------
 //
