@@ -1,4 +1,4 @@
-# DIA Lite #
+# DIAQ #
 A better DIA format that reduces storage compared to Scipy's DIA format. This numerical library offers DIAQ matrices, matricized tensors, and a set of kernels specifically tailored for efficient quantum simulations.
 
 ### About this Project ###
@@ -9,17 +9,15 @@ A better DIA format that reduces storage compared to Scipy's DIA format. This nu
 
 ## Installation ##
 * Clone this repo
+* Build both CPU and GPU builds
+```
+	./run_builds.sh
+```
 * Test cases
 ```
-cd tests
-./compile_linux.sh
-(or)
-./compile_mac.sh
-
-./a.out		# runs a bunch of testcases
-./a.out 1 	# runs tensordot
-./a.out 2	# runs tensor transpose
-./a.out 3	# runs getMatrixPosition and getTensorPosition
-./a.out 4	# runs tensor transpose another example
-./a.out 5	# runs using operator overloading
+	cd cpu_build/bin
+	./tests		# runs a bunch of spMspM testcases (around 46 testcases as of now)
+	./tests 1
+	./test 2
+	./test 3 and so on.. for different operations
 ```
