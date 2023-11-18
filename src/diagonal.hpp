@@ -1,5 +1,5 @@
-#ifndef SPARSE_TNQS_DIAGONAL_HPP
-#define SPARSE_TNQS_DIAGONAL_HPP
+#ifndef DIAQ_DIAGONAL_HPP
+#define DIAQ_DIAGONAL_HPP
 
 #include <iostream>
 #include <string>
@@ -124,4 +124,4 @@ class diagonal {
         float* imagValues; // real number array
 };
 
-#endif // SPARSE_TNQS_DIAGONAL_HPP
+#endif // DIAQ_DIAGONAL_HPP

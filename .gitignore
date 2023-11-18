@@ -13,6 +13,10 @@ benchmarks/tool/*
 docs/.DS_Store
 docs/.DS_Store/*
 
+# exclude build
+cpu_build/*
+gpu_build/*
+
 diaq.egg-info/PKG-INFO
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++

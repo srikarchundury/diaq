@@ -1,5 +1,5 @@
-#ifndef SPARSE_TNQS_NORMS_HPP
-#define SPARSE_TNQS_NORMS_HPP
+#ifndef DIAQ_NORMS_HPP
+#define DIAQ_NORMS_HPP
 
 #include <cmath>
 #include <iostream>
@@ -12,14 +12,6 @@
 #include "denseMatrix.hpp"
 #include "kernels.hpp"
 
+float norm(const vector &x);
 
-float norm(const vector &x) {
-    std::complex<float> sum = 0;
-    for (size_t i = 0; i < x.num_rows(); ++i) {
-        sum += std::conj(x[i]) * x[i];
-    }
-    assert(sum.imag() == 0.0);
-    return std::sqrt(sum.real());
-}
-
-#endif // SPARSE_TNQS_NORMS_HPP
+#endif // DIAQ_NORMS_HPP

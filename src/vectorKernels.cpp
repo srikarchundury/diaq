@@ -1,41 +1,27 @@
-// implement all functions here
-// UPDATE: Implement Kernels in include/kernels.hpp
-
-#include "vector.hpp"
-#include "kernels.hpp"
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <functional>
-#include <random>
-#include <omp.h>
-
-#include "diaQMatrix.hpp"
-#include "diagonal.hpp"
-
+#include "vectorKernels.hpp"
 // ----------------------------------------------------------------
 //
-// Vector arithmetic
+// vector arithmetic
 //
 // ----------------------------------------------------------------
 
 /**
- * @brief Set all elements of a given (complex) Vector to 0+0i
+ * @brief Set all elements of a given (complex) vector to 0+0i
  * 
  * @param x the vector to be set to zero
  */
-void zeroize(Vector &x) {
+void zeroize(vector &x) {
     for (size_t i = 0; i < x.num_rows(); ++i) {
         x[i] = 0.0;
     }
 }
 
 /**
- * @brief Set all elements of a given (complex) Vector to 1+0i
+ * @brief Set all elements of a given (complex) vector to 1+0i
  *
  * @param x
  */
-void unitize(Vector &x) {
+void unitize(vector &x) {
     for (size_t i = 0; i < x.num_rows(); ++i) {
         x[i] = 1.0;
     }
@@ -44,11 +30,11 @@ void unitize(Vector &x) {
 /**
  * @brief Randomize the entries of a given vector
  * 
- * @param x         Vector to be randomized
+ * @param x         vector to be randomized
  * @param scale     spread of uniform distribution to randomize over
  * @param mean      mean of the uniform distribution to randomize over
  */
-void randomize(Vector &x, double scale, double mean) {
+void randomize(vector &x, double scale, double mean) {
     std::default_random_engine generator;
     std::uniform_real_distribution<double> distribution(mean - scale, mean + scale);
     static auto dice = std::bind(distribution, generator);
@@ -63,7 +49,7 @@ void randomize(Vector &x, double scale, double mean) {
  * @param x  the vector
  * @return double the 1 norm
  */
-double one_norm(const Vector &x) {
+double one_norm(const vector &x) {
     double sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
@@ -77,10 +63,10 @@ double one_norm(const Vector &x) {
 /**
  * @brief  Calculate the 2 norm of a vector: by taking the square root of the sums of the norm() of each entry
  * 
- * @param x         The Vector
+ * @param x         The vector
  * @return double   The norm
  */
-double two_norm(const Vector &x) {
+double two_norm(const vector &x) {
     double sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
@@ -94,10 +80,10 @@ double two_norm(const Vector &x) {
 /**
  * @brief Calculate infinity (max) norm
  * 
- * @param x         Vector
+ * @param x         vector
  * @return double   Result
  */
-double inf_norm(const Vector &x) {
+double inf_norm(const vector &x) {
         double result = std::abs(x[0]);
         for (size_t i = 1; i < x.num_rows(); ++i)
         {
@@ -109,13 +95,13 @@ double inf_norm(const Vector &x) {
         return result;
 }
 
-double p_norm(const Vector &x);
+double p_norm(const vector &x);
 
-Vector operator+(const Vector &x, const Vector &y);
+vector operator+(const vector &x, const vector &y);
 
-Vector operator-(const Vector &x, const Vector &y)
+vector operator-(const vector &x, const vector &y)
 {
-    Vector z(x.num_rows());
+    vector z(x.num_rows());
     #pragma omp parallel for
     for (size_t i = 0; i < z.num_rows(); ++i)
     {
@@ -124,7 +110,7 @@ Vector operator-(const Vector &x, const Vector &y)
     return z;
 }
 
-Vector &operator*=(Vector &x, double alpha) {
+vector &operator*=(vector &x, double alpha) {
     #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
@@ -133,7 +119,7 @@ Vector &operator*=(Vector &x, double alpha) {
     return x;
 }
 
-Vector &operator+=(Vector &x, std::complex<double> alpha) {
+vector &operator+=(vector &x, std::complex<double> alpha) {
     #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
@@ -142,7 +128,7 @@ Vector &operator+=(Vector &x, std::complex<double> alpha) {
     return x;
 }
 
-Vector &operator+=(Vector &x, const Vector &y) {
+vector &operator+=(vector &x, const vector &y) {
     assert(x.num_rows() == y.num_rows());
     #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
@@ -151,4 +137,4 @@ Vector &operator+=(Vector &x, const Vector &y) {
     }
     return x;
 }
-Vector &operator-=(const Vector &x, const Vector &y);
+vector &operator-=(const vector &x, const vector &y);

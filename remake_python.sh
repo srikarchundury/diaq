@@ -1,3 +1,3 @@
 rm -rf build/*
 rm -rf diaq.egg-info
-pip install --no-cache-dir .
+CUDA_ENABLED=1 pip install --no-cache-dir .

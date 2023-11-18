@@ -1,5 +1,5 @@
-#ifndef QSPARSE_DIAQ_HPP
-#define QSPARSE_DIAQ_HPP
+#ifndef DIAQ_DIAQMATRIX_HPP
+#define DIAQ_DIAQMATRIX_HPP
 
 #include "diagonal.hpp"
 #include <map>
@@ -307,4 +307,4 @@ class diaQMatrix {
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
-#endif // QSPARSE_DIAQ_HPP
+#endif // DIAQ_DIAQMATRIX_HPP

@@ -2,12 +2,7 @@
 #include <cstdlib>
 #include <string>
 
-
 #include "../include/diaq.hpp"
-
-#include <pybind11/numpy.h>
-
-namespace py = pybind11;
 
 diaQMatrix testQuantumSparseMatrix(std::map<long int, diagonal> dm) {
     diaQMatrix m = diaQMatrix(dm, 6);
@@ -1730,10 +1725,42 @@ int main(int argc, char **argv) {
         std::cout << "Testing Format Conversion" << std::endl;
         std::vector<std::complex<float>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<long int> shape{3,3,2};
-        diaQMatrix result = from_numpy_cuda(values, shape);
+        diaQMatrix result = from_numpy(values, shape);
         result.print();
         std::cout << " -- " << std::endl;
         std::cout << " -- From Numpy Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        // test case 5 - GHZ 3 qubit unitary simulation
+        std::cout << " -- Testing Multiplication --" << std::endl;
+        std::vector<std::complex<float>> a{
+            1,0,0,0,0,0,0,0,
+            0,0,0,1,0,0,0,0,
+            0,0,1,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,
+            0,0,0,0,1,0,0,0,
+            0,0,0,0,0,0,0,1,
+            0,0,0,0,0,0,1,0,
+            0,0,0,0,0,1,0,0,
+        };
+        std::vector<long int> a_shape{8, 8};
+        std::vector<std::complex<float>> b{
+            1,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,0,
+            0,0,0,0,0,0,0,1,
+            0,0,0,0,1,0,0,0,
+            0,0,0,0,0,1,0,0,
+            0,0,1,0,0,0,0,0,
+            0,0,0,1,0,0,0,0,
+        };
+        std::vector<long int> b_shape{8, 8};
+
+        diaQMatrix A = from_numpy(a, a_shape);
+        diaQMatrix B = from_numpy(b, b_shape);
+        diaQMatrix C = A * B;
+        C.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Multiplication Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "test") == 0) {

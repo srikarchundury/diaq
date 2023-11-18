@@ -1,5 +1,5 @@
-#ifndef SPARSE_TNQS_DENSEMATRIX_HPP
-#define SPARSE_TNQS_DENSEMATRIX_HPP
+#ifndef DIAQ_DENSEMATRIX_HPP
+#define DIAQ_DENSEMATRIX_HPP
 
 #include <iostream>
 #include <string>
@@ -164,4 +164,4 @@ class denseMatrix {
         float *imagData;
 };
 
-#endif // SPARSE_TNQS_DENSEMATRIX_HPP
+#endif // DIAQ_DENSEMATRIX_HPP

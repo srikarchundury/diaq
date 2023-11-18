@@ -159,6 +159,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
     #ifdef __AVX__
     // SIMD vectorization
+    // std::cout << "AVX vectorization" << std::endl;
     long int loop_count = 0;
     long int k_cpy = k;
     while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -732,7 +733,7 @@ vector spMV(diaQMatrix A, vector x) {
         // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < it->second.dLength; i++) {
             // std::cout << "dIndex=" << dIndex << "; dLength=" << dLength << "; i=" << i << std::endl;
-            long int x_idx = (dIndex < 0)? i : dIndex + i ;
+            long int x_idx = (dIndex < 0)? i : dIndex + i;
             long int y_idx = (dIndex < 0)? i - dIndex : i;
             std::complex<float> c(real_vals[i], imag_vals[i]);
             y[y_idx] += c * x[x_idx];

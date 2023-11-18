@@ -8,6 +8,7 @@
 
 #include "diaq.hpp"
 
+#include <cuda_runtime.h>
 
 namespace py = pybind11;
 
@@ -84,7 +85,8 @@ PYBIND11_MODULE(diaq, m) {
     // conversion from numpy
     m.def("from_numpy", &from_numpy, py::return_value_policy::reference);
     m.def("to_numpy", &to_numpy, py::return_value_policy::reference);
-    m.def("from_numpy_cuda", &from_numpy_cuda, py::return_value_policy::reference, "Convert NumPy array to diaQMatrix using CUDA");
+    // CUDA conversion from numpy
+    m.def("from_numpy_cuda", &from_numpy_cuda);
 
     // kernel functions
     m.def("product", &product, py::return_value_policy::reference);

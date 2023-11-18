@@ -1,5 +1,5 @@
-#ifndef SPARSE_TNQS_VECTOR_HPP
-#define SPARSE_TNQS_VECTOR_HPP
+#ifndef DIAQ_VECTOR_HPP
+#define DIAQ_VECTOR_HPP
 
 #include <iostream>
 #include <vector>
@@ -28,4 +28,4 @@ class vector {
         std::vector< std::complex< float > > storage_;
 };
 
-#endif // SPARSE_TNQS_VECTOR_HPP
+#endif // DIAQ_VECTOR_HPP

@@ -1,3 +1,6 @@
+#ifndef DIAQ_CONFIG_HPP
+#define DIAQ_CONFIG_HPP
+
 #include <thread>
 #include <iostream>
 
@@ -6,3 +9,6 @@
 #else
 	#define NUMBER_OF_OMP_THREADS 32
 #endif
+
+
+#endif // DIAQ_CONFIG_HPP
