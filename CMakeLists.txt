@@ -4,6 +4,7 @@ project(diaq)
 # Set the source files
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
+set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
 
 set(SOURCES
     ${SRC_DIR}/config.hpp
@@ -38,12 +39,20 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
     find_package(CUDA REQUIRED)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
     cuda_add_library(diaq ${SOURCES} ${CUDA_SOURCES})
+	add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
+	set(BUILD_TYPE "gpu_build")
 else()
     message(STATUS "CUDA is not enabled")
     add_library(diaq ${SOURCES})
+	set(BUILD_TYPE "cpu_build")
 endif()
 
+# Compile the tests.cpp file
+add_executable(tests ${TESTS_DIR}/tests.cpp)
+# Link your library to the tests
+target_link_libraries(tests diaq)
+
 # Set the output directory for the compiled libraries and executables
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
