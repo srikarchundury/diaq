@@ -259,6 +259,9 @@ class diaQMatrix {
             // std::cout << "lenRes = " << lenRes << std::endl;
             return lenRes;
         }
+        long int num_diags() {
+            return diagonalMap.size();
+        }
         std::vector<std::complex<float>> flatten() {
             std::vector<std::complex<float>> res(matrix_shape[0] * matrix_shape[1] , 1);
             std::map<long int, diagonal>::iterator it;

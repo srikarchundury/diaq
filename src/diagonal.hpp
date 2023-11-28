@@ -121,7 +121,7 @@ class diagonal {
         }
     private:
         float* realValues; // real number array
-        float* imagValues; // real number array
+        float* imagValues; // imag number array
 };
 
 #endif // DIAQ_DIAGONAL_HPP
