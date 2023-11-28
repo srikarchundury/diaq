@@ -1,16 +1,5 @@
-#include <iostream>
-#include <vector>
-#include <map>
-#include <complex>
-#include <cmath>
-#include <omp.h>
-#include "diaQMatrix.hpp"
+#include "conversions_gpu.hpp"
 
-// CUDA libraries
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
-#include "cuda_profiler_api.h"
-#include "device_launch_parameters.h"
 
 __global__ void convert_to_dq(
 	long int size, long int matrix_size_x, long int matrix_size_y,

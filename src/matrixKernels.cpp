@@ -2,7 +2,16 @@
 #include "denseMatrix.hpp"
 #include "vector.hpp"
 
+#ifdef CUDA_ENABLED
+    #include "conversions_gpu.hpp"
+    #include "matrixKernels_gpu.hpp"
+#endif
+
+// ----------------------------------------------------------------
+//
 // SIMD
+//
+// ----------------------------------------------------------------
 #ifdef __AVX__
 	#include <immintrin.h>
     __m256 load_partial(long int n, const float* p) {
@@ -719,10 +728,18 @@ diaQMatrix diaQMatrix::transpose(std::vector<long int> new_order) {
 
 
 vector spMV(diaQMatrix A, vector x) {
+    #ifdef CUDA_ENABLED
+        return spmv_cuda(A, x);
+    #else
     if(A.matrix_shape[1] != x.num_rows()) {
         throw std::invalid_argument("Not multiplyable");
     }
-    vector y(A.matrix_shape[0]);
+    vector y(A.matrix_shape[0], 0.0, 0.0);
+    float *y_real_values = y.getRealValues();
+    float *y_imag_values = y.getImagValues();
+
+    float *x_real_values = x.getRealValues();
+    float *x_imag_values = x.getImagValues();
     std::map<long int, diagonal> diagMap = A.getDiagonalMap();
     std::map<long int, diagonal>::iterator it;
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
@@ -730,31 +747,41 @@ vector spMV(diaQMatrix A, vector x) {
         long int dLength = it->second.dLength;
         float *real_vals = it->second.getRealValues();
         float *imag_vals = it->second.getImagValues();
-        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < it->second.dLength; i++) {
             // std::cout << "dIndex=" << dIndex << "; dLength=" << dLength << "; i=" << i << std::endl;
             long int x_idx = (dIndex < 0)? i : dIndex + i;
             long int y_idx = (dIndex < 0)? i - dIndex : i;
-            std::complex<float> c(real_vals[i], imag_vals[i]);
-            y[y_idx] += c * x[x_idx];
+            y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+            y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
             // std::cout << "y[" << y_idx << "] = " << c << " * x[" << x_idx << "]" << std::endl;
             // std::cout << " -- " << std::endl;
         }
     }
     return y;
+    #endif
 }
 
 vector MV(denseMatrix A, vector x) {
     if(A.matrix_shape[1] != x.num_rows()) {
         throw std::invalid_argument("Not multiplyable");
     }
-    vector y(A.matrix_shape[0]);
+    float *x_real_values = x.getRealValues();
+    float *x_imag_values = x.getImagValues();
+    vector y(A.matrix_shape[0], 0.0, 0.0);
+    float *y_real_values = y.getRealValues();
+    float *y_imag_values = y.getImagValues();
     for(long int i = 0; i < A.matrix_shape[0]; i++) {
-        std::complex<float> res = 0;
+        float res_real = 0.0;
+        float res_imag = 0.0;
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) reduction(+:res_real,res_imag)
         for(long int j = 0; j < A.matrix_shape[1]; j++) {
-            res += A.get(i, j) * x[j];
+            std::complex<float> elem = A.get(i, j);
+            res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
+            res_imag += elem.real() * x_imag_values[j] + elem.imag() * x_real_values[j];
         }
-        y[i] = res;
+        y_real_values[i] = res_real;
+        y_imag_values[i] = res_imag;
     }
     return y;
 }

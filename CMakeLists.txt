@@ -28,6 +28,9 @@ set(SOURCES
 set(CUDA_SOURCES
 	${SRC_DIR}/conversions_gpu.hpp
 	${SRC_DIR}/conversions_gpu.cu
+
+	${SRC_DIR}/matrixKernels_gpu.hpp
+	${SRC_DIR}/matrixKernels_gpu.cu
 )
 
 # Set include directories
