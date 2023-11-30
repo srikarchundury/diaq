@@ -189,6 +189,57 @@ class diaQMatrix {
             }
             return ten_pos;
         }
+        void getDiagFlatData(long int *nd, long int *diagonal_indices, long int *cum_diagonal_lengths, long int *nm, float *real_data, float *imag_data) {
+            long int n_diags = diagonalMap.size();
+            diagonal_indices = (long int *)malloc(n_diags * sizeof(long int));
+            cum_diagonal_lengths = (long int *)malloc(n_diags * sizeof(long int));
+            long int num_elements = 0;
+            long int k = 0;
+            for (auto x : diagonalMap) {
+                diagonal_indices[k] = x.first;
+                if (k == 0) {
+                    cum_diagonal_lengths[k] = x.second.dLength;
+                } else {
+                    cum_diagonal_lengths[k] = cum_diagonal_lengths[k - 1] + x.second.dLength;
+                }
+                k++;
+                num_elements += x.second.dLength;
+            }
+            // ------------------ DEBUG ------------------
+            // std::cout << "num_elements = " << num_elements << std::endl;
+            std::cout << "diagonal_indices = ";
+            for (long int i = 0; i < n_diags; i++) {
+                std::cout << diagonal_indices[i] << ",";
+            }
+            std::cout << std::endl;
+            // ------------------ DEBUG ------------------
+            long int p = 0;
+            real_data = (float *)malloc(num_elements * sizeof(float));
+            imag_data = (float *)malloc(num_elements * sizeof(float));
+            for (auto x : diagonalMap) {
+                float *real_vals = x.second.getRealValues();
+                float *imag_vals = x.second.getImagValues();
+                for (int i = 0; i < x.second.dLength; i++) {
+                    real_data[p] = real_vals[i];
+                    imag_data[p++] = imag_vals[i];
+                }
+            }
+            // ------------------ DEBUG ------------------
+            std::cout << "real_data = ";
+            for (long int i = 0; i < num_elements; i++) {
+                std::cout << real_data[i] << ",";
+            }
+            std::cout << std::endl;
+            std::cout << "imag_data = ";
+            for (long int i = 0; i < num_elements; i++) {
+                std::cout << imag_data[i] << ",";
+            }
+            std::cout << std::endl;
+            // ------------------ DEBUG ------------------
+            *nm = num_elements;
+            *nd = n_diags;
+            return;
+        }
         std::vector<long int> getDiagonalPositionByFlatIndex(long int flatIndex) {
             long int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
