@@ -7,7 +7,9 @@
 #include <complex>
 #include <cmath>
 #include <omp.h>
+
 #include "diaQMatrix.hpp"
+#include "denseMatrix.hpp"
 
 // CUDA libraries
 #include "cuda_runtime_api.h"
@@ -17,5 +19,6 @@
 
 // declarations
 diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<long int> shape);
+diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape);
 
 #endif // DIAQ_CONVERSIONS_GPU_HPP

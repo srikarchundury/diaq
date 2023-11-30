@@ -37,7 +37,7 @@ __global__ void spmv_kernel(long int num_diags, long int num_elements, long int 
 */
 vector spmv_cuda(diaQMatrix A, vector x) {
 	// ------------------ DEBUG ------------------
-	std::cout << "Using CUDA to calculate product of matrix and vector" << std::endl;
+	std::cout << "\nUsing CUDA to calculate product of matrix and vector" << std::endl;
 	// ------------------ DEBUG ------------------
 	if (A.matrix_shape[1] != x.num_rows()) {
 		throw std::invalid_argument("Not multiplyable");
@@ -156,7 +156,7 @@ __global__ void product_kernel(float *a_real_values, float *a_imag_values, float
  * 	@return C = A * B
 */
 diaQMatrix product_cuda(diaQMatrix A, diaQMatrix B) {
-	std::cout << "Using CUDA to calculate product of two matrices" << std::endl;
+	std::cout << "\nUsing CUDA to calculate product of two matrices" << std::endl;
 	if(A.matrix_shape[1] != B.matrix_shape[0]) {
 		throw std::invalid_argument("Not multiplyable");
 	}

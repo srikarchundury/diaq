@@ -22,9 +22,21 @@ __global__ void convert_to_dq(
 		device_diagonal_pos[index] = d_pos;
 	}
 }
-
+/*
+ * 		Converts a NumPy array to diaQMatrix using CUDA
+ * 		Parameters:
+ * 			values: A vector of complex<float> values
+ * 			shape: A vector of long int values
+ * 		Returns:
+ * 			diaQMatrix
+ * 		Note:
+ * 			1. The shape vector should be of length 2
+ * 			2. The values vector should be of length equal to the product of the elements of shape
+ * 			3. The values vector should be in row-major order
+ * 			4. The values vector should be a flattened version of the NumPy array 
+*/
 diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<long int> shape) {
-	std::cout << "Using CUDA to convert NumPy array to diaQMatrix" << std::endl;
+	std::cout << "\nUsing CUDA to convert NumPy array to diaQMatrix" << std::endl;
 	long int size = values.size();
 	int rank = shape.size();
 	long int x, y;
@@ -107,6 +119,80 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 		long int dIndex = host_diagonal_idx[i];
 		long int dPos = host_diagonal_pos[i];
 		diaq_res.setDiagonalElement(dIndex, dPos, diaq_res.getDiagonalLength(dIndex), values[i].real(), values[i].imag());
+	}
+	diaq_res.pruneMatrix();
+	return diaq_res;
+}
+/*
+ * 		Converts a diaQMatrix to denseMatrix using CUDA
+ * 		Parameters:
+ * 			d: A diaQMatrix
+ * 			new_shape: A vector of long int values
+ * 		Returns:
+ * 			denseMatrix
+*/
+diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
+	std::cout << "\nUsing CUDA to convert denseMatrix to diaQMatrix" << std::endl;
+	float *realData = d->getRealData();
+	float *ImagData = d->getImagData();
+	long int size = d->size;
+	long int matrix_size_x = new_shape[0]; // Assuming first dimension as rows
+	long int matrix_size_y = new_shape[1]; // Assuming second dimension as columns
+
+	// Allocate memory on the device for diaQMatrix map
+	long int* device_diagonal_idx;
+	long int* device_diagonal_pos;
+	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
+	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
+
+	// dim3 threadsPerBlock(16, 16);
+	// dim3 numBlocks(size/16,size/16);
+	int totalDataSize = size;
+	int threadsPerBlock = 256;
+	// Calculate the number of blocks needed
+	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
+	// Hardcoded values for numBlocks and threadsPerBlock
+	// Launch the kernel
+	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+
+	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
+	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));
+	cudaMemcpy(host_diagonal_idx, device_diagonal_idx, size * sizeof(long int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_diagonal_pos, device_diagonal_pos, size * sizeof(long int), cudaMemcpyDeviceToHost);
+
+	// Free memory on the device
+	cudaFree(device_diagonal_idx);
+	cudaFree(device_diagonal_pos);
+
+	// std::cout << "Matrix shape" << std::endl;
+	// for (long int i = 0; i < 2; i++) {
+	//     std::cout << matrix_shape[i] << " ";
+	// }
+	// std::cout << std::endl;
+
+	// std::cout << "Diagonal indices" << std::endl;
+	// for (long int i = 0; i < size; i++) {
+	//     std::cout << host_diagonal_idx[i] << " ";
+	// }
+	// std::cout << std::endl;
+	// std::cout << "Diagonal positions" << std::endl;
+	// for (long int i = 0; i < size; i++) {
+	//     std::cout << host_diagonal_pos[i] << " ";
+	// }
+	// std::cout << std::endl;
+
+	std::map<long int, diagonal> diagMap;
+	diaQMatrix diaq_res(diagMap, &new_shape);
+	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
+		// TODO: This function calls .insert on a std::map and hence is thread-unsafe; need to think of a parallel insert
+		// in std::map, else replace with some other datastructure.?
+		diaq_res.createDiagonal(i);
+	}
+	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+	for (long int i = 0; i < size; i++) {
+		long int dIndex = host_diagonal_idx[i];
+		long int dPos = host_diagonal_pos[i];
+		diaq_res.setDiagonalElement(dIndex, dPos, diaq_res.getDiagonalLength(dIndex), realData[i], ImagData[i]);
 	}
 	diaq_res.pruneMatrix();
 	return diaq_res;

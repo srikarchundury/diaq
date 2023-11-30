@@ -72,10 +72,12 @@ class denseMatrix {
         float *getRealData() {
             return realData;
         }
+        float *getImagData() {
+            return imagData;
+        }
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int flat_index = 0;
             long long int prod = 1;
-            long int remaining;
             for(long int i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (size / prod) * ten_pos[i];

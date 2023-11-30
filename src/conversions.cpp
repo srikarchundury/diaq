@@ -40,6 +40,9 @@ denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
 }
 
 diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
+    #ifdef CUDA_ENABLED
+        return convertToQuantumSparse_cuda(this, new_shape);
+    #else
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // long int s = 0;
     // for(long int i = 0; i < new_shape.size(); i++) {
@@ -69,6 +72,7 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     qm.pruneMatrix();
     qm.shape = shape;
     return qm;
+    #endif
 }
 
 std::vector<std::complex<float> > to_numpy(diaQMatrix A) {
