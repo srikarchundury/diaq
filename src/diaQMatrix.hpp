@@ -189,6 +189,45 @@ class diaQMatrix {
             }
             return ten_pos;
         }
+        void setDiagFlatData(long int n_diags, long int *diagonal_indices, long int *cum_diagonal_lengths, long int num_elements, float *real_data, float *imag_data) {
+            // ------------------ DEBUG ------------------
+            // std::cout << "n_diags = " << n_diags << std::endl;
+            // std::cout << "num_elements = " << num_elements << std::endl;
+            // std::cout << "diagonal_indices = [";
+            // for (long int i = 0; i < n_diags - 1; i++) {
+            //     std::cout << diagonal_indices[i] << ",";
+            // }
+            // std::cout << diagonal_indices[n_diags - 1] << "]" << std::endl;
+            // std::cout << "cum_diagonal_lengths = [";
+            // for (long int i = 0; i < n_diags - 1; i++) {
+            //     std::cout << cum_diagonal_lengths[i] << ",";
+            // }
+            // std::cout << cum_diagonal_lengths[n_diags - 1] << "]" << std::endl;
+            // std::cout << "real_data = [";
+            // for (long int i = 0; i < num_elements - 1; i++) {
+            //     std::cout << real_data[i] << ",";
+            // }
+            // std::cout << real_data[num_elements - 1] << "]" << std::endl;
+            // std::cout << "imag_data = [";
+            // for (long int i = 0; i < num_elements - 1; i++) {
+            //     std::cout << imag_data[i] << ",";
+            // }
+            // std::cout << imag_data[num_elements - 1] << "]" << std::endl;
+            // ------------------ DEBUG ------------------
+            for (long int i = 0; i < n_diags; i++) {
+                long int dIndex = diagonal_indices[i];
+                long int dLength = cum_diagonal_lengths[i];
+                // std::cout << "dIndex = " << dIndex << " dLength = " << dLength << std::endl;
+                float *real_vals = (float *)calloc(dLength, sizeof(float));
+                float *imag_vals = (float *)calloc(dLength, sizeof(float));
+                for (long int j = 0; j < dLength; j++) {
+                    real_vals[j] = real_data[j];
+                    imag_vals[j] = imag_data[j];
+                }
+                diagonal newDiag(dIndex, dLength, real_vals, imag_vals);
+                this->diagonalMap.insert({dIndex, newDiag});
+            }
+        }
         void getDiagFlatData(long int *n_diags, long int **diagonal_indices, long int **cum_diagonal_lengths, long int *num_elements, float **real_data, float **imag_data) {
             *n_diags = diagonalMap.size();
             // ------------------ DEBUG ------------------

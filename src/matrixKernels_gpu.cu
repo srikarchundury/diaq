@@ -161,8 +161,8 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 }
 
 __global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, long int *A_cum_diagonal_lengths, long int A_num_elements, float *A_real_data, float *A_imag_data, long int num_diags_B, long int *B_diag_indices, long int *B_cum_diagonal_lengths, long int B_num_elements, float *B_real_data, float *B_imag_data, long int num_diags_C, long int *C_diag_indices, long int *C_cum_diagonal_lengths, long int C_num_elements, float *C_real_data, float *C_imag_data) {
-	int diagonal_idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int diagonal_pos = blockIdx.y * blockDim.y + threadIdx.y;
+	// TODO – Do this at night!
+	return;
 }
 /*
  * 	Product of two matrices (spMspM)
@@ -194,46 +194,162 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	B->getDiagFlatData(&B_n_diags, &B_diagonal_indices, &B_cum_diagonal_lengths, &B_num_elements, &B_real_data, &B_imag_data);
 
 	// ------------------ DEBUG A ------------------
-	std::cout << "A_n_diags = " << A_n_diags << std::endl;
-	std::cout << "A_num_elements = " << A_num_elements << std::endl;
-	std::cout << "A_diagonal_indices: [";
-	for (int i = 0; i < A_n_diags - 1; i++) {
-		std::cout << A_diagonal_indices[i] << ", ";
-	}
-	std::cout << A_diagonal_indices[A_n_diags - 1] << "]" << std::endl;
-	std::cout << "A_cum_diagonal_lengths: [";
-	for (int i = 0; i < A_n_diags - 1; i++) {
-		std::cout << A_cum_diagonal_lengths[i] << ", ";
-	}
-	std::cout << A_cum_diagonal_lengths[A_n_diags - 1] << "]" << std::endl;
-	std::cout << "(A_num_elements = " << A_num_elements << ") [";
-	for (int i = 0; i < A_num_elements - 1; i++) {
-		std::cout << "(" << A_real_data[i] << "," << A_imag_data[i] << "), ";
-	}
-	std::cout << "(" << A_real_data[A_num_elements - 1] << "," << A_imag_data[A_num_elements - 1] << ")]" << std::endl;
+	// std::cout << "A_n_diags = " << A_n_diags << std::endl;
+	// std::cout << "A_num_elements = " << A_num_elements << std::endl;
+	// std::cout << "A_diagonal_indices: [";
+	// for (int i = 0; i < A_n_diags - 1; i++) {
+	// 	std::cout << A_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << A_diagonal_indices[A_n_diags - 1] << "]" << std::endl;
+	// std::cout << "A_cum_diagonal_lengths: [";
+	// for (int i = 0; i < A_n_diags - 1; i++) {
+	// 	std::cout << A_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << A_cum_diagonal_lengths[A_n_diags - 1] << "]" << std::endl;
+	// std::cout << "(A_num_elements = " << A_num_elements << ") [";
+	// for (int i = 0; i < A_num_elements - 1; i++) {
+	// 	std::cout << "(" << A_real_data[i] << "," << A_imag_data[i] << "), ";
+	// }
+	// std::cout << "(" << A_real_data[A_num_elements - 1] << "," << A_imag_data[A_num_elements - 1] << ")]" << std::endl;
 	// ------------------ DEBUG A ------------------
-	std::cout << "---" << std::endl;
+	// std::cout << "---" << std::endl;
 	// ------------------ DEBUG B ------------------
-	std::cout << "B_n_diags = " << B_n_diags << std::endl;
-	std::cout << "B_num_elements = " << B_num_elements << std::endl;
-	std::cout << "B_diagonal_indices: [";
-	for (int i = 0; i < B_n_diags - 1; i++) {
-		std::cout << B_diagonal_indices[i] << ", ";
-	}
-	std::cout << B_diagonal_indices[B_n_diags - 1] << "]" << std::endl;
-	std::cout << "B_cum_diagonal_lengths: [";
-	for (int i = 0; i < B_n_diags - 1; i++) {
-		std::cout << B_cum_diagonal_lengths[i] << ", ";
-	}
-	std::cout << B_cum_diagonal_lengths[B_n_diags - 1] << "]" << std::endl;
-	std::cout << "(B_num_elements = " << B_num_elements << ") [";
-	for (int i = 0; i < B_num_elements - 1; i++) {
-		std::cout << "(" << B_real_data[i] << "," << B_imag_data[i] << "), ";
-	}
-	std::cout << "(" << B_real_data[B_num_elements - 1] << "," << B_imag_data[B_num_elements - 1] << ")]" << std::endl;
+	// std::cout << "B_n_diags = " << B_n_diags << std::endl;
+	// std::cout << "B_num_elements = " << B_num_elements << std::endl;
+	// std::cout << "B_diagonal_indices: [";
+	// for (int i = 0; i < B_n_diags - 1; i++) {
+	// 	std::cout << B_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << B_diagonal_indices[B_n_diags - 1] << "]" << std::endl;
+	// std::cout << "B_cum_diagonal_lengths: [";
+	// for (int i = 0; i < B_n_diags - 1; i++) {
+	// 	std::cout << B_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << B_cum_diagonal_lengths[B_n_diags - 1] << "]" << std::endl;
+	// std::cout << "(B_num_elements = " << B_num_elements << ") [";
+	// for (int i = 0; i < B_num_elements - 1; i++) {
+	// 	std::cout << "(" << B_real_data[i] << "," << B_imag_data[i] << "), ";
+	// }
+	// std::cout << "(" << B_real_data[B_num_elements - 1] << "," << B_imag_data[B_num_elements - 1] << ")]" << std::endl;
 	// ------------------ DEBUG B ------------------
 
-	// CUDA stuff
 
-	return *A;
+	// CUDA stuff - Preparation Phase 1
+	// how many resulting diagonal indices can there be?
+	// we should prune later, ofc.
+	// number of diagonals in C : A_matrix_shape[0] + B_matrix_shape[1] - 1
+	long int *C_diagonal_indices = (long int *)malloc((A->matrix_shape[0] + B->matrix_shape[1] - 1) * sizeof(long int));
+	long int C_n_diags = 0;
+	// all combinations of A_diagonal_indices and B_diagonal_indices, want to sort? diag_idx_C = diag_idx_A + diag_idx_B, let's do it
+	for(int i = 0; i < A_n_diags; i++) {
+		#pragma omp parallel for
+		for(int j = 0; j < B_n_diags; j++) {
+			C_diagonal_indices[C_n_diags] = A_diagonal_indices[i] + B_diagonal_indices[j];
+			C_n_diags++;
+		}
+	}
+	// ------------------ DEBUG C ------------------
+	// std::cout << "---" << std::endl;
+	// std::cout << "C_n_diags = " << C_n_diags << std::endl;
+	// std::cout << "C_diagonal_indices: [";
+	// for (long int i = 0; i < C_n_diags - 1; i++) {
+	// 	std::cout << C_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << C_diagonal_indices[C_n_diags - 1] << "]" << std::endl;
+	// ------------------ DEBUG C ------------------
+	
+	std::vector<long int> C_matrix_shape{A->matrix_shape[0], B->matrix_shape[1]};
+	diaQMatrix* C = new diaQMatrix(&C_matrix_shape);
+
+	long int *C_cum_diagonal_lengths = (long int *)malloc(C_n_diags * sizeof(long int));
+	long int C_num_elements = 0;
+	for(long int i = 0; i < C_n_diags; i++) {
+		long int diag_idx = C_diagonal_indices[i];
+		long int diag_length = C->getDiagonalLength(diag_idx);
+		C_num_elements += diag_length;
+		C_cum_diagonal_lengths[i] = C_num_elements;
+	}
+
+	// ------------------ DEBUG C ------------------
+	// std::cout << "---" << std::endl;
+	// std::cout << "C_num_elements = " << C_num_elements << std::endl;
+	// std::cout << "C_cum_diagonal_lengths: [";
+	// for (long int i = 0; i < C_n_diags - 1; i++) {
+	// 	std::cout << C_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << C_cum_diagonal_lengths[C_n_diags - 1] << "]" << std::endl;
+	// ------------------ DEBUG C ------------------
+
+	float *C_real_data = (float *)malloc(C_num_elements * sizeof(float));
+	float *C_imag_data = (float *)malloc(C_num_elements * sizeof(float));
+
+	// cuda stuff - Allocation Phase
+	float *d_A_real_data, *d_A_imag_data, *d_B_real_data, *d_B_imag_data, *d_C_real_data, *d_C_imag_data;
+	long int *d_A_diagonal_indices, *d_A_cum_diagonal_lengths, *d_B_diagonal_indices, *d_B_cum_diagonal_lengths, *d_C_diagonal_indices, *d_C_cum_diagonal_lengths;
+	cudaMalloc((void **)&d_A_real_data, A_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_A_imag_data, A_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_B_real_data, B_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_B_imag_data, B_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_C_real_data, C_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_C_imag_data, C_num_elements * sizeof(float));
+	cudaMalloc((void **)&d_A_diagonal_indices, A_n_diags * sizeof(long int));
+	cudaMalloc((void **)&d_A_cum_diagonal_lengths, A_n_diags * sizeof(long int));
+	cudaMalloc((void **)&d_B_diagonal_indices, B_n_diags * sizeof(long int));
+	cudaMalloc((void **)&d_B_cum_diagonal_lengths, B_n_diags * sizeof(long int));
+	cudaMalloc((void **)&d_C_diagonal_indices, C_n_diags * sizeof(long int));
+	cudaMalloc((void **)&d_C_cum_diagonal_lengths, C_n_diags * sizeof(long int));
+	// cuda copy
+	cudaMemcpy(d_A_real_data, A_real_data, A_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_A_imag_data, A_imag_data, A_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B_real_data, B_real_data, B_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B_imag_data, B_imag_data, B_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_C_real_data, C_real_data, C_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_C_imag_data, C_imag_data, C_num_elements * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_A_diagonal_indices, A_diagonal_indices, A_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_A_cum_diagonal_lengths, A_cum_diagonal_lengths, A_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B_diagonal_indices, B_diagonal_indices, B_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B_cum_diagonal_lengths, B_cum_diagonal_lengths, B_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_C_diagonal_indices, C_diagonal_indices, C_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_C_cum_diagonal_lengths, C_cum_diagonal_lengths, C_n_diags * sizeof(long int), cudaMemcpyHostToDevice);
+
+	// cuda kernel
+	int blockSize = 256;
+	int gridSize = (C_n_diags + blockSize - 1) / blockSize;
+	product_kernel<<<gridSize, blockSize>>>(A_n_diags, A_diagonal_indices, A_cum_diagonal_lengths, A_num_elements, A_real_data, A_imag_data, B_n_diags, B_diagonal_indices, B_cum_diagonal_lengths, B_num_elements, B_real_data, B_imag_data, C_n_diags, C_diagonal_indices, C_cum_diagonal_lengths, C_num_elements, C_real_data, C_imag_data);
+
+	// cuda copy back just C
+	cudaMemcpy(C_real_data, d_C_real_data, C_num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(C_imag_data, d_C_imag_data, C_num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+	// cuda free
+	cudaFree(d_A_real_data);
+	cudaFree(d_A_imag_data);
+	cudaFree(d_B_real_data);
+	cudaFree(d_B_imag_data);
+	cudaFree(d_C_real_data);
+	cudaFree(d_C_imag_data);
+	cudaFree(d_A_diagonal_indices);
+	cudaFree(d_A_cum_diagonal_lengths);
+	cudaFree(d_B_diagonal_indices);
+	cudaFree(d_B_cum_diagonal_lengths);
+	cudaFree(d_C_diagonal_indices);
+	cudaFree(d_C_cum_diagonal_lengths);
+
+	// Construct back diaQMatrix C
+	C->setDiagFlatData(C_n_diags, C_diagonal_indices, C_cum_diagonal_lengths, C_num_elements, C_real_data, C_imag_data);
+
+	// free
+	free(A_diagonal_indices);
+	free(A_cum_diagonal_lengths);
+	free(A_real_data);
+	free(A_imag_data);
+	free(B_diagonal_indices);
+	free(B_cum_diagonal_lengths);
+	free(B_real_data);
+	free(B_imag_data);
+	free(C_diagonal_indices);
+	free(C_cum_diagonal_lengths);
+	free(C_real_data);
+	free(C_imag_data);
+
+	return *C;
 }
