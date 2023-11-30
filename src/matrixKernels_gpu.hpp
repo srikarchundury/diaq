@@ -11,7 +11,7 @@
 #include "device_launch_parameters.h"
 
 // declarations
-diaQMatrix product_cuda(diaQMatrix A, diaQMatrix B);
-vector spmv_cuda(diaQMatrix A, vector x);
+diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B);
+vector spmv_cuda(diaQMatrix *A, vector *x);
 
 #endif // DIAQ_MATRIXKERNELS_GPU_HPP
