@@ -189,56 +189,63 @@ class diaQMatrix {
             }
             return ten_pos;
         }
-        void getDiagFlatData(long int *nd, long int *diagonal_indices, long int *cum_diagonal_lengths, long int *nm, float *real_data, float *imag_data) {
-            long int n_diags = diagonalMap.size();
-            diagonal_indices = (long int *)malloc(n_diags * sizeof(long int));
-            cum_diagonal_lengths = (long int *)malloc(n_diags * sizeof(long int));
-            long int num_elements = 0;
+        void getDiagFlatData(long int *n_diags, long int **diagonal_indices, long int **cum_diagonal_lengths, long int *num_elements, float **real_data, float **imag_data) {
+            *n_diags = diagonalMap.size();
+            // ------------------ DEBUG ------------------
+            // std::cout << "n_diags = " << *n_diags << std::endl;
+            // ------------------ DEBUG ------------------
+            (*diagonal_indices) = (long int *)malloc(*n_diags * sizeof(long int));
+            (*cum_diagonal_lengths) = (long int *)malloc(*n_diags * sizeof(long int));
+            *num_elements = 0;
             long int k = 0;
             for (auto x : diagonalMap) {
-                diagonal_indices[k] = x.first;
+                // std::cout << "for k = " << k << " x.first = " << x.first << std::endl;
+                (*diagonal_indices)[k] = x.first;
+                // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
                 if (k == 0) {
-                    cum_diagonal_lengths[k] = x.second.dLength;
+                    (*cum_diagonal_lengths)[k] = x.second.dLength;
                 } else {
-                    cum_diagonal_lengths[k] = cum_diagonal_lengths[k - 1] + x.second.dLength;
+                    // std::cout << "k = " << k << std::endl;
+                    // std::cout << "~ (*cum_diagonal_lengths)[" << k - 1 << "] = " << (*cum_diagonal_lengths)[k - 1] << std::endl;
+                    // std::cout << "~ x.second.dLength = " << x.second.dLength << std::endl;
+                    (*cum_diagonal_lengths)[k] = (*cum_diagonal_lengths)[k - 1] + x.second.dLength;
                 }
+                // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
                 k++;
-                num_elements += x.second.dLength;
+                *num_elements += x.second.dLength;
+                // std::cout << "set! *num_elements = " << *num_elements << std::endl;
             }
             // ------------------ DEBUG ------------------
-            // std::cout << "num_elements = " << num_elements << std::endl;
-            std::cout << "diagonal_indices = ";
-            for (long int i = 0; i < n_diags; i++) {
-                std::cout << diagonal_indices[i] << ",";
-            }
-            std::cout << std::endl;
+            // std::cout << "num_elements = " << *num_elements << std::endl;
+            // std::cout << "diagonal_indices = ";
+            // for (long int i = 0; i < *n_diags; i++) {
+            //     std::cout << (*cum_diagonal_lengths)[i] << ",";
+            // }
+            // std::cout << std::endl;
             // ------------------ DEBUG ------------------
             long int p = 0;
-            real_data = (float *)malloc(num_elements * sizeof(float));
-            imag_data = (float *)malloc(num_elements * sizeof(float));
+            (*real_data) = (float *)malloc(*num_elements * sizeof(float));
+            (*imag_data) = (float *)malloc(*num_elements * sizeof(float));
             for (auto x : diagonalMap) {
                 float *real_vals = x.second.getRealValues();
                 float *imag_vals = x.second.getImagValues();
                 for (int i = 0; i < x.second.dLength; i++) {
-                    real_data[p] = real_vals[i];
-                    imag_data[p++] = imag_vals[i];
+                    (*real_data)[p] = real_vals[i];
+                    (*imag_data)[p++] = imag_vals[i];
                 }
             }
             // ------------------ DEBUG ------------------
-            std::cout << "real_data = ";
-            for (long int i = 0; i < num_elements; i++) {
-                std::cout << real_data[i] << ",";
-            }
-            std::cout << std::endl;
-            std::cout << "imag_data = ";
-            for (long int i = 0; i < num_elements; i++) {
-                std::cout << imag_data[i] << ",";
-            }
-            std::cout << std::endl;
+            // std::cout << "real_data = ";
+            // for (long int i = 0; i < *num_elements; i++) {
+            //     std::cout << (*real_data)[i] << ",";
+            // }
+            // std::cout << std::endl;
+            // std::cout << "imag_data = ";
+            // for (long int i = 0; i < *num_elements; i++) {
+            //     std::cout << (*imag_data)[i] << ",";
+            // }
+            // std::cout << std::endl;
             // ------------------ DEBUG ------------------
-            *nm = num_elements;
-            *nd = n_diags;
-            return;
         }
         std::vector<long int> getDiagonalPositionByFlatIndex(long int flatIndex) {
             long int mat_x = flatIndex / matrix_shape[1];
@@ -256,7 +263,7 @@ class diaQMatrix {
                 res.push_back(mat_y - d_idx);
             }
             return res;
-        } 
+        }
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int total_elements = 1;
             for(long int i = 0;i < shape.size(); i++)
