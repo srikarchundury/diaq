@@ -7,15 +7,12 @@ __global__ void convert_to_dq(
 ) {
 	long int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index < size) {
-		long int mat_x = index / matrix_size_y;
-		long int flatIndex = index - matrix_size_y * mat_x;
-		long int mat_y = flatIndex % matrix_size_y;
-		long int d_idx = mat_y - mat_x;
+		long int d_idx = ((index - matrix_size_y * (index / matrix_size_y)) % matrix_size_y) - (index / matrix_size_y);
 		long int d_pos;
 		if(d_idx <= 0) {
-			d_pos = mat_y;
+			d_pos = ((index - matrix_size_y * (index / matrix_size_y)) % matrix_size_y);
 		} else {
-			d_pos = mat_y - d_idx;
+			d_pos = ((index - matrix_size_y * (index / matrix_size_y)) % matrix_size_y) - d_idx;
 		}
 		// printf("index: %ld, x: %ld, y: %ld, dIndex: %ld, val:%ld\n", index, mat_x, mat_y, d_idx, d_pos);
 		device_diagonal_idx[index] = d_idx;
@@ -71,14 +68,9 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	// dim3 threadsPerBlock(16, 16);
-	// dim3 numBlocks(size/16,size/16);
-	int totalDataSize = size;
-	int threadsPerBlock = 256;
-	// Calculate the number of blocks needed
-	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
-	// Hardcoded values for numBlocks and threadsPerBlock
-	// Launch the kernel
+	dim3 threadsPerBlock(16, 16, 16);
+	dim3 numBlocks(size/16, size/16, size/16);
+	// launch kernel
 	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
@@ -145,14 +137,9 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	// dim3 threadsPerBlock(16, 16);
-	// dim3 numBlocks(size/16,size/16);
-	int totalDataSize = size;
-	int threadsPerBlock = 256;
-	// Calculate the number of blocks needed
-	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
-	// Hardcoded values for numBlocks and threadsPerBlock
-	// Launch the kernel
+	dim3 threadsPerBlock(16, 16, 16);
+	dim3 numBlocks(size/16, size/16, size/16);
+	// launch kernel
 	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
