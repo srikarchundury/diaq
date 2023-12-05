@@ -1430,6 +1430,29 @@ int main(int argc, char **argv) {
     testCase47.push_back(B47);
     testCases.push_back(testCase47);
 
+    // -----------------------------------------
+    std::vector<long int> shapeA48{4, 5};
+    float a48[20] = {
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20,
+    };
+    denseMatrix A48(&shapeA48, a48);
+    std::vector<long int> shapeB48{5, 3};
+    float b48[15] = {
+        1, 6, 11,
+        2, 7, 12,
+        3, 8, 13,
+        4, 9, 14,
+        5, 10, 15,
+    };
+    denseMatrix B48(&shapeB48, b48);
+    std::vector<denseMatrix> testCase48;
+    testCase48.push_back(A48);
+    testCase48.push_back(B48);
+    testCases.push_back(testCase48);
+
     if(argc == 1) {
         for(long int i = 0; i < testCases.size(); i++) {
             std::cout << "test case - " << i;

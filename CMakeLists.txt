@@ -41,12 +41,17 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
     message(STATUS "CUDA is enabled")
     find_package(CUDA REQUIRED)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
+	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
     cuda_add_library(diaq ${SOURCES} ${CUDA_SOURCES})
 	add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
+	# Add -fPIC flag for CUDA sources
+    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
 	set(BUILD_TYPE "gpu_build")
 else()
     message(STATUS "CUDA is not enabled")
     add_library(diaq ${SOURCES})
+	# Add -fPIC flag for non-CUDA sources also
+	set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
 	set(BUILD_TYPE "cpu_build")
 endif()
 

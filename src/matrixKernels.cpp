@@ -250,9 +250,9 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
  * @return diaQMatrix  C
  */
 diaQMatrix product(diaQMatrix A, diaQMatrix B) {
-    #ifdef CUDA_ENABLED
-        return product_cuda(&A, &B);
-    #else
+    // #ifdef CUDA_ENABLED
+    //     return product_cuda(&A, &B);
+    // #else
     // A.print();
     // B.print();
     if(A.matrix_shape[1] != B.matrix_shape[0]) {
@@ -291,7 +291,7 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
     return *result;
-    #endif
+    // #endif
 }
 
 /**

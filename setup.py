@@ -9,8 +9,10 @@ cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED env
 
 sources = ["include/pythonWrappers.cpp"]
 d_macros = [('VERSION_INFO', __version__)]
-compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2"]
+compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "-fPIC"]
 link_args = ['-lgomp', '-lpthread']
+cpu_lib_dirs = ["./cpu_build/lib"]
+libs = ["diaq"]
 
 if cuda_enabled:
     print("Building with GPU support")
@@ -20,9 +22,10 @@ if cuda_enabled:
     cuda_compile_args = ["-std=c++11", "-O3", "-I" + cuda_include]
     cuda_link_args = ["-L" + cuda_lib, "-lcudart"]
     nvcc_args = ['--gpu-architecture=sm_75', '-O2']  # Adjust the architecture based on your GPU
-    compile_args = compile_args.extend(cuda_compile_args)
-    link_args = link_args.extend(cuda_link_args)
+    compile_args.extend(cuda_compile_args)
+    link_args.extend(cuda_link_args)
     d_macros.append(('CUDA_ENABLED', 1))
+    gpu_lib_dirs = ["./gpu_build/lib"]
 
 ext_modules = [
     Pybind11Extension(
@@ -32,7 +35,9 @@ ext_modules = [
         extra_compile_args=compile_args,
         extra_link_args=link_args,
         language='c++',
-        nvcc_args=nvcc_args if cuda_enabled else None
+        # nvcc_args=nvcc_args if cuda_enabled else None,
+        library_dirs=gpu_lib_dirs if cuda_enabled else cpu_lib_dirs,
+        libraries=libs,
     ),
 ]
 
