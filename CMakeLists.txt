@@ -44,12 +44,14 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
 	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
     cuda_add_library(diaq ${SOURCES} ${CUDA_SOURCES})
 	add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
+	target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # support for avx2
 	# Add -fPIC flag for CUDA sources
     set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
 	set(BUILD_TYPE "gpu_build")
 else()
     message(STATUS "CUDA is not enabled")
     add_library(diaq ${SOURCES})
+	target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>)
 	# Add -fPIC flag for non-CUDA sources also
 	set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
 	set(BUILD_TYPE "cpu_build")

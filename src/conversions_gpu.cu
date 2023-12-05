@@ -36,7 +36,7 @@ __global__ void convert_to_dq(
  * 			4. The values vector should be a flattened version of the NumPy array 
 */
 diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<long int> shape) {
-	std::cout << "\nUsing CUDA to convert NumPy array to diaQMatrix" << std::endl;
+	// std::cout << "Using CUDA to convert NumPy array to diaQMatrix" << std::endl;
 	long int size = values.size();
 	int rank = shape.size();
 	long int x, y;
@@ -132,7 +132,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
  * 			denseMatrix
 */
 diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
-	std::cout << "\nUsing CUDA to convert denseMatrix to diaQMatrix" << std::endl;
+	// std::cout << "Using CUDA to convert denseMatrix to diaQMatrix" << std::endl;
 	float *realData = d->getRealData();
 	float *ImagData = d->getImagData();
 	long int size = d->size;

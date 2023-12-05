@@ -18,6 +18,7 @@ cpu_build/*
 gpu_build/*
 
 diaq.egg-info/PKG-INFO
+diaq.egg-info/
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++

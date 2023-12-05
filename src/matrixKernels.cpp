@@ -168,7 +168,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
     #ifdef __AVX__
     // SIMD vectorization
-    std::cout << "AVX vectorization" << std::endl;
+    // std::cout << "AVX vectorization" << std::endl;
     long int loop_count = 0;
     long int k_cpy = k;
     while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
