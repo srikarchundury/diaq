@@ -1,6 +1,6 @@
 #include "norms.hpp"
 
-double norm(const vector &x) {
+float norm(const vector &x) {
     std::complex<float> sum = 0;
     for (size_t i = 0; i < x.num_rows(); ++i) {
         sum += std::conj(x[i]) * x[i];

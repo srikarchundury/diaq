@@ -9,27 +9,27 @@ class vector {
     public:
         vector(size_t M) {
             numRows_ = M;
-            realValues_ = (double *)calloc(M, sizeof(float));
-            imagValues_ = (double *)calloc(M, sizeof(float));
+            realValues_ = (float *)calloc(M, sizeof(float));
+            imagValues_ = (float *)calloc(M, sizeof(float));
         }
-        vector(size_t M, double *realVals, double *imagVals) {
+        vector(size_t M, float *realVals, float *imagVals) {
             numRows_ = M;
             realValues_ = realVals;
             imagValues_ = imagVals;
         }
-        vector(size_t M, double init_real, double init_imag) {
+        vector(size_t M, float init_real, float init_imag) {
             numRows_ = M;
-            realValues_ = (double *)calloc(M, sizeof(float));
-            imagValues_ = (double *)calloc(M, sizeof(float));
+            realValues_ = (float *)calloc(M, sizeof(float));
+            imagValues_ = (float *)calloc(M, sizeof(float));
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = init_imag;
             }
         }
-        vector(size_t M, double init_real) {
+        vector(size_t M, float init_real) {
             numRows_ = M;
-            realValues_ = (double *)calloc(M, sizeof(float));
-            imagValues_ = (double *)calloc(M, sizeof(float));
+            realValues_ = (float *)calloc(M, sizeof(float));
+            imagValues_ = (float *)calloc(M, sizeof(float));
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = 0.0;
@@ -58,18 +58,18 @@ class vector {
             std::cout << imagValues_[numRows_ - 1] << ")]" << std::endl;
         }
 
-        double *getRealValues() {
+        float *getRealValues() {
             return realValues_;
         }
 
-        double *getImagValues() {
+        float *getImagValues() {
             return imagValues_;
         }
 
     private:
         size_t numRows_;
-        double* realValues_;
-        double* imagValues_;
+        float* realValues_;
+        float* imagValues_;
 };
 
 #endif // DIAQ_VECTOR_HPP

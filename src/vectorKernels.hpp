@@ -14,15 +14,15 @@
 
 void zeroize(vector &x);
 void unitize(vector &x);
-void randomize(vector &x, double scale, double mean);
-double one_norm(const vector &x);
-double two_norm(const vector &x);
-double inf_norm(const vector &x);
-double p_norm(const vector &x);
+void randomize(vector &x, float scale, float mean);
+float one_norm(const vector &x);
+float two_norm(const vector &x);
+float inf_norm(const vector &x);
+float p_norm(const vector &x);
 vector operator+(const vector &x, const vector &y);
 vector operator-(const vector &x, const vector &y);
-vector &operator*=(vector &x, double alpha);
-vector &operator+=(vector &x, std::complex<double> alpha);
+vector &operator*=(vector &x, float alpha);
+vector &operator+=(vector &x, std::complex<float> alpha);
 vector &operator+=(vector &x, const vector &y);
 vector &operator-=(const vector &x, const vector &y);
 

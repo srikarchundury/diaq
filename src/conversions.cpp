@@ -5,13 +5,13 @@
 #endif
 
 denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
-    double *real_data = (double *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(double));
-    double *imag_data = (double *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(double));
+    float *real_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
+    float *imag_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
     std::map<long int, diagonal>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        double *real_vals = it->second.getRealValues();
-        double *imag_vals = it->second.getImagValues();
+        float *real_vals = it->second.getRealValues();
+        float *imag_vals = it->second.getImagValues();
         if (it->first == 0) {
             x = 0;
             y = 0;
@@ -72,17 +72,17 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     #endif
 }
 
-std::vector<std::complex<double> > to_numpy(diaQMatrix A) {
+std::vector<std::complex<float> > to_numpy(diaQMatrix A) {
     denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
     return d.getData_forPy();
 }
 
-diaQMatrix from_numpy(std::vector<std::complex<double>> vals, std::vector<long int> shape) {
+diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
-        double *real_vals = (double *)malloc(vals.size() * sizeof(double));
-        double *imag_vals = (double *)malloc(vals.size() * sizeof(double));
+        float *real_vals = (float *)malloc(vals.size() * sizeof(float));
+        float *imag_vals = (float *)malloc(vals.size() * sizeof(float));
         
         #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < vals.size(); i++) {

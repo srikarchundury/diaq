@@ -34,9 +34,9 @@ void unitize(vector &x) {
  * @param scale     spread of uniform distribution to randomize over
  * @param mean      mean of the uniform distribution to randomize over
  */
-void randomize(vector &x, double scale, double mean) {
+void randomize(vector &x, float scale, float mean) {
     std::default_random_engine generator;
-    std::uniform_real_distribution<double> distribution(mean - scale, mean + scale);
+    std::uniform_real_distribution<float> distribution(mean - scale, mean + scale);
     static auto dice = std::bind(distribution, generator);
     for (size_t i = 0; i < x.num_rows(); ++i) {
         x[i] = std::complex(dice(),dice());
@@ -47,10 +47,10 @@ void randomize(vector &x, double scale, double mean) {
  * @brief Calculate the 1 norm of a vector: by summing the abs() of each entry.
  * 
  * @param x  the vector
- * @return double the 1 norm
+ * @return float the 1 norm
  */
-double one_norm(const vector &x) {
-    double sum = 0.0;
+float one_norm(const vector &x) {
+    float sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
     for (size_t i = 0; i < x.num_rows(); ++i)
@@ -64,10 +64,10 @@ double one_norm(const vector &x) {
  * @brief  Calculate the 2 norm of a vector: by taking the square root of the sums of the norm() of each entry
  * 
  * @param x         The vector
- * @return double   The norm
+ * @return float   The norm
  */
-double two_norm(const vector &x) {
-    double sum = 0.0;
+float two_norm(const vector &x) {
+    float sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
     for (size_t i = 0; i < x.num_rows(); ++i)
@@ -81,10 +81,10 @@ double two_norm(const vector &x) {
  * @brief Calculate infinity (max) norm
  * 
  * @param x         vector
- * @return double   Result
+ * @return float   Result
  */
-double inf_norm(const vector &x) {
-        double result = std::abs(x[0]);
+float inf_norm(const vector &x) {
+        float result = std::abs(x[0]);
         for (size_t i = 1; i < x.num_rows(); ++i)
         {
             if (std::abs(x[i]) > result)
@@ -95,7 +95,7 @@ double inf_norm(const vector &x) {
         return result;
 }
 
-double p_norm(const vector &x);
+float p_norm(const vector &x);
 
 vector operator+(const vector &x, const vector &y);
 
@@ -110,7 +110,7 @@ vector operator-(const vector &x, const vector &y)
     return z;
 }
 
-vector &operator*=(vector &x, double alpha) {
+vector &operator*=(vector &x, float alpha) {
     #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
@@ -119,7 +119,7 @@ vector &operator*=(vector &x, double alpha) {
     return x;
 }
 
-vector &operator+=(vector &x, std::complex<double> alpha) {
+vector &operator+=(vector &x, std::complex<float> alpha) {
     #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {

@@ -15,7 +15,7 @@ std::string checkResult(diaQMatrix A, diaQMatrix B) {
         // A.print();
         return "false - 1";
     }
-    const double epsilon = 0.00002;
+    const float epsilon = 0.00002;
     std::map<long int, diagonal> dmA = A.getDiagonalMap();
     std::map<long int, diagonal> dmB = B.getDiagonalMap();
     std::map<long int, diagonal>::iterator itA, itB;
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     std::vector<std::vector<denseMatrix> > testCases;
 
     // test case 0
-    double a0[25] = {
+    float a0[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A0(5, a0);
-    double b0[25] = {
+    float b0[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase0);
 
     // // test case 1
-    double a1[25] = {
+    float a1[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A1(5, a1);
-    double b1[25] = {
+    float b1[25] = {
         0,0,2,0,0,
         0,0,0,3,0,
         0,0,0,0,4,
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 
 
     // test case 2
-    double a2[25] = {
+    float a2[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A2(5, a2);
-    double b2[25] = {
+    float b2[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
 
     // test case 3
-    double a3[25] = {
+    float a3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
         0,0,0,1,0,
     };
     denseMatrix A3(5, a3);
-    double b3[25] = {
+    float b3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 
 
     // test case 4
-    double a4[25] = {
+    float a4[25] = {
         0,0,1,0,0,
         0,0,0,1,0,
         0,0,0,0,1,
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,
     };
     denseMatrix A4(5, a4);
-    double b4[25] = {
+    float b4[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 
 
     // test case 5 - GHZ 3 qubit unitary simulation
-    double a5[64] = {
+    float a5[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
     };
     denseMatrix A5(8, a5);
-    double b5[64] = {
+    float b5[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
 
 
     // test case 6
-    double a6[64] = {
+    float a6[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A6(8, a6);
-    double b6[64] = {
+    float b6[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
 
 
     // test case 7
-    double a7[64] = {
+    float a7[64] = {
         0,0,2,0,0,0,0,0,
         0,0,0,3,0,0,0,0,
         0,0,0,0,4,0,0,0,
@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A7(8, a7);
-    double b7[64] = {
+    float b7[64] = {
         0,0,0,0,8,0,0,0,
         0,0,0,0,0,9,0,0,
         0,0,0,0,0,0,10,0,
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
 
 
     // test case 8
-    double a8[64] = {
+    float a8[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         2,0,0,0,0,0,0,0,
@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,7,0,0,
     };
     denseMatrix A8(8, a8);
-    double b8[64] = {
+    float b8[64] = {
         8,0,0,0,0,0,0,0,
         0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,
@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase8);
 
     // test case 9
-    double a9[64] = {
+    float a9[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
         0,0,0,4,0,0,0,0,
     };
     denseMatrix A9(8, a9);
-    double b9[64] = {
+    float b9[64] = {
         0,0,5,0,0,0,0,0,
         0,0,0,6,0,0,0,0,
         0,0,0,0,7,0,0,0,
@@ -309,7 +309,7 @@ int main(int argc, char **argv) {
 
 
     // test case 10
-    double a10[64] = {
+    float a10[64] = {
         0,0,1,0,0,0,0,0,
         0,0,0,2,0,0,0,0,
         0,0,0,0,3,0,0,0,
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A10(8, a10);
-    double b10[64] = {
+    float b10[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -338,7 +338,7 @@ int main(int argc, char **argv) {
 
 
     // test case 11
-    double a11[64] = {
+    float a11[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,
@@ -349,7 +349,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,8,
     };
     denseMatrix A11(8, a11);
-    double b11[64] = {
+    float b11[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
 
 
     // test case 12
-    double a12[64] = {
+    float a12[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -378,7 +378,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
     };
     denseMatrix A12(8, a12);
-    double b12[64] = {
+    float b12[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
 
 
     // test case 13
-    double a13[64] = {
+    float a13[64] = {
         0,0,1,0,0,0,0,0,
         0,0,0,2,0,0,0,0,
         0,0,0,0,3,0,0,0,
@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A13(8, a13);
-    double b13[64] = {
+    float b13[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         7,0,0,0,0,0,0,0,
@@ -425,7 +425,7 @@ int main(int argc, char **argv) {
 
 
     // test case 14
-    double a14[256] = {
+    float a14[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,
@@ -444,7 +444,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,
     };
     denseMatrix A14(16, a14);
-    double b14[256] = {
+    float b14[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -469,7 +469,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase14);
 
     // test case 15
-    double a15[256] = {
+    float a15[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -488,7 +488,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,
     };
     denseMatrix A15(16, a15);
-    double b15[256] = {
+    float b15[256] = {
         0,0,17,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,19,0,0,0,0,0,0,0,0,0,0,0,
@@ -513,7 +513,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase15);
 
     // test case 16
-    double a16[256] = {
+    float a16[256] = {
         0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
     denseMatrix A16(16, a16);
-    double b16[256] = {
+    float b16[256] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -558,7 +558,7 @@ int main(int argc, char **argv) {
 
 
     // test case 17
-    double a17[64] = {
+    float a17[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -569,7 +569,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,1,0,
     };
     denseMatrix A17(8, a17);
-    double b17[64] = {
+    float b17[64] = {
         2,3,0,0,0,0,0,0,
         0,0,0,0,0,0,3,2,
         0,0,2,3,0,0,0,0,
@@ -586,7 +586,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase17);
 
     // test case 18
-    double a18[64] = {
+    float a18[64] = {
         0,0,0,0,0,0,0,0,
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
@@ -597,7 +597,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,7,0,
     };
     denseMatrix A18(8, a18);
-    double b18[64] = {
+    float b18[64] = {
         0,0,0,0,0,0,8,0,
         0,0,0,0,0,0,0,9,
         0,0,0,0,0,0,0,0,
@@ -614,7 +614,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase18);
 
     // test case 19
-    double a19[64] = {
+    float a19[64] = {
         0,0,0,0,1,0,0,0,
         0,0,0,0,0,2,0,0,
         0,0,0,0,0,0,3,0,
@@ -625,7 +625,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A19(8, a19);
-    double b19[64] = {
+    float b19[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -642,7 +642,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase19);
 
     // test case 20
-    double a20[64] = {
+    float a20[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -653,7 +653,7 @@ int main(int argc, char **argv) {
         1,0,0,0,0,0,0,0,
     };
     denseMatrix A20(8, a20);
-    double b20[64] = {
+    float b20[64] = {
         9,0,0,0,0,0,0,0,
         0,10,0,0,0,0,0,0,
         0,0,11,0,0,0,0,0,
@@ -670,7 +670,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase20);
 
     // test case 21
-    double a21[64] = {
+    float a21[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -681,7 +681,7 @@ int main(int argc, char **argv) {
         0,0,0,4,0,0,0,0,
     };
     denseMatrix A21(8, a21);
-    double b21[64] = {
+    float b21[64] = {
         0,0,0,0,5,0,0,0,
         0,0,0,0,0,6,0,0,
         0,0,0,0,0,0,7,0,
@@ -698,7 +698,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase21);
 
     // test case 22
-    double a22[64] = {
+    float a22[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,
@@ -709,7 +709,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,8,0,
     };
     denseMatrix A22(8, a22);
-    double b22[64] = {
+    float b22[64] = {
         9,10,0,0,0,0,0,0,
         0,0,0,0,0,0,11,12,
         0,0,13,14,0,0,0,0,
@@ -726,7 +726,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase22);
 
     // test case 23
-    double a23[64] = {
+    float a23[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,0,0,0,0,3,0,
@@ -737,7 +737,7 @@ int main(int argc, char **argv) {
         0,0,0,8,0,0,0,0,
     };
     denseMatrix A23(8, a23);
-    double b23[64] = {
+    float b23[64] = {
         9,10,0,0,0,0,0,0,
         0,0,0,0,0,0,11,12,
         0,0,0,0,0,0,13,14,
@@ -755,14 +755,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA24{3, 6};
-    double a24[18] = {
+    float a24[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18,
     };
     denseMatrix A24(&shapeA24, a24);
     std::vector<long int> shapeB24{6, 2};
-    double b24[12] = {
+    float b24[12] = {
         1,2,
         3,4,
         5,6,
@@ -778,14 +778,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA25{3, 6};
-    double a25[18] = {
+    float a25[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18
     };
     denseMatrix A25(&shapeA25, a25);
     std::vector<long int> shapeB25{6,4};
-    double b25[24] = {
+    float b25[24] = {
         20,21,22,23,
         24,25,26,27,
         28,29,30,31,
@@ -802,14 +802,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA26{3, 6};
-    double a26[18] = {
+    float a26[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A26(&shapeA26, a26);
     std::vector<long int> shapeB26{6,4};
-    double b26[24] = {
+    float b26[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -826,14 +826,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA27{3, 6};
-    double a27[18] = {
+    float a27[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A27(&shapeA27, a27);
     std::vector<long int> shapeB27{6,4};
-    double b27[24] = {
+    float b27[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -849,14 +849,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA28{3, 6};
-    double a28[18] = {
+    float a28[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A28(&shapeA28, a28);
     std::vector<long int> shapeB28{6,4};
-    double b28[24] = {
+    float b28[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -873,14 +873,14 @@ int main(int argc, char **argv) {
 
         // -----------------------------------------
     std::vector<long int> shapeA29{3, 6};
-    double a29[18] = {
+    float a29[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A29(&shapeA29, a29);
     std::vector<long int> shapeB29{6,4};
-    double b29[24] = {
+    float b29[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -897,14 +897,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA30{3, 6};
-    double a30[18] = {
+    float a30[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A30(&shapeA30, a30);
     std::vector<long int> shapeB30{6,4};
-    double b30[24] = {
+    float b30[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -920,14 +920,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA31{3, 6};
-    double a31[18] = {
+    float a31[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A31(&shapeA31, a31);
     std::vector<long int> shapeB31{6,4};
-    double b31[24] = {
+    float b31[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -944,14 +944,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA32{3, 6};
-    double a32[18] = {
+    float a32[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A32(&shapeA32, a32);
     std::vector<long int> shapeB32{6,4};
-    double b32[24] = {
+    float b32[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -968,14 +968,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA33{3, 6};
-    double a33[18] = {
+    float a33[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A33(&shapeA33, a33);
     std::vector<long int> shapeB33{6,4};
-    double b33[24] = {
+    float b33[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -991,14 +991,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA34{3, 6};
-    double a34[18] = {
+    float a34[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A34(&shapeA34, a34);
     std::vector<long int> shapeB34{6,4};
-    double b34[24] = {
+    float b34[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -1014,14 +1014,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA35{3, 6};
-    double a35[18] = {
+    float a35[18] = {
         0,0,0,0,5,0,
         0,0,0,0,0,6,
         0,0,0,0,0,0,
     };
     denseMatrix A35(&shapeA35, a35);
     std::vector<long int> shapeB35{6, 2};
-    double b35[12] = {
+    float b35[12] = {
         0,0,
         0,0,
         0,0,
@@ -1038,14 +1038,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA36{3, 6};
-    double a36[18] = {
+    float a36[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         5,0,0,0,0,0,
     };
     denseMatrix A36(&shapeA36, a36);
     std::vector<long int> shapeB36{6,4};
-    double b36[24] = {
+    float b36[24] = {
         0,0,0,10,
         0,0,0,0,
         0,0,0,0,
@@ -1062,14 +1062,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA37{3, 6};
-    double a37[18] = {
+    float a37[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         1,0,0,0,0,0,
     };
     denseMatrix A37(&shapeA37, a37);
     std::vector<long int> shapeB37{6,2};
-    double b37[12] = {
+    float b37[12] = {
         0,2,
         0,0,
         0,0,
@@ -1085,7 +1085,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA38{16, 4};
-    double a38[64] = {
+    float a38[64] = {
         8,0,0,0,
         0,0,0,0,
         0,9,0,0,
@@ -1105,7 +1105,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A38(&shapeA38, a38);
     std::vector<long int> shapeB38{4,16};
-    double b38[64] = {
+    float b38[64] = {
         8,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,12,0,0,0,0,0,0,0,0,13,0,0,
@@ -1119,7 +1119,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA39{16, 4};
-    double a39[64] = {
+    float a39[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1139,7 +1139,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A39(&shapeA39, a39);
     std::vector<long int> shapeB39{4,16};
-    double b39[64] = {
+    float b39[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1154,7 +1154,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA40{16, 4};
-    double a40[64] = {
+    float a40[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1174,7 +1174,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A40(&shapeA40, a40);
     std::vector<long int> shapeB40{4,16};
-    double b40[64] = {
+    float b40[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1189,7 +1189,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA41{16, 4};
-    double a41[64] = {
+    float a41[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1209,7 +1209,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A41(&shapeA41, a41);
     std::vector<long int> shapeB41{4,16};
-    double b41[64] = {
+    float b41[64] = {
         8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1223,7 +1223,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA42{16, 4};
-    double a42[64] = {
+    float a42[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1243,7 +1243,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A42(&shapeA42, a42);
     std::vector<long int> shapeB42{4,16};
-    double b42[64] = {
+    float b42[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1257,7 +1257,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA43{16, 4};
-    double a43[64] = {
+    float a43[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1277,7 +1277,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A43(&shapeA43, a43);
     std::vector<long int> shapeB43{4,16};
-    double b43[64] = {
+    float b43[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,13,0,0,
@@ -1291,7 +1291,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA44{16, 4};
-    double a44[64] = {
+    float a44[64] = {
         0,0,0,0,
         0,0,0,0,
         0,9,0,0,
@@ -1311,7 +1311,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A44(&shapeA44, a44);
     std::vector<long int> shapeB44{4,16};
-    double b44[64] = {
+    float b44[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1325,7 +1325,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA45{16, 4};
-    double a45[64] = {
+    float a45[64] = {
         8,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1345,7 +1345,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A45(&shapeA45, a45);
     std::vector<long int> shapeB45{4,16};
-    double b45[64] = {
+    float b45[64] = {
         0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1359,7 +1359,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA46{32, 2};
-    double a46[64] = {
+    float a46[64] = {
         1,0,
         0,0,
         0,0,
@@ -1395,7 +1395,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A46(&shapeA46, a46);
     std::vector<long int> shapeB46{2,8};
-    double b46[64] = {
+    float b46[64] = {
         1,0,0,1,0,0,0,0,
         0,0,0,0,0,1,1,0,
     };
@@ -1408,7 +1408,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA47{8, 2};
-    double a47[16] = {
+    float a47[16] = {
         0.707107,0,
         0,0,
         0,0.707107,
@@ -1420,7 +1420,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A47(&shapeA47, a47);
     std::vector<long int> shapeB47{2,2};
-    double b47[4] = {
+    float b47[4] = {
         0.707107,0,
         0,-0.707107,
     };
@@ -1432,7 +1432,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA48{4, 5};
-    double a48[20] = {
+    float a48[20] = {
         1, 2, 3, 4, 5,
         6, 7, 8, 9, 10,
         11, 12, 13, 14, 15,
@@ -1440,7 +1440,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A48(&shapeA48, a48);
     std::vector<long int> shapeB48{5, 3};
-    double b48[15] = {
+    float b48[15] = {
         1, 6, 11,
         2, 7, 12,
         3, 8, 13,
@@ -1619,7 +1619,7 @@ int main(int argc, char **argv) {
         diaQMatrix q_A24 = A24.convertToQuantumSparse(A24.matrix_shape);
         q_A24.print();
         std::cout << " -- " << std::endl;
-        std::vector<std::complex<double>> values = q_A24.flatten();
+        std::vector<std::complex<float>> values = q_A24.flatten();
         for (long int i = 0; i < values.size(); i++) {
             std::cout << values[i] << " ";
         }
@@ -1687,7 +1687,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "10") == 0) {
-        double first_m[16] = {
+        float first_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 0, 1,
@@ -1697,7 +1697,7 @@ int main(int argc, char **argv) {
         denseMatrix dfirst(&shape_first_m, first_m);
         diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
         q_first.shape = std::vector<long int>{2,2,2,2};
-        double second_m[4] = {
+        float second_m[4] = {
             0.707107, 0,
             0, -0.707107,
         };
@@ -1715,7 +1715,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "11") == 0) {
-        double first_m[16] = {
+        float first_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 0, 1,
@@ -1725,7 +1725,7 @@ int main(int argc, char **argv) {
         denseMatrix dfirst(&shape_first_m, first_m);
         diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
         q_first.shape = std::vector<long int>{2,2,2,2};
-        double second_m[16] = {
+        float second_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 0, 1,
@@ -1746,7 +1746,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "12") == 0) {
         std::cout << "Testing Format Conversion" << std::endl;
-        std::vector<std::complex<double>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+        std::vector<std::complex<float>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<long int> shape{3,3,2};
         diaQMatrix result = from_numpy(values, shape);
         result.print();
@@ -1755,7 +1755,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         // test case 5 - GHZ 3 qubit unitary simulation
         std::cout << " -- Testing Multiplication --" << std::endl;
-        std::vector<std::complex<double>> a{
+        std::vector<std::complex<float>> a{
             1,0,0,0,0,0,0,0,
             0,0,0,1,0,0,0,0,
             0,0,1,0,0,0,0,0,
@@ -1766,7 +1766,7 @@ int main(int argc, char **argv) {
             0,0,0,0,0,1,0,0,
         };
         std::vector<long int> a_shape{8, 8};
-        std::vector<std::complex<double>> b{
+        std::vector<std::complex<float>> b{
             1,0,0,0,0,0,0,0,
             0,1,0,0,0,0,0,0,
             0,0,0,0,0,0,1,0,

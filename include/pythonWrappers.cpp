@@ -62,10 +62,10 @@ PYBIND11_MODULE(diaq, m) {
 
     // denseMatrix class
     py::class_<denseMatrix>(m, "denseMatrix")
-        .def(py::init<long int, double *>())
-        .def(py::init<long int, double *, double *>())
-        .def(py::init<std::vector<long int> *, double *>())
-        .def(py::init<std::vector<long int> *, double *, double *>())
+        .def(py::init<long int, float *>())
+        .def(py::init<long int, float *, float *>())
+        .def(py::init<std::vector<long int> *, float *>())
+        .def(py::init<std::vector<long int> *, float *, float *>())
         .def_readwrite("size", &denseMatrix::size)
         .def_readwrite("matrix_shape", &denseMatrix::matrix_shape)
         .def_readwrite("shape", &denseMatrix::shape)
