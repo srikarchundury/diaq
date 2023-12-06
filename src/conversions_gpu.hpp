@@ -8,6 +8,7 @@
 #include <cmath>
 #include <omp.h>
 
+#include "config.hpp"
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
 

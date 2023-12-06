@@ -10,5 +10,7 @@
 	#define NUMBER_OF_OMP_THREADS 32
 #endif
 
+#include "logger.hpp"
+extern Logger logger;
 
 #endif // DIAQ_CONFIG_HPP

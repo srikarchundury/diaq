@@ -8,6 +8,9 @@ set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
 
 set(SOURCES
     ${SRC_DIR}/config.hpp
+	${SRC_DIR}/config.cpp
+
+	${SRC_DIR}/logger.hpp
 
 	${SRC_DIR}/denseMatrix.hpp
 	${SRC_DIR}/diagonal.hpp

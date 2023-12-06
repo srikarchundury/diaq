@@ -34,7 +34,7 @@ __global__ void convert_to_dq(
  * 			4. The values vector should be a flattened version of the NumPy array 
 */
 diaQMatrix from_numpy_cuda(std::vector<std::complex<double>> values, std::vector<long int> shape) {
-	std::cout << "Using CUDA to convert NumPy array to diaQMatrix" << std::endl;
+	logger.log("Using CUDA to convert NumPy array to diaQMatrix");
 	long int size = values.size();
 	int rank = shape.size();
 	long int x, y;
@@ -125,7 +125,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<double>> values, std::vector
  * 			denseMatrix
 */
 diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
-	std::cout << "Using CUDA to convert denseMatrix to diaQMatrix" << std::endl;
+	logger.log("Using CUDA to convert denseMatrix to diaQMatrix");
 	double *realData = d->getRealData();
 	double *ImagData = d->getImagData();
 	long int size = d->size;
@@ -138,10 +138,17 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	dim3 threadsPerBlock(16, 16, 16);
-	dim3 numBlocks(size/16, size/16, size/16);
+
+	int totalDataSize = size;
+	int threadsPerBlock = 1024; // what should this value be?
+	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
 	// launch kernel
 	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+
+	// dim3 threadsPerBlock(16, 16, 16);
+	// dim3 numBlocks(size/16, size/16, size/16);
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
 	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));

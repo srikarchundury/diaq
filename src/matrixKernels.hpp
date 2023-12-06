@@ -4,6 +4,7 @@
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
 #include "vector.hpp"
+#include "config.hpp"
 
 long int getDiagonalLength(long int dIndex, std::vector<long int> shape);
 diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, long int indexA, long int indexB, diagonal diagA, diagonal diagB);

@@ -3,6 +3,7 @@
 
 #include "diaQMatrix.hpp"
 #include "vector.hpp"
+#include "config.hpp"
 
 // CUDA libraries
 #include "cuda_runtime_api.h"

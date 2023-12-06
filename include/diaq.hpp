@@ -5,10 +5,6 @@
 
 // config
 #include "../src/config.hpp"
-#define LOG_LEVEL 2
-// INFO = 0
-// DEBUG = 1
-// DEEP DEBUG = 2
 
 // operations
 #include "../src/conversions.hpp"

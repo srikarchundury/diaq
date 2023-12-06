@@ -1,7 +1,4 @@
-#include "denseMatrix.hpp"
-#include "config.hpp"
-#include "diaQMatrix.hpp"
-#include <omp.h>
+#include "conversions.hpp"
 
 #ifdef CUDA_ENABLED
 	#include "conversions_gpu.hpp"
