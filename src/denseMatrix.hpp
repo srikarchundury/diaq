@@ -64,6 +64,7 @@ class denseMatrix {
         }
         std::complex<float> *getData() {
             std::complex<float> *res = (std::complex<float> *)malloc(size * sizeof(std::complex<float>));
+            #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<float>{realData[i], imagData[i]};
             }
