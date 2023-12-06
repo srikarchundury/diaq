@@ -11,7 +11,7 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B);
 denseMatrix denseProduct(denseMatrix A, denseMatrix B);
 diagonal addElements(diagonal A, diagonal B);
 diaQMatrix add(diaQMatrix A, diaQMatrix B);
-std::complex<float> trace(diaQMatrix A);
+std::complex<double> trace(diaQMatrix A);
 diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape);
 std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::vector<long int> tensor_shape_B, std::vector<long int> axis_A, std::vector<long int> axis_B);
 std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vector<long int> axes);

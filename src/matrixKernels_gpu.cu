@@ -1,7 +1,19 @@
 #include "matrixKernels_gpu.hpp"
 
+__device__ double atomicAddDouble(double* address, double val) {
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
 
-__global__ void spmv_kernel(long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, float *real_data, float *imag_data, float *x_real_values, float *x_imag_values, float *y_real_values, float *y_imag_values) {
+    do {
+        assumed = old;
+        double old_val = __longlong_as_double(assumed);
+        double new_val = old_val + val;
+        old = atomicCAS(address_as_ull, assumed, __double_as_longlong(new_val));
+    } while (assumed != old);
+
+    return __longlong_as_double(old);
+}
+__global__ void spmv_kernel(long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, double *real_data, double *imag_data, double *x_real_values, double *x_imag_values, double *y_real_values, double *y_imag_values) {
 	int n = blockIdx.x * blockDim.x + threadIdx.x;
 	if(n < gridDim.x * blockDim.x && n < num_diags) {
 		long int dIndex = diagonal_indices[n];
@@ -20,24 +32,24 @@ __global__ void spmv_kernel(long int num_diags, long int num_elements, long int 
 			// printf("dLength = %ld, dIndex = %ld, dPos = %d, final_offset = %ld\tx_idx = %ld, y_idx = %ld\n", dLength, dIndex, i, offset, x_idx, y_idx);
 			// ------------------ DEBUG ------------------
 
-			float real_val = real_data[offset] * x_real_values[x_idx] - imag_data[offset] * x_imag_values[x_idx];
-            float imag_val = real_data[offset] * x_imag_values[x_idx] + imag_data[offset] * x_real_values[x_idx];
+			double real_val = real_data[offset] * x_real_values[x_idx] - imag_data[offset] * x_imag_values[x_idx];
+            double imag_val = real_data[offset] * x_imag_values[x_idx] + imag_data[offset] * x_real_values[x_idx];
 
-            atomicAdd(&y_real_values[y_idx], real_val);	// this is bad!
-            atomicAdd(&y_imag_values[y_idx], imag_val); // this is bad!
+            atomicAddDouble(&y_real_values[y_idx], real_val);	// this is bad!
+            atomicAddDouble(&y_imag_values[y_idx], imag_val); // this is bad!
 		}
 	}
 	return;
 }
 // this is inspired from the paper Dr. Li shared with me. It works, but have to compare with the above kernel. I have a feeling it'll be better because there's no atomicAdd
-__global__ void spmv_dia_kernel(long int num_rows, long int num_cols, long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, float *real_data, float *imag_data, float *x_real_values, float *x_imag_values, float *y_real_values, float *y_imag_values) {
+__global__ void spmv_dia_kernel(long int num_rows, long int num_cols, long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, double *real_data, double *imag_data, double *x_real_values, double *x_imag_values, double *y_real_values, double *y_imag_values) {
 
 	long int y_row_idx = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if(y_row_idx < num_rows) {
 
-		float real_dot = 0;
-		float imag_dot = 0;
+		double real_dot = 0;
+		double imag_dot = 0;
 
 		for(long int x_row_idx = 0; x_row_idx < num_cols; x_row_idx++) {
 
@@ -79,18 +91,18 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 	}
 
 	vector y(A->matrix_shape[0], 0);
-	float *y_real_values = y.getRealValues();
-	float *y_imag_values = y.getImagValues();
+	double *y_real_values = y.getRealValues();
+	double *y_imag_values = y.getImagValues();
 
-	float *x_real_values = x->getRealValues();
-	float *x_imag_values = x->getImagValues();
+	double *x_real_values = x->getRealValues();
+	double *x_imag_values = x->getImagValues();
 
 	long int n_diags;
 	long int *diagonal_indices;
 	long int *cum_diagonal_lengths;
 	long int num_elements;
-	float *real_data;
-	float *imag_data;
+	double *real_data;
+	double *imag_data;
 	A->getDiagFlatData(&n_diags, &diagonal_indices, &cum_diagonal_lengths, &num_elements, &real_data, &imag_data);
 	// ------------------ DEBUG ------------------
 	// std::cout << "diagonal_indices: [";
@@ -110,11 +122,8 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 	// std::cout << "(" << real_data[num_elements - 1] << "," << imag_data[num_elements - 1] << ")]" << std::endl;
 	// ------------------ DEBUG ------------------
 
-	// CUDA stuff
-	int blockSize = 256;
-	int gridSize = (A->matrix_shape[0] + blockSize - 1) / blockSize;
 	// cuda allocation
-	float *d_real_data, *d_imag_data, *d_x_real_values, *d_x_imag_values, *d_y_real_values, *d_y_imag_values;
+	double *d_real_data, *d_imag_data, *d_x_real_values, *d_x_imag_values, *d_y_real_values, *d_y_imag_values;
 	long int *d_diagonal_indices, *d_cum_diagonal_lengths;
 	cudaMalloc((void **)&d_real_data, num_elements * sizeof(float));
 	cudaMalloc((void **)&d_imag_data, num_elements * sizeof(float));
@@ -137,8 +146,10 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 	// cuda kernel
 	// spmv_kernel<<<gridSize, blockSize>>>(n_diags, num_elements, d_diagonal_indices, d_cum_diagonal_lengths, d_real_data, d_imag_data, d_x_real_values, d_x_imag_values, d_y_real_values, d_y_imag_values);
 
-	// cuda kernel: TODO
-	spmv_dia_kernel<<<gridSize, blockSize>>>(A->matrix_shape[0], A->matrix_shape[1], n_diags, num_elements, d_diagonal_indices, d_cum_diagonal_lengths, d_real_data, d_imag_data, d_x_real_values, d_x_imag_values, d_y_real_values, d_y_imag_values);
+	// cuda kernel
+	dim3 threadsPerBlock(16, 16, 16);
+	dim3 numBlocks(num_elements/16, num_elements/16, num_elements/16);
+	spmv_dia_kernel<<<numBlocks, threadsPerBlock>>>(A->matrix_shape[0], A->matrix_shape[1], n_diags, num_elements, d_diagonal_indices, d_cum_diagonal_lengths, d_real_data, d_imag_data, d_x_real_values, d_x_imag_values, d_y_real_values, d_y_imag_values);
 	// cuda copy back just y
 	cudaMemcpy(y_real_values, d_y_real_values, y.num_rows() * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(y_imag_values, d_y_imag_values, y.num_rows() * sizeof(float), cudaMemcpyDeviceToHost);
@@ -160,7 +171,7 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 	return y;
 }
 
-__global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, long int *A_cum_diagonal_lengths, long int A_num_elements, float *A_real_data, float *A_imag_data, long int num_diags_B, long int *B_diag_indices, long int *B_cum_diagonal_lengths, long int B_num_elements, float *B_real_data, float *B_imag_data, long int num_diags_C, long int *C_diag_indices, long int *C_cum_diagonal_lengths, long int C_num_elements, float *C_real_data, float *C_imag_data) {
+__global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, long int *A_cum_diagonal_lengths, long int A_num_elements, double *A_real_data, double *A_imag_data, long int num_diags_B, long int *B_diag_indices, long int *B_cum_diagonal_lengths, long int B_num_elements, double *B_real_data, double *B_imag_data, long int num_diags_C, long int *C_diag_indices, long int *C_cum_diagonal_lengths, long int C_num_elements, double *C_real_data, double *C_imag_data) {
 	long int d_a = blockIdx.x * blockDim.x + threadIdx.x;
 	if(d_a < gridDim.x * blockDim.x && d_a < num_diags_A) {
 		printf("d_a = %ld\n", d_a);
@@ -191,16 +202,16 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	long int *A_diagonal_indices;
 	long int *A_cum_diagonal_lengths;
 	long int A_num_elements;
-	float *A_real_data;
-	float *A_imag_data;
+	double *A_real_data;
+	double *A_imag_data;
 	A->getDiagFlatData(&A_n_diags, &A_diagonal_indices, &A_cum_diagonal_lengths, &A_num_elements, &A_real_data, &A_imag_data);
 	// for B
 	long int B_n_diags;
 	long int *B_diagonal_indices;
 	long int *B_cum_diagonal_lengths;
 	long int B_num_elements;
-	float *B_real_data;
-	float *B_imag_data;
+	double *B_real_data;
+	double *B_imag_data;
 	B->getDiagFlatData(&B_n_diags, &B_diagonal_indices, &B_cum_diagonal_lengths, &B_num_elements, &B_real_data, &B_imag_data);
 
 	// ------------------ DEBUG ------------------
@@ -261,8 +272,8 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 		C_num_elements += diag_length;
 		C_cum_diagonal_lengths[i] = C_num_elements;
 	}
-	float *C_real_data = (float *)malloc(C_num_elements * sizeof(float));
-	float *C_imag_data = (float *)malloc(C_num_elements * sizeof(float));
+	double *C_real_data = (double *)malloc(C_num_elements * sizeof(float));
+	double *C_imag_data = (double *)malloc(C_num_elements * sizeof(float));
 	// set them to 0
 	for(long int i = 0; i < C_num_elements; i++) {
 		C_real_data[i] = 0;
@@ -292,7 +303,7 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 
 	// cuda stuff - Allocation Phase
 	// std::cout << "Allocation Phase" << std::endl;
-	float *d_A_real_data, *d_A_imag_data, *d_B_real_data, *d_B_imag_data, *d_C_real_data, *d_C_imag_data;
+	double *d_A_real_data, *d_A_imag_data, *d_B_real_data, *d_B_imag_data, *d_C_real_data, *d_C_imag_data;
 	long int *d_A_diagonal_indices, *d_A_cum_diagonal_lengths, *d_B_diagonal_indices, *d_B_cum_diagonal_lengths, *d_C_diagonal_indices, *d_C_cum_diagonal_lengths;
 	// A
 	cudaMalloc((void **)&d_A_real_data, A_num_elements * sizeof(float));
