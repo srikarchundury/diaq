@@ -15,7 +15,7 @@ __global__ void convert_to_dq(
 		} else {
 			d_pos = ((index - matrix_size_y * (index / matrix_size_y)) % matrix_size_y) - d_idx;
 		}
-		// printf("index: %ld, x: %ld, y: %ld, dIndex: %ld, val:%ld\n", index, mat_x, mat_y, d_idx, d_pos);
+		// printf("index: %ld, dIndex: %ld, val:%ld\n", index, d_idx, d_pos);
 		device_diagonal_idx[index] = d_idx;
 		device_diagonal_pos[index] = d_pos;
 	}
@@ -69,10 +69,23 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	dim3 threadsPerBlock(16, 16, 16);
-	dim3 numBlocks(size/16, size/16, size/16);
+	int totalDataSize = size;
+	int threadsPerBlock = 256;
+	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
 	// launch kernel
 	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+
+	// int blockSize = 256;
+	// dim3 threadsPerBlock(blockSize, blockSize);
+	// dim3 numBlocks((matrix_size_x + blockSize - 1) / blockSize, (matrix_size_y + blockSize - 1) / blockSize);
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+
+	// why isn't the below working logically? – Have no clue
+	// dim3 threadsPerBlock(16, 16, 16);
+	// dim3 numBlocks(size/16, size/16, size/16);
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
 	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));
@@ -138,13 +151,19 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-
 	int totalDataSize = size;
-	int threadsPerBlock = 1024; // what should this value be?
+	int threadsPerBlock = 1024;
 	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
 	// launch kernel
 	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
+	// int blockSize = 256;
+	// dim3 threadsPerBlock(blockSize, blockSize);
+	// dim3 numBlocks((matrix_size_x + blockSize - 1) / blockSize, (matrix_size_y + blockSize - 1) / blockSize);
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+
+	// why doesnt the below work logically? – Have no clue
 	// dim3 threadsPerBlock(16, 16, 16);
 	// dim3 numBlocks(size/16, size/16, size/16);
 	// // launch kernel
