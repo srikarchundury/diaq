@@ -68,6 +68,7 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     }
     qm.pruneMatrix();
     qm.shape = shape;
+    // this->free();
     return qm;
     #endif
 }

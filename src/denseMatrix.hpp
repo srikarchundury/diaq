@@ -161,6 +161,10 @@ class denseMatrix {
         long int getTargetDiagIndex_onlydiags(long int i, long int j) {
             return j-i;
         }
+        void free() {
+            delete[] realData;
+            delete[] imagData;
+        }
         diaQMatrix convertToQuantumSparse(std::vector<long int> new_shape);
     private:
         float *realData;

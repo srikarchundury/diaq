@@ -209,5 +209,6 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 		diaq_res.setDiagonalElement(dIndex, dPos, diaq_res.getDiagonalLength(dIndex), realData[i], ImagData[i]);
 	}
 	diaq_res.pruneMatrix();
+	// d->free();
 	return diaq_res;
 }

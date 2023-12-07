@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include <cstddef>
 
+#include "config.hpp"
 
 class diagonal {
     public:
@@ -17,10 +19,8 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
-            float *realVals = (float *)calloc(dl, sizeof(float));
-            float *imagVals = (float *)calloc(dl, sizeof(float));
-            realValues = realVals;
-            imagValues = imagVals;
+            realValues = (float *)calloc(dl, sizeof(float));
+            imagValues = (float *)calloc(dl, sizeof(float));
         }
         diagonal(long int di, long int dl, float *realVals, float *imagVals) {
             dIndex = di;
@@ -119,9 +119,15 @@ class diagonal {
             }
             return count;
         }
+        void free() {
+            delete[] realValues;
+            delete[] imagValues;
+        }
     private:
-        float* realValues; // real number array
-        float* imagValues; // imag number array
+        alignas(NUM_BYTES_ALIGNED) float* realValues; // real number array
+        // float* realValues; // real number array
+        alignas(NUM_BYTES_ALIGNED) float* imagValues; // imaginary number array
+        // float* imagValues; // imaginary number array
 };
 
 #endif // DIAQ_DIAGONAL_HPP

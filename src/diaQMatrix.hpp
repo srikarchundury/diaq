@@ -5,6 +5,9 @@
 #include <map>
 #include <numeric>
 #include <omp.h>
+#include <cstddef>
+
+
 #include "config.hpp"
 
 
@@ -115,8 +118,8 @@ class diaQMatrix {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                float *real_vals = (float *)calloc(dLen, sizeof(float));
-                float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLen, sizeof(float));
+                alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLen, sizeof(float));
                 real_vals[dPos] = real_val;
                 imag_vals[dPos] = imag_val;
                 diagonal newDiag(dIndex, dLen, real_vals, imag_vals);
@@ -218,8 +221,8 @@ class diaQMatrix {
                 long int dIndex = diagonal_indices[i];
                 long int dLength = cum_diagonal_lengths[i];
                 // std::cout << "dIndex = " << dIndex << " dLength = " << dLength << std::endl;
-                float *real_vals = (float *)calloc(dLength, sizeof(float));
-                float *imag_vals = (float *)calloc(dLength, sizeof(float));
+                alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLength, sizeof(float));
+                alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLength, sizeof(float));
                 for (long int j = 0; j < dLength; j++) {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
@@ -263,11 +266,11 @@ class diaQMatrix {
             // std::cout << std::endl;
             // ------------------ DEBUG ------------------
             long int p = 0;
-            (*real_data) = (float *)malloc(*num_elements * sizeof(float));
-            (*imag_data) = (float *)malloc(*num_elements * sizeof(float));
+            (*real_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
+            (*imag_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
             for (auto x : diagonalMap) {
-                float *real_vals = x.second.getRealValues();
-                float *imag_vals = x.second.getImagValues();
+                alignas(NUM_BYTES_ALIGNED) float *real_vals = x.second.getRealValues();
+                alignas(NUM_BYTES_ALIGNED) float *imag_vals = x.second.getImagValues();
                 for (int i = 0; i < x.second.dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
@@ -375,6 +378,12 @@ class diaQMatrix {
                 }
             }
             return res;
+        }
+        void free() {
+            std::map<long int, diagonal>::iterator it;
+            for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                it->second.free();
+            }
         }
         void pruneMatrix() {
             std::vector<long int> toDelete;
