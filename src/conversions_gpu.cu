@@ -5,8 +5,10 @@ __global__ void convert_to_dq(
 	long int size, long int matrix_size_x, long int matrix_size_y,
 	long int* device_diagonal_idx, long int* device_diagonal_pos
 ) {
-	long int index = blockIdx.x * blockDim.x + threadIdx.x;
+	// printf("kernel called with size: %ld, matrix_size_x: %ld, matrix_size_y: %ld\n", size, matrix_size_x, matrix_size_y);
+	long int index = blockIdx.x * (blockDim.x * blockDim.y * blockDim.z) + threadIdx.z * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 	if (index < size) {
+		// printf("index: %ld\n", index);
 		// TODO: reduce this below function to a single line
 		long int d_idx = ((index - matrix_size_y * (index / matrix_size_y)) % matrix_size_y) - (index / matrix_size_y);
 		long int d_pos;
@@ -69,11 +71,11 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	int totalDataSize = size;
-	int threadsPerBlock = 256;
-	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
-	// launch kernel
-	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+	// int totalDataSize = size;
+	// int threadsPerBlock = 256;
+	// int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	// int blockSize = 256;
 	// dim3 threadsPerBlock(blockSize, blockSize);
@@ -82,10 +84,10 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	// why isn't the below working logically? – Have no clue
-	// dim3 threadsPerBlock(16, 16, 16);
-	// dim3 numBlocks(size/16, size/16, size/16);
-	// // launch kernel
-	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+	dim3 threadsPerBlock(4, 4, 4);
+	dim3 numBlocks(size/4, size/4, size/4);
+	// launch kernel
+	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
 	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));
@@ -96,6 +98,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	cudaFree(device_diagonal_idx);
 	cudaFree(device_diagonal_pos);
 
+	// -------------- DEBUG ---------------
 	// std::cout << "Matrix shape" << std::endl;
 	// for (long int i = 0; i < 2; i++) {
 	//     std::cout << matrix_shape[i] << " ";
@@ -112,6 +115,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<float>> values, std::vector<
 	//     std::cout << host_diagonal_pos[i] << " ";
 	// }
 	// std::cout << std::endl;
+	// -------------- DEBUG ---------------
 
 	std::map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &matrix_shape, &shape);
@@ -151,11 +155,11 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
 	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
 
-	int totalDataSize = size;
-	int threadsPerBlock = 1024;
-	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
-	// launch kernel
-	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+	// int totalDataSize = size;
+	// int threadsPerBlock = 1024;
+	// int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
+	// // launch kernel
+	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	// int blockSize = 256;
 	// dim3 threadsPerBlock(blockSize, blockSize);
@@ -164,10 +168,10 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	// why doesnt the below work logically? – Have no clue
-	// dim3 threadsPerBlock(16, 16, 16);
-	// dim3 numBlocks(size/16, size/16, size/16);
-	// // launch kernel
-	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+	dim3 threadsPerBlock(4, 4, 4);
+	dim3 numBlocks(size/4, size/4, size/4);
+	// launch kernel
+	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
 	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));
@@ -178,9 +182,10 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	cudaFree(device_diagonal_idx);
 	cudaFree(device_diagonal_pos);
 
+	// -------------- DEBUG ---------------
 	// std::cout << "Matrix shape" << std::endl;
 	// for (long int i = 0; i < 2; i++) {
-	//     std::cout << matrix_shape[i] << " ";
+	//     std::cout << new_shape[i] << " ";
 	// }
 	// std::cout << std::endl;
 
@@ -194,6 +199,7 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	//     std::cout << host_diagonal_pos[i] << " ";
 	// }
 	// std::cout << std::endl;
+	// -------------- DEBUG ---------------
 
 	std::map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &new_shape);
