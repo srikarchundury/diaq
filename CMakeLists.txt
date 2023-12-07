@@ -9,14 +9,11 @@ set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
 set(SOURCES
     ${SRC_DIR}/config.hpp
 	${SRC_DIR}/config.cpp
-
 	${SRC_DIR}/logger.hpp
-
 	${SRC_DIR}/denseMatrix.hpp
 	${SRC_DIR}/diagonal.hpp
 	${SRC_DIR}/diaQMatrix.hpp
 	${SRC_DIR}/vector.hpp
-
 	${SRC_DIR}/conversions.hpp
 	${SRC_DIR}/conversions.cpp
 	${SRC_DIR}/kernels.hpp
@@ -31,7 +28,6 @@ set(SOURCES
 set(CUDA_SOURCES
 	${SRC_DIR}/conversions_gpu.hpp
 	${SRC_DIR}/conversions_gpu.cu
-
 	${SRC_DIR}/matrixKernels_gpu.hpp
 	${SRC_DIR}/matrixKernels_gpu.cu
 )
@@ -44,20 +40,26 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
     message(STATUS "CUDA is enabled")
     find_package(CUDA REQUIRED)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
-	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
     cuda_add_library(diaq ${SOURCES} ${CUDA_SOURCES})
-	add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
-	target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # support for avx2
-	# Add -fPIC flag for CUDA sources
-    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
-	set(BUILD_TYPE "gpu_build")
+    add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
+    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
+    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
+    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for CUDA sources
+    set(BUILD_TYPE "gpu_build")
 else()
     message(STATUS "CUDA is not enabled")
     add_library(diaq ${SOURCES})
-	target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>)
-	# Add -fPIC flag for non-CUDA sources also
-	set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
-	set(BUILD_TYPE "cpu_build")
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
+    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
+    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
+    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for non-CUDA sources
+    set(BUILD_TYPE "cpu_build")
 endif()
 
 # Compile the tests.cpp file

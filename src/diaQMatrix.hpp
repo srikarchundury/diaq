@@ -118,8 +118,13 @@ class diaQMatrix {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLen, sizeof(float));
-                alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                #ifndef CUDA_ENABLED
+                    alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLen, sizeof(float));
+                    alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                #else
+                    float *real_vals = (float *)calloc(dLen, sizeof(float));
+                    float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                #endif
                 real_vals[dPos] = real_val;
                 imag_vals[dPos] = imag_val;
                 diagonal newDiag(dIndex, dLen, real_vals, imag_vals);
@@ -221,8 +226,13 @@ class diaQMatrix {
                 long int dIndex = diagonal_indices[i];
                 long int dLength = cum_diagonal_lengths[i];
                 // std::cout << "dIndex = " << dIndex << " dLength = " << dLength << std::endl;
-                alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLength, sizeof(float));
-                alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLength, sizeof(float));
+                #ifndef CUDA_ENABLED
+                    alignas(NUM_BYTES_ALIGNED) float *real_vals = (float *)calloc(dLength, sizeof(float));
+                    alignas(NUM_BYTES_ALIGNED) float *imag_vals = (float *)calloc(dLength, sizeof(float));
+                #else
+                    float *real_vals = (float *)calloc(dLength, sizeof(float));
+                    float *imag_vals = (float *)calloc(dLength, sizeof(float));
+                #endif
                 for (long int j = 0; j < dLength; j++) {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
@@ -266,11 +276,21 @@ class diaQMatrix {
             // std::cout << std::endl;
             // ------------------ DEBUG ------------------
             long int p = 0;
-            (*real_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
-            (*imag_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
+            #ifndef CUDA_ENABLED
+                (*real_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
+                (*imag_data) = (alignas(NUM_BYTES_ALIGNED) float *)malloc(*num_elements * sizeof(float));
+            #else
+                (*real_data) = (float *)malloc(*num_elements * sizeof(float));
+                (*imag_data) = (float *)malloc(*num_elements * sizeof(float));
+            #endif
             for (auto x : diagonalMap) {
-                alignas(NUM_BYTES_ALIGNED) float *real_vals = x.second.getRealValues();
-                alignas(NUM_BYTES_ALIGNED) float *imag_vals = x.second.getImagValues();
+                #ifndef CUDA_ENABLED
+                    alignas(NUM_BYTES_ALIGNED) float *real_vals = x.second.getRealValues();
+                    alignas(NUM_BYTES_ALIGNED) float *imag_vals = x.second.getImagValues();
+                #else
+                    float *real_vals = x.second.getRealValues();
+                    float *imag_vals = x.second.getImagValues();
+                #endif
                 for (int i = 0; i < x.second.dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
