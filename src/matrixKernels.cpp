@@ -282,6 +282,52 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
+    if (logger.log_level == DEEP_DEBUG) {
+        std::cout << " --- " << std::endl;
+		// --- First matrix ---
+		std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
+        // get keys of A_diagonalMap
+        std::vector<long int> A_keys;
+        std::map<long int, diagonal>::iterator A_it;
+        for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
+            A_keys.push_back(A_it->first);
+        }
+        // print keys
+        std::cout << "keys of A_diagonalMap: ";
+        for(long int i = 0; i < A_keys.size(); i++) {
+            std::cout << A_keys[i] << " ";
+        }
+        std::cout << std::endl;
+		// --- Second matrix ---
+        std::map<long int, diagonal> B_diagonalMap = B.getDiagonalMap();
+        // get keys of B_diagonalMap
+        std::vector<long int> B_keys;
+        std::map<long int, diagonal>::iterator B_it;
+        for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
+            B_keys.push_back(B_it->first);
+        }
+        // print keys
+        std::cout << "keys of B_diagonalMap: ";
+        for(long int i = 0; i < B_keys.size(); i++) {
+            std::cout << B_keys[i] << " ";
+        }
+        std::cout << std::endl;
+		// --- Result matrix ---
+        std::map<long int, diagonal> result_diagonalMap = result->getDiagonalMap();
+        // get keys of result_diagonalMap
+        std::vector<long int> result_keys;
+        std::map<long int, diagonal>::iterator result_it;
+        for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
+            result_keys.push_back(result_it->first);
+        }
+        // print keys
+        std::cout << "keys of result_diagonalMap: ";
+        for(long int i = 0; i < result_keys.size(); i++) {
+            std::cout << result_keys[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << " --- " << std::endl;
+	}
     return *result;
     // #endif
 }

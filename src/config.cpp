@@ -4,4 +4,4 @@
 // #define INFO 1
 // #define DEBUG 2
 // #define DEEP_DEBUG 3
-Logger logger = Logger(RELEASE);
+Logger logger = Logger(DEEP_DEBUG);

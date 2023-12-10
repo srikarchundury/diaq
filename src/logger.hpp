@@ -36,7 +36,7 @@ class Logger {
 			}
 		}
 		void log(std::string message) {
-			if (log_level >= DEBUG) {
+			if (log_level == DEBUG) {
 				std::cout << "\n[" << level_str << "] " << message << std::endl;
 			}
 		}
