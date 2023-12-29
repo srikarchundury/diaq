@@ -12,6 +12,6 @@
 #include "denseMatrix.hpp"
 #include "kernels.hpp"
 
-float norm(const vector &x);
+valType norm(const vector &x);
 
 #endif // DIAQ_NORMS_HPP

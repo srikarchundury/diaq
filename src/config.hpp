@@ -19,7 +19,9 @@
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
 
-#define NUM_BYTES_ALIGNED 16
+#define NUM_BYTES_ALIGNED 8 // set -1 for unaligned then default behavior whatever compiler does it does!
+using valType = double; // change this to change the type of the values in complex type. Only float and double are supported.
+
 
 #include "logger.hpp"
 extern Logger logger;
