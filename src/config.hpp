@@ -10,9 +10,6 @@
 	#define NUMBER_OF_OMP_THREADS 32
 #endif
 
-#include <cstdint>
-#include <immintrin.h>
-
 // #if defined(__AVX__) || defined(__AVX2__)
 // 	#define NUM_BYTES_ALIGNED _mm256_get_cache_line_size()
 // #else
@@ -20,8 +17,7 @@
 // #endif
 
 #define NUM_BYTES_ALIGNED 8 // set -1 for unaligned then default behavior whatever compiler does it does!
-using valType = double; // change this to change the type of the values in complex type. Only float and double are supported.
-
+using valType = double; // change this to change the type of the values in complex type. Only float and double are supported as of now.
 
 #include "logger.hpp"
 extern Logger logger;

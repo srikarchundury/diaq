@@ -27,7 +27,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 // ----------------------------------------------------------------
 #ifdef __AVX__
 	#include <immintrin.h>
-    __m256d load_partial_double(long int n, const double* p) {
+    __m256d avx_load_partial_double(long int n, const double* p) {
         __m256d vec;
         #pragma unroll
         for(long int i = 0; i < n; i++) {
@@ -35,13 +35,13 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         }
         return vec;
     }
-	void store_partial_double(long int n, double *loc, __m256d vec) {
+	void avx_store_partial_double(long int n, double *loc, __m256d vec) {
 		#pragma unroll
 		for(long int i = 0; i < n; i++) {
 			loc[i] = vec[i];
 		}
 	}
-    __m256 load_partial_float(long int n, const float* p) {
+    __m256 avx_load_partial_float(long int n, const float* p) {
         __m256 vec;
         #pragma unroll
         for(long int i = 0; i < n; i++) {
@@ -49,69 +49,17 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         }
         return vec;
     }
-	void store_partial_float(long int n, float *loc, __m256 vec) {
+	void avx_store_partial_float(long int n, float *loc, __m256 vec) {
 		#pragma unroll
 		for(long int i = 0; i < n; i++) {
 			loc[i] = vec[i];
 		}
 	}
-    void run_avx_for_doubles(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-        logger.log("Using AVX vectorization");
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
-        __m256d real_a, real_b; // a for valuesA and b for valuesB
-        __m256d imag_a, imag_b; // a for valuesA and b for valuesB
-        __m256d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-        long int left_overs = loop_count - ((loop_count / 8) * 8);
-        long int vec_loop = (loop_count / 8);
-        long int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
-        long int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
-
-        while (vec_loop--) {
-            real_a = _mm256_loadu_pd(&real_vals_a[k + offsetA - jump]);
-            imag_a = _mm256_loadu_pd(&imag_vals_a[k + offsetA - jump]);
-            real_b = _mm256_loadu_pd(&real_vals_b[k + offsetB - jump]);
-            imag_b = _mm256_loadu_pd(&imag_vals_b[k + offsetB - jump]);
-
-            real_reala_realb = _mm256_mul_pd(real_a, real_b);
-            real_imaga_imagb = _mm256_mul_pd(imag_a, imag_b);
-            real_res = _mm256_sub_pd(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm256_mul_pd(real_a, imag_b);
-            imag_imaga_realb = _mm256_mul_pd(imag_a, real_b);
-            imag_res = _mm256_add_pd(imag_reala_imagb, imag_imaga_realb);
-
-            store_partial_double(8, &real_vals_final[k], real_res);
-            store_partial_double(8, &imag_vals_final[k], imag_res);
-
-            k += 8;
-        }
-        if (left_overs != 0) {
-            real_a = load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
-            imag_a = load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
-            real_b = load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
-            imag_b = load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
-
-            real_reala_realb = _mm256_mul_pd(real_a, real_b);
-            real_imaga_imagb = _mm256_mul_pd(imag_a, imag_b);
-            real_res = _mm256_sub_pd(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm256_mul_pd(real_a, imag_b);
-            imag_imaga_realb = _mm256_mul_pd(imag_a, real_b);
-            imag_res = _mm256_add_pd(imag_reala_imagb, imag_imaga_realb);
-
-            store_partial_double(left_overs, &real_vals_final[k], real_res);
-            store_partial_double(left_overs, &imag_vals_final[k], imag_res);
-
-            k += left_overs;
-        }
-    }
-    void run_avx_for_floats(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-        logger.log("Using AVX vectorization");
+    template<typename valTypeTemplate>
+    void run_avx(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final);
+    template<>
+    void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
+        logger.log("Using AVX-Float vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -140,16 +88,16 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
             imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-            store_partial_float(8, &real_vals_final[k], real_res);
-            store_partial_float(8, &imag_vals_final[k], imag_res);
+            avx_store_partial_float(8, &real_vals_final[k], real_res);
+            avx_store_partial_float(8, &imag_vals_final[k], imag_res);
 
             k += 8;
         }
         if (left_overs != 0) {
-            real_a = load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
-            imag_a = load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
-            real_b = load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
-            imag_b = load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
+            real_a = avx_load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
+            imag_a = avx_load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
+            real_b = avx_load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
+            imag_b = avx_load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
 
             real_reala_realb = _mm256_mul_ps(real_a, real_b);
             real_imaga_imagb = _mm256_mul_ps(imag_a, imag_b);
@@ -159,189 +107,228 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
             imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-            store_partial_float(left_overs, &real_vals_final[k], real_res);
-            store_partial_float(left_overs, &imag_vals_final[k], imag_res);
+            avx_store_partial_float(left_overs, &real_vals_final[k], real_res);
+            avx_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
 
             k += left_overs;
         }
     }
-    template<typename T>
-    void run_avx(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, T *real_vals_a, T *imag_vals_a, T *real_vals_b, T *imag_vals_b, T *real_vals_final, T *imag_vals_final);
-    template<>
-    void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-        run_avx_for_floats(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-    }
     template<>
     void run_avx<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-        run_avx_for_doubles(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        logger.log("Using AVX-Double vectorization");
+        long int loop_count = 0;
+        long int k_cpy = k;
+        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+            loop_count++;
+            k_cpy++;
+        }
+        __m256d real_a, real_b; // a for valuesA and b for valuesB
+        __m256d imag_a, imag_b; // a for valuesA and b for valuesB
+        __m256d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+        long int left_overs = loop_count - ((loop_count / 8) * 8);
+        long int vec_loop = (loop_count / 8);
+        long int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
+        long int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+
+        while (vec_loop--) {
+            real_a = _mm256_loadu_pd(&real_vals_a[k + offsetA - jump]);
+            imag_a = _mm256_loadu_pd(&imag_vals_a[k + offsetA - jump]);
+            real_b = _mm256_loadu_pd(&real_vals_b[k + offsetB - jump]);
+            imag_b = _mm256_loadu_pd(&imag_vals_b[k + offsetB - jump]);
+
+            real_reala_realb = _mm256_mul_pd(real_a, real_b);
+            real_imaga_imagb = _mm256_mul_pd(imag_a, imag_b);
+            real_res = _mm256_sub_pd(real_reala_realb, real_imaga_imagb);
+
+            imag_reala_imagb = _mm256_mul_pd(real_a, imag_b);
+            imag_imaga_realb = _mm256_mul_pd(imag_a, real_b);
+            imag_res = _mm256_add_pd(imag_reala_imagb, imag_imaga_realb);
+
+            avx_store_partial_double(8, &real_vals_final[k], real_res);
+            avx_store_partial_double(8, &imag_vals_final[k], imag_res);
+
+            k += 8;
+        }
+        if (left_overs != 0) {
+            real_a = avx_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
+            imag_a = avx_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
+            real_b = avx_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
+            imag_b = avx_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
+
+            real_reala_realb = _mm256_mul_pd(real_a, real_b);
+            real_imaga_imagb = _mm256_mul_pd(imag_a, imag_b);
+            real_res = _mm256_sub_pd(real_reala_realb, real_imaga_imagb);
+
+            imag_reala_imagb = _mm256_mul_pd(real_a, imag_b);
+            imag_imaga_realb = _mm256_mul_pd(imag_a, real_b);
+            imag_res = _mm256_add_pd(imag_reala_imagb, imag_imaga_realb);
+
+            avx_store_partial_double(left_overs, &real_vals_final[k], real_res);
+            avx_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
+
+            k += left_overs;
+        }
     }
-#else
-    #ifdef __SSE__
-        #include <immintrin.h>
-        /* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
-        __m128 load_partial_float(long int n, float const *p) {
-            __m128 t1, t2, xmm;
-            switch (n) {
-            case 1:
-                xmm = _mm_load_ss(p); break;
-            case 2:
-                xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
-            case 3:
-                t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
-                t2 = _mm_load_ss(p + 2);
-                xmm = _mm_movelh_ps(t1, t2); break;
-            case 4:
-                xmm = _mm_loadu_ps(p); break;
-            default:
-                xmm = _mm_setzero_ps();
-            }
-            return xmm;
+#endif
+#ifdef __SSE__
+    #include <immintrin.h>
+    /* Loads n elements and set the rest to 0. You can call this function for boudary cases. */
+    __m128 sse_load_partial_float(long int n, float const *p) {
+        __m128 t1, t2, xmm;
+        switch (n) {
+        case 1:
+            xmm = _mm_load_ss(p); break;
+        case 2:
+            xmm = _mm_castpd_ps(_mm_load_sd((double const*)p)); break;
+        case 3:
+            t1 = _mm_castpd_ps(_mm_load_sd((double const*)p));
+            t2 = _mm_load_ss(p + 2);
+            xmm = _mm_movelh_ps(t1, t2); break;
+        case 4:
+            xmm = _mm_loadu_ps(p); break;
+        default:
+            xmm = _mm_setzero_ps();
         }
-        void store_partial_float(long int n, float *loc, __m128 vec) {
-            #pragma unroll
-            for(long int i = 0; i < n; i++){
-                loc[i] = vec[i];
-            }
+        return xmm;
+    }
+    void sse_store_partial_float(long int n, float *loc, __m128 vec) {
+        #pragma unroll
+        for(long int i = 0; i < n; i++){
+            loc[i] = vec[i];
         }
-        __m128d load_partial_double(long int n, double const *p) {
-            __m128d t1, t2, xmm;
-            switch (n) {
-            case 1:
-                xmm = _mm_load_sd(p); break;
-            case 2:
-                xmm = _mm_loadu_pd(p); break;
-            default:
-                xmm = _mm_setzero_pd();
-            }
-            return xmm;
+    }
+    __m128d sse_load_partial_double(long int n, double const *p) {
+        __m128d t1, t2, xmm;
+        switch (n) {
+        case 1:
+            xmm = _mm_load_sd(p); break;
+        case 2:
+            xmm = _mm_loadu_pd(p); break;
+        default:
+            xmm = _mm_setzero_pd();
         }
-        void store_partial_double(long int n, double *loc, __m128d vec) {
-            #pragma unroll
-            for(long int i = 0; i < n; i++){
-                loc[i] = vec[i];
-            }
+        return xmm;
+    }
+    void sse_store_partial_double(long int n, double *loc, __m128d vec) {
+        #pragma unroll
+        for(long int i = 0; i < n; i++){
+            loc[i] = vec[i];
         }
-        void run_sse_for_floats(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
-            logger.log("Using SSE vectorization");
-            long int loop_count = 0;
-            long int k_cpy = k;
-            while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-                loop_count++;
-                k_cpy++;
-            }
-            __m128 real_a, real_b; // a for valuesA and b for valuesB
-            __m128 imag_a, imag_b; // a for valuesA and b for valuesB
-            __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-            long int left_overs = loop_count - ((loop_count / 4) * 4);
-            long int vec_loop = (loop_count / 4);
-            long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
-            long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
-
-            while (vec_loop--) {
-                real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
-                imag_a = _mm_loadu_ps(&imag_vals_a[k + offsetA - jump]);
-                real_b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
-                imag_b = _mm_loadu_ps(&imag_vals_b[k + offsetB - jump]);
-
-                real_reala_realb = _mm_mul_ps(real_a, real_b);
-                real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
-                real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
-
-                imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
-                imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
-                imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-
-                store_partial_float(4, &real_vals_final[k], real_res);
-                store_partial_float(4, &imag_vals_final[k], imag_res);
-
-                k += 4;
-            }
-            if (left_overs != 0) {
-                real_a = load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
-                imag_a = load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
-                real_b = load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
-                imag_b = load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
-
-                real_reala_realb = _mm_mul_ps(real_a, real_b);
-                real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
-                real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
-
-                imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
-                imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
-                imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
-
-                store_partial_float(left_overs, &real_vals_final[k], real_res);
-                store_partial_float(left_overs, &imag_vals_final[k], imag_res);
-
-                k += left_overs;
-            }
+    }
+    template<typename valTypeTemplate>
+    void run_sse(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final);
+    template<>
+    void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
+        logger.log("Using SSE-Float vectorization");
+        long int loop_count = 0;
+        long int k_cpy = k;
+        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+            loop_count++;
+            k_cpy++;
         }
-        void run_sse_for_doubles(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-            logger.log("Using SSE vectorization");
-            long int loop_count = 0;
-            long int k_cpy = k;
-            while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-                loop_count++;
-                k_cpy++;
-            }
-            __m128d real_a, real_b; // a for valuesA and b for valuesB
-            __m128d imag_a, imag_b; // a for valuesA and b for valuesB
-            __m128d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-            long int left_overs = loop_count - ((loop_count / 4) * 4);
-            long int vec_loop = (loop_count / 4);
-            long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
-            long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
+        __m128 real_a, real_b; // a for valuesA and b for valuesB
+        __m128 imag_a, imag_b; // a for valuesA and b for valuesB
+        __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+        long int left_overs = loop_count - ((loop_count / 4) * 4);
+        long int vec_loop = (loop_count / 4);
+        long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
+        long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
 
-            while (vec_loop--) {
-                real_a = _mm_loadu_pd(&real_vals_a[k + offsetA - jump]);
-                imag_a = _mm_loadu_pd(&imag_vals_a[k + offsetA - jump]);
-                real_b = _mm_loadu_pd(&real_vals_b[k + offsetB - jump]);
-                imag_b = _mm_loadu_pd(&imag_vals_b[k + offsetB - jump]);
+        while (vec_loop--) {
+            real_a = _mm_loadu_ps(&real_vals_a[k + offsetA - jump]);
+            imag_a = _mm_loadu_ps(&imag_vals_a[k + offsetA - jump]);
+            real_b = _mm_loadu_ps(&real_vals_b[k + offsetB - jump]);
+            imag_b = _mm_loadu_ps(&imag_vals_b[k + offsetB - jump]);
 
-                real_reala_realb = _mm_mul_pd(real_a, real_b);
-                real_imaga_imagb = _mm_mul_pd(imag_a, imag_b);
-                real_res = _mm_sub_pd(real_reala_realb, real_imaga_imagb);
+            real_reala_realb = _mm_mul_ps(real_a, real_b);
+            real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+            real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
 
-                imag_reala_imagb = _mm_mul_pd(real_a, imag_b);
-                imag_imaga_realb = _mm_mul_pd(imag_a, real_b);
-                imag_res = _mm_add_pd(imag_reala_imagb, imag_imaga_realb);
+            imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+            imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+            imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-                store_partial_double(4, &real_vals_final[k], real_res);
-                store_partial_double(4, &imag_vals_final[k], imag_res);
+            sse_store_partial_float(4, &real_vals_final[k], real_res);
+            sse_store_partial_float(4, &imag_vals_final[k], imag_res);
 
-                k += 4;
-            }
-            if (left_overs != 0) {
-                real_a = load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
-                imag_a = load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
-                real_b = load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
-                imag_b = load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
-
-                real_reala_realb = _mm_mul_pd(real_a, real_b);
-                real_imaga_imagb = _mm_mul_pd(imag_a, imag_b);
-                real_res = _mm_sub_pd(real_reala_realb, real_imaga_imagb);
-
-                imag_reala_imagb = _mm_mul_pd(real_a, imag_b);
-                imag_imaga_realb = _mm_mul_pd(imag_a, real_b);
-                imag_res = _mm_add_pd(imag_reala_imagb, imag_imaga_realb);
-
-                store_partial_double(left_overs, &real_vals_final[k], real_res);
-                store_partial_double(left_overs, &imag_vals_final[k], imag_res);
-
-                k += left_overs;
-            }
+            k += 4;
         }
-        template<typename T>
-        void run_sse(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, T *real_vals_a, T *imag_vals_a, T *real_vals_b, T *imag_vals_b, T *real_vals_final, T *imag_vals_final);
-        template<>
-        void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-            run_sse_for_floats(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        if (left_overs != 0) {
+            real_a = sse_load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
+            imag_a = sse_load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
+            real_b = sse_load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
+            imag_b = sse_load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
+
+            real_reala_realb = _mm_mul_ps(real_a, real_b);
+            real_imaga_imagb = _mm_mul_ps(imag_a, imag_b);
+            real_res = _mm_sub_ps(real_reala_realb, real_imaga_imagb);
+
+            imag_reala_imagb = _mm_mul_ps(real_a, imag_b);
+            imag_imaga_realb = _mm_mul_ps(imag_a, real_b);
+            imag_res = _mm_add_ps(imag_reala_imagb, imag_imaga_realb);
+
+            sse_store_partial_float(left_overs, &real_vals_final[k], real_res);
+            sse_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
+
+            k += left_overs;
         }
-        template<>
-        void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-            run_sse_for_doubles(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+    }
+    template<>
+    void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
+        logger.log("Using SSE-Double vectorization");
+        long int loop_count = 0;
+        long int k_cpy = k;
+        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+            loop_count++;
+            k_cpy++;
         }
-    #endif
+        __m128d real_a, real_b; // a for valuesA and b for valuesB
+        __m128d imag_a, imag_b; // a for valuesA and b for valuesB
+        __m128d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+        long int left_overs = loop_count - ((loop_count / 4) * 4);
+        long int vec_loop = (loop_count / 4);
+        long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
+        long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
+
+        while (vec_loop--) {
+            real_a = _mm_loadu_pd(&real_vals_a[k + offsetA - jump]);
+            imag_a = _mm_loadu_pd(&imag_vals_a[k + offsetA - jump]);
+            real_b = _mm_loadu_pd(&real_vals_b[k + offsetB - jump]);
+            imag_b = _mm_loadu_pd(&imag_vals_b[k + offsetB - jump]);
+
+            real_reala_realb = _mm_mul_pd(real_a, real_b);
+            real_imaga_imagb = _mm_mul_pd(imag_a, imag_b);
+            real_res = _mm_sub_pd(real_reala_realb, real_imaga_imagb);
+
+            imag_reala_imagb = _mm_mul_pd(real_a, imag_b);
+            imag_imaga_realb = _mm_mul_pd(imag_a, real_b);
+            imag_res = _mm_add_pd(imag_reala_imagb, imag_imaga_realb);
+
+            sse_store_partial_double(4, &real_vals_final[k], real_res);
+            sse_store_partial_double(4, &imag_vals_final[k], imag_res);
+
+            k += 4;
+        }
+        if (left_overs != 0) {
+            real_a = sse_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
+            imag_a = sse_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
+            real_b = sse_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
+            imag_b = sse_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
+
+            real_reala_realb = _mm_mul_pd(real_a, real_b);
+            real_imaga_imagb = _mm_mul_pd(imag_a, imag_b);
+            real_res = _mm_sub_pd(real_reala_realb, real_imaga_imagb);
+
+            imag_reala_imagb = _mm_mul_pd(real_a, imag_b);
+            imag_imaga_realb = _mm_mul_pd(imag_a, real_b);
+            imag_res = _mm_add_pd(imag_reala_imagb, imag_imaga_realb);
+
+            sse_store_partial_double(left_overs, &real_vals_final[k], real_res);
+            sse_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
+
+            k += left_overs;
+        }
+    }
 #endif
 
 // ----------------------------------------------------------------
@@ -474,15 +461,27 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
     valType *imag_vals_final = res.getImagValues();
     // std::cout << "k=" << k << std::endl;
     // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
-    #ifdef __AVX__
-        run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-    #else
+    if(std::is_same<valType, double>::value) { // prefer AVX for double
+        #ifdef __AVX__
+            run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        #else
+            #ifdef __SSE__
+                run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            #else
+                run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            #endif
+        #endif   
+    } else if(std::is_same<valType, float>::value) { // prefer SSE for float
         #ifdef __SSE__
             run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #else
-            run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            #ifdef __AVX__
+                run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            #else
+                run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            #endif
         #endif
-    #endif
+    }
     return res;
 }
 
