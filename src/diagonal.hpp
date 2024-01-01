@@ -19,10 +19,10 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
-            realValues = (float *)calloc(dl, sizeof(float));
-            imagValues = (float *)calloc(dl, sizeof(float));
+            realValues = (valType *)calloc(dl, sizeof(valType));
+            imagValues = (valType *)calloc(dl, sizeof(valType));
         }
-        diagonal(long int di, long int dl, float *realVals, float *imagVals) {
+        diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;
             realValues = realVals;
             imagValues = imagVals;
@@ -31,29 +31,29 @@ class diagonal {
         void setIndex(long int newIndex) {
             dIndex = newIndex;
         }
-        void setElements(float *new_realVals, float *new_imagVals) {
+        void setElements(valType *new_realVals, valType *new_imagVals) {
             realValues = new_realVals;
             imagValues = new_imagVals;
         }
-        void addElements(float *new_realVals, float *new_imagVals, long int from_index, long int to_index) {
+        void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];
             }
         }
-        void setValue(long int i, float real_val, float imag_val) {
+        void setValue(long int i, valType real_val, valType imag_val) {
             // std::cout << "there" << std::endl;
             realValues[i] = real_val;
             imagValues[i] = imag_val;
         }
-        std::complex<float> getValue(long int i) {
-            std::complex<float> ans{realValues[i], imagValues[i]};
+        std::complex<valType> getValue(long int i) {
+            std::complex<valType> ans{realValues[i], imagValues[i]};
             return ans;
         }
-        float getRealValue(long int i) {
+        valType getRealValue(long int i) {
             return realValues[i];
         }
-        float getImagValue(long int i) {
+        valType getImagValue(long int i) {
             return imagValues[i];
         }
         bool isEmpty() {
@@ -75,10 +75,10 @@ class diagonal {
             std::cout << "]" << "";
             std::cout << std::endl;
         }
-        float *getRealValues() {
+        valType *getRealValues() {
             return realValues;
         }
-        float *getImagValues() {
+        valType *getImagValues() {
             return imagValues;
         }
         // returns the start (x, y) of diagonal of the matrix
@@ -124,10 +124,13 @@ class diagonal {
             delete[] imagValues;
         }
     private:
-        alignas(NUM_BYTES_ALIGNED) float* realValues; // real number array
-        // float* realValues; // real number array
-        alignas(NUM_BYTES_ALIGNED) float* imagValues; // imaginary number array
-        // float* imagValues; // imaginary number array
+        #if NUM_BYTES_ALIGNED == -1
+            valType* realValues; // real number array
+            valType* imagValues; // imaginary number array
+        #else
+            alignas(NUM_BYTES_ALIGNED) valType* realValues; // real number array
+            alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
+        #endif
 };
 
 #endif // DIAQ_DIAGONAL_HPP
