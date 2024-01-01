@@ -1,10 +1,13 @@
-#ifndef QSPARSE_DIAQ_HPP
-#define QSPARSE_DIAQ_HPP
+#ifndef DIAQ_DIAQMATRIX_HPP
+#define DIAQ_DIAQMATRIX_HPP
 
 #include "diagonal.hpp"
 #include <map>
 #include <numeric>
 #include <omp.h>
+#include <cstddef>
+
+
 #include "config.hpp"
 
 
@@ -64,7 +67,7 @@ class diaQMatrix {
         long int getSize() {
             return size;
         }
-        std::complex<float> getItem(std::vector<long int> ten_pos) {
+        std::complex<valType> getItem(std::vector<long int> ten_pos) {
             std::vector<long int> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
@@ -108,12 +111,25 @@ class diaQMatrix {
                 return &it->second;
             }
         }
-        void setDiagonalElement(long int dIndex, long int dPos, long int dLen, float real_val, float imag_val) {
+        void setDiagonalMap(std::map<long int, diagonal> dm) {
+            diagonalMap = dm;
+        }
+        void setDiagonalElement(long int dIndex, long int dPos, long int dLen, valType real_val, valType imag_val) {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                float *real_vals = (float *)calloc(dLen, sizeof(float));
-                float *imag_vals = (float *)calloc(dLen, sizeof(float));
+                #ifndef CUDA_ENABLED
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                        valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                    #endif
+                #else
+                    valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                    valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                #endif
                 real_vals[dPos] = real_val;
                 imag_vals[dPos] = imag_val;
                 diagonal newDiag(dIndex, dLen, real_vals, imag_vals);
@@ -186,6 +202,133 @@ class diaQMatrix {
             }
             return ten_pos;
         }
+        void setDiagFlatData(long int n_diags, long int *diagonal_indices, long int *cum_diagonal_lengths, long int num_elements, valType *real_data, valType *imag_data) {
+            // ------------------ DEBUG ------------------
+            // std::cout << "n_diags = " << n_diags << std::endl;
+            // std::cout << "num_elements = " << num_elements << std::endl;
+            // std::cout << "diagonal_indices = [";
+            // for (long int i = 0; i < n_diags - 1; i++) {
+            //     std::cout << diagonal_indices[i] << ",";
+            // }
+            // std::cout << diagonal_indices[n_diags - 1] << "]" << std::endl;
+            // std::cout << "cum_diagonal_lengths = [";
+            // for (long int i = 0; i < n_diags - 1; i++) {
+            //     std::cout << cum_diagonal_lengths[i] << ",";
+            // }
+            // std::cout << cum_diagonal_lengths[n_diags - 1] << "]" << std::endl;
+            // std::cout << "real_data = [";
+            // for (long int i = 0; i < num_elements - 1; i++) {
+            //     std::cout << real_data[i] << ",";
+            // }
+            // std::cout << real_data[num_elements - 1] << "]" << std::endl;
+            // std::cout << "imag_data = [";
+            // for (long int i = 0; i < num_elements - 1; i++) {
+            //     std::cout << imag_data[i] << ",";
+            // }
+            // std::cout << imag_data[num_elements - 1] << "]" << std::endl;
+            // ------------------ DEBUG ------------------
+            for (long int i = 0; i < n_diags; i++) {
+                long int dIndex = diagonal_indices[i];
+                long int dLength = cum_diagonal_lengths[i];
+                // std::cout << "dIndex = " << dIndex << " dLength = " << dLength << std::endl;
+                #ifndef CUDA_ENABLED
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                        valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                    #endif
+                #else
+                    valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                    valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                #endif
+                for (long int j = 0; j < dLength; j++) {
+                    real_vals[j] = real_data[j];
+                    imag_vals[j] = imag_data[j];
+                }
+                diagonal newDiag(dIndex, dLength, real_vals, imag_vals);
+                this->diagonalMap.insert({dIndex, newDiag});
+            }
+        }
+        void getDiagFlatData(long int *n_diags, long int **diagonal_indices, long int **cum_diagonal_lengths, long int *num_elements, valType **real_data, valType **imag_data) {
+            *n_diags = diagonalMap.size();
+            // ------------------ DEBUG ------------------
+            // std::cout << "n_diags = " << *n_diags << std::endl;
+            // ------------------ DEBUG ------------------
+            (*diagonal_indices) = (long int *)malloc(*n_diags * sizeof(long int));
+            (*cum_diagonal_lengths) = (long int *)malloc(*n_diags * sizeof(long int));
+            *num_elements = 0;
+            long int k = 0;
+            for (auto x : diagonalMap) {
+                // std::cout << "for k = " << k << " x.first = " << x.first << std::endl;
+                (*diagonal_indices)[k] = x.first;
+                // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
+                if (k == 0) {
+                    (*cum_diagonal_lengths)[k] = x.second.dLength;
+                } else {
+                    // std::cout << "k = " << k << std::endl;
+                    // std::cout << "~ (*cum_diagonal_lengths)[" << k - 1 << "] = " << (*cum_diagonal_lengths)[k - 1] << std::endl;
+                    // std::cout << "~ x.second.dLength = " << x.second.dLength << std::endl;
+                    (*cum_diagonal_lengths)[k] = (*cum_diagonal_lengths)[k - 1] + x.second.dLength;
+                }
+                // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
+                k++;
+                *num_elements += x.second.dLength;
+                // std::cout << "set! *num_elements = " << *num_elements << std::endl;
+            }
+            // ------------------ DEBUG ------------------
+            // std::cout << "num_elements = " << *num_elements << std::endl;
+            // std::cout << "diagonal_indices = ";
+            // for (long int i = 0; i < *n_diags; i++) {
+            //     std::cout << (*cum_diagonal_lengths)[i] << ",";
+            // }
+            // std::cout << std::endl;
+            // ------------------ DEBUG ------------------
+            long int p = 0;
+            #ifndef CUDA_ENABLED
+                #if NUM_BYTES_ALIGNED == -1
+                    (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                    (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                #else
+                    (*real_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                    (*imag_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                #endif
+            #else
+                (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+            #endif
+            for (auto x : diagonalMap) {
+                #ifndef CUDA_ENABLED
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = x.second.getRealValues();
+                        valType *imag_vals = x.second.getImagValues();
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second.getRealValues();
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second.getImagValues();
+                    #endif
+                #else
+                    valType *real_vals = x.second.getRealValues();
+                    valType *imag_vals = x.second.getImagValues();
+                #endif
+                for (int i = 0; i < x.second.dLength; i++) {
+                    (*real_data)[p] = real_vals[i];
+                    (*imag_data)[p++] = imag_vals[i];
+                }
+            }
+            // ------------------ DEBUG ------------------
+            // std::cout << "real_data = ";
+            // for (long int i = 0; i < *num_elements; i++) {
+            //     std::cout << (*real_data)[i] << ",";
+            // }
+            // std::cout << std::endl;
+            // std::cout << "imag_data = ";
+            // for (long int i = 0; i < *num_elements; i++) {
+            //     std::cout << (*imag_data)[i] << ",";
+            // }
+            // std::cout << std::endl;
+            // ------------------ DEBUG ------------------
+        }
         std::vector<long int> getDiagonalPositionByFlatIndex(long int flatIndex) {
             long int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
@@ -202,7 +345,7 @@ class diaQMatrix {
                 res.push_back(mat_y - d_idx);
             }
             return res;
-        } 
+        }
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int total_elements = 1;
             for(long int i = 0;i < shape.size(); i++)
@@ -256,31 +399,61 @@ class diaQMatrix {
             // std::cout << "lenRes = " << lenRes << std::endl;
             return lenRes;
         }
+        long int num_diags() {
+            return diagonalMap.size();
+        }
+        std::vector<std::complex<valType>> flatten() {
+            std::vector<std::complex<valType>> res(matrix_shape[0] * matrix_shape[1] , 1);
+            std::map<long int, diagonal>::iterator it;
+            for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                long int dIndex = it->first;
+                long int dLength = it->second.dLength;
+                valType *real_vals = it->second.getRealValues();
+                valType *imag_vals = it->second.getImagValues();
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for (long int i = 0; i < dLength; i++) {
+                    std::vector<long int> mat_pos = getMatrixPosition(dIndex, i);
+                    long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
+                    res[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
+                }
+            }
+            return res;
+        }
+        void free() {
+            std::map<long int, diagonal>::iterator it;
+            for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                it->second.free();
+            }
+        }
         void pruneMatrix() {
             std::vector<long int> toDelete;
             std::map<long int, diagonal>::iterator it;
-            // don't yet to parallelize loops like this.
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                long int counter = 0;
-                float *real_vals = it->second.getRealValues();
-                float *imag_vals = it->second.getImagValues();
-                for (long int i = 0; i < it->second.dLength; i++) {
-                    if(real_vals[i] == 0.0 && imag_vals[i] == 0.0) { counter++; }
-                    else {break;}
+                valType *real_vals = it->second.getRealValues();
+                valType *imag_vals = it->second.getImagValues();
+                long int i;
+                for (i = 0; i < it->second.dLength; i++) {
+                    if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) {
+                        break;
+                    }
                 }
-                if(counter == it->second.dLength) {
+                if(i == it->second.dLength) {
                     toDelete.push_back(it->first);
                 }
             }
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < toDelete.size(); i++) {
                 // TODO: again, same case as createDiagonal; .erase is thread-unsafe; makes it tough to use omp
+                // #pragma omp critical
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
+        diaQMatrix reshape(std::vector<long int> new_tensor_shape);
+        diaQMatrix transpose(std::vector<long int> new_order);
         denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
     private:
         long int size;
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
-#endif // QSPARSE_DIAQ_HPP
+#endif // DIAQ_DIAQMATRIX_HPP

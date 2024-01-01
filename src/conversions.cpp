@@ -1,16 +1,17 @@
-#include "denseMatrix.hpp"
-#include "config.hpp"
+#include "conversions.hpp"
 
-#include <omp.h>
+#ifdef CUDA_ENABLED
+	#include "conversions_gpu.hpp"
+#endif
 
 denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
-    float *real_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
-    float *imag_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
+    valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
+    valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     std::map<long int, diagonal>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        float *real_vals = it->second.getRealValues();
-        float *imag_vals = it->second.getImagValues();
+        valType *real_vals = it->second.getRealValues();
+        valType *imag_vals = it->second.getImagValues();
         if (it->first == 0) {
             x = 0;
             y = 0;
@@ -36,6 +37,9 @@ denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
 }
 
 diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
+    #ifdef CUDA_ENABLED
+        return convertToQuantumSparse_cuda(this, new_shape);
+    #else
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // long int s = 0;
     // for(long int i = 0; i < new_shape.size(); i++) {
@@ -64,40 +68,51 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     }
     qm.pruneMatrix();
     qm.shape = shape;
+    // this->free();
     return qm;
+    #endif
 }
 
-// conversion from numpy to our format
-diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
-    float *real_vals = (float *)malloc(vals.size() * sizeof(float));
-    float *imag_vals = (float *)malloc(vals.size() * sizeof(float));
-    #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = 0; i < vals.size(); i++) {
-        real_vals[i] = vals[i].real();
-        imag_vals[i] = vals[i].imag();
-    }
-    long int l = shape.size();
-    if(l>2) {
-        std::vector<long int> orig_shape = shape;
-        l = shape.size();
-        std::vector<long int> new_shape{1,1};
-        long int i = l / 2;
-        #pragma unroll
-        for(long int r = 0; r < i ; r++) {
-            new_shape[0] = new_shape[0] * shape[r];
-        }
-        #pragma unroll
-        for(long int r = i; r < l ; r++) {
-            new_shape[1] = new_shape[1] * shape[r];
-        }
-        return denseMatrix(&new_shape, real_vals, imag_vals, &orig_shape).convertToQuantumSparse(new_shape);
-    }
-    else {
-        return denseMatrix(&shape, real_vals, imag_vals, &shape).convertToQuantumSparse(shape);
-    }
-}
-
-std::vector<std::complex<float> > to_numpy(diaQMatrix A) {
+std::vector<std::complex<valType> > to_numpy(diaQMatrix A) {
     denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
     return d.getData_forPy();
+}
+
+diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape) {
+    #ifdef CUDA_ENABLED
+        return from_numpy_cuda(vals, shape);
+    #else
+        valType *real_vals = (valType *)malloc(vals.size() * sizeof(valType));
+        valType *imag_vals = (valType *)malloc(vals.size() * sizeof(valType));
+        
+        #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int i = 0; i < vals.size(); i++) {
+            real_vals[i] = vals[i].real();
+            imag_vals[i] = vals[i].imag();
+        }
+
+        long int rank = shape.size();
+        if (rank > 2) {
+            long int product = 1;
+            for (long int val : shape) {
+                product *= val;
+            }
+            long int sqrtProduct = static_cast<long int>(std::sqrt(product));
+            // Find the closest factors of the product
+            long int x = 1;
+            long int y = product;
+            for (long int i = sqrtProduct; i > 0; --i) {
+                if (product % i == 0) {
+                    x = i;
+                    y = product / i;
+                    break;
+                }
+            }
+            std::vector<long int> new_shape{x, y};
+            std::vector<long int> orig_shape = shape;
+            return denseMatrix(&new_shape, real_vals, imag_vals, &orig_shape).convertToQuantumSparse(new_shape);
+        } else {
+            return denseMatrix(&shape, real_vals, imag_vals, &shape).convertToQuantumSparse(shape);
+        }
+    #endif
 }

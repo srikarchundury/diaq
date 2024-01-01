@@ -2,9 +2,7 @@
 #include <cstdlib>
 #include <string>
 
-
 #include "../include/diaq.hpp"
-
 
 diaQMatrix testQuantumSparseMatrix(std::map<long int, diagonal> dm) {
     diaQMatrix m = diaQMatrix(dm, 6);
@@ -17,7 +15,7 @@ std::string checkResult(diaQMatrix A, diaQMatrix B) {
         // A.print();
         return "false - 1";
     }
-    const double epsilon = 0.00002;
+    const valType epsilon = 0.00002;
     std::map<long int, diagonal> dmA = A.getDiagonalMap();
     std::map<long int, diagonal> dmB = B.getDiagonalMap();
     std::map<long int, diagonal>::iterator itA, itB;
@@ -52,7 +50,7 @@ int main(int argc, char **argv) {
     std::vector<std::vector<denseMatrix> > testCases;
 
     // test case 0
-    float a0[25] = {
+    valType a0[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -60,7 +58,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A0(5, a0);
-    float b0[25] = {
+    valType b0[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
@@ -74,7 +72,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase0);
 
     // // test case 1
-    float a1[25] = {
+    valType a1[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -82,7 +80,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A1(5, a1);
-    float b1[25] = {
+    valType b1[25] = {
         0,0,2,0,0,
         0,0,0,3,0,
         0,0,0,0,4,
@@ -97,7 +95,7 @@ int main(int argc, char **argv) {
 
 
     // test case 2
-    float a2[25] = {
+    valType a2[25] = {
         0,0,0,0,0,
         0,0,0,0,0,
         1,0,0,0,0,
@@ -105,7 +103,7 @@ int main(int argc, char **argv) {
         0,0,1,0,0,
     };
     denseMatrix A2(5, a2);
-    float b2[25] = {
+    valType b2[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
@@ -120,7 +118,7 @@ int main(int argc, char **argv) {
 
 
     // test case 3
-    float a3[25] = {
+    valType a3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,1,0,0,0,
@@ -128,7 +126,7 @@ int main(int argc, char **argv) {
         0,0,0,1,0,
     };
     denseMatrix A3(5, a3);
-    float b3[25] = {
+    valType b3[25] = {
         0,0,0,0,0,
         1,0,0,0,0,
         0,2,0,0,0,
@@ -144,7 +142,7 @@ int main(int argc, char **argv) {
 
 
     // test case 4
-    float a4[25] = {
+    valType a4[25] = {
         0,0,1,0,0,
         0,0,0,1,0,
         0,0,0,0,1,
@@ -152,7 +150,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,
     };
     denseMatrix A4(5, a4);
-    float b4[25] = {
+    valType b4[25] = {
         2,0,0,0,0,
         0,3,0,0,0,
         0,0,4,0,0,
@@ -167,7 +165,7 @@ int main(int argc, char **argv) {
 
 
     // test case 5 - GHZ 3 qubit unitary simulation
-    float a5[64] = {
+    valType a5[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -178,7 +176,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
     };
     denseMatrix A5(8, a5);
-    float b5[64] = {
+    valType b5[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,
@@ -196,7 +194,7 @@ int main(int argc, char **argv) {
 
 
     // test case 6
-    float a6[64] = {
+    valType a6[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -207,7 +205,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A6(8, a6);
-    float b6[64] = {
+    valType b6[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -225,7 +223,7 @@ int main(int argc, char **argv) {
 
 
     // test case 7
-    float a7[64] = {
+    valType a7[64] = {
         0,0,2,0,0,0,0,0,
         0,0,0,3,0,0,0,0,
         0,0,0,0,4,0,0,0,
@@ -236,7 +234,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A7(8, a7);
-    float b7[64] = {
+    valType b7[64] = {
         0,0,0,0,8,0,0,0,
         0,0,0,0,0,9,0,0,
         0,0,0,0,0,0,10,0,
@@ -254,7 +252,7 @@ int main(int argc, char **argv) {
 
 
     // test case 8
-    float a8[64] = {
+    valType a8[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         2,0,0,0,0,0,0,0,
@@ -265,7 +263,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,7,0,0,
     };
     denseMatrix A8(8, a8);
-    float b8[64] = {
+    valType b8[64] = {
         8,0,0,0,0,0,0,0,
         0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,
@@ -282,7 +280,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase8);
 
     // test case 9
-    float a9[64] = {
+    valType a9[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -293,7 +291,7 @@ int main(int argc, char **argv) {
         0,0,0,4,0,0,0,0,
     };
     denseMatrix A9(8, a9);
-    float b9[64] = {
+    valType b9[64] = {
         0,0,5,0,0,0,0,0,
         0,0,0,6,0,0,0,0,
         0,0,0,0,7,0,0,0,
@@ -311,7 +309,7 @@ int main(int argc, char **argv) {
 
 
     // test case 10
-    float a10[64] = {
+    valType a10[64] = {
         0,0,1,0,0,0,0,0,
         0,0,0,2,0,0,0,0,
         0,0,0,0,3,0,0,0,
@@ -322,7 +320,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A10(8, a10);
-    float b10[64] = {
+    valType b10[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -340,7 +338,7 @@ int main(int argc, char **argv) {
 
 
     // test case 11
-    float a11[64] = {
+    valType a11[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,
@@ -351,7 +349,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,8,
     };
     denseMatrix A11(8, a11);
-    float b11[64] = {
+    valType b11[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -369,7 +367,7 @@ int main(int argc, char **argv) {
 
 
     // test case 12
-    float a12[64] = {
+    valType a12[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -380,7 +378,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,1,0,0,
     };
     denseMatrix A12(8, a12);
-    float b12[64] = {
+    valType b12[64] = {
         1,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -398,7 +396,7 @@ int main(int argc, char **argv) {
 
 
     // test case 13
-    float a13[64] = {
+    valType a13[64] = {
         0,0,1,0,0,0,0,0,
         0,0,0,2,0,0,0,0,
         0,0,0,0,3,0,0,0,
@@ -409,7 +407,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A13(8, a13);
-    float b13[64] = {
+    valType b13[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         7,0,0,0,0,0,0,0,
@@ -427,7 +425,7 @@ int main(int argc, char **argv) {
 
 
     // test case 14
-    float a14[256] = {
+    valType a14[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,
@@ -446,7 +444,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,
     };
     denseMatrix A14(16, a14);
-    float b14[256] = {
+    valType b14[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -471,7 +469,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase14);
 
     // test case 15
-    float a15[256] = {
+    valType a15[256] = {
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -490,7 +488,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,
     };
     denseMatrix A15(16, a15);
-    float b15[256] = {
+    valType b15[256] = {
         0,0,17,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,19,0,0,0,0,0,0,0,0,0,0,0,
@@ -515,7 +513,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase15);
 
     // test case 16
-    float a16[256] = {
+    valType a16[256] = {
         0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,
@@ -534,7 +532,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
     denseMatrix A16(16, a16);
-    float b16[256] = {
+    valType b16[256] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -560,7 +558,7 @@ int main(int argc, char **argv) {
 
 
     // test case 17
-    float a17[64] = {
+    valType a17[64] = {
         1,0,0,0,0,0,0,0,
         0,1,0,0,0,0,0,0,
         0,0,1,0,0,0,0,0,
@@ -571,7 +569,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,1,0,
     };
     denseMatrix A17(8, a17);
-    float b17[64] = {
+    valType b17[64] = {
         2,3,0,0,0,0,0,0,
         0,0,0,0,0,0,3,2,
         0,0,2,3,0,0,0,0,
@@ -588,7 +586,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase17);
 
     // test case 18
-    float a18[64] = {
+    valType a18[64] = {
         0,0,0,0,0,0,0,0,
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
@@ -599,7 +597,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,7,0,
     };
     denseMatrix A18(8, a18);
-    float b18[64] = {
+    valType b18[64] = {
         0,0,0,0,0,0,8,0,
         0,0,0,0,0,0,0,9,
         0,0,0,0,0,0,0,0,
@@ -616,7 +614,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase18);
 
     // test case 19
-    float a19[64] = {
+    valType a19[64] = {
         0,0,0,0,1,0,0,0,
         0,0,0,0,0,2,0,0,
         0,0,0,0,0,0,3,0,
@@ -627,7 +625,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,0,0,
     };
     denseMatrix A19(8, a19);
-    float b19[64] = {
+    valType b19[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -644,7 +642,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase19);
 
     // test case 20
-    float a20[64] = {
+    valType a20[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -655,7 +653,7 @@ int main(int argc, char **argv) {
         1,0,0,0,0,0,0,0,
     };
     denseMatrix A20(8, a20);
-    float b20[64] = {
+    valType b20[64] = {
         9,0,0,0,0,0,0,0,
         0,10,0,0,0,0,0,0,
         0,0,11,0,0,0,0,0,
@@ -672,7 +670,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase20);
 
     // test case 21
-    float a21[64] = {
+    valType a21[64] = {
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,
@@ -683,7 +681,7 @@ int main(int argc, char **argv) {
         0,0,0,4,0,0,0,0,
     };
     denseMatrix A21(8, a21);
-    float b21[64] = {
+    valType b21[64] = {
         0,0,0,0,5,0,0,0,
         0,0,0,0,0,6,0,0,
         0,0,0,0,0,0,7,0,
@@ -700,7 +698,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase21);
 
     // test case 22
-    float a22[64] = {
+    valType a22[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,3,0,0,0,0,0,
@@ -711,7 +709,7 @@ int main(int argc, char **argv) {
         0,0,0,0,0,0,8,0,
     };
     denseMatrix A22(8, a22);
-    float b22[64] = {
+    valType b22[64] = {
         9,10,0,0,0,0,0,0,
         0,0,0,0,0,0,11,12,
         0,0,13,14,0,0,0,0,
@@ -728,7 +726,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase22);
 
     // test case 23
-    float a23[64] = {
+    valType a23[64] = {
         1,0,0,0,0,0,0,0,
         0,2,0,0,0,0,0,0,
         0,0,0,0,0,0,3,0,
@@ -739,7 +737,7 @@ int main(int argc, char **argv) {
         0,0,0,8,0,0,0,0,
     };
     denseMatrix A23(8, a23);
-    float b23[64] = {
+    valType b23[64] = {
         9,10,0,0,0,0,0,0,
         0,0,0,0,0,0,11,12,
         0,0,0,0,0,0,13,14,
@@ -757,14 +755,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA24{3, 6};
-    float a24[18] = {
+    valType a24[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18,
     };
     denseMatrix A24(&shapeA24, a24);
     std::vector<long int> shapeB24{6, 2};
-    float b24[12] = {
+    valType b24[12] = {
         1,2,
         3,4,
         5,6,
@@ -780,14 +778,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA25{3, 6};
-    float a25[18] = {
-        1,2,3,4,6,7,
-        8,9,10,11,12,13,
-        14,15,16,17,18,19,
+    valType a25[18] = {
+        1,2,3,4,5,6,
+        7,8,9,10,11,12,
+        13,14,15,16,17,18
     };
     denseMatrix A25(&shapeA25, a25);
     std::vector<long int> shapeB25{6,4};
-    float b25[24] = {
+    valType b25[24] = {
         20,21,22,23,
         24,25,26,27,
         28,29,30,31,
@@ -804,14 +802,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA26{3, 6};
-    float a26[18] = {
+    valType a26[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A26(&shapeA26, a26);
     std::vector<long int> shapeB26{6,4};
-    float b26[24] = {
+    valType b26[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -828,14 +826,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA27{3, 6};
-    float a27[18] = {
+    valType a27[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A27(&shapeA27, a27);
     std::vector<long int> shapeB27{6,4};
-    float b27[24] = {
+    valType b27[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -851,14 +849,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA28{3, 6};
-    float a28[18] = {
+    valType a28[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     denseMatrix A28(&shapeA28, a28);
     std::vector<long int> shapeB28{6,4};
-    float b28[24] = {
+    valType b28[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -875,14 +873,14 @@ int main(int argc, char **argv) {
 
         // -----------------------------------------
     std::vector<long int> shapeA29{3, 6};
-    float a29[18] = {
+    valType a29[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A29(&shapeA29, a29);
     std::vector<long int> shapeB29{6,4};
-    float b29[24] = {
+    valType b29[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -899,14 +897,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA30{3, 6};
-    float a30[18] = {
+    valType a30[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A30(&shapeA30, a30);
     std::vector<long int> shapeB30{6,4};
-    float b30[24] = {
+    valType b30[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -922,14 +920,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA31{3, 6};
-    float a31[18] = {
+    valType a31[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     denseMatrix A31(&shapeA31, a31);
     std::vector<long int> shapeB31{6,4};
-    float b31[24] = {
+    valType b31[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -946,14 +944,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA32{3, 6};
-    float a32[18] = {
+    valType a32[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A32(&shapeA32, a32);
     std::vector<long int> shapeB32{6,4};
-    float b32[24] = {
+    valType b32[24] = {
         0,4,0,0,
         0,0,5,0,
         0,0,0,6,
@@ -970,14 +968,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA33{3, 6};
-    float a33[18] = {
+    valType a33[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A33(&shapeA33, a33);
     std::vector<long int> shapeB33{6,4};
-    float b33[24] = {
+    valType b33[24] = {
         0,0,0,0,
         0,0,0,0,
         4,0,0,0,
@@ -993,14 +991,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA34{3, 6};
-    float a34[18] = {
+    valType a34[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     denseMatrix A34(&shapeA34, a34);
     std::vector<long int> shapeB34{6,4};
-    float b34[24] = {
+    valType b34[24] = {
         4,0,0,0,
         0,5,0,0,
         0,0,6,0,
@@ -1016,14 +1014,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA35{3, 6};
-    float a35[18] = {
+    valType a35[18] = {
         0,0,0,0,5,0,
         0,0,0,0,0,6,
         0,0,0,0,0,0,
     };
     denseMatrix A35(&shapeA35, a35);
     std::vector<long int> shapeB35{6, 2};
-    float b35[12] = {
+    valType b35[12] = {
         0,0,
         0,0,
         0,0,
@@ -1040,14 +1038,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA36{3, 6};
-    float a36[18] = {
+    valType a36[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         5,0,0,0,0,0,
     };
     denseMatrix A36(&shapeA36, a36);
     std::vector<long int> shapeB36{6,4};
-    float b36[24] = {
+    valType b36[24] = {
         0,0,0,10,
         0,0,0,0,
         0,0,0,0,
@@ -1064,14 +1062,14 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA37{3, 6};
-    float a37[18] = {
+    valType a37[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         1,0,0,0,0,0,
     };
     denseMatrix A37(&shapeA37, a37);
     std::vector<long int> shapeB37{6,2};
-    float b37[12] = {
+    valType b37[12] = {
         0,2,
         0,0,
         0,0,
@@ -1087,7 +1085,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA38{16, 4};
-    float a38[64] = {
+    valType a38[64] = {
         8,0,0,0,
         0,0,0,0,
         0,9,0,0,
@@ -1107,7 +1105,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A38(&shapeA38, a38);
     std::vector<long int> shapeB38{4,16};
-    float b38[64] = {
+    valType b38[64] = {
         8,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,12,0,0,0,0,0,0,0,0,13,0,0,
@@ -1121,7 +1119,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA39{16, 4};
-    float a39[64] = {
+    valType a39[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1141,7 +1139,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A39(&shapeA39, a39);
     std::vector<long int> shapeB39{4,16};
-    float b39[64] = {
+    valType b39[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1156,7 +1154,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA40{16, 4};
-    float a40[64] = {
+    valType a40[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1176,7 +1174,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A40(&shapeA40, a40);
     std::vector<long int> shapeB40{4,16};
-    float b40[64] = {
+    valType b40[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1191,7 +1189,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA41{16, 4};
-    float a41[64] = {
+    valType a41[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1211,7 +1209,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A41(&shapeA41, a41);
     std::vector<long int> shapeB41{4,16};
-    float b41[64] = {
+    valType b41[64] = {
         8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1225,7 +1223,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA42{16, 4};
-    float a42[64] = {
+    valType a42[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1245,7 +1243,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A42(&shapeA42, a42);
     std::vector<long int> shapeB42{4,16};
-    float b42[64] = {
+    valType b42[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1259,7 +1257,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA43{16, 4};
-    float a43[64] = {
+    valType a43[64] = {
         0,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1279,7 +1277,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A43(&shapeA43, a43);
     std::vector<long int> shapeB43{4,16};
-    float b43[64] = {
+    valType b43[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,13,0,0,
@@ -1293,7 +1291,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA44{16, 4};
-    float a44[64] = {
+    valType a44[64] = {
         0,0,0,0,
         0,0,0,0,
         0,9,0,0,
@@ -1313,7 +1311,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A44(&shapeA44, a44);
     std::vector<long int> shapeB44{4,16};
-    float b44[64] = {
+    valType b44[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1327,7 +1325,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA45{16, 4};
-    float a45[64] = {
+    valType a45[64] = {
         8,0,0,0,
         0,0,0,0,
         0,0,0,0,
@@ -1347,7 +1345,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A45(&shapeA45, a45);
     std::vector<long int> shapeB45{4,16};
-    float b45[64] = {
+    valType b45[64] = {
         0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1361,7 +1359,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA46{32, 2};
-    float a46[64] = {
+    valType a46[64] = {
         1,0,
         0,0,
         0,0,
@@ -1397,7 +1395,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A46(&shapeA46, a46);
     std::vector<long int> shapeB46{2,8};
-    float b46[64] = {
+    valType b46[64] = {
         1,0,0,1,0,0,0,0,
         0,0,0,0,0,1,1,0,
     };
@@ -1410,7 +1408,7 @@ int main(int argc, char **argv) {
 
     // -----------------------------------------
     std::vector<long int> shapeA47{8, 2};
-    float a47[16] = {
+    valType a47[16] = {
         0.707107,0,
         0,0,
         0,0.707107,
@@ -1422,7 +1420,7 @@ int main(int argc, char **argv) {
     };
     denseMatrix A47(&shapeA47, a47);
     std::vector<long int> shapeB47{2,2};
-    float b47[4] = {
+    valType b47[4] = {
         0.707107,0,
         0,-0.707107,
     };
@@ -1431,6 +1429,29 @@ int main(int argc, char **argv) {
     testCase47.push_back(A47);
     testCase47.push_back(B47);
     testCases.push_back(testCase47);
+
+    // -----------------------------------------
+    std::vector<long int> shapeA48{4, 5};
+    valType a48[20] = {
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20,
+    };
+    denseMatrix A48(&shapeA48, a48);
+    std::vector<long int> shapeB48{5, 3};
+    valType b48[15] = {
+        1, 6, 11,
+        2, 7, 12,
+        3, 8, 13,
+        4, 9, 14,
+        5, 10, 15,
+    };
+    denseMatrix B48(&shapeB48, b48);
+    std::vector<denseMatrix> testCase48;
+    testCase48.push_back(A48);
+    testCase48.push_back(B48);
+    testCases.push_back(testCase48);
 
     if(argc == 1) {
         for(long int i = 0; i < testCases.size(); i++) {
@@ -1460,7 +1481,7 @@ int main(int argc, char **argv) {
         }
     }
     else if(strcmp(argv[1], "1") == 0) {
-        // testing tensordot operations
+        // testing reshape operations
         B8.print();
         std::cout << " -- " << std::endl;
         std::vector<long int> dims{8,8};
@@ -1471,6 +1492,8 @@ int main(int argc, char **argv) {
         std::vector<long int> new_dims{4,16};
         diaQMatrix reshaped_q_B8 = reshape(q_B8, new_dims);
         reshaped_q_B8.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "2") == 0) {
@@ -1489,6 +1512,8 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Matrix Transpose Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "3") == 0) {
@@ -1512,6 +1537,9 @@ int main(int argc, char **argv) {
         std::cout << "tensor position - " << ten_pos[0] << "," << ten_pos[1] << "," << ten_pos[2] << std::endl;
 
         std::cout << "reading element from dense version: " << A24.getItem(ten_pos) << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << " -- getMatrixPosition and getTensorPosition Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "4") == 0) {
         // testing tensor transposition operation
@@ -1548,6 +1576,9 @@ int main(int argc, char **argv) {
         res.print();
         std::cout << " -- " << std::endl;
         res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensor Transpose Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "5") == 0) {
         // testing operator overloading
@@ -1576,6 +1607,184 @@ int main(int argc, char **argv) {
         std::cout << " -- qp -- " << std::endl;
         std::string check = checkResult(dp, qp);
         std::cout << " = " << check << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Operator * Overloading Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "6") == 0) {
+        // testing flatten operation
+        std::cout << " --example1-- " << std::endl;
+        A24.print();
+        std::cout << " -- " << std::endl;
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(A24.matrix_shape);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+        std::vector<std::complex<valType>> values = q_A24.flatten();
+        for (long int i = 0; i < values.size(); i++) {
+            std::cout << values[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Flatten Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "7") == 0) {
+        // tranpose using matrix.transpose instead of transpose(matrix, order)
+        diaQMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
+        q_A47.shape = std::vector<long int>{2,2,2,2};
+        q_A47.print();
+        std::cout << " -- " << std::endl;
+        diaQMatrix res = q_A47.transpose(std::vector<long int>{});
+        res.print();
+        std::cout << " -- " << std::endl;
+        res.convertToDenseMatrix(res.matrix_shape).print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Transpose Test Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "8") == 0) {
+        // testing spMV here.
+        std::cout << " --matrix-- " << std::endl;
+        A25.print();
+        std::cout << " --sparse_matrix-- " << std::endl;
+        diaQMatrix q_A25 = A25.convertToQuantumSparse(A25.matrix_shape);
+        q_A25.print();
+        std::cout << " --x-- " << std::endl;
+        vector x(A25.matrix_shape[1], 1.0);
+        for(int i = 0; i < x.num_rows(); i++) {
+            x[i] = i;
+        }
+        x.print();
+        std::cout << " --MV-- " << std::endl;
+        vector dense_y = MV(A25, x);
+        dense_y.print();
+        std::cout << " --spMV-- " << std::endl;
+        vector y = spMV(q_A25, x);
+        y.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "9") == 0) {
+        // testing tensordot operation
+        A24.shape = std::vector<long int>{3,3,2};
+        std::vector<long int> dims_A{3,6};
+        diaQMatrix q_A24 = A24.convertToQuantumSparse(dims_A);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+        B24.shape = std::vector<long int>{2,3,2};
+        std::vector<long int> dims_B{6,2};
+        diaQMatrix q_B24 = B24.convertToQuantumSparse(dims_B);
+        q_B24.print();
+        std::cout << " -- " << std::endl;
+        std::vector<long int> axes_A{2};
+        std::vector<long int> axes_B{0};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_A24, q_B24, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "10") == 0) {
+        valType first_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_first_m{4,4};
+        denseMatrix dfirst(&shape_first_m, first_m);
+        diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
+        q_first.shape = std::vector<long int>{2,2,2,2};
+        valType second_m[4] = {
+            0.707107, 0,
+            0, -0.707107,
+        };
+        std::vector<long int> shape_second_m{2,2};
+        denseMatrix dsecond(&shape_second_m, second_m);
+        diaQMatrix q_second = dsecond.convertToQuantumSparse(dsecond.matrix_shape);
+        q_second.shape = std::vector<long int>{2,2};
+        std::vector<long int> axes_A{3};
+        std::vector<long int> axes_B{0};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_first, q_second, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "11") == 0) {
+        valType first_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_first_m{4,4};
+        denseMatrix dfirst(&shape_first_m, first_m);
+        diaQMatrix q_first = dfirst.convertToQuantumSparse(dfirst.matrix_shape);
+        q_first.shape = std::vector<long int>{2,2,2,2};
+        valType second_m[16] = {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0,
+        };
+        std::vector<long int> shape_second_m{4,4};
+        denseMatrix dsecond(&shape_second_m, second_m);
+        diaQMatrix q_second = dsecond.convertToQuantumSparse(dsecond.matrix_shape);
+        q_second.shape = std::vector<long int>{2,2,2,2};
+        std::vector<long int> axes_A{2};
+        std::vector<long int> axes_B{1};
+        std::vector<std::vector<long int>> axes{axes_A, axes_B};
+        diaQMatrix res = tensordot(q_first, q_second, axes);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "12") == 0) {
+        std::cout << "Testing Format Conversion" << std::endl;
+        std::vector<std::complex<valType>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+        std::vector<long int> shape{3,3,2};
+        diaQMatrix result = from_numpy(values, shape);
+        result.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- From Numpy Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        // test case 5 - GHZ 3 qubit unitary simulation
+        std::cout << " -- Testing Multiplication --" << std::endl;
+        std::vector<std::complex<valType>> a{
+            1,0,0,0,0,0,0,0,
+            0,0,0,1,0,0,0,0,
+            0,0,1,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,
+            0,0,0,0,1,0,0,0,
+            0,0,0,0,0,0,0,1,
+            0,0,0,0,0,0,1,0,
+            0,0,0,0,0,1,0,0,
+        };
+        std::vector<long int> a_shape{8, 8};
+        std::vector<std::complex<valType>> b{
+            1,0,0,0,0,0,0,0,
+            0,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,0,
+            0,0,0,0,0,0,0,1,
+            0,0,0,0,1,0,0,0,
+            0,0,0,0,0,1,0,0,
+            0,0,1,0,0,0,0,0,
+            0,0,0,1,0,0,0,0,
+        };
+        std::vector<long int> b_shape{8, 8};
+
+        diaQMatrix A = from_numpy(a, a_shape);
+        diaQMatrix B = from_numpy(b, b_shape);
+        diaQMatrix C = A * B;
+        C.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Multiplication Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];

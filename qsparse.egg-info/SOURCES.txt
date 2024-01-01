@@ -1,9 +1,0 @@
-README.md
-setup.py
-include/pythonWrappers.cpp
-diaq.egg-info/PKG-INFO
-diaq.egg-info/SOURCES.txt
-diaq.egg-info/dependency_links.txt
-diaq.egg-info/not-zip-safe
-diaq.egg-info/requires.txt
-diaq.egg-info/top_level.txt
