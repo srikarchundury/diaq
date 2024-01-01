@@ -124,10 +124,13 @@ class diagonal {
             delete[] imagValues;
         }
     private:
-        alignas(NUM_BYTES_ALIGNED) valType* realValues; // real number array
-        // valType* realValues; // real number array
-        alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
-        // valType* imagValues; // imaginary number array
+        #if NUM_BYTES_ALIGNED == -1
+            valType* realValues; // real number array
+            valType* imagValues; // imaginary number array
+        #else
+            alignas(NUM_BYTES_ALIGNED) valType* realValues; // real number array
+            alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
+        #endif
 };
 
 #endif // DIAQ_DIAGONAL_HPP

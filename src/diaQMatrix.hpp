@@ -119,8 +119,13 @@ class diaQMatrix {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 #ifndef CUDA_ENABLED
-                    alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
-                    alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                        valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                    #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
@@ -227,8 +232,13 @@ class diaQMatrix {
                 long int dLength = cum_diagonal_lengths[i];
                 // std::cout << "dIndex = " << dIndex << " dLength = " << dLength << std::endl;
                 #ifndef CUDA_ENABLED
-                    alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-                    alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                        valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                    #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
@@ -277,16 +287,26 @@ class diaQMatrix {
             // ------------------ DEBUG ------------------
             long int p = 0;
             #ifndef CUDA_ENABLED
-                (*real_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
-                (*imag_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                #if NUM_BYTES_ALIGNED == -1
+                    (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                    (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                #else
+                    (*real_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                    (*imag_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                #endif
             #else
                 (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
                 (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
             #endif
             for (auto x : diagonalMap) {
                 #ifndef CUDA_ENABLED
-                    alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second.getRealValues();
-                    alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second.getImagValues();
+                    #if NUM_BYTES_ALIGNED == -1
+                        valType *real_vals = x.second.getRealValues();
+                        valType *imag_vals = x.second.getImagValues();
+                    #else
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second.getRealValues();
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second.getImagValues();
+                    #endif
                 #else
                     valType *real_vals = x.second.getRealValues();
                     valType *imag_vals = x.second.getImagValues();

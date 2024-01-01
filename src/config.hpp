@@ -16,8 +16,9 @@
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
 
-#define NUM_BYTES_ALIGNED 8 // set -1 for unaligned then default behavior whatever compiler does it does!
-using valType = double; // change this to change the type of the values in complex type. Only float and double are supported as of now.
+#define NUM_BYTES_ALIGNED -1 // set -1 for unaligned then default behavior whatever compiler does it does!
+using valType = float; // double has issues, working on it!! TODO
+#define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX
 
 #include "logger.hpp"
 extern Logger logger;
