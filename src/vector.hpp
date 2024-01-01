@@ -5,43 +5,45 @@
 #include <vector>
 #include <complex>
 
+#include "config.hpp"
+
 class vector {
     public:
         vector(size_t M) {
             numRows_ = M;
-            realValues_ = (float *)calloc(M, sizeof(float));
-            imagValues_ = (float *)calloc(M, sizeof(float));
+            realValues_ = (valType *)calloc(M, sizeof(valType));
+            imagValues_ = (valType *)calloc(M, sizeof(valType));
         }
-        vector(size_t M, float *realVals, float *imagVals) {
+        vector(size_t M, valType *realVals, valType *imagVals) {
             numRows_ = M;
             realValues_ = realVals;
             imagValues_ = imagVals;
         }
-        vector(size_t M, float init_real, float init_imag) {
+        vector(size_t M, valType init_real, valType init_imag) {
             numRows_ = M;
-            realValues_ = (float *)calloc(M, sizeof(float));
-            imagValues_ = (float *)calloc(M, sizeof(float));
+            realValues_ = (valType *)calloc(M, sizeof(valType));
+            imagValues_ = (valType *)calloc(M, sizeof(valType));
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = init_imag;
             }
         }
-        vector(size_t M, float init_real) {
+        vector(size_t M, valType init_real) {
             numRows_ = M;
-            realValues_ = (float *)calloc(M, sizeof(float));
-            imagValues_ = (float *)calloc(M, sizeof(float));
+            realValues_ = (valType *)calloc(M, sizeof(valType));
+            imagValues_ = (valType *)calloc(M, sizeof(valType));
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = 0.0;
             }
         }
 
-        std::complex<float> operator[](size_t i) {
-            return std::complex<float>(realValues_[i], imagValues_[i]);
+        std::complex<valType> operator[](size_t i) {
+            return std::complex<valType>(realValues_[i], imagValues_[i]);
         }
 
-        const std::complex<float> operator[](size_t i) const {
-            return std::complex<float>(realValues_[i], imagValues_[i]);
+        const std::complex<valType> operator[](size_t i) const {
+            return std::complex<valType>(realValues_[i], imagValues_[i]);
         }
 
         size_t num_rows() const {
@@ -58,18 +60,18 @@ class vector {
             std::cout << imagValues_[numRows_ - 1] << ")]" << std::endl;
         }
 
-        float *getRealValues() {
+        valType *getRealValues() {
             return realValues_;
         }
 
-        float *getImagValues() {
+        valType *getImagValues() {
             return imagValues_;
         }
 
     private:
         size_t numRows_;
-        float* realValues_;
-        float* imagValues_;
+        valType* realValues_;
+        valType* imagValues_;
 };
 
 #endif // DIAQ_VECTOR_HPP

@@ -6,7 +6,7 @@
 #include "diaQMatrix.hpp"
 #include <omp.h>
 
-std::vector<std::complex<float> > to_numpy(diaQMatrix A);
-diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape);
+std::vector<std::complex<valType> > to_numpy(diaQMatrix A);
+diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape);
 
 #endif // DIAQ_CONVERSIONS_HPP

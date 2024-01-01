@@ -5,13 +5,13 @@
 #endif
 
 denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
-    float *real_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
-    float *imag_data = (float *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(float));
+    valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
+    valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     std::map<long int, diagonal>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        float *real_vals = it->second.getRealValues();
-        float *imag_vals = it->second.getImagValues();
+        valType *real_vals = it->second.getRealValues();
+        valType *imag_vals = it->second.getImagValues();
         if (it->first == 0) {
             x = 0;
             y = 0;
@@ -68,21 +68,22 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     }
     qm.pruneMatrix();
     qm.shape = shape;
+    // this->free();
     return qm;
     #endif
 }
 
-std::vector<std::complex<float> > to_numpy(diaQMatrix A) {
+std::vector<std::complex<valType> > to_numpy(diaQMatrix A) {
     denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
     return d.getData_forPy();
 }
 
-diaQMatrix from_numpy(std::vector<std::complex<float>> vals, std::vector<long int> shape) {
+diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape) {
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
-        float *real_vals = (float *)malloc(vals.size() * sizeof(float));
-        float *imag_vals = (float *)malloc(vals.size() * sizeof(float));
+        valType *real_vals = (valType *)malloc(vals.size() * sizeof(valType));
+        valType *imag_vals = (valType *)malloc(vals.size() * sizeof(valType));
         
         #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < vals.size(); i++) {
