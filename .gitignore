@@ -8,6 +8,12 @@ analysis/*metrics*/*
 benchmarks/bench
 benchmarks/tool/*
 
+cpu_build
+gpu_build
+cpu_build_sse
+cpu_build_avx
+
+
 .vscode/*
 .DS_Store
 docs/.DS_Store
