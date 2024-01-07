@@ -8,6 +8,8 @@
 #include "vector.hpp"
 #include "config.hpp"
 
+namespace diaq {
+
 long int getDiagonalLength(long int dIndex, std::vector<long int> shape);
 diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, long int indexA, long int indexB, diagonal diagA, diagonal diagB);
 diaQMatrix product(diaQMatrix A, diaQMatrix B);
@@ -26,5 +28,7 @@ diaQMatrix operator*(const diaQMatrix &A, const diaQMatrix &B);
 diaQMatrix operator+(const diaQMatrix &A, const diaQMatrix &B);
 vector spMV(diaQMatrix A, vector x);
 vector MV(denseMatrix A, vector x);
+
+} // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_HPP

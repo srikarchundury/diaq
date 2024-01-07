@@ -7,6 +7,8 @@
 
 #include "config.hpp"
 
+namespace diaq {
+
 class vector {
     public:
         vector(size_t M) {
@@ -73,5 +75,7 @@ class vector {
         valType* realValues_;
         valType* imagValues_;
 };
+
+} // namespace diaq
 
 #endif // DIAQ_VECTOR_HPP

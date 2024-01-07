@@ -5,6 +5,8 @@
 //
 // ----------------------------------------------------------------
 
+namespace diaq {
+
 /**
  * @brief Set all elements of a given (complex) vector to 0+0i
  * 
@@ -138,3 +140,5 @@ vector &operator+=(vector &x, const vector &y) {
     return x;
 }
 vector &operator-=(const vector &x, const vector &y);
+
+} // namespace diaq

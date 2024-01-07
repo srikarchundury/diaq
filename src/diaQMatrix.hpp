@@ -11,8 +11,9 @@
 #include "config.hpp"
 
 
-class denseMatrix; // telling this class exists w/o defining it here
+namespace diaq {
 
+class denseMatrix; // telling this class exists w/o defining it here
 
 class diaQMatrix {
     public:
@@ -455,5 +456,7 @@ class diaQMatrix {
         long int size;
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
+
+} // namespace diaq
 
 #endif // DIAQ_DIAQMATRIX_HPP

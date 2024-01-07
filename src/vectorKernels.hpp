@@ -13,6 +13,8 @@
 #include "diaQMatrix.hpp"
 #include "diagonal.hpp"
 
+namespace diaq {
+
 void zeroize(vector &x);
 void unitize(vector &x);
 void randomize(vector &x, valType scale, valType mean);
@@ -26,5 +28,7 @@ vector &operator*=(vector &x, valType alpha);
 vector &operator+=(vector &x, std::complex<valType> alpha);
 vector &operator+=(vector &x, const vector &y);
 vector &operator-=(const vector &x, const vector &y);
+
+} // namespace diaq
 
 #endif // DIAQ_VECTORKERNELS_HPP

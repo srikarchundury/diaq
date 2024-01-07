@@ -4,6 +4,10 @@
 #include <thread>
 #include <iostream>
 
+#include "logger.hpp"
+
+namespace diaq {
+
 #if defined(__x86_64__) || defined(_M_X64)
 	#define NUMBER_OF_OMP_THREADS std::thread::hardware_concurrency()
 #else
@@ -20,7 +24,8 @@
 using valType = float; // double has issues, working on it!! TODO
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX
 
-#include "logger.hpp"
 extern Logger logger;
+
+} // namespace diaq
 
 #endif // DIAQ_CONFIG_HPP

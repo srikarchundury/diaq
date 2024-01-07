@@ -7,11 +7,13 @@
 #include <cassert>
 
 #include "vector.hpp"
-
-// TODO: change to .hpp and move to include/
 #include "denseMatrix.hpp"
 #include "kernels.hpp"
 
+namespace diaq {
+
 valType norm(const vector &x);
+
+} // namespace diaq
 
 #endif // DIAQ_NORMS_HPP

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+namespace diaq {
+
 #define RELEASE 0
 #define INFO 1
 #define DEBUG 2
@@ -41,5 +43,7 @@ class Logger {
 			}
 		}
 };
+
+} // namespace diaq
 
 #endif // LOGGER_HPP
