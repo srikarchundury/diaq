@@ -5,6 +5,8 @@
     #include "matrixKernels_gpu.hpp"
 #endif
 
+namespace diaq {
+
 void run_without_vectorization(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     // no vectorization
     logger.log("No vectorization");
@@ -999,11 +1001,11 @@ diaQMatrix operator+(const diaQMatrix &A, const diaQMatrix &B) {
 }
 
 diaQMatrix diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
-    return ::reshape(*this, new_tensor_shape);
+    return diaq::reshape(*this, new_tensor_shape);
 }
 
 diaQMatrix diaQMatrix::transpose(std::vector<long int> new_order) {
-    return ::transpose(*this, new_order);
+    return diaq::transpose(*this, new_order);
 }
 
 
@@ -1065,3 +1067,5 @@ vector MV(denseMatrix A, vector x) {
     }
     return y;
 }
+
+} // namespace diaq

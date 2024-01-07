@@ -1,5 +1,6 @@
 #include "conversions_gpu.hpp"
 
+namespace diaq {
 
 __global__ void convert_to_dq(
 	long int size, long int matrix_size_x, long int matrix_size_y,
@@ -218,3 +219,5 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	// d->free();
 	return diaq_res;
 }
+
+} // namespace diaq

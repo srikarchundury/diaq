@@ -9,6 +9,8 @@
 
 #include "config.hpp"
 
+namespace diaq {
+
 class diagonal {
     public:
         long int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
@@ -132,5 +134,7 @@ class diagonal {
             alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
         #endif
 };
+
+} // namespace diaq
 
 #endif // DIAQ_DIAGONAL_HPP

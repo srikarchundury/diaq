@@ -4,6 +4,8 @@
 	#include "conversions_gpu.hpp"
 #endif
 
+namespace diaq {
+
 denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
@@ -116,3 +118,5 @@ diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long 
         }
     #endif
 }
+
+} // namespace diaq

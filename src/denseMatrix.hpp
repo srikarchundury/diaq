@@ -10,6 +10,7 @@
 
 #include "diaQMatrix.hpp"
 
+namespace diaq {
 
 class denseMatrix {
     public:
@@ -170,5 +171,7 @@ class denseMatrix {
         valType *realData;
         valType *imagData;
 };
+
+} // namespace diaq
 
 #endif // DIAQ_DENSEMATRIX_HPP

@@ -1,5 +1,7 @@
 #include "matrixKernels_gpu.hpp"
 
+namespace diaq {
+
 __device__ double atomicAdddouble(double* address, double val) {
     unsigned long long int* address_as_ull = (unsigned long long int*)address;
     unsigned long long int old = *address_as_ull, assumed;
@@ -384,3 +386,5 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 
 	return *C;
 }
+
+} // namespace diaq
