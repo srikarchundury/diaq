@@ -13,6 +13,7 @@ set(SOURCES
 	${SRC_DIR}/denseMatrix.hpp
 	${SRC_DIR}/diagonal.hpp
 	${SRC_DIR}/diaQMatrix.hpp
+    ${SRC_DIR}/specialMatrices.hpp
 	${SRC_DIR}/vector.hpp
 	${SRC_DIR}/conversions.hpp
 	${SRC_DIR}/conversions.cpp

@@ -1670,7 +1670,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Transpose Test Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "8") == 0) {
+    else if(strcmp(argv[1], "spmv") == 0) {
         // testing spMV here.
         std::cout << " --matrix-- " << std::endl;
         A25.print();
@@ -1823,6 +1823,13 @@ int main(int argc, char **argv) {
         kron_test(B1, B1);
         kron_test(A2, A2);
         kron_test(A1, B1);
+    }
+    else if (strcmp(argv[1], "id") == 0 ) {
+        std::cout << " -- testing identity class -- " << std::endl;
+        diaq::identityMatrix id4((long int)4);
+        id4.print();
+        diaq::identityMatrix id2((long int)2);
+        id2.print();
     }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];

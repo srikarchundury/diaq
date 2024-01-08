@@ -485,8 +485,15 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     // #ifdef CUDA_ENABLED
     //     return product_cuda(&A, &B);
     // #else
-    // A.print();
-    // B.print();
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- product --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A.print();
+        std::cout << " --- times --- " << std::endl;
+        B.print();
+        std::cout << " --- " << std::endl;
+    }
     if(A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -568,6 +575,13 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
         std::cout << std::endl;
         std::cout << " --- " << std::endl;
 	}
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- product result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result->print();
+        std::cout << " --- " << std::endl;
+    }
     return *result;
     // #endif
 }
@@ -1013,6 +1027,15 @@ vector spMV(diaQMatrix A, vector x) {
     #ifdef CUDA_ENABLED
         return spmv_cuda(&A, &x);
     #else
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- spMV --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A.print();
+        std::cout << " --- times --- " << std::endl;
+        x.print();
+        std::cout << " --- " << std::endl;
+    }
     if(A.matrix_shape[1] != x.num_rows()) {
         throw std::invalid_argument("Not multiplyable");
     }
@@ -1039,6 +1062,13 @@ vector spMV(diaQMatrix A, vector x) {
             // std::cout << "y[" << y_idx << "] = " << c << " * x[" << x_idx << "]" << std::endl;
             // std::cout << " -- " << std::endl;
         }
+    }
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- spMV result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        y.print();
+        std::cout << " --- " << std::endl;
     }
     return y;
     #endif
@@ -1143,6 +1173,15 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // B: p x q
     // C: mp x nq
 
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- kron product --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A.print();
+        std::cout << " --- times --- " << std::endl;
+        B.print();
+    }
+
     // std::vector<long int> shape_a = A.matrix_shape;
     // std::vector<long int> shape_b = B.matrix_shape;
 
@@ -1183,7 +1222,17 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     denseMatrix denseA = A.convertToDenseMatrix(A.shape);
     denseMatrix denseB = B.convertToDenseMatrix(B.shape);
     denseMatrix denseC = dense_kron_product(denseA, denseB);
-    return denseC.convertToQuantumSparse(denseC.shape);
+    diaQMatrix res = denseC.convertToQuantumSparse(denseC.shape);
+
+    if(logger.log_level == DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        res.print();
+        std::cout << " --- " << std::endl;
+    }
+
+    return res;
 }
 
 } // namespace diaq

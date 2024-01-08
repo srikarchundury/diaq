@@ -17,6 +17,7 @@ class denseMatrix; // telling this class exists w/o defining it here
 
 class diaQMatrix {
     public:
+        long int size;
         std::vector<long int> matrix_shape; // as of now, this is always a 2 element array
         std::vector<long int> shape;
 
@@ -453,7 +454,6 @@ class diaQMatrix {
         diaQMatrix transpose(std::vector<long int> new_order);
         denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
     private:
-        long int size;
         std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
