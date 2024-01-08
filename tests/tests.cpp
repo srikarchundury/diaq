@@ -45,6 +45,34 @@ std::string checkResult(diaq::diaQMatrix A, diaq::diaQMatrix B) {
     return "true";
 }
 
+void kron_test(diaq::denseMatrix A24, diaq::denseMatrix B24) {
+        A24.print();
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix q_A24 = A24.convertToQuantumSparse(A24.matrix_shape);
+        q_A24.print();
+        std::cout << " -- " << std::endl;
+        B24.print();
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix q_B24 = B24.convertToQuantumSparse(B24.matrix_shape);
+        q_B24.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- dense kron product -- " << std::endl;
+        diaq::denseMatrix p = diaq::dense_kron_product(A24, B24);
+        p.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- correct answer -- " << std::endl;
+        diaq::diaQMatrix dp = p.convertToQuantumSparse(p.matrix_shape);
+        dp.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- sparse kron product -- " << std::endl;
+        diaq::diaQMatrix res = kron_product(q_A24, q_B24);
+        res.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Kron Product check -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << checkResult(dp, res) << std::endl;
+        std::cout << " -- " << std::endl;
+}
 
 int main(int argc, char **argv) {
     std::vector<std::vector<diaq::denseMatrix> > testCases;
@@ -1785,6 +1813,16 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         std::cout << " -- Multiplication Done -- " << std::endl;
         std::cout << " -- " << std::endl;
+    }
+    else if (strcmp(argv[1], "kron") == 0 ) {
+        // testing kron_product here
+        std::cout << " -- test -- " << std::endl;
+        kron_test(A0, A0);
+        kron_test(B0, B0);
+        kron_test(A1, A1);
+        kron_test(B1, B1);
+        kron_test(A2, A2);
+        kron_test(A1, B1);
     }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];

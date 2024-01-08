@@ -467,7 +467,7 @@ diagonal multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> s
         run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == 1
         run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-    #else
+    #elif VECTORIZATION_TYPE == -1
         run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #endif
     return res;
@@ -1066,6 +1066,124 @@ vector MV(denseMatrix A, vector x) {
         y_imag_values[i] = res_imag;
     }
     return y;
+}
+
+denseMatrix dense_kron_product(denseMatrix A, denseMatrix B) {
+    // A: m x n
+    // B: p x q
+    // C: mp x nq
+
+    std::vector<long int> shape_a = A.matrix_shape;
+    std::vector<long int> shape_b = B.matrix_shape;
+
+    // Calculate dimensions for the resulting matrix
+    std::vector<long int> d{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
+    valType *real_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
+    valType *imag_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
+    denseMatrix result(&d, real_res, imag_res);
+
+    // Iterate through the rows of matrix A
+    for (long int i = 0; i < A.matrix_shape[0]; i++) {
+
+        // Iterate through the columns of matrix A
+        for (long int j = 0; j < A.matrix_shape[1]; j++) {
+
+            // Iterate through the rows of matrix B
+            for (long int k = 0; k < B.matrix_shape[0]; k++) {
+
+                // Iterate through the columns of matrix B
+                for (long int l = 0; l < B.matrix_shape[1]; l++) {
+
+                    // Calculate the resulting indices in the new matrix
+                    long int newIndexI = i * B.matrix_shape[0] + k;
+                    long int newIndexJ = j * B.matrix_shape[1] + l;
+
+                    // Multiply the element of A by the element of B
+                    std::complex<valType> newElement = A.get(i, j) * B.get(k, l);
+
+                    // Add the resulting element to the appropriate position in the result denseMatrix
+                    result.set(newIndexI, newIndexJ, newElement);
+                }
+            }
+        }
+    }
+    return result;
+}
+
+diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, diagonal diagA, diagonal diagB) {
+    // std::cout << "multiplyEntireDiagonals called" << std::endl;
+    // diagA.print();
+    // diagB.print();
+    long int dIndexA = diagA.dIndex;
+    long int dIndexB = diagB.dIndex;
+    long int dLengthA = diagA.dLength;
+    long int dLengthB = diagB.dLength;
+    long int dLength = dLengthA * dLengthB;
+    valType *real_valsA = diagA.getRealValues();
+    valType *imag_valsA = diagA.getImagValues();
+    valType *real_valsB = diagB.getRealValues();
+    valType *imag_valsB = diagB.getImagValues();
+    valType *real_valsC = (valType *)calloc(dLength, sizeof(valType));
+    valType *imag_valsC = (valType *)calloc(dLength, sizeof(valType));
+    for(long int i = 0; i < dLengthA; i++) {
+        valType each_real = real_valsA[i];
+        valType each_imag = imag_valsA[i];
+        for(long int j = 0; j < dLengthB; j++) {
+            long int c_pos = i * dLengthB + j;
+            real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
+            imag_valsC[c_pos] = each_real * imag_valsB[j] + each_imag * real_valsB[j];
+        }
+    }
+    long int dIndexC = dIndexA + dIndexB;
+    return diagonal(dIndexC, dLength, real_valsC, imag_valsC);
+}
+
+diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
+    // A: m x n
+    // B: p x q
+    // C: mp x nq
+
+    // std::vector<long int> shape_a = A.matrix_shape;
+    // std::vector<long int> shape_b = B.matrix_shape;
+
+    // // Calculate dimensions for the resulting matrix
+    // std::vector<long int> d{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
+    // diaQMatrix* result = new diaQMatrix(&d);
+
+    // std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
+    // std::map<long int, diagonal> B_diagonalMap = B.getDiagonalMap();
+
+    // // Iterate through the diagonals of matrix A
+    // for (auto itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); ++itA) {
+    //     long int indexA = itA->first;
+    //     const diagonal& diagA = itA->second;
+
+    //     // Iterate through the diagonals of matrix B
+    //     for (auto itB = B_diagonalMap.begin(); itB != B_diagonalMap.end(); ++itB) {
+    //         long int indexB = itB->first;
+    //         const diagonal& diagB = itB->second;
+
+    //         // Calculate the resulting indices in the new matrix for kron product
+    //         long int newIndex = indexA + indexB;
+
+    //         // Multiply the entire diagonal of A by the entire diagonal of B
+    //         diagonal newDiag = multiplyEntireDiagonals(A.matrix_shape, B.matrix_shape, diagA, diagB);
+
+    //         // Add the resulting diagonal to the appropriate position in the result diaQMatrix
+    //         if (newDiag.dLength != 0 && !newDiag.isEmpty()) {
+    //             result->addDiagonal(newIndex, newDiag);
+    //         }
+    //     }
+    // }
+
+    // result->pruneMatrix(); // Prune the resulting matrix if necessary
+    // return *result;
+
+    // for now let's just convert to dense, do the kron product and convert back to diaq
+    denseMatrix denseA = A.convertToDenseMatrix(A.shape);
+    denseMatrix denseB = B.convertToDenseMatrix(B.shape);
+    denseMatrix denseC = dense_kron_product(denseA, denseB);
+    return denseC.convertToQuantumSparse(denseC.shape);
 }
 
 } // namespace diaq

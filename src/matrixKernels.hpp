@@ -29,6 +29,9 @@ diaQMatrix operator+(const diaQMatrix &A, const diaQMatrix &B);
 vector spMV(diaQMatrix A, vector x);
 vector MV(denseMatrix A, vector x);
 
+denseMatrix dense_kron_product(denseMatrix A, denseMatrix B);
+diaQMatrix kron_product(diaQMatrix A, diaQMatrix B);
+
 } // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_HPP
