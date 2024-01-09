@@ -17,6 +17,15 @@ class denseMatrix {
         std::vector<long int> matrix_shape;
         std::vector<long int> shape;
         long int size;
+        denseMatrix(const long int s) {
+            size = s*s;
+            realData = (valType *)calloc(size, sizeof(valType));
+            imagData = (valType *)calloc(size, sizeof(valType));
+            matrix_shape.push_back(s);
+            matrix_shape.push_back(s);
+            shape.push_back(s);
+            shape.push_back(s);
+        } 
         denseMatrix(const long int s, valType *real_data) {
             size = s*s;
             realData = real_data;

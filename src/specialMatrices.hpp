@@ -19,6 +19,28 @@ class identityMatrix : public diaQMatrix {
 		}
 };
 
+class permutationMatrix : public diaQMatrix {
+	public:
+		permutationMatrix(long int s, std::vector<long int> row_order) : diaQMatrix(s) {
+			valType *real_ones = (valType *)calloc(s * s, sizeof(valType));
+			for(long int i = 0 ; i < s; i++) {
+				for(long int j = 0; j < s; j++) {
+					if(j == row_order[i]) {
+						real_ones[i * s + j] = 1;
+					} else {
+						real_ones[i * s + j] = 0;
+					}
+				}
+			}
+			denseMatrix d(s, real_ones);
+			diaQMatrix qs = d.convertToQuantumSparse(this->matrix_shape);
+			this->setDiagonalMap(qs.getDiagonalMap());
+			this->matrix_shape = qs.matrix_shape;
+			this->shape = qs.shape;
+			this->size = qs.size;
+		}
+};
+
 } // namespace diaq
 
 #endif // DIAQ_SPECIALMATRICES_HPP

@@ -1831,6 +1831,13 @@ int main(int argc, char **argv) {
         diaq::identityMatrix id2((long int)2);
         id2.print();
     }
+    else if (strcmp(argv[1], "permutation") == 0 ) {
+        std::cout << " -- testing permutation class -- " << std::endl;
+        std::vector<long int> row_order{1,0,2,4,3};
+        diaq::permutationMatrix perm5((long int)5, row_order);
+        perm5.print();
+        perm5.convertToDenseMatrix(perm5.matrix_shape).print();
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);
