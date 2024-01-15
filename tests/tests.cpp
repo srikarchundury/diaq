@@ -1817,12 +1817,7 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "kron") == 0 ) {
         // testing kron_product here
         std::cout << " -- test -- " << std::endl;
-        kron_test(A0, A0);
-        kron_test(B0, B0);
-        kron_test(A1, A1);
-        kron_test(B1, B1);
-        kron_test(A2, A2);
-        kron_test(A1, B1);
+        kron_test(A33, B33);
     }
     else if (strcmp(argv[1], "id") == 0 ) {
         std::cout << " -- testing identity class -- " << std::endl;

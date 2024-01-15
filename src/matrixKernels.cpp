@@ -1168,6 +1168,45 @@ diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long 
     return diagonal(dIndexC, dLength, real_valsC, imag_valsC);
 }
 
+diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatrix A) {
+    if(logger.log_level == DEEP_DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- multiply_by_scalar --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
+        std::cout << " --- times --- " << std::endl;
+        A.print();
+        std::cout << " --- " << std::endl;
+    }
+    // if(scalar_real == 0.0 && scalar_imag == 0.0) {
+    //     logger.log("diaq/multiply_by_scalar called with scalar = 0.0");
+    //     // can handle this better. TODO
+    //     return diaQMatrix((long int)0);
+    // }
+    diaQMatrix result((long int)0);
+    result.matrix_shape = A.matrix_shape;
+    result.shape = A.shape;
+    std::map<long int, diagonal> diagMap = A.getDiagonalMap();
+    std::map<long int, diagonal>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dLength = it->second.dLength;
+        valType *real_vals = it->second.getRealValues();
+        valType *imag_vals = it->second.getImagValues();
+        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for (long int i = 0; i < dLength; i++) {
+            result.setDiagonalElement(it->first, i, dLength, real_vals[i] * scalar_real, imag_vals[i] * scalar_imag);
+        }
+    }
+    if(logger.log_level == DEEP_DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- multiply_by_scalar result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result.print();
+        std::cout << " --- " << std::endl;
+    }
+    return result;
+}
+
 diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // A: m x n
     // B: p x q
@@ -1180,59 +1219,91 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
         A.print();
         std::cout << " --- times --- " << std::endl;
         B.print();
-    }
-
-    // std::vector<long int> shape_a = A.matrix_shape;
-    // std::vector<long int> shape_b = B.matrix_shape;
-
-    // // Calculate dimensions for the resulting matrix
-    // std::vector<long int> d{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
-    // diaQMatrix* result = new diaQMatrix(&d);
-
-    // std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
-    // std::map<long int, diagonal> B_diagonalMap = B.getDiagonalMap();
-
-    // // Iterate through the diagonals of matrix A
-    // for (auto itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); ++itA) {
-    //     long int indexA = itA->first;
-    //     const diagonal& diagA = itA->second;
-
-    //     // Iterate through the diagonals of matrix B
-    //     for (auto itB = B_diagonalMap.begin(); itB != B_diagonalMap.end(); ++itB) {
-    //         long int indexB = itB->first;
-    //         const diagonal& diagB = itB->second;
-
-    //         // Calculate the resulting indices in the new matrix for kron product
-    //         long int newIndex = indexA + indexB;
-
-    //         // Multiply the entire diagonal of A by the entire diagonal of B
-    //         diagonal newDiag = multiplyEntireDiagonals(A.matrix_shape, B.matrix_shape, diagA, diagB);
-
-    //         // Add the resulting diagonal to the appropriate position in the result diaQMatrix
-    //         if (newDiag.dLength != 0 && !newDiag.isEmpty()) {
-    //             result->addDiagonal(newIndex, newDiag);
-    //         }
-    //     }
-    // }
-
-    // result->pruneMatrix(); // Prune the resulting matrix if necessary
-    // return *result;
-
-    // for now let's just convert to dense, do the kron product and convert back to diaq
-    denseMatrix denseA = A.convertToDenseMatrix(A.shape);
-    denseMatrix denseB = B.convertToDenseMatrix(B.shape);
-    denseMatrix denseC = dense_kron_product(denseA, denseB);
-    diaQMatrix res = denseC.convertToQuantumSparse(denseC.shape);
-
-    if(logger.log_level == DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        res.print();
         std::cout << " --- " << std::endl;
     }
 
-    return res;
+    std::vector<long int> shape_a = A.matrix_shape;
+    std::vector<long int> shape_b = B.matrix_shape;
+
+    // map of combination of A diagonal index, A diagonal position to multiply_by_scalar matrix. The individual blocks of matrices: A11 * B, A12 * B, A21 * B, A22 * B, ...
+    std::map<std::pair<long int, long int>, diaQMatrix> kron_map;
+
+    // Calculate dimensions for the resulting matrix
+    std::vector<long int> result_shape{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
+    diaQMatrix *result = new diaQMatrix(&result_shape);
+
+    std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
+    std::map<long int, diagonal>::iterator itA;
+
+    // for each element in A, do multiply_by_scalar with B and add to kron_list.
+    for (itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); itA++) {
+        long int diagonal_index = itA->first;
+        diagonal *diag = &(itA->second);
+        long int diagonal_length = diag->dLength;
+        for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
+            diaQMatrix kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+            std::vector<long int> A_pos = A.getMatrixPosition(diagonal_index, diagonal_position);
+            std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
+            kron_map.insert(std::pair<std::pair<long int, long int>, diaQMatrix>(key, kron_block));
+        }
+    }
+    if(logger.log_level == DEEP_DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
+        std::cout << " --- " << std::endl;
+    }
+
+    // traverse kron_map and add to result.
+    std::map<std::pair<long int, long int>, diaQMatrix>::iterator it;
+    for (it = kron_map.begin(); it != kron_map.end(); it++) {
+        // for each element in A
+        std::vector<long int> A_mat_pos{it->first.first, it->first.second};
+        diaQMatrix kron_block = it->second;
+
+        // we now have to add to result's res_diag_index at res_diag_pos
+        std::map<long int, diagonal> kron_block_diagMap = kron_block.getDiagonalMap();
+        std::map<long int, diagonal>::iterator itK;
+
+        for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
+
+            long int kron_block_diag_index = itK->first;
+            diagonal kron_block_diag = itK->second;
+            long int kron_block_diag_length = kron_block_diag.dLength;
+
+            for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+                std::vector<long int> B_mat_pos = kron_block.getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                std::vector<long int> res_mat_pos{A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
+                std::vector<long int> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                if(logger.log_level == DEEP_DEBUG) {
+                    std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
+                    std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
+                    std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
+                    std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
+                }
+                result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag.getRealValue(kron_block_diag_position), kron_block_diag.getImagValue(kron_block_diag_position));
+            }
+        }
+    }
+
+    result->pruneMatrix(); // Prune the resulting matrix if necessary; we don't actually need this :thinking
+
+    // // for now let's just convert to dense, do the kron product and convert back to diaq
+    // denseMatrix denseA = A.convertToDenseMatrix(A.shape);
+    // denseMatrix denseB = B.convertToDenseMatrix(B.shape);
+    // denseMatrix denseC = dense_kron_product(denseA, denseB);
+    // diaQMatrix result = denseC.convertToQuantumSparse(denseC.shape);
+
+    if(logger.log_level == DEEP_DEBUG) {
+        std::cout << " --- " << std::endl;
+        std::cout << " --- kron result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result->print();
+        std::cout << " --- " << std::endl;
+    }
+
+    // return result;
+
+    return *result;
 }
 
 } // namespace diaq

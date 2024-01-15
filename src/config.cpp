@@ -6,6 +6,6 @@ namespace diaq {
 // #define INFO 1
 // #define DEBUG 2
 // #define DEEP_DEBUG 3
-Logger logger = Logger(DEBUG);
+Logger logger = Logger(RELEASE);
 
 } // namespace diaq
