@@ -33,44 +33,29 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     void run_avx(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final);
 
     // ------------------------AVX DOUBLE----------------------------------------
-	#include <immintrin.h>
+    #include <immintrin.h>
     __m256d avx_load_partial_double(long int n, const double *p) {
-        __m256d ymm;
-        switch (n) {
-            case 1:
-                ymm = _mm256_broadcast_sd(p);
-                break;
-            case 2:
-                ymm = _mm256_broadcast_pd((__m128d*)p);
-                break;
-            case 3:
-                ymm = _mm256_set_pd(0.0, p[2], p[1], p[0]);
-                break;
-            case 4:
-                ymm = _mm256_loadu_pd(p);
-                break;
-            case 5:
-                ymm = _mm256_insertf128_pd(_mm256_setzero_pd(), _mm_load_sd(p + 4), 1);
-                ymm = _mm256_insertf128_pd(ymm, _mm_loadu_pd(p), 0);
-                break;
-            case 6:
-                ymm = _mm256_insertf128_pd(_mm256_setzero_pd(), _mm_loadu_pd(p), 0);
-                break;
-            case 7:
-                ymm = _mm256_set_pd(0.0, p[6], p[5], p[4]);
-                ymm = _mm256_insertf128_pd(ymm, _mm_loadu_pd(p), 0);
-                break;
-            default:
-                ymm = _mm256_setzero_pd();
-        }
+        // Initialize a mask with all bits set to 1
+        __m256i mask = _mm256_set1_epi64x(-1);
+        // Create a mask based on the length 'n' of the array
+        // Set the corresponding bits to 0 for elements beyond the array length
+        mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(n), _mm256_setr_epi64x(0, 1, 2, 3));
+
+        // Load the array elements into the YMM register using the mask
+        __m256d ymm = _mm256_maskload_pd(p, mask);
         return ymm;
     }
-	void avx_store_partial_double(long int n, double *loc, __m256d vec) {
-		#pragma unroll
-		for(long int i = 0; i < n; i++) {
-			loc[i] = vec[i];
-		}
-	}
+
+    void avx_store_partial_double(long int n, double *loc, __m256d vec) {
+        // Initialize a mask with all bits set to 1
+        __m256i mask = _mm256_set1_epi64x(-1);
+        // Create a mask based on the length 'n' of the array
+        // Set the corresponding bits to 0 for elements beyond the array length
+        mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(n), _mm256_setr_epi64x(0, 1, 2, 3));
+
+        // Store the elements of the vector 'vec' into the array 'loc' using the mask
+        _mm256_maskstore_pd(loc, mask, vec);
+    }
     template<>
     void run_avx<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
         logger.log("Using AVX-Double vectorization");
@@ -113,38 +98,6 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             real_b = avx_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
             imag_b = avx_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
 
-            // if(logger.log_level == DEEP_DEBUG) {
-                std::cout << "left_overs = " << left_overs << std::endl;
-                double real_a_temp[8], imag_a_temp[8], real_b_temp[8], imag_b_temp[8];
-                for(long int i = 0; i < 8; i++) {
-                    real_a_temp[i] = real_a[i];
-                    imag_a_temp[i] = imag_a[i];
-                    real_b_temp[i] = real_b[i];
-                    imag_b_temp[i] = imag_b[i];
-                }
-                // print real_a_temp
-                std::cout << "real_a_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << real_a_temp[i] << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "imag_a_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << imag_a_temp[i] << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "real_b_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << real_b_temp[i] << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "imag_b_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << imag_b_temp[i] << " ";
-                }
-                std::cout << std::endl;
-            // }
-
             real_reala_realb = _mm256_mul_pd(real_a, real_b);
             real_imaga_imagb = _mm256_mul_pd(imag_a, imag_b);
             real_res = _mm256_sub_pd(real_reala_realb, real_imaga_imagb);
@@ -152,27 +105,6 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             imag_reala_imagb = _mm256_mul_pd(real_a, imag_b);
             imag_imaga_realb = _mm256_mul_pd(imag_a, real_b);
             imag_res = _mm256_add_pd(imag_reala_imagb, imag_imaga_realb);
-
-            // if(logger.log_level == DEEP_DEBUG) {
-                // copy over real_res over to something temporary and print it
-                double real_res_temp[8], imag_res_temp[8];
-                for(long int i = 0; i < 8; i++) {
-                    real_res_temp[i] = real_res[i];
-                    imag_res_temp[i] = imag_res[i];
-                }
-                // print real_res_temp
-                std::cout << "real_res_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << real_res_temp[i] << " ";
-                }
-                std::cout << std::endl;
-                // print imag_res_temp
-                std::cout << "imag_res_temp: ";
-                for(long int i = 0; i < 8; i++) {
-                    std::cout << imag_res_temp[i] << " ";
-                }
-                std::cout << std::endl;
-            // }
 
             avx_store_partial_double(left_overs, &real_vals_final[k], real_res);
             avx_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
@@ -233,8 +165,8 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
             imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-            avx_store_partial_float(8, &real_vals_final[k], real_res);
-            avx_store_partial_float(8, &imag_vals_final[k], imag_res);
+            _mm256_store_ps(&real_vals_final[k], real_res);
+            _mm256_store_ps(&imag_vals_final[k], imag_res);
 
             k += 8;
         }

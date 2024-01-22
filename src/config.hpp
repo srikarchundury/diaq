@@ -21,7 +21,7 @@ namespace diaq {
 // #endif
 
 #define NUM_BYTES_ALIGNED -1 // set -1 for unaligned then default behavior whatever compiler does it does!
-using valType = float; // double or float
+using valType = double; // double or float
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
 
 extern Logger logger;
