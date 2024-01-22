@@ -1194,7 +1194,7 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
         valType *imag_vals = it->second.getImagValues();
         // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < dLength; i++) {
-            result.setDiagonalElement(it->first, i, dLength, real_vals[i] * scalar_real, imag_vals[i] * scalar_imag);
+            result.setDiagonalElement(it->first, i, dLength, real_vals[i] * scalar_real - imag_vals[i] * scalar_imag, real_vals[i] * scalar_imag + imag_vals[i] * scalar_real);
         }
     }
     if(logger.log_level == DEEP_DEBUG) {
@@ -1236,6 +1236,7 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     std::map<long int, diagonal>::iterator itA;
 
     // for each element in A, do multiply_by_scalar with B and add to kron_list.
+    // paralleize this later. TODO
     for (itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); itA++) {
         long int diagonal_index = itA->first;
         diagonal *diag = &(itA->second);
@@ -1252,6 +1253,8 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
         std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
         std::cout << " --- " << std::endl;
     }
+
+    // pre-allocate resutl's diagonals and paralleize this below later,! TODO
 
     // traverse kron_map and add to result.
     std::map<std::pair<long int, long int>, diaQMatrix>::iterator it;
