@@ -40,19 +40,16 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         // Create a mask based on the length 'n' of the array
         // Set the corresponding bits to 0 for elements beyond the array length
         mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(n), _mm256_setr_epi64x(0, 1, 2, 3));
-
         // Load the array elements into the YMM register using the mask
         __m256d ymm = _mm256_maskload_pd(p, mask);
         return ymm;
     }
-
     void avx_store_partial_double(long int n, double *loc, __m256d vec) {
         // Initialize a mask with all bits set to 1
         __m256i mask = _mm256_set1_epi64x(-1);
         // Create a mask based on the length 'n' of the array
         // Set the corresponding bits to 0 for elements beyond the array length
         mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(n), _mm256_setr_epi64x(0, 1, 2, 3));
-
         // Store the elements of the vector 'vec' into the array 'loc' using the mask
         _mm256_maskstore_pd(loc, mask, vec);
     }
@@ -282,39 +279,24 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 
     // ------------------------SSE Double----------------------------------------
     #include <emmintrin.h>
-    __m128d sse_load_partial_double(long int n, double const *p) {
-        __m128d xmm;
-        switch (n) {
-            case 1:
-                xmm = _mm_load_sd(p);
-                break;
-            case 2:
-                xmm = _mm_loadu_pd(p);
-                break;
-            case 3:
-                xmm = _mm_loadu_pd(p);
-                xmm = _mm_shuffle_pd(xmm, _mm_load_sd(p + 2), 0x3);
-                break;
-            default:
-                xmm = _mm_setzero_pd();
-        }
+    __m128d sse_load_partial_double(long int n, const double *p) {
+        // Initialize a mask with all bits set to 1
+        __m128i mask = _mm_set1_epi64x(-1);
+        // Create a mask based on the length 'n' of the array
+        // Set the corresponding bits to 0 for elements beyond the array length
+        mask = _mm_cmpgt_epi64(_mm_set1_epi64x(n), _mm_set_epi64x(0, 1));
+        // Load the array elements into the XMM register using the mask
+        __m128d xmm = _mm_maskload_pd(p, mask);
         return xmm;
     }
     void sse_store_partial_double(long int n, double *loc, __m128d vec) {
-        switch (n) {
-            case 1:
-                _mm_store_sd(loc, vec);
-                break;
-            case 2:
-                _mm_storeu_pd(loc, vec);
-                break;
-            case 3:
-                _mm_storeu_pd(loc, vec);
-                _mm_store_sd(loc + 2, _mm_unpackhi_pd(vec, vec));
-                break;
-            default:
-                break;
-        }
+        // Initialize a mask with all bits set to 1
+        __m128i mask = _mm_set1_epi64x(-1);
+        // Create a mask based on the length 'n' of the array
+        // Set the corresponding bits to 0 for elements beyond the array length
+        mask = _mm_cmpgt_epi64(_mm_set1_epi64x(n), _mm_set_epi64x(0, 1));
+        // Store the elements of the vector 'vec' into the array 'loc' using the mask
+        _mm_maskstore_pd(loc, mask, vec);
     }
     template<>
     void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
