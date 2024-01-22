@@ -27,15 +27,19 @@ std::string checkResult(diaq::diaQMatrix A, diaq::diaQMatrix B) {
         }
         if(itB->second.dLength != itA->second.dLength) { 
             // A.print();
-            // std::cout << "error with diag idx - " << itA->second.getIndex() << std::endl;
+            std::cout << "error with diag idx - " << itA->second.dIndex << std::endl;
             return "false - 3";
         }
         else {
             for(long int i = 0; i < itA->second.dLength; i++) {
                 if(itB->second.getRealValue(i) - itA->second.getRealValue(i) > epsilon) {
+                    // print where the error is
+                    std::cout << "error with diag idx and i - " << itA->second.dIndex << " " << i << std::endl;
                     return "false - 4";
                 }
                 if(itB->second.getImagValue(i) - itA->second.getImagValue(i) > epsilon) {
+                    // print where the error is
+                    std::cout << "error with diag idx and i - " << itA->second.dIndex << " " << i << std::endl;
                     return "false - 5";
                 }
             }
