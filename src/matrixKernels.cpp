@@ -919,6 +919,10 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     return res;
 }
 
+diaQMatrix transpose(diaQMatrix A) {
+    return transpose(A, std::vector<long int>());   
+}
+
 diaQMatrix tensordot(diaQMatrix A, diaQMatrix B, std::vector<std::vector<long int> > axes) {
     // std::cout << "--" << std::endl;
     // std::cout << "tensordot called for A - " << std::endl;

@@ -69,6 +69,36 @@ class diaQMatrix {
         long int getSize() {
             return size;
         }
+        valType getItem_real(long int flat_index) {
+            std::vector<long int> mat_pos = getMatrixPosition(flat_index);
+            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            if(it == diagonalMap.end()) {
+                return 0.0;
+            }
+            else {
+                return it->second.getRealValue(mat_pos[1]);
+            }
+        }
+        valType getItem_imag(long int flat_index) {
+            std::vector<long int> mat_pos = getMatrixPosition(flat_index);
+            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            if(it == diagonalMap.end()) {
+                return 0.0;
+            }
+            else {
+                return it->second.getImagValue(mat_pos[1]);
+            }
+        }
+        std::complex<valType> getItem(long int flat_index) {
+            std::vector<long int> mat_pos = getMatrixPosition(flat_index);
+            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            if(it == diagonalMap.end()) {
+                return std::complex<valType>(0.0, 0.0);
+            }
+            else {
+                return it->second.getValue(mat_pos[1]);
+            }
+        }
         std::complex<valType> getItem(std::vector<long int> ten_pos) {
             std::vector<long int> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
@@ -161,6 +191,12 @@ class diaQMatrix {
                     );
                 }
             }
+        }
+        std::vector<long int> getMatrixPosition(long int flat_index) {
+            std::vector<long int> mat_pos;
+            mat_pos.push_back(flat_index / matrix_shape[1]);
+            mat_pos.push_back(flat_index % matrix_shape[1]);
+            return mat_pos;
         }
         std::vector<long int> getMatrixPosition(long int diagonal_idx, long int diagonal_pos) {
             std::vector<long int> mat_pos;
@@ -348,6 +384,23 @@ class diaQMatrix {
             }
             return res;
         }
+        std::vector<long int> getDiagonalPosition(long int flatIndex) {
+            long int mat_x = flatIndex / matrix_shape[1];
+            flatIndex = flatIndex - matrix_shape[1] * mat_x;
+            long int mat_y = flatIndex % matrix_shape[1];
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
+            std::vector<long int> res;
+            // diagonal index is just j - i
+            long int d_idx = mat_y - mat_x;
+            res.push_back(d_idx);
+            // getting the position in that diagonal
+            if(d_idx <= 0) {
+                res.push_back(mat_y);
+            } else {
+                res.push_back(mat_y - d_idx);
+            }
+            return res;
+        }
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int total_elements = 1;
             for(long int i = 0;i < shape.size(); i++)
@@ -361,6 +414,7 @@ class diaQMatrix {
             }
             return flat_index;
         }
+        
         std::vector<long int> getDiagonalPosition(std::vector<long int> ten_pos) {
             // returns {diagonal_idx, position_in_this_idx}
             long int flatIndex = getFlatIndex(ten_pos);
