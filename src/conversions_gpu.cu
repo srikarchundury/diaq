@@ -120,9 +120,8 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vecto
 
 	std::unordered_map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &matrix_shape, &shape);
+	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		// TODO: This function calls .insert on a std::unordered_map and hence is thread-unsafe; need to think of a parallel insert
-		// in std::unordered_map, else replace with some other datastructure.
 		diaq_res.createDiagonal(i);
 	}
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
@@ -204,9 +203,8 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 
 	std::unordered_map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &new_shape);
+	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		// TODO: This function calls .insert on a std::unordered_map and hence is thread-unsafe; need to think of a parallel insert
-		// in std::unordered_map, else replace with some other datastructure.?
 		diaq_res.createDiagonal(i);
 	}
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)

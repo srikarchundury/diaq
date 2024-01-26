@@ -50,10 +50,8 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     // std::cout << "converting dense to sparse" << std::endl;
     std::unordered_map<long int, diagonal> diagMap;    
     diaQMatrix qm(diagMap, &new_shape);
-    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * qm.matrix_shape[0]; i < qm.matrix_shape[1]; i++) {
-        // TODO: This function calls .insert on a std::unordered_map and hence is thread-unsafe; need to think of a parallel insert
-        // in std::unordered_map, else replace with some other datastructure.
         qm.createDiagonal(i);
     }
     // #pragma omp barrier

@@ -1512,7 +1512,7 @@ int main(int argc, char **argv) {
             std::cout << " = " << check << std::endl;
         }
     }
-    else if(strcmp(argv[1], "1") == 0) {
+    else if(strcmp(argv[1], "reshape") == 0) {
         // testing reshape operations
         B8.print();
         std::cout << " -- " << std::endl;
@@ -1528,7 +1528,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "2") == 0) {
+    else if(strcmp(argv[1], "matrix_transpose") == 0) {
         // testing matrix transposition operation
         A24.print();
         std::cout << " -- " << std::endl;
@@ -1548,7 +1548,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Matrix Transpose Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "3") == 0) {
+    else if(strcmp(argv[1], "pos") == 0) {
         // testing getMatrixPosition and getTensorPosition
         A24.shape = std::vector<long int>{3,3,2};
         A24.print();
@@ -1573,7 +1573,7 @@ int main(int argc, char **argv) {
         std::cout << " -- getMatrixPosition and getTensorPosition Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "4") == 0) {
+    else if(strcmp(argv[1], "tensor_transpose") == 0) {
         // testing tensor transposition operation
         std::cout << " --example1-- " << std::endl;
         A24.print();
@@ -1612,7 +1612,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Tensor Transpose Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "5") == 0) {
+    else if(strcmp(argv[1], "operator_overloading_product") == 0) {
         // testing operator overloading
         const std::string str_i = "30";
         long int i = std::stoi(str_i);
@@ -1643,7 +1643,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Operator * Overloading Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "6") == 0) {
+    else if(strcmp(argv[1], "flatten") == 0) {
         // testing flatten operation
         std::cout << " --example1-- " << std::endl;
         A24.print();
@@ -1660,7 +1660,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Flatten Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "7") == 0) {
+    else if(strcmp(argv[1], "operator_overloading_transpose") == 0) {
         // tranpose using matrix.transpose instead of transpose(matrix, order)
         diaq::diaQMatrix q_A47 = A47.convertToQuantumSparse(A47.matrix_shape);
         q_A47.shape = std::vector<long int>{2,2,2,2};
@@ -1697,7 +1697,7 @@ int main(int argc, char **argv) {
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "9") == 0) {
+    else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24.shape = std::vector<long int>{3,3,2};
         std::vector<long int> dims_A{3,6};
@@ -1718,7 +1718,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Tensordot Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "10") == 0) {
+    else if(strcmp(argv[1], "tensordot_2") == 0) {
         diaq::valType first_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -1746,7 +1746,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Tensordot Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "11") == 0) {
+    else if(strcmp(argv[1], "tensordot_3") == 0) {
         diaq::valType first_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -1776,7 +1776,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Tensordot Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "12") == 0) {
+    else if(strcmp(argv[1], "format_conversion") == 0) {
         std::cout << "Testing Format Conversion" << std::endl;
         std::vector<std::complex<diaq::valType>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<long int> shape{3,3,2};

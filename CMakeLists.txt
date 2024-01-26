@@ -62,6 +62,14 @@ else()
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
     set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for non-CUDA sources
     set(BUILD_TYPE "cpu_build")
+
+    # option(ENABLE_GPROF "Enable gprof profiling" OFF)
+    # if(ENABLE_GPROF)
+    #     message(STATUS "gprof profiling is enabled")
+    #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    # endif()
+
 endif()
 
 # Compile the tests.cpp file

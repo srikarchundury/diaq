@@ -67,6 +67,7 @@ class denseMatrix {
         }
         std::vector<std::complex<valType> > getData_forPy() {
             std::vector<std::complex<valType> > res(size, 0);
+            #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -109,12 +110,12 @@ class denseMatrix {
         }
         void print() {
             std::cout << "matrix_shape (";
-            for(long int i = 0; i < matrix_shape.size()-1; i++) {
+            for(size_t i = 0; i < matrix_shape.size()-1; i++) {
                 std::cout << matrix_shape[i] << ",";
             }
             std::cout << matrix_shape[matrix_shape.size()-1] << ")" << std::endl;
             std::cout << "tensor_shape (";
-            for(long int i = 0; i < shape.size()-1; i++) {
+            for(size_t i = 0; i < shape.size()-1; i++) {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;

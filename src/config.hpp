@@ -8,11 +8,13 @@
 
 namespace diaq {
 
-#if defined(__x86_64__) || defined(_M_X64)
-	#define NUMBER_OF_OMP_THREADS std::thread::hardware_concurrency()
-#else
-	#define NUMBER_OF_OMP_THREADS 32
-#endif
+// #if defined(__x86_64__) || defined(_M_X64)
+// 	#define NUMBER_OF_OMP_THREADS std::thread::hardware_concurrency()
+// #else
+// 	#define NUMBER_OF_OMP_THREADS 32
+// #endif
+
+#define NUMBER_OF_OMP_THREADS 16
 
 // #if defined(__AVX__) || defined(__AVX2__)
 // 	#define NUM_BYTES_ALIGNED _mm256_get_cache_line_size()

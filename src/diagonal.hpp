@@ -38,6 +38,7 @@ class diagonal {
             imagValues = new_imagVals;
         }
         void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];
@@ -101,7 +102,7 @@ class diagonal {
             return c;
         }
         // returns the dIndex based on start coords
-        long int getDIndex(long int *coords, long int matrixSize) {
+        long int getDIndex(long int *coords) {
             if(coords[0] == 0){
                 return coords[1];
             }

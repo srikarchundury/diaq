@@ -368,7 +368,7 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	cudaFree(d_C_cum_diagonal_lengths);
 
 	// Construct back diaQMatrix C
-	C->setDiagFlatData(C_n_diags, C_diagonal_indices, C_cum_diagonal_lengths, C_num_elements, C_real_data, C_imag_data);
+	C->setDiagFlatData(C_n_diags, C_diagonal_indices, C_cum_diagonal_lengths, C_real_data, C_imag_data);
 
 	// free
 	free(A_diagonal_indices);

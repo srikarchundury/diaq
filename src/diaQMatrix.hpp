@@ -40,6 +40,7 @@ class diaQMatrix {
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, long int s) {
             std::unordered_map<long int, diagonal>::iterator it;
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -51,6 +52,7 @@ class diaQMatrix {
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d) {
             std::unordered_map<long int, diagonal>::iterator it;
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -60,6 +62,7 @@ class diaQMatrix {
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             std::unordered_map<long int, diagonal>::iterator it;
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -115,12 +118,12 @@ class diaQMatrix {
         }
         void print() {
             std::cout << "matrix_shape (";
-            for(long int i = 0; i < matrix_shape.size()-1; i++) {
+            for(size_t i = 0; i < matrix_shape.size()-1; i++) {
                 std::cout << matrix_shape[i] << ",";
             }
             std::cout << matrix_shape[matrix_shape.size()-1] << ")" << std::endl;
             std::cout << "tensor_shape (";
-            for(long int i = 0; i < shape.size()-1; i++) {
+            for(size_t i = 0; i < shape.size()-1; i++) {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
@@ -241,7 +244,7 @@ class diaQMatrix {
             }
             return ten_pos;
         }
-        void setDiagFlatData(long int n_diags, long int *diagonal_indices, long int *cum_diagonal_lengths, long int num_elements, valType *real_data, valType *imag_data) {
+        void setDiagFlatData(long int n_diags, long int *diagonal_indices, long int *cum_diagonal_lengths, valType *real_data, valType *imag_data) {
             // ------------------ DEBUG ------------------
             // std::cout << "n_diags = " << n_diags << std::endl;
             // std::cout << "num_elements = " << num_elements << std::endl;
@@ -282,6 +285,7 @@ class diaQMatrix {
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                 #endif
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for (long int j = 0; j < dLength; j++) {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
@@ -350,6 +354,7 @@ class diaQMatrix {
                     valType *real_vals = x.second.getRealValues();
                     valType *imag_vals = x.second.getImagValues();
                 #endif
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for (int i = 0; i < x.second.dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
@@ -404,12 +409,12 @@ class diaQMatrix {
         }
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int total_elements = 1;
-            for(long int i = 0;i < shape.size(); i++)
+            for(size_t i = 0;i < shape.size(); i++)
                 total_elements = total_elements * shape[i];
             long int flat_index = 0;
             long long int prod = 1;
             #pragma unroll
-            for(long int i = 0; i < shape.size() ; i++) {
+            for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
             }
@@ -478,6 +483,7 @@ class diaQMatrix {
         }
         void free() {
             std::unordered_map<long int, diagonal>::iterator it;
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.free();
             }
@@ -498,10 +504,8 @@ class diaQMatrix {
                     toDelete.push_back(it->first);
                 }
             }
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for(long int i = 0; i < toDelete.size(); i++) {
-                // TODO: again, same case as createDiagonal; .erase is thread-unsafe; makes it tough to use omp
-                // #pragma omp critical
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
             }
         }

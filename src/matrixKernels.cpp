@@ -739,7 +739,8 @@ diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape) {
     std::unordered_map<long int, diagonal> diagonalMap = A.getDiagonalMap();
     std::unordered_map<long int, diagonal>::iterator it;
 
-    // Can't parallize this currently, .insert is thread-unsafe.
+
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
         res.createDiagonal(i);
     }
@@ -1185,6 +1186,7 @@ diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long 
     for(long int i = 0; i < dLengthA; i++) {
         valType each_real = real_valsA[i];
         valType each_imag = imag_valsA[i];
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < dLengthB; j++) {
             long int c_pos = i * dLengthB + j;
             real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
@@ -1219,7 +1221,7 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
         long int dLength = it->second.dLength;
         valType *real_vals = it->second.getRealValues();
         valType *imag_vals = it->second.getImagValues();
-        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < dLength; i++) {
             result.setDiagonalElement(it->first, i, dLength, real_vals[i] * scalar_real - imag_vals[i] * scalar_imag, real_vals[i] * scalar_imag + imag_vals[i] * scalar_real);
         }
@@ -1268,12 +1270,15 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
         long int diagonal_index = itA->first;
         diagonal *diag = &(itA->second);
         long int diagonal_length = diag->dLength;
+
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             diaQMatrix kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
             std::vector<long int> A_pos = A.getMatrixPosition(diagonal_index, diagonal_position);
             std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
             kron_map.insert(std::pair<std::pair<long int, long int>, diaQMatrix>(key, kron_block));
         }
+
     }
     if(logger.log_level == DEEP_DEBUG) {
         std::cout << " --- " << std::endl;
@@ -1300,16 +1305,19 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
             diagonal kron_block_diag = itK->second;
             long int kron_block_diag_length = kron_block_diag.dLength;
 
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
                 std::vector<long int> B_mat_pos = kron_block.getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
                 std::vector<long int> res_mat_pos{A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
                 std::vector<long int> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                
                 if(logger.log_level == DEEP_DEBUG) {
                     std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
                     std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
                     std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
                     std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
                 }
+
                 result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag.getRealValue(kron_block_diag_position), kron_block_diag.getImagValue(kron_block_diag_position));
             }
         }
