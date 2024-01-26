@@ -4,7 +4,7 @@
 
 #include "../include/diaq.hpp"
 
-diaq::diaQMatrix testQuantumSparseMatrix(std::map<long int, diaq::diagonal> dm) {
+diaq::diaQMatrix testQuantumSparseMatrix(std::unordered_map<long int, diaq::diagonal> dm) {
     diaq::diaQMatrix m = diaq::diaQMatrix(dm, 6);
     m.print();
     return m;
@@ -16,9 +16,9 @@ std::string checkResult(diaq::diaQMatrix A, diaq::diaQMatrix B) {
         return "false - 1";
     }
     const diaq::valType epsilon = 0.00002;
-    std::map<long int, diaq::diagonal> dmA = A.getDiagonalMap();
-    std::map<long int, diaq::diagonal> dmB = B.getDiagonalMap();
-    std::map<long int, diaq::diagonal>::iterator itA, itB;
+    std::unordered_map<long int, diaq::diagonal> dmA = A.getDiagonalMap();
+    std::unordered_map<long int, diaq::diagonal> dmB = B.getDiagonalMap();
+    std::unordered_map<long int, diaq::diagonal>::iterator itA, itB;
     for(itA = dmA.begin(); itA != dmA.end(); itA++) {
         auto itB = dmB.find(itA->first);
         if(itB == dmB.end()) {

@@ -6,6 +6,7 @@
 #include <numeric>
 #include <omp.h>
 #include <cstddef>
+#include <unordered_map>
 
 
 #include "config.hpp"
@@ -22,7 +23,7 @@ class diaQMatrix {
         std::vector<long int> shape;
 
         diaQMatrix(long int s) {
-            std::map<long int, diagonal> d;
+            std::unordered_map<long int, diagonal> d;
             diagonalMap = d;
             size = s;
             matrix_shape.push_back(s);
@@ -31,14 +32,14 @@ class diaQMatrix {
             shape.push_back(s);
         }
         diaQMatrix(std::vector<long int> *dimens) {
-            std::map<long int, diagonal> d;
+            std::unordered_map<long int, diagonal> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
             shape = *dimens;
         }
-        diaQMatrix(std::map<long int, diagonal> dm, long int s) {
-            std::map<long int, diagonal>::iterator it;
+        diaQMatrix(std::unordered_map<long int, diagonal> dm, long int s) {
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -48,8 +49,8 @@ class diaQMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
-            std::map<long int, diagonal>::iterator it;
+        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d) {
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -57,8 +58,8 @@ class diaQMatrix {
             size = matrix_shape[0];
             shape = *d;
         }
-        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
-            std::map<long int, diagonal>::iterator it;
+        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -109,7 +110,7 @@ class diaQMatrix {
                 return it->second.getValue(d_pos[1]);
             }
         }
-        std::map<long int, diagonal> getDiagonalMap() {
+        std::unordered_map<long int, diagonal> getDiagonalMap() {
             return diagonalMap;
         }
         void print() {
@@ -123,7 +124,7 @@ class diaQMatrix {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
-            std::map<long int, diagonal>::iterator it;
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.print();
             }
@@ -143,7 +144,7 @@ class diaQMatrix {
                 return &it->second;
             }
         }
-        void setDiagonalMap(std::map<long int, diagonal> dm) {
+        void setDiagonalMap(std::unordered_map<long int, diagonal> dm) {
             diagonalMap = dm;
         }
         void setDiagonalElement(long int dIndex, long int dPos, long int dLen, valType real_val, valType imag_val) {
@@ -460,7 +461,7 @@ class diaQMatrix {
         }
         std::vector<std::complex<valType>> flatten() {
             std::vector<std::complex<valType>> res(matrix_shape[0] * matrix_shape[1] , 1);
-            std::map<long int, diagonal>::iterator it;
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 long int dIndex = it->first;
                 long int dLength = it->second.dLength;
@@ -476,14 +477,14 @@ class diaQMatrix {
             return res;
         }
         void free() {
-            std::map<long int, diagonal>::iterator it;
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.free();
             }
         }
         void pruneMatrix() {
             std::vector<long int> toDelete;
-            std::map<long int, diagonal>::iterator it;
+            std::unordered_map<long int, diagonal>::iterator it;
             for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 valType *real_vals = it->second.getRealValues();
                 valType *imag_vals = it->second.getImagValues();
@@ -508,7 +509,7 @@ class diaQMatrix {
         diaQMatrix transpose(std::vector<long int> new_order);
         denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
     private:
-        std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
+        std::unordered_map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
 } // namespace diaq

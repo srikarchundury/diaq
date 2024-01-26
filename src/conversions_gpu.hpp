@@ -7,6 +7,7 @@
 #include <complex>
 #include <cmath>
 #include <omp.h>
+#include <unordered_map>
 
 // CUDA libraries
 #include "cuda_runtime_api.h"
