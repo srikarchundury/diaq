@@ -49,6 +49,7 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
     set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for CUDA sources
     set(BUILD_TYPE "gpu_build")
 else()

@@ -37,7 +37,7 @@ class diaQMatrix {
             shape = *dimens;
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, long int s) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -48,7 +48,7 @@ class diaQMatrix {
             shape.push_back(s);
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -57,7 +57,7 @@ class diaQMatrix {
             shape = *d;
         }
         diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
             }
@@ -475,7 +475,7 @@ class diaQMatrix {
             return res;
         }
         void free() {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second.free();
             }

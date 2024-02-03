@@ -9,7 +9,7 @@ cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED env
 
 sources = ["include/pythonWrappers.cpp"]
 d_macros = [('VERSION_INFO', __version__)]
-compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "sse4.2", "-fPIC"]
+compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "-msse2", "-fPIC"]
 link_args = ['-lgomp', '-lpthread']
 cpu_lib_dirs = ["./cpu_build/lib"]
 libs = ["diaq"]
