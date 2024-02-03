@@ -6,6 +6,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 
+#include <unordered_map>
+
 #include "diaq.hpp"
 
 namespace py = pybind11;
@@ -37,9 +39,19 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<std::unordered_map<long int, diaq::diagonal>, long int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
-        .def("getItem", &diaq::diaQMatrix::getItem, py::return_value_policy::reference)
-        .def("getMatrixPosition", &diaq::diaQMatrix::getMatrixPosition, py::return_value_policy::reference)
-        .def("getDiagonalPosition", &diaq::diaQMatrix::getDiagonalPosition, py::return_value_policy::reference)
+        // -- //
+        // .def("getItem", &diaq::diaQMatrix::getItem, py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(long int)>(&diaq::diaQMatrix::getItem))
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<long int>)>(&diaq::diaQMatrix::getItem))
+        // -- //
+        // .def("getMatrixPosition", &diaq::diaQMatrix::getMatrixPosition, py::return_value_policy::reference)
+        .def("getMatrixPosition", static_cast<std::vector<long int> (diaq::diaQMatrix::*)(long int)>(&diaq::diaQMatrix::getMatrixPosition))
+        .def("getMatrixPosition", static_cast<std::vector<long int> (diaq::diaQMatrix::*)(long int, long int)>(&diaq::diaQMatrix::getMatrixPosition))
+        // -- //
+        // .def("getDiagonalPosition", &diaq::diaQMatrix::getDiagonalPosition, py::return_value_policy::reference)
+        .def("getDiagonalPosition", static_cast<std::vector<long int> (diaq::diaQMatrix::*)(long int)>(&diaq::diaQMatrix::getDiagonalPosition))
+        .def("getDiagonalPosition", static_cast<std::vector<long int> (diaq::diaQMatrix::*)(std::vector<long int>)>(&diaq::diaQMatrix::getDiagonalPosition))
+        // --- //
         .def("getSize", &diaq::diaQMatrix::getSize, py::return_value_policy::reference)
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)

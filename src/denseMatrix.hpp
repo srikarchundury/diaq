@@ -90,7 +90,7 @@ class denseMatrix {
         long int getFlatIndex(std::vector<long int> ten_pos) {
             long int flat_index = 0;
             long long int prod = 1;
-            for(long int i = 0; i < shape.size() ; i++) {
+            for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (size / prod) * ten_pos[i];
             }
@@ -130,7 +130,7 @@ class denseMatrix {
         }
         long int isPartOf(long int dIndex, long int a, long int b, long int x, long int y) {
             long int p = x - y + b - a;
-            if(dIndex >= size){
+            if(dIndex >= size) {
                 p = x + y - a - b;
             }
             return p;
