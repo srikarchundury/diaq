@@ -1331,7 +1331,7 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // denseMatrix denseC = dense_kron_product(denseA, denseB);
     // diaQMatrix result = denseC.convertToQuantumSparse(denseC.shape);
 
-    if(logger.log_level == DEEP_DEBUG) {
+    if(logger.log_level == DEBUG) {
         std::cout << " --- " << std::endl;
         std::cout << " --- kron result --- " << std::endl;
         std::cout << " --- " << std::endl;
