@@ -55,11 +55,9 @@ class vector {
         void print() {
             std::cout << "length (" << numRows_ << ") [";
             for (size_t i = 0; i < numRows_ - 1; ++i) {
-                std::cout << "(" << realValues_[i] << ",";
-                std::cout << imagValues_[i] << "), ";
+                printf("(%lf,%lf), ", realValues_[i], imagValues_[i]);
             }
-            std::cout << "(" << realValues_[numRows_ - 1] << ",";
-            std::cout << imagValues_[numRows_ - 1] << ")]" << std::endl;
+            printf("(%lf,%lf)]\n", realValues_[numRows_ - 1], imagValues_[numRows_ - 1]);
         }
 
         valType *getRealValues() {
