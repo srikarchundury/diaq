@@ -1674,7 +1674,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Transpose Test Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "spmv") == 0) {
+    else if(strcmp(argv[1], "spmv_1") == 0) {
         // testing spMV here.
         std::cout << " --matrix-- " << std::endl;
         A25.print();
@@ -1692,6 +1692,60 @@ int main(int argc, char **argv) {
         dense_y.print();
         std::cout << " --spMV-- " << std::endl;
         diaq::vector y = spMV(q_A25, x);
+        y.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "spmv_2") == 0) {
+        // matrix_shape (8,8)
+        // tensor_shape (8,8)
+        // (dIndex=-1) [(0.707107,0),(0,0),(0.707107,0),(0,0),(0.707107,0),(0,0),(0.707107,0)]
+        // (dIndex=0) [(0.707107,0),(-0.707107,0),(0.707107,0),(-0.707107,0),(0.707107,0),(-0.707107,0),(0.707107,0),(-0.707107,0)]
+        // (dIndex=1) [(0.707107,0),(0,0),(0.707107,0),(0,0),(0.707107,0),(0,0),(0.707107,0)]
+        // --- times ---
+        // length (8) [(0.279931,0.085921), (0.279931,0.085921), (0,0), (0,0), (0,0), (0,0), (0.126182,0.631137), (0.126182,0.631137)]
+        // ---
+        // ---
+        // --- spMV result ---
+        // ---
+        // length (8) [(0.395882,0.121511), (-5.55112e-17,-2.08167e-17), (0,0), (0,0), (0,0), (0,0), (0.178448,0.892563), (-5.55112e-17,0)]
+        // testing spMV here.
+        diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
+        std::vector<long int> shape_mat{8, 8};
+        diaq::valType mat_vals[64] = {
+            h_val,                h_val,                0,                0,                0,                0,                0,                0,
+
+            h_val,                -1 * h_val,                0,                0,                0,                0,                0,                0,
+            
+            0,                0,                h_val,                h_val,                0,                0,                0,                0,
+            
+            0,                0,                h_val,                -1 * h_val,                0,                0,                0,                0,
+            
+            0,                0,                0,                0,                h_val,                h_val,                0,                0,
+            
+            0,                0,                0,                0,                h_val,                -1 * h_val,                0,                0,
+            
+            0,                0,                0,                0,                0,                0,                h_val,                h_val,
+            
+            0,                0,                0,                0,                0,                0,                h_val,                -1 * h_val,
+        };
+        std::cout << " --matrix-- " << std::endl;
+        diaq::denseMatrix mat(&shape_mat, mat_vals);
+        mat.print();
+        std::cout << " --sparse_matrix-- " << std::endl;
+        diaq::diaQMatrix mat_dq = mat.convertToQuantumSparse(mat.matrix_shape);
+        mat_dq.print();
+        std::cout << " --x-- " << std::endl;
+        diaq::valType x_real_vals[8] = {0.279931, 0.279931, 0, 0, 0, 0, 0.126182, 0.126182};
+        diaq::valType x_imag_vals[8] = {0.085921, 0.085921, 0, 0, 0, 0, 0.631137, 0.631137};
+        diaq::vector x(8, x_real_vals, x_imag_vals);
+        x.print();
+        std::cout << " --MV-- " << std::endl;
+        diaq::vector dense_y = MV(mat, x);
+        dense_y.print();
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector y = spMV(mat_dq, x);
         y.print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
