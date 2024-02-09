@@ -1862,21 +1862,21 @@ int main(int argc, char **argv) {
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
         std::vector<long int> shape_mat{8, 8};
         diaq::valType mat_vals_real[64] = {
-            1,                0,                0,                0,                0,                0,                0,                0,
+            0,                1,                0,                0,                0,                0,                0,                0,
 
-            0,                0,                0,                0,                0,                1,                0,                0,
+            1,                0,                0,                0,                0,                0,                0,                0,
+            
+            0,                0,                0,                1,                0,                0,                0,                0,
             
             0,                0,                1,                0,                0,                0,                0,                0,
             
-            0,                0,                0,                0,                0,                0,                0,                1,
+            0,                0,                0,                0,                0,                1,                0,                0,
             
             0,                0,                0,                0,                1,                0,                0,                0,
             
-            0,                1,                0,                0,                0,                0,                0,                0,
+            0,                0,                0,                0,                0,                0,                0,                1,
             
             0,                0,                0,                0,                0,                0,                1,                0,
-            
-            0,                0,                0,                1,                0,                0,                0,                0,
         };
         std::cout << " --matrix-- " << std::endl;
         diaq::denseMatrix mat(&shape_mat, mat_vals_real);
@@ -1885,9 +1885,8 @@ int main(int argc, char **argv) {
         diaq::diaQMatrix mat_dq = mat.convertToQuantumSparse(mat.matrix_shape);
         mat_dq.print();
         std::cout << " --x-- " << std::endl;
-        diaq::valType x_real_vals[8] = {0.279931, 0.000000, 0.126182, 0.000000, 0.279931, 0.000000, 0.126182, 0.000000};
-        diaq::valType x_imag_vals[8] = {0.085921, 0.000000, 0.631137, 0.000000, 0.085921, 0.000000, 0.631137, 0.000000};
-        diaq::vector x(8, x_real_vals, x_imag_vals);
+        diaq::valType x_real_vals[8] = {1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
+        diaq::vector x(8, x_real_vals);
         x.print();
         std::cout << " --MV-- " << std::endl;
         diaq::vector dense_y = MV(mat, x);

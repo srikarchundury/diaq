@@ -21,6 +21,11 @@ class vector {
             realValues_ = realVals;
             imagValues_ = imagVals;
         }
+        vector(size_t M, valType *realVals) {
+            numRows_ = M;
+            realValues_ = realVals;
+            imagValues_ = (valType *)calloc(M, sizeof(valType));
+        }
         vector(size_t M, valType init_real, valType init_imag) {
             numRows_ = M;
             realValues_ = (valType *)calloc(M, sizeof(valType));
