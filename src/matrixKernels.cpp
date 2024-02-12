@@ -508,15 +508,15 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     // #ifdef CUDA_ENABLED
     //     return product_cuda(&A, &B);
     // #else
-    if(logger.log_level == DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- product --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        A.print();
-        std::cout << " --- times --- " << std::endl;
-        B.print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- product --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     A.print();
+    //     std::cout << " --- times --- " << std::endl;
+    //     B.print();
+    //     std::cout << " --- " << std::endl;
+    // }
     if(A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -598,13 +598,13 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
         std::cout << std::endl;
         std::cout << " --- " << std::endl;
 	}
-    if(logger.log_level == DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- product result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        result->print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- product result --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     result->print();
+    //     std::cout << " --- " << std::endl;
+    // }
     return *result;
     // #endif
 }
@@ -881,7 +881,7 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     std::unordered_map<long int, diagonal>::iterator it;
     std::unordered_map<long int, diagonal> diagonalMap = A.getDiagonalMap();
 
-    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
         res.createDiagonal(i);
     }
@@ -904,7 +904,7 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
 
             // modify ten_pos to perform the transposition using the new_order
             std::vector<long int> new_ten_pos(new_order.size(), 1);
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i=0; i < new_order.size(); i++) {
                 new_ten_pos[i] = ten_pos[new_order[i]];
             }
@@ -1055,15 +1055,17 @@ vector spMV(diaQMatrix A, vector x) {
     #ifdef CUDA_ENABLED
         return spmv_cuda(&A, &x);
     #else
-    if(logger.log_level == DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- spMV --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        A.print();
-        std::cout << " --- times --- " << std::endl;
-        x.print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- spMV --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     A.print();
+    //     std::cout << " --- times --- " << std::endl;
+    //     x.print();
+    //     std::cout << " --- " << std::endl;
+    // }
+    // // measure start time
+    // auto start = std::chrono::high_resolution_clock::now();
     if(A.matrix_shape[1] != x.num_rows()) {
         throw std::invalid_argument("Not multiplyable");
     }
@@ -1075,13 +1077,14 @@ vector spMV(diaQMatrix A, vector x) {
     valType *x_imag_values = x.getImagValues();
     std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
     std::unordered_map<long int, diagonal>::iterator it;
+
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second.dLength;
         valType *real_vals = it->second.getRealValues();
         valType *imag_vals = it->second.getImagValues();
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) shared(dIndex, dLength, real_vals, imag_vals, x_real_values, x_imag_values, y_real_values, y_imag_values)
-        for (long int i = 0; i < it->second.dLength; i++) {
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for (long int i = 0; i < dLength; i++) {
             // std::cout << "dIndex=" << dIndex << "; dLength=" << dLength << "; i=" << i << std::endl;
             long int x_idx = (dIndex < 0)? i : dIndex + i;
             long int y_idx = (dIndex < 0)? i - dIndex : i;
@@ -1091,13 +1094,19 @@ vector spMV(diaQMatrix A, vector x) {
             // std::cout << " -- " << std::endl;
         }
     }
-    if(logger.log_level == DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- spMV result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        y.print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- spMV result --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     y.print();
+    //     std::cout << " --- " << std::endl;
+    // }
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("SpMV took %f seconds\n", duration.count());
     return y;
     #endif
 }
@@ -1198,15 +1207,15 @@ diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long 
 }
 
 diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatrix A) {
-    if(logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- multiply_by_scalar --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
-        std::cout << " --- times --- " << std::endl;
-        A.print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- multiply_by_scalar --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
+    //     std::cout << " --- times --- " << std::endl;
+    //     A.print();
+    //     std::cout << " --- " << std::endl;
+    // }
     // if(scalar_real == 0.0 && scalar_imag == 0.0) {
     //     logger.log("diaq/multiply_by_scalar called with scalar = 0.0");
     //     // can handle this better. TODO
@@ -1218,21 +1227,29 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
     std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
     std::unordered_map<long int, diagonal>::iterator it;
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
         long int dLength = it->second.dLength;
         valType *real_vals = it->second.getRealValues();
         valType *imag_vals = it->second.getImagValues();
+        diagonal newDiag(dIndex, dLength);
+        valType *real_valsC = newDiag.getRealValues();
+        valType *imag_valsC = newDiag.getImagValues();
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < dLength; i++) {
-            result.setDiagonalElement(it->first, i, dLength, real_vals[i] * scalar_real - imag_vals[i] * scalar_imag, real_vals[i] * scalar_imag + imag_vals[i] * scalar_real);
+            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
+            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
+        // printf("printing newDiag\n");
+        // newDiag.print();
+        result.setDiagonal(dIndex, newDiag);
     }
-    if(logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- multiply_by_scalar result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        result.print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- multiply_by_scalar result --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     result.print();
+    //     std::cout << " --- " << std::endl;
+    // }
     return result;
 }
 
@@ -1241,15 +1258,18 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // B: p x q
     // C: mp x nq
 
-    if(logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- kron product --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        A.print();
-        std::cout << " --- times --- " << std::endl;
-        B.print();
-        std::cout << " --- " << std::endl;
-    }
+    // measure start time
+    // auto start = std::chrono::high_resolution_clock::now();
+
+    // if(logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- kron product --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     A.print();
+    //     std::cout << " --- times --- " << std::endl;
+    //     B.print();
+    //     std::cout << " --- " << std::endl;
+    // }
 
     std::vector<long int> shape_a = A.matrix_shape;
     std::vector<long int> shape_b = B.matrix_shape;
@@ -1280,11 +1300,11 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
         }
 
     }
-    if(logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
+    //     std::cout << " --- " << std::endl;
+    // }
 
     // pre-allocate resutl's diagonals and paralleize this below later,! TODO
 
@@ -1307,23 +1327,24 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
 
             #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+
                 std::vector<long int> B_mat_pos = kron_block.getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
                 std::vector<long int> res_mat_pos{A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
                 std::vector<long int> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
-                
-                if(logger.log_level == DEEP_DEBUG) {
-                    std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
-                    std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
-                    std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
-                    std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
-                }
+
+                // if(logger.log_level == DEEP_DEBUG) {
+                //     std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
+                //     std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
+                //     std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
+                //     std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
+                // }
 
                 result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag.getRealValue(kron_block_diag_position), kron_block_diag.getImagValue(kron_block_diag_position));
             }
         }
     }
 
-    result->pruneMatrix(); // Prune the resulting matrix if necessary; we don't actually need this :thinking
+    // result->pruneMatrix(); // Prune the resulting matrix if necessary; we don't actually need this :thinking
 
     // // for now let's just convert to dense, do the kron product and convert back to diaq
     // denseMatrix denseA = A.convertToDenseMatrix(A.shape);
@@ -1331,16 +1352,22 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // denseMatrix denseC = dense_kron_product(denseA, denseB);
     // diaQMatrix result = denseC.convertToQuantumSparse(denseC.shape);
 
-    if(logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-        std::cout << " --- kron result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        result->print();
-        std::cout << " --- " << std::endl;
-    }
+    // if(logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+    //     std::cout << " --- kron result --- " << std::endl;
+    //     std::cout << " --- " << std::endl;
+    //     result->print();
+    //     std::cout << " --- " << std::endl;
+    // }
+
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("Kron product took %f seconds\n", duration.count());
 
     // return result;
-
     return *result;
 }
 

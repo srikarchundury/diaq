@@ -69,7 +69,16 @@ void kron_test(diaq::denseMatrix A24, diaq::denseMatrix B24) {
         dp.print();
         std::cout << " -- " << std::endl;
         std::cout << " -- sparse kron product -- " << std::endl;
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
         diaq::diaQMatrix res = kron_product(q_A24, q_B24);
+        // end timer
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate time
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        std::cout << " -- " << std::endl;
+        std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+        std::cout << " -- " << std::endl;
         res.print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Kron Product check -- " << std::endl;
