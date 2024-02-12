@@ -6,7 +6,7 @@
 #include <numeric>
 #include <omp.h>
 #include <cstddef>
-#include <unordered_map>
+
 
 #include "config.hpp"
 
@@ -21,7 +21,7 @@ class diaQMatrix {
         std::vector<long int> shape;
 
         diaQMatrix(long int s) {
-            std::unordered_map<long int, diagonal> d;
+            std::map<long int, diagonal> d;
             diagonalMap = d;
             size = s;
             matrix_shape.push_back(s);
@@ -30,13 +30,13 @@ class diaQMatrix {
             shape.push_back(s);
         }
         diaQMatrix(std::vector<long int> *dimens) {
-            std::unordered_map<long int, diagonal> d;
+            std::map<long int, diagonal> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
             shape = *dimens;
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, long int s) {
+        diaQMatrix(std::map<long int, diagonal> dm, long int s) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -47,7 +47,7 @@ class diaQMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d) {
+        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -56,7 +56,7 @@ class diaQMatrix {
             size = matrix_shape[0];
             shape = *d;
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
+        diaQMatrix(std::map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -108,7 +108,7 @@ class diaQMatrix {
                 return it->second.getValue(d_pos[1]);
             }
         }
-        std::unordered_map<long int, diagonal> getDiagonalMap() {
+        std::map<long int, diagonal> getDiagonalMap() {
             return diagonalMap;
         }
         void print() {
@@ -142,7 +142,7 @@ class diaQMatrix {
                 return &it->second;
             }
         }
-        void setDiagonalMap(std::unordered_map<long int, diagonal> dm) {
+        void setDiagonalMap(std::map<long int, diagonal> dm) {
             diagonalMap = dm;
         }
         void setDiagonalElement(long int dIndex, long int dPos, long int dLen, valType real_val, valType imag_val) {
@@ -154,8 +154,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
                     #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
                     #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
@@ -273,8 +273,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                     #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
                     #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
@@ -294,8 +294,8 @@ class diaQMatrix {
             // ------------------ DEBUG ------------------
             // std::cout << "n_diags = " << *n_diags << std::endl;
             // ------------------ DEBUG ------------------
-            (*diagonal_indices) = (long int *)malloc(*n_diags * sizeof(long int));
-            (*cum_diagonal_lengths) = (long int *)malloc(*n_diags * sizeof(long int));
+            (*diagonal_indices) = (long int *)calloc(*n_diags, sizeof(long int));
+            (*cum_diagonal_lengths) = (long int *)calloc(*n_diags, sizeof(long int));
             *num_elements = 0;
             long int k = 0;
             for (auto x : diagonalMap) {
@@ -326,15 +326,15 @@ class diaQMatrix {
             long int p = 0;
             #ifndef CUDA_ENABLED
                 #if NUM_BYTES_ALIGNED == -1
-                    (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
-                    (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                    (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
+                    (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
                 #else
-                    (*real_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
-                    (*imag_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                    (*real_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
+                    (*imag_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
                 #endif
             #else
-                (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
-                (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
+                (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
             #endif
             for (auto x : diagonalMap) {
                 #ifndef CUDA_ENABLED
@@ -505,7 +505,7 @@ class diaQMatrix {
         diaQMatrix transpose(std::vector<long int> new_order);
         denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
     private:
-        std::unordered_map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
+        std::map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
 };
 
 } // namespace diaq
