@@ -1239,7 +1239,6 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
 
         // Assuming dLength is a multiple of 4
         long int dLength_mul_4 = dLength - (dLength % 4);
-        long int dLength_left = dLength % 4;
         for (long int i = 0; i < dLength_mul_4; i += 4) {
             __m256d real_vals_vec = _mm256_loadu_pd(real_vals + i);
             __m256d imag_vals_vec = _mm256_loadu_pd(imag_vals + i);
@@ -1256,6 +1255,7 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
             _mm256_storeu_pd(imag_valsC + i, imag_valsC_vec);
         }
         // Handle dLength_left
+        #pragma unroll
         for (long int i = dLength_mul_4; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
