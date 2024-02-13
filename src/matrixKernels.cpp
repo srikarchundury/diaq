@@ -1227,7 +1227,6 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
     result.shape = A.shape;
     std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
     std::unordered_map<long int, diagonal>::iterator it;
-    #pragma omp parallel for num_threads(4)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second.dLength;
@@ -1237,29 +1236,35 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
         valType *real_valsC = newDiag.getRealValues();
         valType *imag_valsC = newDiag.getImagValues();
 
-        // Assuming dLength is a multiple of 4
-        long int dLength_mul_4 = dLength - (dLength % 4);
-        for (long int i = 0; i < dLength_mul_4; i += 4) {
-            __m256d real_vals_vec = _mm256_loadu_pd(real_vals + i);
-            __m256d imag_vals_vec = _mm256_loadu_pd(imag_vals + i);
-            __m256d scalar_real_vec = _mm256_set1_pd(scalar_real);
-            __m256d scalar_imag_vec = _mm256_set1_pd(scalar_imag);
+        #if VECTORIZATION_TYPE == 1
+            long int dLength_mul_4 = dLength - (dLength % 4);
+            for (long int i = 0; i < dLength_mul_4; i += 4) {
+                __m256d real_vals_vec = _mm256_loadu_pd(real_vals + i);
+                __m256d imag_vals_vec = _mm256_loadu_pd(imag_vals + i);
+                __m256d scalar_real_vec = _mm256_set1_pd(scalar_real);
+                __m256d scalar_imag_vec = _mm256_set1_pd(scalar_imag);
 
-            __m256d real_valsC_vec = _mm256_mul_pd(real_vals_vec, scalar_real_vec);
-            __m256d imag_valsC_vec = _mm256_mul_pd(imag_vals_vec, scalar_imag_vec);
+                __m256d real_valsC_vec = _mm256_mul_pd(real_vals_vec, scalar_real_vec);
+                __m256d imag_valsC_vec = _mm256_mul_pd(imag_vals_vec, scalar_imag_vec);
 
-            real_valsC_vec = _mm256_sub_pd(real_valsC_vec, _mm256_mul_pd(imag_vals_vec, scalar_imag_vec));
-            imag_valsC_vec = _mm256_add_pd(_mm256_mul_pd(real_vals_vec, scalar_imag_vec), imag_valsC_vec);
+                real_valsC_vec = _mm256_sub_pd(real_valsC_vec, _mm256_mul_pd(imag_vals_vec, scalar_imag_vec));
+                imag_valsC_vec = _mm256_add_pd(_mm256_mul_pd(real_vals_vec, scalar_imag_vec), imag_valsC_vec);
 
-            _mm256_storeu_pd(real_valsC + i, real_valsC_vec);
-            _mm256_storeu_pd(imag_valsC + i, imag_valsC_vec);
-        }
-        // Handle dLength_left
-        #pragma unroll
-        for (long int i = dLength_mul_4; i < dLength; i++) {
-            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
-            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
-        }
+                _mm256_storeu_pd(real_valsC + i, real_valsC_vec);
+                _mm256_storeu_pd(imag_valsC + i, imag_valsC_vec);
+            }
+            // Handle dLength_left
+            for (long int i = dLength_mul_4; i < dLength; i++) {
+                real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
+                imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+            }
+        #else
+            #pragma omp simd
+            for (long int i = 0; i < dLength; i++) {
+                real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
+                imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+            }
+        #endif
 
         // printf("printing newDiag\n");
         // newDiag.print();
