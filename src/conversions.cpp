@@ -9,7 +9,7 @@ namespace diaq {
 denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
-    std::map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         valType *real_vals = it->second.getRealValues();
@@ -48,7 +48,7 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::map<long int, diagonal> diagMap;    
+    std::unordered_map<long int, diagonal> diagMap;    
     diaQMatrix qm(diagMap, &new_shape);
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * qm.matrix_shape[0]; i < qm.matrix_shape[1]; i++) {

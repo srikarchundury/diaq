@@ -523,9 +523,9 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     std::vector<long int> d{A.matrix_shape[0], B.matrix_shape[1]};
     diaQMatrix* result = new diaQMatrix(&d);
     // diaQMatrix* resptr = &result;
-    std::map<long int, diagonal> mapA = A.getDiagonalMap();
-    std::map<long int, diagonal> mapB = B.getDiagonalMap();
-    std::map<long int, diagonal>::iterator itA, itB;
+    std::unordered_map<long int, diagonal> mapA = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal> mapB = B.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator itA, itB;
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
             // std::cout << " ------ diags ------ " << std::endl;
@@ -555,10 +555,10 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
     if (logger.log_level == DEEP_DEBUG) {
         std::cout << " --- " << std::endl;
 		// --- First matrix ---
-		std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
+		std::unordered_map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
         // get keys of A_diagonalMap
         std::vector<long int> A_keys;
-        std::map<long int, diagonal>::iterator A_it;
+        std::unordered_map<long int, diagonal>::iterator A_it;
         for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
             A_keys.push_back(A_it->first);
         }
@@ -569,10 +569,10 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
         }
         std::cout << std::endl;
 		// --- Second matrix ---
-        std::map<long int, diagonal> B_diagonalMap = B.getDiagonalMap();
+        std::unordered_map<long int, diagonal> B_diagonalMap = B.getDiagonalMap();
         // get keys of B_diagonalMap
         std::vector<long int> B_keys;
-        std::map<long int, diagonal>::iterator B_it;
+        std::unordered_map<long int, diagonal>::iterator B_it;
         for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
             B_keys.push_back(B_it->first);
         }
@@ -583,10 +583,10 @@ diaQMatrix product(diaQMatrix A, diaQMatrix B) {
         }
         std::cout << std::endl;
 		// --- Result matrix ---
-        std::map<long int, diagonal> result_diagonalMap = result->getDiagonalMap();
+        std::unordered_map<long int, diagonal> result_diagonalMap = result->getDiagonalMap();
         // get keys of result_diagonalMap
         std::vector<long int> result_keys;
-        std::map<long int, diagonal>::iterator result_it;
+        std::unordered_map<long int, diagonal>::iterator result_it;
         for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
             result_keys.push_back(result_it->first);
         }
@@ -668,9 +668,9 @@ diaQMatrix add(diaQMatrix A, diaQMatrix B) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
     diaQMatrix* result = new diaQMatrix(A.getSize());
-    std::map<long int, diagonal> mapA = A.getDiagonalMap();
-    std::map<long int, diagonal> mapB = B.getDiagonalMap();
-    std::map<long int, diagonal>::iterator itA, itB;
+    std::unordered_map<long int, diagonal> mapA = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal> mapB = B.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator itA, itB;
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         itB = mapB.find(itA->first);
         if (itB == mapB.end()) {
@@ -686,8 +686,8 @@ diaQMatrix add(diaQMatrix A, diaQMatrix B) {
 
 std::complex<valType> trace(diaQMatrix A) {
     std::complex<valType> t;
-    std::map<long int, diagonal>::iterator itA;
-    std::map<long int, diagonal> mapA = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator itA;
+    std::unordered_map<long int, diagonal> mapA = A.getDiagonalMap();
     itA = mapA.find(0);
     if(itA == mapA.end()) {
         return t;
@@ -733,11 +733,11 @@ diaQMatrix reshape(diaQMatrix A, std::vector<long int> new_tensor_shape) {
     } else {
         new_shape = new_tensor_shape;
     }
-    std::map<long int, diagonal> newDiagMap;
+    std::unordered_map<long int, diagonal> newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     diaQMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
-    std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
-    std::map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal> diagonalMap = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator it;
 
 
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
@@ -835,9 +835,9 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     // tranpose of the diagonals
     if(A.shape.size() == 2) {
         std::vector<long int> newShape{A.matrix_shape[1], A.matrix_shape[0]};
-        std::map<long int, diagonal> diagMap = A.getDiagonalMap();
-        std::map<long int, diagonal>::iterator it;
-        std::map<long int, diagonal> newDiagMap;
+        std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
+        std::unordered_map<long int, diagonal>::iterator it;
+        std::unordered_map<long int, diagonal> newDiagMap;
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
             newDiagMap.insert(std::pair<long int, diagonal>(-1 * it->first, it->second));
         }
@@ -874,12 +874,12 @@ diaQMatrix transpose(diaQMatrix A, std::vector<long int> new_order) {
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::map<long int, diagonal> newDiagMap;
+    std::unordered_map<long int, diagonal> newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     diaQMatrix res{newDiagMap, &new_shape, &new_tensor_shape};
     // iterate over all diagonals
-    std::map<long int, diagonal>::iterator it;
-    std::map<long int, diagonal> diagonalMap = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal> diagonalMap = A.getDiagonalMap();
 
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = -1 * res.matrix_shape[0]; i < res.matrix_shape[1]; i++) {
@@ -1075,8 +1075,8 @@ vector spMV(diaQMatrix A, vector x) {
 
     valType *x_real_values = x.getRealValues();
     valType *x_imag_values = x.getImagValues();
-    std::map<long int, diagonal> diagMap = A.getDiagonalMap();
-    std::map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator it;
 
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
@@ -1225,8 +1225,8 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
     diaQMatrix result((long int)0);
     result.matrix_shape = A.matrix_shape;
     result.shape = A.shape;
-    std::map<long int, diagonal> diagMap = A.getDiagonalMap();
-    std::map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal> diagMap = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator it;
     #pragma omp parallel for num_threads(4)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
@@ -1303,8 +1303,8 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     std::vector<long int> result_shape{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
     diaQMatrix *result = new diaQMatrix(&result_shape);
 
-    std::map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
-    std::map<long int, diagonal>::iterator itA;
+    std::unordered_map<long int, diagonal> A_diagonalMap = A.getDiagonalMap();
+    std::unordered_map<long int, diagonal>::iterator itA;
 
     // for each element in A, do multiply_by_scalar with B and add to kron_list.
     // paralleize this later. TODO
@@ -1339,8 +1339,8 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
         diaQMatrix kron_block = it->second;
 
         // we now have to add to result's res_diag_index at res_diag_pos
-        std::map<long int, diagonal> kron_block_diagMap = kron_block.getDiagonalMap();
-        std::map<long int, diagonal>::iterator itK;
+        std::unordered_map<long int, diagonal> kron_block_diagMap = kron_block.getDiagonalMap();
+        std::unordered_map<long int, diagonal>::iterator itK;
 
         #pragma omp parallel for num_threads(4)
         for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {

@@ -118,7 +118,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vecto
 	// std::cout << std::endl;
 	// -------------- DEBUG ---------------
 
-	std::map<long int, diagonal> diagMap;
+	std::unordered_map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &matrix_shape, &shape);
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
@@ -201,7 +201,7 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	// std::cout << std::endl;
 	// -------------- DEBUG ---------------
 
-	std::map<long int, diagonal> diagMap;
+	std::unordered_map<long int, diagonal> diagMap;
 	diaQMatrix diaq_res(diagMap, &new_shape);
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {

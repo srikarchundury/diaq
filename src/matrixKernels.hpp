@@ -2,7 +2,7 @@
 #define DIAQ_MATRIXKERNELS_HPP
 
 #include <type_traits>
-
+#include <unordered_map>
 
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
