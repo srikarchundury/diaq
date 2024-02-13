@@ -1907,6 +1907,63 @@ int main(int argc, char **argv) {
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "spmv_6") == 0) {
+        std::vector<long int> shape_mat{8, 8};
+        diaq::valType mat_vals_real[64] = {
+            -0.483542,                0,                -0.152339,                0,                0,                0,                0,                0,
+
+            0,                -0.483542,                0,                -0.152339,                0,                0,                0,                0,
+            
+            0.234435,                0,                -0.481306,                0,                0,                0,                0,                0,
+            
+            0,                0.234435,                0,                -0.481306,                0,                0,                0,                0,
+            
+            0,                0,                0,                0,                -0.483542,                0,                -0.152339,                0,
+            
+            0,                0,                0,                0,                0,                -0.483542,                0,                -0.152339,
+            
+            0,                0,                0,                0,                0.234435,                0,                -0.481306,                0,
+            
+            0,                0,                0,                0,                0,                0.234435,                0,                -0.481306,
+        };
+        diaq::valType mat_vals_imag[64] = {
+            0,                0,                0.861963,                0,                0,                0,                0,                0,
+
+            0,                0,                0,                0.861963,                0,                0,                0,                0,
+            
+            0.843343,                0,                0.0464493,                0,                0,                0,                0,                0,
+            
+            0,                0.843343,                0,                0.0464493,                0,                0,                0,                0,
+            
+            0,                0,                0,                0,                0,                0,                0.861963,                0,
+            
+            0,                0,                0,                0,                0,                0,                0,                0.861963,
+            
+            0,                0,                0,                0,                0.843343,                0,                0.0464493,                0,
+            
+            0,                0,                0,                0,                0,                0.843343,                0,                0.0464493,
+        };
+        std::cout << " --matrix-- " << std::endl;
+        diaq::denseMatrix mat(&shape_mat, mat_vals_real, mat_vals_imag);
+        mat.print();
+        std::cout << " --sparse_matrix-- " << std::endl;
+        diaq::diaQMatrix mat_dq = mat.convertToQuantumSparse(mat.matrix_shape);
+        mat_dq.print();
+        std::cout << " --x-- " << std::endl;
+        diaq::valType x_real_vals[8] = {0.603145, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
+        diaq::valType x_imag_vals[8] = {0,0,-0.797631,0,0,0,0,0};
+        diaq::vector x(8, x_real_vals, x_imag_vals);
+        x.print();
+        std::cout << " --MV-- " << std::endl;
+        diaq::vector dense_y = MV(mat, x);
+        dense_y.print();
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector y = spMV(mat_dq, x);
+        y.print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24.shape = std::vector<long int>{3,3,2};
