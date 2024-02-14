@@ -2085,10 +2085,20 @@ int main(int argc, char **argv) {
         std::cout << " -- Multiplication Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if (strcmp(argv[1], "kron") == 0 ) {
+    else if (strcmp(argv[1], "kron_1") == 0 ) {
         // testing kron_product here
         std::cout << " -- test -- " << std::endl;
         kron_test(A33, B33);
+    }
+    else if (strcmp(argv[1], "kron_2") == 0 ) {
+        // testing kron_product here
+        std::cout << " -- kron test -- " << std::endl;
+        kron_test(A4, B4);
+    }
+    else if (strcmp(argv[1], "kron_3") == 0 ) {
+        // testing kron_product here
+        std::cout << " -- kron test -- " << std::endl;
+        kron_test(A14, B14);
     }
     else if (strcmp(argv[1], "id") == 0 ) {
         std::cout << " -- testing identity class -- " << std::endl;
