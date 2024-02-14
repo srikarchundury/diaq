@@ -1177,34 +1177,34 @@ denseMatrix dense_kron_product(denseMatrix A, denseMatrix B) {
     return result;
 }
 
-diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, diagonal diagA, diagonal diagB) {
-    // std::cout << "multiplyEntireDiagonals called" << std::endl;
-    // diagA.print();
-    // diagB.print();
-    long int dIndexA = diagA.dIndex;
-    long int dIndexB = diagB.dIndex;
-    long int dLengthA = diagA.dLength;
-    long int dLengthB = diagB.dLength;
-    long int dLength = dLengthA * dLengthB;
-    valType *real_valsA = diagA.getRealValues();
-    valType *imag_valsA = diagA.getImagValues();
-    valType *real_valsB = diagB.getRealValues();
-    valType *imag_valsB = diagB.getImagValues();
-    valType *real_valsC = (valType *)calloc(dLength, sizeof(valType));
-    valType *imag_valsC = (valType *)calloc(dLength, sizeof(valType));
-    for(long int i = 0; i < dLengthA; i++) {
-        valType each_real = real_valsA[i];
-        valType each_imag = imag_valsA[i];
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int j = 0; j < dLengthB; j++) {
-            long int c_pos = i * dLengthB + j;
-            real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
-            imag_valsC[c_pos] = each_real * imag_valsB[j] + each_imag * real_valsB[j];
-        }
-    }
-    long int dIndexC = dIndexA + dIndexB;
-    return diagonal(dIndexC, dLength, real_valsC, imag_valsC);
-}
+// diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, diagonal diagA, diagonal diagB) {
+//     // std::cout << "multiplyEntireDiagonals called" << std::endl;
+//     // diagA.print();
+//     // diagB.print();
+//     long int dIndexA = diagA.dIndex;
+//     long int dIndexB = diagB.dIndex;
+//     long int dLengthA = diagA.dLength;
+//     long int dLengthB = diagB.dLength;
+//     long int dLength = dLengthA * dLengthB;
+//     valType *real_valsA = diagA.getRealValues();
+//     valType *imag_valsA = diagA.getImagValues();
+//     valType *real_valsB = diagB.getRealValues();
+//     valType *imag_valsB = diagB.getImagValues();
+//     valType *real_valsC = (valType *)calloc(dLength, sizeof(valType));
+//     valType *imag_valsC = (valType *)calloc(dLength, sizeof(valType));
+//     for(long int i = 0; i < dLengthA; i++) {
+//         valType each_real = real_valsA[i];
+//         valType each_imag = imag_valsA[i];
+//         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+//         for(long int j = 0; j < dLengthB; j++) {
+//             long int c_pos = i * dLengthB + j;
+//             real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
+//             imag_valsC[c_pos] = each_real * imag_valsB[j] + each_imag * real_valsB[j];
+//         }
+//     }
+//     long int dIndexC = dIndexA + dIndexB;
+//     return diagonal(dIndexC, dLength, real_valsC, imag_valsC);
+// }
 
 diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatrix A) {
     // if(logger.log_level == DEEP_DEBUG) {
@@ -1234,7 +1234,7 @@ diaQMatrix multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatr
         diagonal newDiag(dIndex, dLength);
         valType *real_valsC = newDiag.getRealValues();
         valType *imag_valsC = newDiag.getImagValues();
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp simd
         for (long int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
@@ -1275,7 +1275,10 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     std::vector<long int> shape_b = B.matrix_shape;
 
     // map of combination of A diagonal index, A diagonal position to multiply_by_scalar matrix. The individual blocks of matrices: A11 * B, A12 * B, A21 * B, A22 * B, ...
-    std::map<std::pair<long int, long int>, diaQMatrix> kron_map;
+    std::map<std::pair<long int, long int>, std::pair<valType, valType>> kron_map;
+
+    // map of unique A elements and their corresponding kron blocks
+    std::map<std::pair<valType, valType>, diaQMatrix> unique_kron_blocks;
 
     // Calculate dimensions for the resulting matrix
     std::vector<long int> result_shape{shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
@@ -1293,12 +1296,22 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
 
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
-            diaQMatrix kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+            // skippihg zero elements
+            if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
+                continue;
+            }
+            diaQMatrix kron_block((long int)0);
+            // dynamic programming for unique kron blocks
+            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
+                kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+                // store in unique_kron_blocks
+                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix>(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)), kron_block));
+            }
             std::vector<long int> A_pos = A.getMatrixPosition(diagonal_index, diagonal_position);
             std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
-            kron_map.insert(std::pair<std::pair<long int, long int>, diaQMatrix>(key, kron_block));
+            std::pair<valType, valType> val = std::make_pair(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
+            kron_map.insert(std::pair<std::pair<long int, long int>, std::pair<valType, valType>>(key, val));
         }
-
     }
     // if(logger.log_level == DEEP_DEBUG) {
     //     std::cout << " --- " << std::endl;
@@ -1309,11 +1322,12 @@ diaQMatrix kron_product(diaQMatrix A, diaQMatrix B) {
     // pre-allocate resutl's diagonals and paralleize this below later,! TODO
 
     // traverse kron_map and add to result.
-    std::map<std::pair<long int, long int>, diaQMatrix>::iterator it;
+    std::map<std::pair<long int, long int>, std::pair<valType, valType>>::iterator it;
     for (it = kron_map.begin(); it != kron_map.end(); it++) {
         // for each element in A
         std::vector<long int> A_mat_pos{it->first.first, it->first.second};
-        diaQMatrix kron_block = it->second;
+        // get kron_block from unique_kron_blocks
+        diaQMatrix kron_block = unique_kron_blocks.find(it->second)->second;
 
         // we now have to add to result's res_diag_index at res_diag_pos
         std::unordered_map<long int, diagonal> kron_block_diagMap = kron_block.getDiagonalMap();
