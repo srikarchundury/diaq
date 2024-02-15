@@ -1692,15 +1692,12 @@ int main(int argc, char **argv) {
         q_A25->print();
         std::cout << " --x-- " << std::endl;
         diaq::vector *x = new diaq::vector(A25->matrix_shape[1], 1.0);
-        for(int i = 0; i < x->num_rows(); i++) {
-            x[i] = i;
-        }
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(A25, x);
+        diaq::vector *dense_y = diaq::MV(A25, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(q_A25, x);
+        diaq::vector *y = diaq::spMV(q_A25, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1751,10 +1748,10 @@ int main(int argc, char **argv) {
         diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(mat, x);
+        diaq::vector *dense_y = diaq::MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(mat_dq, x);
+        diaq::vector *y = diaq::spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1809,10 +1806,10 @@ int main(int argc, char **argv) {
         diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(mat, x);
+        diaq::vector *dense_y = diaq::MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(mat_dq, x);
+        diaq::vector *y = diaq::spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1858,10 +1855,10 @@ int main(int argc, char **argv) {
         diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(mat, x);
+        diaq::vector *dense_y = diaq::MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(mat_dq, x);
+        diaq::vector *y = diaq::spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1898,10 +1895,10 @@ int main(int argc, char **argv) {
         diaq::vector *x = new diaq::vector(8, x_real_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(mat, x);
+        diaq::vector *dense_y = diaq::MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(mat_dq, x);
+        diaq::vector *y = diaq::spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1955,10 +1952,10 @@ int main(int argc, char **argv) {
         diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector *dense_y = MV(mat, x);
+        diaq::vector *dense_y = diaq::MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = spMV(mat_dq, x);
+        diaq::vector *y = diaq::spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1979,7 +1976,7 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res = tensordot(q_A24, q_B24, axes);
+        diaq::diaQMatrix *res = diaq::tensordot(q_A24, q_B24, axes);
         res->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
