@@ -21,8 +21,13 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
-            realValues = (valType *)calloc(dl, sizeof(valType));
-            imagValues = (valType *)calloc(dl, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realValues = (valType *)calloc(dl, sizeof(valType));
+                imagValues = (valType *)calloc(dl, sizeof(valType));
+            #else
+                realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
+                imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
+            #endif
         }
         diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;
@@ -127,13 +132,8 @@ class diagonal {
             delete[] imagValues;
         }
     private:
-        #if NUM_BYTES_ALIGNED == -1
-            valType* realValues; // real number array
-            valType* imagValues; // imaginary number array
-        #else
-            alignas(NUM_BYTES_ALIGNED) valType* realValues; // real number array
-            alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
-        #endif
+        valType* realValues; // real number array
+        valType* imagValues; // imaginary number array
 };
 
 } // namespace diaq

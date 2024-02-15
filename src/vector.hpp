@@ -13,8 +13,13 @@ class vector {
     public:
         vector(size_t M) {
             numRows_ = M;
-            realValues_ = (valType *)calloc(M, sizeof(valType));
-            imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realValues_ = (valType *)calloc(M, sizeof(valType));
+                imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #else
+                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+            #endif
         }
         vector(size_t M, valType *realVals, valType *imagVals) {
             numRows_ = M;
@@ -24,12 +29,21 @@ class vector {
         vector(size_t M, valType *realVals) {
             numRows_ = M;
             realValues_ = realVals;
-            imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #else
+                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+            #endif
         }
         vector(size_t M, valType init_real, valType init_imag) {
             numRows_ = M;
-            realValues_ = (valType *)calloc(M, sizeof(valType));
-            imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realValues_ = (valType *)calloc(M, sizeof(valType));
+                imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #else
+                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+            #endif
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = init_imag;
@@ -37,8 +51,13 @@ class vector {
         }
         vector(size_t M, valType init_real) {
             numRows_ = M;
-            realValues_ = (valType *)calloc(M, sizeof(valType));
-            imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realValues_ = (valType *)calloc(M, sizeof(valType));
+                imagValues_ = (valType *)calloc(M, sizeof(valType));
+            #else
+                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+            #endif
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;
                 imagValues_[i] = 0.0;

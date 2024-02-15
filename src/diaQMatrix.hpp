@@ -154,8 +154,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
                     #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
                     #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
@@ -273,8 +273,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                     #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
                     #endif
                 #else
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
@@ -294,8 +294,8 @@ class diaQMatrix {
             // ------------------ DEBUG ------------------
             // std::cout << "n_diags = " << *n_diags << std::endl;
             // ------------------ DEBUG ------------------
-            (*diagonal_indices) = (long int *)malloc(*n_diags * sizeof(long int));
-            (*cum_diagonal_lengths) = (long int *)malloc(*n_diags * sizeof(long int));
+            (*diagonal_indices) = (long int *)calloc(*n_diags, sizeof(long int));
+            (*cum_diagonal_lengths) = (long int *)calloc(*n_diags, sizeof(long int));
             *num_elements = 0;
             long int k = 0;
             for (auto x : diagonalMap) {
@@ -326,15 +326,15 @@ class diaQMatrix {
             long int p = 0;
             #ifndef CUDA_ENABLED
                 #if NUM_BYTES_ALIGNED == -1
-                    (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
-                    (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                    (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
+                    (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
                 #else
-                    (*real_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
-                    (*imag_data) = (alignas(NUM_BYTES_ALIGNED) valType *)malloc(*num_elements * sizeof(valType));
+                    (*real_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
+                    (*imag_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
                 #endif
             #else
-                (*real_data) = (valType *)malloc(*num_elements * sizeof(valType));
-                (*imag_data) = (valType *)malloc(*num_elements * sizeof(valType));
+                (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
+                (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
             #endif
             for (auto x : diagonalMap) {
                 #ifndef CUDA_ENABLED

@@ -1079,12 +1079,13 @@ vector *spMV(diaQMatrix *A, vector *x) {
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
 
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp simd
         for (long int i = 0; i < dLength; i++) {
             // std::cout << "dIndex=" << dIndex << "; dLength=" << dLength << "; i=" << i << std::endl;
             long int x_idx = (dIndex < 0)? i : dIndex + i;
@@ -1124,7 +1125,7 @@ vector *MV(denseMatrix *A, vector *x) {
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) reduction(+:res_real, res_imag)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < A->matrix_shape[1]; j++) {
             std::complex<valType> elem = A->get(i, j);
             res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
@@ -1240,6 +1241,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
+
         // printf("printing newDiag\n");
         // newDiag.print();
         result->setDiagonal(dIndex, newDiag);
@@ -1340,7 +1342,6 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             diagonal *kron_block_diag = itK->second;
             long int kron_block_diag_length = kron_block_diag->dLength;
 
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                 std::vector<long int> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);

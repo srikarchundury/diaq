@@ -2,7 +2,7 @@
 #define DIAQ_CONVERSIONS_HPP
 
 #include <omp.h>
-#include <unordered_map>
+
 
 #include "denseMatrix.hpp"
 #include "config.hpp"
