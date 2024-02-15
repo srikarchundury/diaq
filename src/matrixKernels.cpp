@@ -534,7 +534,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
             diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
-            if(diagNew->dLength != 0 && !diagNew->isEmpty()) {
+            if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew.print();
                 // std::cout << " ------ new diag ------ " << std::endl;
