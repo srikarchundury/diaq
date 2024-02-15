@@ -14,7 +14,7 @@ class identityMatrix : public diaQMatrix {
 				real_ones[i] = 1;
 			}
 			valType *imag_zeros = (valType *)calloc(s, sizeof(valType));
-			diagonal d(0, s, real_ones, imag_zeros);
+			diagonal *d = new diagonal(0, s, real_ones, imag_zeros);
 			this->setDiagonal(0, d);
 		}
 };
@@ -32,12 +32,12 @@ class permutationMatrix : public diaQMatrix {
 					}
 				}
 			}
-			denseMatrix d(s, real_ones);
-			diaQMatrix qs = d.convertToQuantumSparse(this->matrix_shape);
-			this->setDiagonalMap(qs.getDiagonalMap());
-			this->matrix_shape = qs.matrix_shape;
-			this->shape = qs.shape;
-			this->size = qs.size;
+			denseMatrix *d = new denseMatrix(s, real_ones);
+			diaQMatrix *qs = d->convertToQuantumSparse(this->matrix_shape);
+			this->setDiagonalMap(qs->getDiagonalMap());
+			this->matrix_shape = qs->matrix_shape;
+			this->shape = qs->shape;
+			this->size = qs->size;
 		}
 };
 

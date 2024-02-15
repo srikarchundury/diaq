@@ -21,7 +21,7 @@ class diaQMatrix {
         std::vector<long int> shape;
 
         diaQMatrix(long int s) {
-            std::unordered_map<long int, diagonal> d;
+            std::unordered_map<long int, diagonal*> d;
             diagonalMap = d;
             size = s;
             matrix_shape.push_back(s);
@@ -30,13 +30,13 @@ class diaQMatrix {
             shape.push_back(s);
         }
         diaQMatrix(std::vector<long int> *dimens) {
-            std::unordered_map<long int, diagonal> d;
+            std::unordered_map<long int, diagonal*> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             size = matrix_shape[0];
             shape = *dimens;
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, long int s) {
+        diaQMatrix(std::unordered_map<long int, diagonal*> dm, long int s) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -47,7 +47,7 @@ class diaQMatrix {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d) {
+        diaQMatrix(std::unordered_map<long int, diagonal*> dm, std::vector<long int> *d) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -56,7 +56,7 @@ class diaQMatrix {
             size = matrix_shape[0];
             shape = *d;
         }
-        diaQMatrix(std::unordered_map<long int, diagonal> dm, std::vector<long int> *d, std::vector<long int> *ts) {
+        diaQMatrix(std::unordered_map<long int, diagonal*> dm, std::vector<long int> *d, std::vector<long int> *ts) {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = dm.begin(); it != dm.end(); it++) {
                 diagonalMap.insert({it->first, it->second});
@@ -75,7 +75,7 @@ class diaQMatrix {
                 return 0.0;
             }
             else {
-                return it->second.getRealValue(mat_pos[1]);
+                return it->second->getRealValue(mat_pos[1]);
             }
         }
         valType getItem_imag(long int flat_index) {
@@ -85,7 +85,7 @@ class diaQMatrix {
                 return 0.0;
             }
             else {
-                return it->second.getImagValue(mat_pos[1]);
+                return it->second->getImagValue(mat_pos[1]);
             }
         }
         std::complex<valType> getItem(long int flat_index) {
@@ -95,7 +95,7 @@ class diaQMatrix {
                 return std::complex<valType>(0.0, 0.0);
             }
             else {
-                return it->second.getValue(mat_pos[1]);
+                return it->second->getValue(mat_pos[1]);
             }
         }
         std::complex<valType> getItem(std::vector<long int> ten_pos) {
@@ -105,10 +105,10 @@ class diaQMatrix {
                 throw std::length_error("out of bounds");
             }
             else {
-                return it->second.getValue(d_pos[1]);
+                return it->second->getValue(d_pos[1]);
             }
         }
-        std::unordered_map<long int, diagonal> getDiagonalMap() {
+        std::unordered_map<long int, diagonal*> getDiagonalMap() {
             return diagonalMap;
         }
         void print() {
@@ -122,13 +122,13 @@ class diaQMatrix {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
-            std::unordered_map<long int, diagonal> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
+            std::map<long int, diagonal *> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
             for (auto it = sortedDiagonalMap.begin(); it != sortedDiagonalMap.end(); it++) {
-                it->second.print();
+                it->second->print();
             }
         }
         void createDiagonal(long int dIndex) {
-            diagonal newDiag(dIndex, getDiagonalLength(dIndex));
+            diagonal *newDiag = new diagonal(dIndex, getDiagonalLength(dIndex));
             this->diagonalMap.insert({dIndex, newDiag});
         }
         diagonal *getDiagonal(long int dIndex) {
@@ -139,10 +139,10 @@ class diaQMatrix {
             }
             else {
                 // it->second.prlong int(size);
-                return &it->second;
+                return it->second;
             }
         }
-        void setDiagonalMap(std::unordered_map<long int, diagonal> dm) {
+        void setDiagonalMap(std::unordered_map<long int, diagonal*> dm) {
             diagonalMap = dm;
         }
         void setDiagonalElement(long int dIndex, long int dPos, long int dLen, valType real_val, valType imag_val) {
@@ -163,18 +163,18 @@ class diaQMatrix {
                 #endif
                 real_vals[dPos] = real_val;
                 imag_vals[dPos] = imag_val;
-                diagonal newDiag(dIndex, dLen, real_vals, imag_vals);
+                diagonal *newDiag = new diagonal(dIndex, dLen, real_vals, imag_vals);
                 this->diagonalMap.insert({dIndex, newDiag});
             }
             else {
-                it->second.setValue(dPos, real_val, imag_val);
+                it->second->setValue(dPos, real_val, imag_val);
             }
         }
-        void setDiagonal(long int dIndex, diagonal diagNew) {
+        void setDiagonal(long int dIndex, diagonal *diagNew) {
             this->diagonalMap.erase(dIndex);
             this->diagonalMap.insert({dIndex, diagNew});
         }
-        void addDiagonal(long int dIndex, diagonal diagNew) {
+        void addDiagonal(long int dIndex, diagonal *diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 // std::cout << "new index" << std::endl;
@@ -182,11 +182,11 @@ class diaQMatrix {
             }
             else {
                 // std::cout << "already exists, overwrite" << std::endl;
-                for(long int i = 0; i < it->second.dLength; i++) {
-                    it->second.setValue(
+                for(long int i = 0; i < it->second->dLength; i++) {
+                    it->second->setValue(
                         i,
-                        it->second.getRealValue(i) + diagNew.getRealValue(i),
-                        it->second.getImagValue(i) + diagNew.getImagValue(i)
+                        it->second->getRealValue(i) + diagNew->getRealValue(i),
+                        it->second->getImagValue(i) + diagNew->getImagValue(i)
                     );
                 }
             }
@@ -285,7 +285,7 @@ class diaQMatrix {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
                 }
-                diagonal newDiag(dIndex, dLength, real_vals, imag_vals);
+                diagonal *newDiag = new diagonal(dIndex, dLength, real_vals, imag_vals);
                 this->diagonalMap.insert({dIndex, newDiag});
             }
         }
@@ -303,16 +303,16 @@ class diaQMatrix {
                 (*diagonal_indices)[k] = x.first;
                 // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
                 if (k == 0) {
-                    (*cum_diagonal_lengths)[k] = x.second.dLength;
+                    (*cum_diagonal_lengths)[k] = x.second->dLength;
                 } else {
                     // std::cout << "k = " << k << std::endl;
                     // std::cout << "~ (*cum_diagonal_lengths)[" << k - 1 << "] = " << (*cum_diagonal_lengths)[k - 1] << std::endl;
-                    // std::cout << "~ x.second.dLength = " << x.second.dLength << std::endl;
-                    (*cum_diagonal_lengths)[k] = (*cum_diagonal_lengths)[k - 1] + x.second.dLength;
+                    // std::cout << "~ x.second->dLength = " << x.second->dLength << std::endl;
+                    (*cum_diagonal_lengths)[k] = (*cum_diagonal_lengths)[k - 1] + x.second->dLength;
                 }
                 // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
                 k++;
-                *num_elements += x.second.dLength;
+                *num_elements += x.second->dLength;
                 // std::cout << "set! *num_elements = " << *num_elements << std::endl;
             }
             // ------------------ DEBUG ------------------
@@ -339,18 +339,18 @@ class diaQMatrix {
             for (auto x : diagonalMap) {
                 #ifndef CUDA_ENABLED
                     #if NUM_BYTES_ALIGNED == -1
-                        valType *real_vals = x.second.getRealValues();
-                        valType *imag_vals = x.second.getImagValues();
+                        valType *real_vals = x.second->getRealValues();
+                        valType *imag_vals = x.second->getImagValues();
                     #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second.getRealValues();
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second.getImagValues();
+                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second->getRealValues();
+                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second->getImagValues();
                     #endif
                 #else
-                    valType *real_vals = x.second.getRealValues();
-                    valType *imag_vals = x.second.getImagValues();
+                    valType *real_vals = x.second->getRealValues();
+                    valType *imag_vals = x.second->getImagValues();
                 #endif
                 #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for (int i = 0; i < x.second.dLength; i++) {
+                for (int i = 0; i < x.second->dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
                 }
@@ -463,9 +463,9 @@ class diaQMatrix {
             std::vector<std::complex<valType>> res(matrix_shape[0] * matrix_shape[1] , 1);
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 long int dIndex = it->first;
-                long int dLength = it->second.dLength;
-                valType *real_vals = it->second.getRealValues();
-                valType *imag_vals = it->second.getImagValues();
+                long int dLength = it->second->dLength;
+                valType *real_vals = it->second->getRealValues();
+                valType *imag_vals = it->second->getImagValues();
                 #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for (long int i = 0; i < dLength; i++) {
                     std::vector<long int> mat_pos = getMatrixPosition(dIndex, i);
@@ -478,21 +478,21 @@ class diaQMatrix {
         void free() {
             // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                it->second.free();
+                it->second->free();
             }
         }
         void pruneMatrix() {
             std::vector<long int> toDelete;
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                valType *real_vals = it->second.getRealValues();
-                valType *imag_vals = it->second.getImagValues();
+                valType *real_vals = it->second->getRealValues();
+                valType *imag_vals = it->second->getImagValues();
                 long int i;
-                for (i = 0; i < it->second.dLength; i++) {
+                for (i = 0; i < it->second->dLength; i++) {
                     if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) {
                         break;
                     }
                 }
-                if(i == it->second.dLength) {
+                if(i == it->second->dLength) {
                     toDelete.push_back(it->first);
                 }
             }
@@ -501,11 +501,11 @@ class diaQMatrix {
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
-        diaQMatrix reshape(std::vector<long int> new_tensor_shape);
-        diaQMatrix transpose(std::vector<long int> new_order);
-        denseMatrix convertToDenseMatrix(std::vector<long int> new_shape);
+        diaQMatrix *reshape(std::vector<long int> new_tensor_shape);
+        diaQMatrix *transpose(std::vector<long int> new_order);
+        denseMatrix *convertToDenseMatrix(std::vector<long int> new_shape);
     private:
-        std::unordered_map<long int, diagonal> diagonalMap; // map <dIndex, diagonal object>
+        std::unordered_map<long int, diagonal*> diagonalMap; // map <dIndex, diagonal object>
 };
 
 } // namespace diaq

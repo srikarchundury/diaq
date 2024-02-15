@@ -84,7 +84,7 @@ __global__ void spmv_dia_kernel(long int num_rows, long int num_cols, long int n
  * 	@param x - vector
  * 	@return y = A * x
 */
-vector spmv_cuda(diaQMatrix *A, vector *x) {
+vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	// ------------------ DEBUG ------------------
 	logger.log("Using CUDA to calculate product of matrix and vector");
 	// ------------------ DEBUG ------------------
@@ -92,9 +92,9 @@ vector spmv_cuda(diaQMatrix *A, vector *x) {
 		throw std::invalid_argument("Not multiplyable");
 	}
 
-	vector y(A->matrix_shape[0], 0);
-	valType *y_real_values = y.getRealValues();
-	valType *y_imag_values = y.getImagValues();
+	vector *y = new vector(A->matrix_shape[0], 0);
+	valType *y_real_values = y->getRealValues();
+	valType *y_imag_values = y->getImagValues();
 
 	valType *x_real_values = x->getRealValues();
 	valType *x_imag_values = x->getImagValues();
@@ -193,7 +193,7 @@ __global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, l
  * 	@param B - second matrix
  * 	@return C = A * B
 */
-diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
+diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	logger.log("Using CUDA to calculate product of two matrices");
 	if(A->matrix_shape[1] != B->matrix_shape[0]) {
 		throw std::invalid_argument("Not multiplyable");
@@ -384,7 +384,7 @@ diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	free(C_real_data);
 	free(C_imag_data);
 
-	return *C;
+	return C;
 }
 
 } // namespace diaq
