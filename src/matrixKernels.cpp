@@ -836,11 +836,11 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
         std::vector<long int> newShape{A->matrix_shape[1], A->matrix_shape[0]};
-        std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
-        std::unordered_map<long int, diagonal*>::iterator it;
-        std::unordered_map<long int, diagonal*> newDiagMap;
+        std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
+        std::unordered_map<long int, diagonal *>::iterator it;
+        std::unordered_map<long int, diagonal *> newDiagMap;
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
-            newDiagMap.insert(std::pair<long int, diagonal*>(-1 * it->first, it->second));
+            newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
         }
         A->setDiagonalMap(newDiagMap);
         // swap A->shape[0] and A->shape[1] and similarly for matrix_shape.

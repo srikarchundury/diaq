@@ -4,7 +4,7 @@
 
 #include "../include/diaq.hpp"
 
-diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::diagonal> dm) {
+diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::diagonal *> dm) {
     diaq::diaQMatrix *m = new diaq::diaQMatrix(dm, 6);
     m->print();
     return m;
@@ -16,30 +16,30 @@ std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
         return "false - 1";
     }
     const diaq::valType epsilon = 0.00002;
-    std::unordered_map<long int, diaq::diagonal> dmA = A->getDiagonalMap();
-    std::unordered_map<long int, diaq::diagonal> dmB = B->getDiagonalMap();
-    std::unordered_map<long int, diaq::diagonal>::iterator itA, itB;
+    std::unordered_map<long int, diaq::diagonal *> dmA = A->getDiagonalMap();
+    std::unordered_map<long int, diaq::diagonal *> dmB = B->getDiagonalMap();
+    std::unordered_map<long int, diaq::diagonal *>::iterator itA, itB;
     for(itA = dmA.begin(); itA != dmA.end(); itA++) {
         auto itB = dmB.find(itA->first);
         if(itB == dmB.end()) {
             // A->print();
             return "false - 2";
         }
-        if(itB->second.dLength != itA->second.dLength) { 
+        if(itB->second->dLength != itA->second->dLength) { 
             // A->print();
-            std::cout << "error with diag idx - " << itA->second.dIndex << std::endl;
+            std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
             return "false - 3";
         }
         else {
-            for(long int i = 0; i < itA->second.dLength; i++) {
-                if(itB->second.getRealValue(i) - itA->second.getRealValue(i) > epsilon) {
+            for(long int i = 0; i < itA->second->dLength; i++) {
+                if(itB->second->getRealValue(i) - itA->second->getRealValue(i) > epsilon) {
                     // print where the error is
-                    std::cout << "error with diag idx and i - " << itA->second.dIndex << " " << i << std::endl;
+                    std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
                     return "false - 4";
                 }
-                if(itB->second.getImagValue(i) - itA->second.getImagValue(i) > epsilon) {
+                if(itB->second->getImagValue(i) - itA->second->getImagValue(i) > epsilon) {
                     // print where the error is
-                    std::cout << "error with diag idx and i - " << itA->second.dIndex << " " << i << std::endl;
+                    std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
                     return "false - 5";
                 }
             }
@@ -1589,13 +1589,13 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
 
         std::vector<long int> dims{3,6};
-        diaq::diaQMatrix q_A24 = A24->convertToQuantumSparse(dims);
-        q_A24.shape = std::vector<long int>{3,3,2};
+        diaq::diaQMatrix *q_A24 = A24->convertToQuantumSparse(dims);
+        q_A24->shape = std::vector<long int>{3,3,2};
         q_A24->print();
         std::cout << " -- " << std::endl;
 
         std::vector<long int> order{};
-        diaq::diaQMatrix res = transpose(q_A24, order);
+        diaq::diaQMatrix *res = transpose(q_A24, order);
         std::cout << " -- " << std::endl;
         res->print();
         std::cout << " -- " << std::endl;
@@ -1607,8 +1607,8 @@ int main(int argc, char **argv) {
         A47->print();
         std::cout << " -- " << std::endl;
 
-        diaq::diaQMatrix q_A47 = A47->convertToQuantumSparse(A47->matrix_shape);
-        q_A47.shape = std::vector<long int>{2,2,2,2};
+        diaq::diaQMatrix *q_A47 = A47->convertToQuantumSparse(A47->matrix_shape);
+        q_A47->shape = std::vector<long int>{2,2,2,2};
         q_A47->print();
         std::cout << " -- " << std::endl;
 
@@ -1626,23 +1626,23 @@ int main(int argc, char **argv) {
         const std::string str_i = "30";
         long int i = std::stoi(str_i);
         std::cout << "test case - " << i;
-        diaq::denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+        diaq::denseMatrix *p = denseProduct(testCases[i][0], testCases[i][1]);
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p->print();
         std::cout << " ---- dense product ---- " << std::endl;
-        diaq::diaQMatrix dp = p->convertToQuantumSparse(p->matrix_shape);
+        diaq::diaQMatrix *dp = p->convertToQuantumSparse(p->matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp->print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        diaq::diaQMatrix first = testCases[i][0]->convertToQuantumSparse(testCases[i][0]->matrix_shape);
+        diaq::diaQMatrix *first = testCases[i][0]->convertToQuantumSparse(testCases[i][0]->matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first->print();
         std::cout << " -- first -- " << std::endl;
-        diaq::diaQMatrix second = testCases[i][1]->convertToQuantumSparse(testCases[i][1]->matrix_shape);
+        diaq::diaQMatrix *second = testCases[i][1]->convertToQuantumSparse(testCases[i][1]->matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second->print();
         std::cout << " -- second -- " << std::endl;
-        diaq::diaQMatrix qp = first * second;
+        diaq::diaQMatrix *qp = (*first) * (*second);
         std::cout << " -- qp -- " << std::endl;
         qp->print();
         std::cout << " -- qp -- " << std::endl;
@@ -1657,10 +1657,10 @@ int main(int argc, char **argv) {
         std::cout << " --example1-- " << std::endl;
         A24->print();
         std::cout << " -- " << std::endl;
-        diaq::diaQMatrix q_A24 = A24->convertToQuantumSparse(A24->matrix_shape);
+        diaq::diaQMatrix *q_A24 = A24->convertToQuantumSparse(A24->matrix_shape);
         q_A24->print();
         std::cout << " -- " << std::endl;
-        std::vector<std::complex<diaq::valType>> values = q_A24.flatten();
+        std::vector<std::complex<diaq::valType>> values = q_A24->flatten();
         for (long int i = 0; i < values.size(); i++) {
             std::cout << values[i] << " ";
         }
@@ -1670,12 +1670,12 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "operator_overloading_transpose") == 0) {
-        // tranpose using matrix.transpose instead of transpose(matrix, order)
-        diaq::diaQMatrix q_A47 = A47->convertToQuantumSparse(A47->matrix_shape);
-        q_A47.shape = std::vector<long int>{2,2,2,2};
+        // tranpose using matrix->transpose instead of transpose(matrix, order)
+        diaq::diaQMatrix *q_A47 = A47->convertToQuantumSparse(A47->matrix_shape);
+        q_A47->shape = std::vector<long int>{2,2,2,2};
         q_A47->print();
         std::cout << " -- " << std::endl;
-        diaq::diaQMatrix res = q_A47.transpose(std::vector<long int>{});
+        diaq::diaQMatrix *res = q_A47->transpose(std::vector<long int>{});
         res->print();
         std::cout << " -- " << std::endl;
         res->convertToDenseMatrix(res->matrix_shape)->print();
@@ -1688,19 +1688,19 @@ int main(int argc, char **argv) {
         std::cout << " --matrix-- " << std::endl;
         A25->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix q_A25 = A25->convertToQuantumSparse(A25->matrix_shape);
+        diaq::diaQMatrix *q_A25 = A25->convertToQuantumSparse(A25->matrix_shape);
         q_A25->print();
         std::cout << " --x-- " << std::endl;
-        diaq::vector x(A25->matrix_shape[1], 1.0);
-        for(int i = 0; i < x.num_rows(); i++) {
+        diaq::vector *x = new diaq::vector(A25->matrix_shape[1], 1.0);
+        for(int i = 0; i < x->num_rows(); i++) {
             x[i] = i;
         }
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(A25, x);
+        diaq::vector *dense_y = MV(A25, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(q_A25, x);
+        diaq::vector *y = spMV(q_A25, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1740,21 +1740,21 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                h_val,                -1 * h_val,
         };
         std::cout << " --matrix-- " << std::endl;
-        diaq::denseMatrix mat(&shape_mat, mat_vals);
+        diaq::denseMatrix *mat = new diaq::denseMatrix(&shape_mat, mat_vals);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
+        diaq::diaQMatrix *mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
         diaq::valType x_real_vals[8] = {0.279931, 0.279931, 0, 0, 0, 0, 0.126182, 0.126182};
         diaq::valType x_imag_vals[8] = {0.085921, 0.085921, 0, 0, 0, 0, 0.631137, 0.631137};
-        diaq::vector x(8, x_real_vals, x_imag_vals);
+        diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(mat, x);
+        diaq::vector *dense_y = MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(mat_dq, x);
+        diaq::vector *y = spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1798,21 +1798,21 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        diaq::denseMatrix mat(&shape_mat, mat_vals_real, mat_vals_imag);
+        diaq::denseMatrix *mat = new diaq::denseMatrix(&shape_mat, mat_vals_real, mat_vals_imag);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
+        diaq::diaQMatrix *mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
         diaq::valType x_real_vals[8] = {0.395882, 0.000000, 0.785682, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
         diaq::valType x_imag_vals[8] = {0.121511, 0.000000, 0.459582, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
-        diaq::vector x(8, x_real_vals, x_imag_vals);
+        diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(mat, x);
+        diaq::vector *dense_y = MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(mat_dq, x);
+        diaq::vector *y = spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1847,21 +1847,21 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        diaq::denseMatrix mat(&shape_mat, mat_vals_real);
+        diaq::denseMatrix *mat = new diaq::denseMatrix(&shape_mat, mat_vals_real);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
+        diaq::diaQMatrix *mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
         diaq::valType x_real_vals[8] = {0.279931, 0.000000, 0.126182, 0.000000, 0.279931, 0.000000, 0.126182, 0.000000};
         diaq::valType x_imag_vals[8] = {0.085921, 0.000000, 0.631137, 0.000000, 0.085921, 0.000000, 0.631137, 0.000000};
-        diaq::vector x(8, x_real_vals, x_imag_vals);
+        diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(mat, x);
+        diaq::vector *dense_y = MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(mat_dq, x);
+        diaq::vector *y = spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1888,20 +1888,20 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        diaq::denseMatrix mat(&shape_mat, mat_vals_real);
+        diaq::denseMatrix *mat = new diaq::denseMatrix(&shape_mat, mat_vals_real);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
+        diaq::diaQMatrix *mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
         diaq::valType x_real_vals[8] = {1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
-        diaq::vector x(8, x_real_vals);
+        diaq::vector *x = new diaq::vector(8, x_real_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(mat, x);
+        diaq::vector *dense_y = MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(mat_dq, x);
+        diaq::vector *y = spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1944,21 +1944,21 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0.843343,                0,                0.0464493,
         };
         std::cout << " --matrix-- " << std::endl;
-        diaq::denseMatrix mat(&shape_mat, mat_vals_real, mat_vals_imag);
+        diaq::denseMatrix *mat = new diaq::denseMatrix(&shape_mat, mat_vals_real, mat_vals_imag);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
-        diaq::diaQMatrix mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
+        diaq::diaQMatrix *mat_dq = mat->convertToQuantumSparse(mat->matrix_shape);
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
         diaq::valType x_real_vals[8] = {0.603145, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000};
         diaq::valType x_imag_vals[8] = {0,0,-0.797631,0,0,0,0,0};
-        diaq::vector x(8, x_real_vals, x_imag_vals);
+        diaq::vector *x = new diaq::vector(8, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
-        diaq::vector dense_y = MV(mat, x);
+        diaq::vector *dense_y = MV(mat, x);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector y = spMV(mat_dq, x);
+        diaq::vector *y = spMV(mat_dq, x);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
@@ -1966,20 +1966,20 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
-        A24.shape = std::vector<long int>{3,3,2};
+        A24->shape = std::vector<long int>{3,3,2};
         std::vector<long int> dims_A{3,6};
-        diaq::diaQMatrix q_A24 = A24->convertToQuantumSparse(dims_A);
+        diaq::diaQMatrix *q_A24 = A24->convertToQuantumSparse(dims_A);
         q_A24->print();
         std::cout << " -- " << std::endl;
-        B24.shape = std::vector<long int>{2,3,2};
+        B24->shape = std::vector<long int>{2,3,2};
         std::vector<long int> dims_B{6,2};
-        diaq::diaQMatrix q_B24 = B24->convertToQuantumSparse(dims_B);
+        diaq::diaQMatrix *q_B24 = B24->convertToQuantumSparse(dims_B);
         q_B24->print();
         std::cout << " -- " << std::endl;
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix res = tensordot(q_A24, q_B24, axes);
+        diaq::diaQMatrix *res = tensordot(q_A24, q_B24, axes);
         res->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
@@ -1993,21 +1993,21 @@ int main(int argc, char **argv) {
             0, 0, 1, 0,
         };
         std::vector<long int> shape_first_m{4,4};
-        diaq::denseMatrix dfirst(&shape_first_m, first_m);
-        diaq::diaQMatrix q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
-        q_first.shape = std::vector<long int>{2,2,2,2};
+        diaq::denseMatrix *dfirst = new diaq::denseMatrix(&shape_first_m, first_m);
+        diaq::diaQMatrix *q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
+        q_first->shape = std::vector<long int>{2,2,2,2};
         diaq::valType second_m[4] = {
             0.707107, 0,
             0, -0.707107,
         };
         std::vector<long int> shape_second_m{2,2};
-        diaq::denseMatrix dsecond(&shape_second_m, second_m);
-        diaq::diaQMatrix q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
-        q_second.shape = std::vector<long int>{2,2};
+        diaq::denseMatrix *dsecond = new diaq::denseMatrix(&shape_second_m, second_m);
+        diaq::diaQMatrix *q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
+        q_second->shape = std::vector<long int>{2,2};
         std::vector<long int> axes_A{3};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix res = tensordot(q_first, q_second, axes);
+        diaq::diaQMatrix *res = tensordot(q_first, q_second, axes);
         res->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
@@ -2021,9 +2021,9 @@ int main(int argc, char **argv) {
             0, 0, 1, 0,
         };
         std::vector<long int> shape_first_m{4,4};
-        diaq::denseMatrix dfirst(&shape_first_m, first_m);
-        diaq::diaQMatrix q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
-        q_first.shape = std::vector<long int>{2,2,2,2};
+        diaq::denseMatrix *dfirst = new diaq::denseMatrix(&shape_first_m, first_m);
+        diaq::diaQMatrix *q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
+        q_first->shape = std::vector<long int>{2,2,2,2};
         diaq::valType second_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -2031,13 +2031,13 @@ int main(int argc, char **argv) {
             0, 0, 1, 0,
         };
         std::vector<long int> shape_second_m{4,4};
-        diaq::denseMatrix dsecond(&shape_second_m, second_m);
-        diaq::diaQMatrix q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
-        q_second.shape = std::vector<long int>{2,2,2,2};
+        diaq::denseMatrix *dsecond = new diaq::denseMatrix(&shape_second_m, second_m);
+        diaq::diaQMatrix *q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
+        q_second->shape = std::vector<long int>{2,2,2,2};
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{1};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix res = tensordot(q_first, q_second, axes);
+        diaq::diaQMatrix *res = tensordot(q_first, q_second, axes);
         res->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
@@ -2047,7 +2047,7 @@ int main(int argc, char **argv) {
         std::cout << "Testing Format Conversion" << std::endl;
         std::vector<std::complex<diaq::valType>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<long int> shape{3,3,2};
-        diaq::diaQMatrix result = diaq::from_numpy(values, shape);
+        diaq::diaQMatrix *result = diaq::from_numpy(values, shape);
         result->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- From Numpy Done -- " << std::endl;
@@ -2077,9 +2077,9 @@ int main(int argc, char **argv) {
         };
         std::vector<long int> b_shape{8, 8};
 
-        diaq::diaQMatrix A =  diaq::from_numpy(a, a_shape);
-        diaq::diaQMatrix B =  diaq::from_numpy(b, b_shape);
-        diaq::diaQMatrix C = A * B;
+        diaq::diaQMatrix *A =  diaq::from_numpy(a, a_shape);
+        diaq::diaQMatrix *B =  diaq::from_numpy(b, b_shape);
+        diaq::diaQMatrix *C = (*A) * (*B);
         C->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Multiplication Done -- " << std::endl;
@@ -2110,7 +2110,7 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "permutation") == 0 ) {
         std::cout << " -- testing permutation class -- " << std::endl;
         std::vector<long int> row_order{1,0,2,4,3};
-        diaq::permutationMatrix perm5((long int)5, row_order);
+        diaq::permutationMatrix *perm5 = new diaq::permutationMatrix((long int)5, row_order);
         perm5->print();
         perm5->convertToDenseMatrix(perm5->matrix_shape)->print();
     }
@@ -2118,23 +2118,23 @@ int main(int argc, char **argv) {
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);
         std::cout << "test case - " << i;
-        diaq::denseMatrix p = denseProduct(testCases[i][0], testCases[i][1]);
+        diaq::denseMatrix *p = denseProduct(testCases[i][0], testCases[i][1]);
         std::cout << std::endl << " ---- dense product ---- " << std::endl;
         p->print();
         std::cout << " ---- dense product ---- " << std::endl;
-        diaq::diaQMatrix dp = p->convertToQuantumSparse(p->matrix_shape);
+        diaq::diaQMatrix *dp = p->convertToQuantumSparse(p->matrix_shape);
         std::cout << " ---- correct answer ---- " << std::endl;
         dp->print();
         std::cout << " ---- correct answer ---- " << std::endl;
-        diaq::diaQMatrix first = testCases[i][0]->convertToQuantumSparse(testCases[i][0]->matrix_shape);
+        diaq::diaQMatrix *first = testCases[i][0]->convertToQuantumSparse(testCases[i][0]->matrix_shape);
         std::cout << " -- first -- " << std::endl;
         first->print();
         std::cout << " -- first -- " << std::endl;
-        diaq::diaQMatrix second = testCases[i][1]->convertToQuantumSparse(testCases[i][1]->matrix_shape);
+        diaq::diaQMatrix *second = testCases[i][1]->convertToQuantumSparse(testCases[i][1]->matrix_shape);
         std::cout << " -- second -- " << std::endl;
         second->print();
         std::cout << " -- second -- " << std::endl;
-        diaq::diaQMatrix qp = product(first, second);
+        diaq::diaQMatrix *qp = product(first, second);
         std::cout << " -- qp -- " << std::endl;
         qp->print();
         std::cout << " -- qp -- " << std::endl;

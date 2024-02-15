@@ -122,9 +122,9 @@ class diaQMatrix {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
-            std::map<long int, diagonal> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
+            std::map<long int, diagonal *> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
             for (auto it = sortedDiagonalMap.begin(); it != sortedDiagonalMap.end(); it++) {
-                it->second.print();
+                it->second->print();
             }
         }
         void createDiagonal(long int dIndex) {
