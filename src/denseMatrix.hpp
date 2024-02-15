@@ -176,7 +176,7 @@ class denseMatrix {
             delete[] realData;
             delete[] imagData;
         }
-        diaQMatrix convertToQuantumSparse(std::vector<long int> new_shape);
+        diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
     private:
         valType *realData;
         valType *imagData;

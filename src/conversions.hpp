@@ -2,7 +2,7 @@
 #define DIAQ_CONVERSIONS_HPP
 
 #include <omp.h>
-#include <unordered_map>
+
 
 #include "denseMatrix.hpp"
 #include "config.hpp"
@@ -11,7 +11,7 @@
 namespace diaq {
 
 std::vector<std::complex<valType> > to_numpy(diaQMatrix A);
-diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape);
+diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape);
 
 } // namespace diaq
 
