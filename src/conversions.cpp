@@ -6,14 +6,14 @@
 
 namespace diaq {
 
-denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
+denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
-    std::unordered_map<long int, diagonal>::iterator it;
+    std::unordered_map<long int, diagonal*>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second.getRealValues();
-        valType *imag_vals = it->second.getImagValues();
+        valType *real_vals = it->second->getRealValues();
+        valType *imag_vals = it->second->getImagValues();
         if (it->first == 0) {
             x = 0;
             y = 0;
@@ -27,18 +27,18 @@ denseMatrix diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
             y = 0;
         }
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for (long int i = 0; i < it->second.dLength; i++) {
+        for (long int i = 0; i < it->second->dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
             imag_data[ matrix_shape[1] * (x+i) + (y+i) ] = imag_vals[i];
         }
     }
-    denseMatrix d(&new_shape, real_data, imag_data);
-    d.shape = shape;
+    denseMatrix *d = new denseMatrix(&new_shape, real_data, imag_data);
+    d->shape = shape;
     return d;
 }
 
-diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
+diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
     #ifdef CUDA_ENABLED
         return convertToQuantumSparse_cuda(this, new_shape);
     #else
@@ -48,11 +48,11 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::unordered_map<long int, diagonal> diagMap;    
-    diaQMatrix qm(diagMap, &new_shape);
+    std::unordered_map<long int, diagonal*> diagMap;    
+    diaQMatrix *qm = new diaQMatrix(diagMap, &new_shape);
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = -1 * qm.matrix_shape[0]; i < qm.matrix_shape[1]; i++) {
-        qm.createDiagonal(i);
+    for(long int i = -1 * qm->matrix_shape[0]; i < qm->matrix_shape[1]; i++) {
+        qm->createDiagonal(i);
     }
     // #pragma omp barrier
     #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
@@ -61,24 +61,24 @@ diaQMatrix denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) 
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<long int> pos{i, j};
-            std::vector<long int> d_pos = qm.getDiagonalPosition(pos);
+            std::vector<long int> d_pos = qm->getDiagonalPosition(pos);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
-            qm.setDiagonalElement(d_pos[0], d_pos[1], qm.getDiagonalLength(d_pos[0]), realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
+            qm->setDiagonalElement(d_pos[0], d_pos[1], qm->getDiagonalLength(d_pos[0]), realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
         }
     }
-    qm.pruneMatrix();
-    qm.shape = shape;
+    qm->pruneMatrix();
+    qm->shape = shape;
     // this->free();
     return qm;
     #endif
 }
 
-std::vector<std::complex<valType> > to_numpy(diaQMatrix A) {
-    denseMatrix d = A.convertToDenseMatrix(A.matrix_shape);
-    return d.getData_forPy();
+std::vector<std::complex<valType> > to_numpy(diaQMatrix *A) {
+    denseMatrix *d = A->convertToDenseMatrix(A->matrix_shape);
+    return d->getData_forPy();
 }
 
-diaQMatrix from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape) {
+diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape) {
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else

@@ -36,7 +36,7 @@ __global__ void convert_to_dq(
  * 			3. The values vector should be in row-major order
  * 			4. The values vector should be a flattened version of the NumPy array 
 */
-diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vector<long int> shape) {
+diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vector<long int> shape) {
 	logger.log("Using CUDA to convert NumPy array to diaQMatrix");
 	long int size = values.size();
 	int rank = shape.size();
@@ -118,19 +118,19 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vecto
 	// std::cout << std::endl;
 	// -------------- DEBUG ---------------
 
-	std::unordered_map<long int, diagonal> diagMap;
-	diaQMatrix diaq_res(diagMap, &matrix_shape, &shape);
+	std::unordered_map<long int, diagonal*> diagMap;
+	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &matrix_shape, &shape);
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		diaq_res.createDiagonal(i);
+		diaq_res->createDiagonal(i);
 	}
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for (long int i = 0; i < size; i++) {
 		long int dIndex = host_diagonal_idx[i];
 		long int dPos = host_diagonal_pos[i];
-		diaq_res.setDiagonalElement(dIndex, dPos, diaq_res.getDiagonalLength(dIndex), values[i].real(), values[i].imag());
+		diaq_res->setDiagonalElement(dIndex, dPos, diaq_res->getDiagonalLength(dIndex), values[i].real(), values[i].imag());
 	}
-	diaq_res.pruneMatrix();
+	diaq_res->pruneMatrix();
 	return diaq_res;
 }
 /*
@@ -141,7 +141,7 @@ diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vecto
  * 		Returns:
  * 			denseMatrix
 */
-diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
+diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
 	logger.log("Using CUDA to convert denseMatrix to diaQMatrix");
 	valType *realData = d->getRealData();
 	valType *ImagData = d->getImagData();
@@ -201,19 +201,19 @@ diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new
 	// std::cout << std::endl;
 	// -------------- DEBUG ---------------
 
-	std::unordered_map<long int, diagonal> diagMap;
-	diaQMatrix diaq_res(diagMap, &new_shape);
+	std::unordered_map<long int, diagonal*> diagMap;
+	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &new_shape);
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		diaq_res.createDiagonal(i);
+		diaq_res->createDiagonal(i);
 	}
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for (long int i = 0; i < size; i++) {
 		long int dIndex = host_diagonal_idx[i];
 		long int dPos = host_diagonal_pos[i];
-		diaq_res.setDiagonalElement(dIndex, dPos, diaq_res.getDiagonalLength(dIndex), realData[i], ImagData[i]);
+		diaq_res->setDiagonalElement(dIndex, dPos, diaq_res->getDiagonalLength(dIndex), realData[i], ImagData[i]);
 	}
-	diaq_res.pruneMatrix();
+	diaq_res->pruneMatrix();
 	// d->free();
 	return diaq_res;
 }
