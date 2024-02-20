@@ -128,8 +128,8 @@ class diagonal {
             return count;
         }
         void free() {
-            delete[] realValues;
-            delete[] imagValues;
+            std::free(realValues);
+            std::free(imagValues);
         }
     private:
         valType* realValues; // real number array

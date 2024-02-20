@@ -9,7 +9,7 @@ namespace diaq {
 
 void run_without_vectorization(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     // no vectorization
-    logger.log("No vectorization");
+    // logger.log("No vectorization");
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
 		valType real_a = real_vals_a[k + offsetA - jump];
@@ -55,7 +55,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_avx<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-        logger.log("Using AVX-Double vectorization");
+        // logger.log("Using AVX-Double vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -133,7 +133,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 	}
     template<>
     void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-        logger.log("Using AVX-Float vectorization");
+        // logger.log("Using AVX-Float vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -222,7 +222,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-        logger.log("Using SSE-Float vectorization");
+        // logger.log("Using SSE-Float vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -300,7 +300,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-        logger.log("Using SSE-Double vectorization");
+        // logger.log("Using SSE-Double vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -526,6 +526,8 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
+
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
             // std::cout << " ------ diags ------ " << std::endl;
@@ -552,52 +554,52 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     // result->print();
     // std::cout << " ------ final result ------ " << std::endl;
     // result->print();
-    if (logger.log_level == DEEP_DEBUG) {
-        std::cout << " --- " << std::endl;
-		// --- First matrix ---
-		std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
-        // get keys of A_diagonalMap
-        std::vector<long int> A_keys;
-        std::unordered_map<long int, diagonal*>::iterator A_it;
-        for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
-            A_keys.push_back(A_it->first);
-        }
-        // print keys
-        std::cout << "keys of A_diagonalMap: ";
-        for(long int i = 0; i < A_keys.size(); i++) {
-            std::cout << A_keys[i] << " ";
-        }
-        std::cout << std::endl;
-		// --- Second matrix ---
-        std::unordered_map<long int, diagonal*> B_diagonalMap = B->getDiagonalMap();
-        // get keys of B_diagonalMap
-        std::vector<long int> B_keys;
-        std::unordered_map<long int, diagonal*>::iterator B_it;
-        for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
-            B_keys.push_back(B_it->first);
-        }
-        // print keys
-        std::cout << "keys of B_diagonalMap: ";
-        for(long int i = 0; i < B_keys.size(); i++) {
-            std::cout << B_keys[i] << " ";
-        }
-        std::cout << std::endl;
-		// --- Result matrix ---
-        std::unordered_map<long int, diagonal*> result_diagonalMap = result->getDiagonalMap();
-        // get keys of result_diagonalMap
-        std::vector<long int> result_keys;
-        std::unordered_map<long int, diagonal*>::iterator result_it;
-        for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
-            result_keys.push_back(result_it->first);
-        }
-        // print keys
-        std::cout << "keys of result_diagonalMap: ";
-        for(long int i = 0; i < result_keys.size(); i++) {
-            std::cout << result_keys[i] << " ";
-        }
-        std::cout << std::endl;
-        std::cout << " --- " << std::endl;
-	}
+    // if (logger.log_level == DEEP_DEBUG) {
+    //     std::cout << " --- " << std::endl;
+	// 	// --- First matrix ---
+	// 	std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
+    //     // get keys of A_diagonalMap
+    //     std::vector<long int> A_keys;
+    //     std::unordered_map<long int, diagonal*>::iterator A_it;
+    //     for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
+    //         A_keys.push_back(A_it->first);
+    //     }
+    //     // print keys
+    //     std::cout << "keys of A_diagonalMap: ";
+    //     for(long int i = 0; i < A_keys.size(); i++) {
+    //         std::cout << A_keys[i] << " ";
+    //     }
+    //     std::cout << std::endl;
+	// 	// --- Second matrix ---
+    //     std::unordered_map<long int, diagonal*> B_diagonalMap = B->getDiagonalMap();
+    //     // get keys of B_diagonalMap
+    //     std::vector<long int> B_keys;
+    //     std::unordered_map<long int, diagonal*>::iterator B_it;
+    //     for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
+    //         B_keys.push_back(B_it->first);
+    //     }
+    //     // print keys
+    //     std::cout << "keys of B_diagonalMap: ";
+    //     for(long int i = 0; i < B_keys.size(); i++) {
+    //         std::cout << B_keys[i] << " ";
+    //     }
+    //     std::cout << std::endl;
+	// 	// --- Result matrix ---
+    //     std::unordered_map<long int, diagonal*> result_diagonalMap = result->getDiagonalMap();
+    //     // get keys of result_diagonalMap
+    //     std::vector<long int> result_keys;
+    //     std::unordered_map<long int, diagonal*>::iterator result_it;
+    //     for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
+    //         result_keys.push_back(result_it->first);
+    //     }
+    //     // print keys
+    //     std::cout << "keys of result_diagonalMap: ";
+    //     for(long int i = 0; i < result_keys.size(); i++) {
+    //         std::cout << result_keys[i] << " ";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << " --- " << std::endl;
+	// }
     // if(logger.log_level == DEBUG) {
     //     std::cout << " --- " << std::endl;
     //     std::cout << " --- product result --- " << std::endl;
@@ -686,7 +688,7 @@ diaQMatrix *add(diaQMatrix *A, diaQMatrix *B) {
 
 
 std::complex<valType> trace(diaQMatrix *A) {
-    std::complex<valType> t;
+    std::complex<valType> t = 0;
     std::unordered_map<long int, diagonal*>::iterator itA;
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     itA = mapA.find(0);
@@ -741,10 +743,10 @@ diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape) {
     std::unordered_map<long int, diagonal*>::iterator it;
 
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
-        res->createDiagonal(i);
-    }
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
+    //     res->createDiagonal(i);
+    // }
 
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         valType *real_vals = it->second->getRealValues();
@@ -839,7 +841,9 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
         std::unordered_map<long int, diagonal *>::iterator it;
         std::unordered_map<long int, diagonal *> newDiagMap;
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
+            it->second->setIndex(-1 * it->first);
             newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
         }
         A->setDiagonalMap(newDiagMap);
@@ -882,10 +886,10 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     std::unordered_map<long int, diagonal*>::iterator it;
     std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
-        res->createDiagonal(i);
-    }
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
+    //     res->createDiagonal(i);
+    // }
 
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
 
@@ -941,7 +945,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     // std::cout << axes[1][i] << ")" << std::endl;
     // std::cout << "--" << std::endl;
 
-    diaQMatrix *res = new diaQMatrix((long int)0); 
+    diaQMatrix *res; 
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
@@ -1236,7 +1240,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         diagonal *newDiag = new diagonal(dIndex, dLength);
         valType *real_valsC = newDiag->getRealValues();
         valType *imag_valsC = newDiag->getImagValues();
-        #pragma omp simd
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
@@ -1335,13 +1339,14 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         // we now have to add to result's res_diag_index at res_diag_pos
         std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
         std::unordered_map<long int, diagonal*>::iterator itK;
-
+        
         for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
 
             long int kron_block_diag_index = itK->first;
             diagonal *kron_block_diag = itK->second;
             long int kron_block_diag_length = kron_block_diag->dLength;
 
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                 std::vector<long int> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);

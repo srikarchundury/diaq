@@ -120,10 +120,10 @@ diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vect
 
 	std::unordered_map<long int, diagonal*> diagMap;
 	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &matrix_shape, &shape);
-	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		diaq_res->createDiagonal(i);
-	}
+	// #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+	// for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
+	// 	diaq_res->createDiagonal(i);
+	// }
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for (long int i = 0; i < size; i++) {
 		long int dIndex = host_diagonal_idx[i];
@@ -203,10 +203,10 @@ diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> ne
 
 	std::unordered_map<long int, diagonal*> diagMap;
 	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &new_shape);
-	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-	for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
-		diaq_res->createDiagonal(i);
-	}
+	// #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+	// for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
+	// 	diaq_res->createDiagonal(i);
+	// }
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	for (long int i = 0; i < size; i++) {
 		long int dIndex = host_diagonal_idx[i];

@@ -180,6 +180,7 @@ class diaQMatrix {
                         it->second->getImagValue(i) + diagNew->getImagValue(i)
                     );
                 }
+                diagNew->free();
             }
         }
         std::vector<long int> getMatrixPosition(long int flat_index) {
@@ -461,6 +462,7 @@ class diaQMatrix {
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second->free();
             }
+            // diagonalMap is taken care of by C++
         }
         void pruneMatrix() {
             std::vector<long int> toDelete;

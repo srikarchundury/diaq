@@ -35,6 +35,8 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     }
     denseMatrix *d = new denseMatrix(&new_shape, real_data, imag_data);
     d->shape = shape;
+    // comment below line for tests.cpp
+    // this->free();
     return d;
 }
 
@@ -50,10 +52,10 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
     // std::cout << "converting dense to sparse" << std::endl;
     std::unordered_map<long int, diagonal*> diagMap;    
     diaQMatrix *qm = new diaQMatrix(diagMap, &new_shape);
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int i = -1 * qm->matrix_shape[0]; i < qm->matrix_shape[1]; i++) {
-        qm->createDiagonal(i);
-    }
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    // for(long int i = -1 * qm->matrix_shape[0]; i < qm->matrix_shape[1]; i++) {
+    //     qm->createDiagonal(i);
+    // }
     // #pragma omp barrier
     for(long int i = 0; i < matrix_shape[0]; i++) {
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
@@ -67,6 +69,7 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
     }
     qm->pruneMatrix();
     qm->shape = shape;
+    // comment below line for tests.cpp
     // this->free();
     return qm;
     #endif
@@ -74,6 +77,8 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
 
 std::vector<std::complex<valType> > to_numpy(diaQMatrix *A) {
     denseMatrix *d = A->convertToDenseMatrix(A->matrix_shape);
+    // comment below line for tests.cpp
+    // A->free();
     return d->getData_forPy();
 }
 

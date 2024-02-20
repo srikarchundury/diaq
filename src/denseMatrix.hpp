@@ -173,8 +173,8 @@ class denseMatrix {
             return j-i;
         }
         void free() {
-            delete[] realData;
-            delete[] imagData;
+            std::free(realData);
+            std::free(imagData);
         }
         diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
     private:
