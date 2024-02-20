@@ -337,18 +337,8 @@ class diaQMatrix {
                 (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
             #endif
             for (auto x : diagonalMap) {
-                #ifndef CUDA_ENABLED
-                    #if NUM_BYTES_ALIGNED == -1
-                        valType *real_vals = x.second->getRealValues();
-                        valType *imag_vals = x.second->getImagValues();
-                    #else
-                        alignas(NUM_BYTES_ALIGNED) valType *real_vals = x.second->getRealValues();
-                        alignas(NUM_BYTES_ALIGNED) valType *imag_vals = x.second->getImagValues();
-                    #endif
-                #else
-                    valType *real_vals = x.second->getRealValues();
-                    valType *imag_vals = x.second->getImagValues();
-                #endif
+                valType *real_vals = x.second->getRealValues();
+                valType *imag_vals = x.second->getImagValues();
                 #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for (int i = 0; i < x.second->dLength; i++) {
                     (*real_data)[p] = real_vals[i];

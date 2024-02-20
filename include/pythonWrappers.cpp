@@ -36,7 +36,7 @@ PYBIND11_MODULE(diaq, m) {
     
     // diaq::diaQMatrix class
     py::class_<diaq::diaQMatrix>(m, "diaQMatrix")
-        .def(py::init<std::unordered_map<long int, diaq::diagonal>, long int>())
+        .def(py::init<std::unordered_map<long int, diaq::diagonal *>, long int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
         // -- //
@@ -63,14 +63,14 @@ PYBIND11_MODULE(diaq, m) {
         .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
-        .def("transpose", &diaq::diaQMatrix::transpose, py::return_value_policy::reference)
+        .def("transpose", &diaq::diaQMatrix::transpose, py::return_value_policy::reference);
         // operator bindings
-        .def("__mul__", [](const diaq::diaQMatrix &a, const diaq::diaQMatrix &b){
-            return a * b;
-        }, py::is_operator())
-        .def("__add__", [](const diaq::diaQMatrix &a, const diaq::diaQMatrix &b){
-            return a + b;
-        }, py::is_operator());
+        // .def("__mul__", [](const diaq::diaQMatrix a, const diaq::diaQMatrix b){
+        //     return a * b;
+        // }, py::is_operator())
+        // .def("__add__", [](const diaq::diaQMatrix a, const diaq::diaQMatrix b){
+        //     return a + b;
+        // }, py::is_operator());
 
     // diaq::denseMatrix class
     py::class_<diaq::denseMatrix>(m, "denseMatrix")
@@ -105,7 +105,7 @@ PYBIND11_MODULE(diaq, m) {
     m.def("array", &diaq::array, py::return_value_policy::reference);
     m.def(
         "tensordot",
-        [](diaq::diaQMatrix A, diaq::diaQMatrix B, std::vector<std::vector<long int> > axes) { return diaq::tensordot(A, B, axes); },
+        [](diaq::diaQMatrix *A, diaq::diaQMatrix *B, std::vector<std::vector<long int> > axes) { return diaq::tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
@@ -113,28 +113,28 @@ PYBIND11_MODULE(diaq, m) {
     );
     m.def(
         "transpose",
-        [](diaq::diaQMatrix A, std::vector<long int> new_order) { return diaq::transpose(A, new_order); },
+        [](diaq::diaQMatrix *A, std::vector<long int> new_order) { return diaq::transpose(A, new_order); },
         py::arg(),
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
     m.def(
         "kroneckerProduct",
-        [](diaq::diaQMatrix A, diaq::diaQMatrix B) { return diaq::kron_product(A, B); },
+        [](diaq::diaQMatrix *A, diaq::diaQMatrix *B) { return diaq::kron_product(A, B); },
         py::arg(),
         py::arg(),
         py::return_value_policy::reference
     );
     m.def(
         "spMV",
-        [](diaq::diaQMatrix A, diaq::vector x) { return diaq::spMV(A, x); },
+        [](diaq::diaQMatrix *A, diaq::vector *x) { return diaq::spMV(A, x); },
         py::arg(),
         py::arg(),
         py::return_value_policy::reference
     );
     m.def(
         "einsum",
-        [](diaq::diaQMatrix A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
+        [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
         py::arg(),
         py::arg("axes"),
         py::return_value_policy::reference

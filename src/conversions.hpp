@@ -10,7 +10,7 @@
 
 namespace diaq {
 
-std::vector<std::complex<valType> > to_numpy(diaQMatrix A);
+std::vector<std::complex<valType> > to_numpy(diaQMatrix *A);
 diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape);
 
 } // namespace diaq
