@@ -37,10 +37,7 @@ class diaQMatrix {
             shape = *dimens;
         }
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, long int s) {
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for (auto it = dm.begin(); it != dm.end(); it++) {
-                diagonalMap.insert({it->first, it->second});
-            }
+            diagonalMap = dm;
             size = s;
             matrix_shape.push_back(s);
             matrix_shape.push_back(s);
@@ -48,19 +45,13 @@ class diaQMatrix {
             shape.push_back(s);
         }
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, std::vector<long int> *d) {
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for (auto it = dm.begin(); it != dm.end(); it++) {
-                diagonalMap.insert({it->first, it->second});
-            }
+            diagonalMap = dm;
             matrix_shape = *d;
             size = matrix_shape[0];
             shape = *d;
         }
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, std::vector<long int> *d, std::vector<long int> *ts) {
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for (auto it = dm.begin(); it != dm.end(); it++) {
-                diagonalMap.insert({it->first, it->second});
-            }
+            diagonalMap = dm;
             matrix_shape = *d;
             shape = *ts;
             size = matrix_shape[0];

@@ -55,9 +55,8 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
         qm->createDiagonal(i);
     }
     // #pragma omp barrier
-    #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i = 0; i < matrix_shape[0]; i++) {
-        #pragma omp for
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<long int> pos{i, j};
@@ -85,7 +84,7 @@ diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long
         valType *real_vals = (valType *)malloc(vals.size() * sizeof(valType));
         valType *imag_vals = (valType *)malloc(vals.size() * sizeof(valType));
         
-        #pragma omp parallel num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < vals.size(); i++) {
             real_vals[i] = vals[i].real();
             imag_vals[i] = vals[i].imag();
