@@ -26,7 +26,7 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
             x = -1 * it->first;
             y = 0;
         }
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for (long int i = 0; i < it->second->dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
@@ -40,6 +40,10 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
     return d;
 }
 
+diaQMatrix *denseMatrix::convertToQuantumSparse() {
+    this->convertToQuantumSparse(this->shape);
+}
+
 diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
     #ifdef CUDA_ENABLED
         return convertToQuantumSparse_cuda(this, new_shape);
@@ -50,24 +54,29 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::unordered_map<long int, diagonal*> diagMap;    
-    diaQMatrix *qm = new diaQMatrix(diagMap, &new_shape);
-    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    diaQMatrix *qm = new diaQMatrix(&new_shape);
+    // printf("printing empty matrix");
+    // qm->print();
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
     // for(long int i = -1 * qm->matrix_shape[0]; i < qm->matrix_shape[1]; i++) {
     //     qm->createDiagonal(i);
     // }
     // #pragma omp barrier
     for(long int i = 0; i < matrix_shape[0]; i++) {
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             std::vector<long int> pos{i, j};
             std::vector<long int> d_pos = qm->getDiagonalPosition(pos);
+            long int d_len = qm->getDiagonalLength(d_pos[0]);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
-            qm->setDiagonalElement(d_pos[0], d_pos[1], qm->getDiagonalLength(d_pos[0]), realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
+            if(realData[i * new_shape[1] + j] != 0.0 || imagData[i * new_shape[1] + j] != 0.0) {
+                // printf("realData[%ld] = %f, imagData[%ld] = %f\n", i * new_shape[1] + j, realData[i * new_shape[1] + j], i * new_shape[1] + j, imagData[i * new_shape[1] + j]);
+                qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
+            }
         }
     }
-    qm->pruneMatrix();
+    // qm->pruneMatrix();
     qm->shape = shape;
     // comment below line for tests.cpp
     // this->free();
@@ -89,7 +98,7 @@ diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long
         valType *real_vals = (valType *)malloc(vals.size() * sizeof(valType));
         valType *imag_vals = (valType *)malloc(vals.size() * sizeof(valType));
         
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for(long int i = 0; i < vals.size(); i++) {
             real_vals[i] = vals[i].real();
             imag_vals[i] = vals[i].imag();

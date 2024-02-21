@@ -67,7 +67,7 @@ class denseMatrix {
         }
         std::vector<std::complex<valType> > getData_forPy() {
             std::vector<std::complex<valType> > res(size, 0);
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -75,7 +75,7 @@ class denseMatrix {
         }
         std::complex<valType> *getData() {
             std::complex<valType> *res = (std::complex<valType> *)malloc(size * sizeof(std::complex<valType>));
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -177,6 +177,7 @@ class denseMatrix {
             std::free(imagData);
         }
         diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
+        diaQMatrix *convertToQuantumSparse();
     private:
         valType *realData;
         valType *imagData;

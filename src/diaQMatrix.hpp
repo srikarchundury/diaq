@@ -36,6 +36,13 @@ class diaQMatrix {
             size = matrix_shape[0];
             shape = *dimens;
         }
+        diaQMatrix(std::vector<long int> *dimens, std::vector<long int> *ts) {
+            std::unordered_map<long int, diagonal*> d;
+            diagonalMap = d;
+            matrix_shape = *dimens;
+            shape = *ts;
+            size = matrix_shape[0];
+        }
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, long int s) {
             diagonalMap = dm;
             size = s;
@@ -272,7 +279,7 @@ class diaQMatrix {
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                 #endif
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
                 for (long int j = 0; j < dLength; j++) {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
@@ -331,7 +338,7 @@ class diaQMatrix {
             for (auto x : diagonalMap) {
                 valType *real_vals = x.second->getRealValues();
                 valType *imag_vals = x.second->getImagValues();
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
                 for (int i = 0; i < x.second->dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
@@ -448,7 +455,7 @@ class diaQMatrix {
                 long int dLength = it->second->dLength;
                 valType *real_vals = it->second->getRealValues();
                 valType *imag_vals = it->second->getImagValues();
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
                 for (long int i = 0; i < dLength; i++) {
                     std::vector<long int> mat_pos = getMatrixPosition(dIndex, i);
                     long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
@@ -458,7 +465,7 @@ class diaQMatrix {
             return res;
         }
         void free() {
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second->free();
             }
@@ -479,7 +486,7 @@ class diaQMatrix {
                     toDelete.push_back(it->first);
                 }
             }
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
             for(size_t i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
             }

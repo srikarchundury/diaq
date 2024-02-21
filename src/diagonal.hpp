@@ -43,7 +43,7 @@ class diagonal {
             imagValues = new_imagVals;
         }
         void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];

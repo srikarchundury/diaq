@@ -63,14 +63,14 @@ PYBIND11_MODULE(diaq, m) {
         .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
-        .def("transpose", &diaq::diaQMatrix::transpose, py::return_value_policy::reference);
+        .def("transpose", &diaq::diaQMatrix::transpose, py::return_value_policy::reference)
         // operator bindings
-        // .def("__mul__", [](const diaq::diaQMatrix a, const diaq::diaQMatrix b){
-        //     return a * b;
-        // }, py::is_operator())
-        // .def("__add__", [](const diaq::diaQMatrix a, const diaq::diaQMatrix b){
-        //     return a + b;
-        // }, py::is_operator());
+        .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
+            return diaq::product(a, b);
+        }, py::is_operator())
+        .def("__add__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
+            return diaq::add(a, b);
+        }, py::is_operator());
 
     // diaq::denseMatrix class
     py::class_<diaq::denseMatrix>(m, "denseMatrix")
