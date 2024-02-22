@@ -6,7 +6,11 @@
 
 namespace diaq {
 
-denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
+denseMatrix *diaQMatrix::convertToDenseMatrix() {
+    return this->convertToDenseMatrix(this->matrix_shape);
+}
+
+denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
     valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -45,6 +49,14 @@ diaQMatrix *denseMatrix::convertToQuantumSparse() {
 }
 
 diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {
+    long int *new_shape_arr = new long int[new_shape.size()];
+    for (long int i = 0; i < new_shape.size(); i++) {
+        new_shape_arr[i] = new_shape[i];
+    }
+    return this->convertToQuantumSparse(new_shape_arr);
+}
+
+diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
     #ifdef CUDA_ENABLED
         return convertToQuantumSparse_cuda(this, new_shape);
     #else
@@ -66,8 +78,8 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
-            std::vector<long int> pos{i, j};
-            std::vector<long int> d_pos = qm->getDiagonalPosition(pos);
+            long int pos[2] = {i, j};
+            long int *d_pos = qm->getDiagonalPosition(pos);
             long int d_len = qm->getDiagonalLength(d_pos[0]);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
             if(realData[i * new_shape[1] + j] != 0.0 || imagData[i * new_shape[1] + j] != 0.0) {
@@ -84,32 +96,33 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape)
     #endif
 }
 
-std::vector<std::complex<valType> > to_numpy(diaQMatrix *A) {
+std::complex<valType> *to_numpy(diaQMatrix *A) {
     denseMatrix *d = A->convertToDenseMatrix(A->matrix_shape);
     // comment below line for tests.cpp
     // A->free();
     return d->getData_forPy();
 }
 
-diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long int> shape) {
+diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape) {
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
-        valType *real_vals = (valType *)malloc(vals.size() * sizeof(valType));
-        valType *imag_vals = (valType *)malloc(vals.size() * sizeof(valType));
+        long int vals_len = 1;
+        for (long int val : shape) {
+            vals_len *= val;
+        }
+        valType *real_vals = (valType *)malloc(vals_len * sizeof(valType));
+        valType *imag_vals = (valType *)malloc(vals_len * sizeof(valType));
         
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
-        for(long int i = 0; i < vals.size(); i++) {
+        for(long int i = 0; i < vals_len; i++) {
             real_vals[i] = vals[i].real();
             imag_vals[i] = vals[i].imag();
         }
 
         long int rank = shape.size();
         if (rank > 2) {
-            long int product = 1;
-            for (long int val : shape) {
-                product *= val;
-            }
+            long int product = vals_len;
             long int sqrtProduct = static_cast<long int>(std::sqrt(product));
             // Find the closest factors of the product
             long int x = 1;
@@ -121,13 +134,17 @@ diaQMatrix *from_numpy(std::vector<std::complex<valType>> vals, std::vector<long
                     break;
                 }
             }
-            std::vector<long int> new_shape{x, y};
-            std::vector<long int> orig_shape = shape;
-            denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, &orig_shape);
+            long int *new_shape = new long int[2];
+            new_shape[0] = x;
+            new_shape[1] = y;
+            denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, shape);
             return d->convertToQuantumSparse(new_shape);
         } else {
-            denseMatrix *d = new denseMatrix(&shape, real_vals, imag_vals, &shape);
-            return d->convertToQuantumSparse(shape);
+            long int *mat_shape = new long int[2];
+            mat_shape[0] = shape[0];
+            mat_shape[1] = shape[1];
+            denseMatrix *d = new denseMatrix(&mat_shape, real_vals, imag_vals, shape);
+            return d->convertToQuantumSparse(mat_shape);
         }
     #endif
 }

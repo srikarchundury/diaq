@@ -11,8 +11,8 @@
 
 namespace diaq {
 
-long int getDiagonalLength(long int dIndex, std::vector<long int> shape);
-diagonal *multiplyDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, long int indexA, long int indexB, diagonal *diagA, diagonal *diagB);
+long int getDiagonalLength(long int dIndex, long int *shape);
+diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, diagonal *diagA, diagonal *diagB);
 diaQMatrix *product(diaQMatrix *A, diaQMatrix *B);
 denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B);
 diagonal *addElements(diagonal *A, diagonal *B);

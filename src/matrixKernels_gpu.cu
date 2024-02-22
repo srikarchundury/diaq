@@ -257,7 +257,7 @@ diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B) {
 
 	// CUDA stuff - Preparation Phase
 	// std::cout << "Preparation Phase" << std::endl;
-	std::vector<long int> C_matrix_shape{A->matrix_shape[0], B->matrix_shape[1]};
+	long int C_matrix_shape[] = {A->matrix_shape[0], B->matrix_shape[1]};
 	diaQMatrix* C = new diaQMatrix(&C_matrix_shape);
 	
 	// number of diagonals in C : A_matrix_shape[0] + B_matrix_shape[1] - 1

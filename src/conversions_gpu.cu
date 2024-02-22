@@ -36,7 +36,7 @@ __global__ void convert_to_dq(
  * 			3. The values vector should be in row-major order
  * 			4. The values vector should be a flattened version of the NumPy array 
 */
-diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vector<long int> shape) {
+diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
 	logger.log("Using CUDA to convert NumPy array to diaQMatrix");
 	long int size = values.size();
 	int rank = shape.size();
@@ -61,8 +61,7 @@ diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vect
 		x = shape[0];
 		y = shape[1];
 	}
-	std::vector<long int> matrix_shape{x, y};
-
+	long int matrix_shape[2] = {x, y};
 	long int matrix_size_x = matrix_shape[0]; // Assuming first dimension as rows
 	long int matrix_size_y = matrix_shape[1]; // Assuming second dimension as columns
 
@@ -131,6 +130,7 @@ diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vect
 		diaq_res->setDiagonalElement(dIndex, dPos, diaq_res->getDiagonalLength(dIndex), values[i].real(), values[i].imag());
 	}
 	diaq_res->pruneMatrix();
+	free(matrix_shape);
 	return diaq_res;
 }
 /*
@@ -141,7 +141,7 @@ diaQMatrix *from_numpy_cuda(std::vector<std::complex<valType>> values, std::vect
  * 		Returns:
  * 			denseMatrix
 */
-diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape) {
+diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, long int *new_shape) {
 	logger.log("Using CUDA to convert denseMatrix to diaQMatrix");
 	valType *realData = d->getRealData();
 	valType *ImagData = d->getImagData();
