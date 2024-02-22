@@ -65,10 +65,10 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_a, real_b; // a for valuesA and b for valuesB
         __m256d imag_a, imag_b; // a for valuesA and b for valuesB
         __m256d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-        long int left_overs = loop_count - ((loop_count / 8) * 8);
-        long int vec_loop = (loop_count / 8);
-        long int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
-        long int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+        long int left_overs = loop_count - ((loop_count / 4) * 4);
+        long int vec_loop = (loop_count / 4);
+        long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
+        long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
 
         while (vec_loop--) {
             real_a = _mm256_loadu_pd(&real_vals_a[k + offsetA - jump]);
@@ -87,7 +87,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             _mm256_storeu_pd(&real_vals_final[k], real_res);
             _mm256_storeu_pd(&imag_vals_final[k], imag_res);
 
-            k += 8;
+            k += 4;
         }
         if (left_overs != 0) {
             real_a = avx_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
@@ -106,7 +106,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             avx_store_partial_double(left_overs, &real_vals_final[k], real_res);
             avx_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
 
-            k += left_overs;
+            // k += left_overs;
         }
     }
     // ------------------------AVX FLOAT----------------------------------------
@@ -134,6 +134,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
         // logger.log("Using AVX-Float vectorization");
+        // printf("Using AVX-Float vectorization\n");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -148,22 +149,39 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         long int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
         long int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
 
+        // printf("k = %ld, lenRes = %ld, offsetA = %ld, offsetB = %ld, jump = %ld, lenDiagA = %ld, lenDiagB = %ld, loop_count = %ld, left_overs = %ld, vec_loop = %ld, left_overs_start_at_A = %ld, left_overs_start_at_B = %ld\n", k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, loop_count, left_overs, vec_loop, left_overs_start_at_A, left_overs_start_at_B);
+
         while (vec_loop--) {
+            // printf("test here 1\n");
             real_a = _mm256_loadu_ps(&real_vals_a[k + offsetA - jump]);
             imag_a = _mm256_loadu_ps(&imag_vals_a[k + offsetA - jump]);
             real_b = _mm256_loadu_ps(&real_vals_b[k + offsetB - jump]);
             imag_b = _mm256_loadu_ps(&imag_vals_b[k + offsetB - jump]);
 
+            // printf("test here 2\n");
+
             real_reala_realb = _mm256_mul_ps(real_a, real_b);
             real_imaga_imagb = _mm256_mul_ps(imag_a, imag_b);
             real_res = _mm256_sub_ps(real_reala_realb, real_imaga_imagb);
+
+            // printf("test here 3\n");
 
             imag_reala_imagb = _mm256_mul_ps(real_a, imag_b);
             imag_imaga_realb = _mm256_mul_ps(imag_a, real_b);
             imag_res = _mm256_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-            _mm256_store_ps(&real_vals_final[k], real_res);
-            _mm256_store_ps(&imag_vals_final[k], imag_res);
+            // printf("test here 4\n");
+
+            avx_store_partial_float(8, &real_vals_final[k], real_res);
+            avx_store_partial_float(8, &imag_vals_final[k], imag_res);
+
+            // printf("test here 5\n");
+
+            // printing real_res, imag_res
+            // float *real_res_ptr = (float *)&real_res;
+            // float *imag_res_ptr = (float *)&imag_res;
+            // printf("real_res = [%f, %f, %f, %f, %f, %f, %f, %f]\n", real_res_ptr[0], real_res_ptr[1], real_res_ptr[2], real_res_ptr[3], real_res_ptr[4], real_res_ptr[5], real_res_ptr[6], real_res_ptr[7]);
+            // printf("imag_res = [%f, %f, %f, %f, %f, %f, %f, %f]\n", imag_res_ptr[0], imag_res_ptr[1], imag_res_ptr[2], imag_res_ptr[3], imag_res_ptr[4], imag_res_ptr[5], imag_res_ptr[6], imag_res_ptr[7]);
 
             k += 8;
         }
@@ -184,7 +202,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             avx_store_partial_float(left_overs, &real_vals_final[k], real_res);
             avx_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
 
-            k += left_overs;
+            // k += left_overs;
         }
     }
 
@@ -273,7 +291,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             sse_store_partial_float(left_overs, &real_vals_final[k], real_res);
             sse_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
 
-            k += left_overs;
+            // k += left_overs;
         }
     }
 
@@ -310,10 +328,12 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m128d real_a, real_b; // a for valuesA and b for valuesB
         __m128d imag_a, imag_b; // a for valuesA and b for valuesB
         __m128d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-        long int left_overs = loop_count - ((loop_count / 4) * 4);
-        long int vec_loop = (loop_count / 4);
-        long int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
-        long int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
+        long int left_overs = loop_count - ((loop_count / 2) * 2);
+        long int vec_loop = (loop_count / 2);
+        long int left_overs_start_at_A = k + offsetA - jump + 2 * (loop_count / 2);
+        long int left_overs_start_at_B = k + offsetB - jump + 2 * (loop_count / 2);
+
+        // printf("k = %ld, lenRes = %ld, offsetA = %ld, offsetB = %ld, jump = %ld, lenDiagA = %ld, lenDiagB = %ld, loop_count = %ld, left_overs = %ld, vec_loop = %ld, left_overs_start_at_A = %ld, left_overs_start_at_B = %ld\n", k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, loop_count, left_overs, vec_loop, left_overs_start_at_A, left_overs_start_at_B);
 
         while (vec_loop--) {
             real_a = _mm_loadu_pd(&real_vals_a[k + offsetA - jump]);
@@ -332,26 +352,12 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             _mm_storeu_pd(&real_vals_final[k], real_res);
             _mm_storeu_pd(&imag_vals_final[k], imag_res);
 
-            k += 4;
+            k += 2;
         }
-        if (left_overs != 0) {
-            real_a = sse_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
-            imag_a = sse_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
-            real_b = sse_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
-            imag_b = sse_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
-
-            real_reala_realb = _mm_mul_pd(real_a, real_b);
-            real_imaga_imagb = _mm_mul_pd(imag_a, imag_b);
-            real_res = _mm_sub_pd(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm_mul_pd(real_a, imag_b);
-            imag_imaga_realb = _mm_mul_pd(imag_a, real_b);
-            imag_res = _mm_add_pd(imag_reala_imagb, imag_imaga_realb);
-
-            sse_store_partial_double(left_overs, &real_vals_final[k], real_res);
-            sse_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
-
-            k += left_overs;
+        if (left_overs == 1) { // left over can be 1 or 0, don't need vectorization for that right..
+            real_vals_final[k] = (valType)((valType)(real_vals_a[k + offsetA - jump] * real_vals_b[k + offsetB - jump]) - (valType)(imag_vals_a[k + offsetA - jump] * imag_vals_b[k + offsetB - jump]));
+            imag_vals_final[k] = (valType)((valType)(real_vals_a[k + offsetA - jump] * imag_vals_b[k + offsetB - jump]) + (valType)(imag_vals_a[k + offsetA - jump] * real_vals_b[k + offsetB - jump]));
+            // k += 1;
         }
     }
 #endif
@@ -545,8 +551,9 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
                 // result->print();
                 // std::cout << " ------ result ------ " << std::endl;
             } else if (diagNew != NULL) {
-                // printf("printing empty diagonal\n");
+                // printf(" --- printing empty diagonal --- \n");
                 // diagNew->print();
+                // printf(" --- --- --- \n");
                 diagNew->free();
             }
         }

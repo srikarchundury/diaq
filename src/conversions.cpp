@@ -41,7 +41,7 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(std::vector<long int> new_shape) {
 }
 
 diaQMatrix *denseMatrix::convertToQuantumSparse() {
-    this->convertToQuantumSparse(this->shape);
+    return this->convertToQuantumSparse(this->shape);
 }
 
 diaQMatrix *denseMatrix::convertToQuantumSparse(std::vector<long int> new_shape) {

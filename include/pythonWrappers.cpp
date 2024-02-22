@@ -90,7 +90,17 @@ PYBIND11_MODULE(diaq, m) {
         .def("sparsity", &diaq::denseMatrix::sparsity, py::return_value_policy::reference)
         .def("getTargetDiagIndex", &diaq::denseMatrix::getTargetDiagIndex, py::return_value_policy::reference)
         .def("getTargetDiagIndex_onlydiags", &diaq::denseMatrix::getTargetDiagIndex_onlydiags, py::return_value_policy::reference)
-        .def("convertToQuantumSparse", &diaq::denseMatrix::convertToQuantumSparse, py::return_value_policy::reference);
+        .def(
+            "convertToQuantumSparse",
+            [](diaq::denseMatrix *self, std::vector<long int> shape) { return self->convertToQuantumSparse(shape); },
+            py::arg(),
+            py::return_value_policy::reference
+        )
+        .def( // overload
+            "convertToQuantumSparse",
+            [](diaq::denseMatrix *self) { return self->convertToQuantumSparse(); },
+            py::return_value_policy::reference
+        );
 
     // conversion from numpy
     m.def("from_numpy", &diaq::from_numpy, py::return_value_policy::reference);
