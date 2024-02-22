@@ -24,6 +24,7 @@ class diaQMatrix {
             std::unordered_map<long int, diagonal*> d;
             diagonalMap = d;
             size = s;
+            matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);

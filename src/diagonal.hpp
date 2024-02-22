@@ -64,9 +64,11 @@ class diagonal {
             return ans;
         }
         valType getRealValue(long int i) {
+            // printf("getRealVal i=%ld, dLength=%ld\n", i, dLength);
             return realValues[i];
         }
         valType getImagValue(long int i) {
+            // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
         bool isEmpty() {

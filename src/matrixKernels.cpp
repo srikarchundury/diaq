@@ -1248,12 +1248,12 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
     //     // can handle this better. TODO
     //     return diaQMatrix((long int)0);
     // }
+    // printf("here begins 0\n");
     diaQMatrix *result = new diaQMatrix((long int)0);
-
-    printf("here 0\n");
+    // printf("here 0\n");
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
-    printf("here 1\n");
+    // printf("here 1\n");
 
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -1266,7 +1266,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         valType *real_valsC = newDiag->getRealValues();
         valType *imag_valsC = newDiag->getImagValues();
 
-        printf("here 1.5\n");
+        // printf("here 1.5\n");
 
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for (long int i = 0; i < dLength; i++) {
@@ -1279,7 +1279,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         result->setDiagonal(dIndex, newDiag);
     }
 
-    printf("here 2\n");
+    // printf("here 2\n");
 
     // if(logger.log_level == DEEP_DEBUG) {
     //     std::cout << " --- " << std::endl;
@@ -1327,7 +1327,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA;
 
-    printf("kron here 0\n");
+    // printf("kron here 0\n");
 
     // for each element in A, do multiply_by_scalar with B and add to kron_list.
     // paralleize this later. TODO
@@ -1343,17 +1343,19 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
                 continue;
             }
 
-            printf("kron here 1\n");
+            // printf("kron here 1\n");
 
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
             if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
                 kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+                // printf("printing kron_block\n");
+                // kron_block->print();
                 // store in unique_kron_blocks
                 unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)), kron_block));
             }
 
-            printf("kron here 2\n");
+            // printf("kron here 2\n");
 
             long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
             std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
