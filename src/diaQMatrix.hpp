@@ -99,6 +99,15 @@ class diaQMatrix {
                 return it->second->getValue(mat_pos[1]);
             }
         }
+        std::complex<valType> getItem(long int *mat_pos) {
+            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            if(it == diagonalMap.end()) {
+                return std::complex<valType>(0.0, 0.0);
+            }
+            else {
+                return it->second->getValue(mat_pos[1]);
+            }
+        }
         std::complex<valType> getItem(std::vector<long int> ten_pos) {
             long int *d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);

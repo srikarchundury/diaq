@@ -78,7 +78,9 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
-            long int pos[2] = {i, j};
+            long int *pos = new long int[2];
+            pos[0] = i;
+            pos[1] = j;
             long int *d_pos = qm->getDiagonalPosition(pos);
             long int d_len = qm->getDiagonalLength(d_pos[0]);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
