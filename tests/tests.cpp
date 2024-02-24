@@ -2021,6 +2021,8 @@ int main(int argc, char **argv) {
         diaq::denseMatrix *dfirst = new diaq::denseMatrix(&shape_first_m, first_m);
         diaq::diaQMatrix *q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
         q_first->shape = std::vector<long int>{2,2,2,2};
+        printf(" --- q_first matrix --- \n");
+        q_first->print();
         diaq::valType second_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -2031,6 +2033,8 @@ int main(int argc, char **argv) {
         diaq::denseMatrix *dsecond = new diaq::denseMatrix(&shape_second_m, second_m);
         diaq::diaQMatrix *q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
         q_second->shape = std::vector<long int>{2,2,2,2};
+        printf(" --- q_second matrix --- \n");
+        q_second->print();
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{1};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};

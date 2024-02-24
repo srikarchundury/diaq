@@ -715,10 +715,10 @@ std::complex<valType> trace(diaQMatrix *A) {
     return t;
 }
 
-diaQMatrix *reshape(diaQMatrix *A, long int *matrix_shape) {
-    // ideally, we shouldn't be needing this at all.
-    return (A->convertToDenseMatrix())->convertToQuantumSparse(matrix_shape);
-}
+// diaQMatrix *reshape(diaQMatrix *A, long int *matrix_shape) {
+//     // ideally, we shouldn't be needing this at all.
+//     return (A->convertToDenseMatrix())->convertToQuantumSparse(matrix_shape);
+// }
 
 diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape) {
     // std::cout << "diaq/reshape called with newshape (";
@@ -1009,9 +1009,11 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     for(long int i=0;i<axes[1].size();i++) axes_1_product *= B->shape[axes[1][i]];
 
     A = transpose(A, order_A);
-    // A.print();
+    // printf("A after transpose\n");
+    // A->print();
     B = transpose(B, order_B);
-    // B.print();
+    // printf("B after transpose\n");
+    // B->print();
 
     long int totalA = A->matrix_shape[0] * A->matrix_shape[1];
     long int totalB = B->matrix_shape[0] * B->matrix_shape[1];
@@ -1023,16 +1025,19 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
         throw std::invalid_argument("invalid axes, can't perform tensordot");
     }
 
-    long int new_shape_a[] = {totalA / axes_0_product, axes_0_product};
-    long int new_shape_b[] = {axes_1_product, totalB / axes_1_product};
+    // long int *new_shape_a = new long int[2] {totalA / axes_0_product, axes_0_product};
+    // long int *new_shape_b = new long int[2] {axes_1_product, totalB / axes_1_product};
+
+    std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
+    std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
     diaQMatrix *reshaped_A = reshape(A, new_shape_a);
     diaQMatrix *reshaped_B = reshape(B, new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
-    // reshaped_A.convertToDenseMatrix(reshaped_A->shape).print();
+    // reshaped_A->convertToDenseMatrix()->print();
     // std::cout << "and B - " << std::endl;
-    // reshaped_B.convertToDenseMatrix(reshaped_B->shape).print();
+    // reshaped_B->convertToDenseMatrix()->print();
 
     res = product(reshaped_A, reshaped_B);
 
@@ -1062,9 +1067,9 @@ diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B) {
     return add(&A, &B);
 }
 
-diaQMatrix *diaQMatrix::reshape(long int *matrix_shape) {
-    return diaq::reshape(this, matrix_shape);
-}
+// diaQMatrix *diaQMatrix::reshape(long int *matrix_shape) {
+//     return diaq::reshape(this, matrix_shape);
+// }
 
 diaQMatrix *diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
     return diaq::reshape(this, new_tensor_shape);
