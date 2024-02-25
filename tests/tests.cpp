@@ -2048,10 +2048,13 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{1};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res = tensordot(q_first, q_second, axes);
-        res->print();
+        diaq::diaQMatrix *res1 = diaq::old_tensordot(q_first, q_second, axes);
+        res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix *res2 = diaq::tensordot(q_first, q_second, axes);
+        res2->print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "format_conversion") == 0) {
