@@ -1087,7 +1087,7 @@ long int *getMatrixShape(std::vector<long int> tensor_shape) {
     return new_shape;
 }
 
-std::vector<long int> getTenPosition(const std::vector<long int>& ten_pos_A,
+std::vector<long int> getTenPos(const std::vector<long int>& ten_pos_A,
                                      const std::vector<long int>& ten_pos_B,
                                      const std::vector<long int>& axes_A,
                                      const std::vector<long int>& axes_B,
@@ -1115,25 +1115,28 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     // start timer
     auto start = std::chrono::high_resolution_clock::now();
 
+    std::vector<long int> axes_A = axes[0];
+    std::vector<long int> axes_B = axes[1];
+
     // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    // std::cout << "--" << std::endl;
-    // std::cout << "tensordot called for A - " << std::endl;
-    // A->print();
-    // std::cout << "and B - " << std::endl;
-    // B->print();
-    // std::cout << "with axes - " << " (";
-    // long int i=0;
-    // for(i=0; i<axes[0].size()-1; i++)
-    //     std::cout << axes[0][i] << ",";
-    // std::cout << axes[0][i] << ") and (";
-    // for(i=0; i<axes[1].size()-1; i++)
-    //     std::cout << axes[1][i] << ",";
-    // std::cout << axes[1][i] << ")" << std::endl;
-    // std::cout << "--" << std::endl;
+    std::cout << "--" << std::endl;
+    std::cout << "tensordot called for A - " << std::endl;
+    A->print();
+    std::cout << "and B - " << std::endl;
+    B->print();
+    std::cout << "with axes - " << " (";
+    long int i=0;
+    for(i=0; i<axes_A.size()-1; i++)
+        std::cout << axes_A[i] << ",";
+    std::cout << axes_A[i] << ") and (";
+    for(i=0; i<axes_B.size()-1; i++)
+        std::cout << axes_B[i] << ",";
+    std::cout << axes_B[i] << ")" << std::endl;
+    std::cout << "--" << std::endl;
 
     // let's try element by element like we do with tensor transpose!
-    std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
+    std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes_A, axes_B);
     long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
     diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
 
@@ -1154,42 +1157,26 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                 for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
                     std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
                     // print ten_pos_A and ten_pos_B
-                    printf("ten_pos_A = (");
-                    for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
-                        printf("%ld, ", ten_pos_A[i]);
-                    }
-                    printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
-                    printf("ten_pos_B = (");
-                    for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
-                        printf("%ld, ", ten_pos_B[i]);
-                    }
-                    printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
-
-                    // now we have ten_pos_A and ten_pos_B, we need use axes to decide if we need to multiply or not
-                    long int match = 1;
-                    for(long int i = 0; i < axes[0].size(); i++) {
-                        if(ten_pos_A[axes[0][i]] != ten_pos_B[axes[1][i]]) {
-                            match = 0;
-                            break;
-                        }
-                    }
-                    if(match) {
-                        std::vector<long int> ten_pos_res = getTenPosition(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
-                        // printing ten_pos_res
-                        printf("ten_pos_res = (");
-                        for (long int i = 0; i < ten_pos_res.size() - 1; i++) {
-                            printf("%ld, ", ten_pos_res[i]);
-                        }
-                        printf("%ld)\n", ten_pos_res[ten_pos_res.size() - 1]);
-
-                        long int *d_pos = res->getDiagonalPosition(ten_pos_res);
-                        long int d_len = getDiagonalLength(d_pos[0], res->matrix_shape);                        
+                    // printf("ten_pos_A = (");
+                    // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
+                    //     printf("%ld, ", ten_pos_A[i]);
+                    // }
+                    // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
+                    // printf("ten_pos_B = (");
+                    // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
+                    //     printf("%ld, ", ten_pos_B[i]);
+                    // }
+                    // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
+                    // if the common axes
+                    if (ten_pos_A[axes_A[0]] == ten_pos_B[axes_B[0]]) {
+                        // Calculate resulting coordinates after contraction
+                        std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes_A, axes_B, A->shape, B->shape);
+                        long int *res_diag_pos = res->getDiagonalPosition(result_coords);
+                        long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
                         valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
                         valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
                         if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
-                            valType cur_real_val = res->getItem_real(d_pos[0], d_pos[1]);
-                            valType cur_imag_val = res->getItem_imag(d_pos[0], d_pos[1]);
-                            res->setDiagonalElement(d_pos[0], d_pos[1], d_len, cur_real_val + real_val, cur_imag_val + imag_val);
+                            res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, real_val, imag_val);
                         }
                     }
                 }
