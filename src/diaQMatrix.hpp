@@ -23,7 +23,7 @@ class diaQMatrix {
         diaQMatrix(long int s) {
             std::unordered_map<long int, diagonal*> d;
             diagonalMap = d;
-            size = s;
+            size = s * s;
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -34,7 +34,7 @@ class diaQMatrix {
             std::unordered_map<long int, diagonal*> d;
             diagonalMap = d;
             matrix_shape = *dimens;
-            size = matrix_shape[0];
+            size = matrix_shape[0] * matrix_shape[1];
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -43,11 +43,11 @@ class diaQMatrix {
             diagonalMap = d;
             matrix_shape = *dimens;
             shape = ts;
-            size = matrix_shape[0];
+            size = matrix_shape[0] * matrix_shape[1];
         }
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, long int s) {
             diagonalMap = dm;
-            size = s;
+            size = s * s;
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
@@ -56,7 +56,7 @@ class diaQMatrix {
         diaQMatrix(std::unordered_map<long int, diagonal*> dm, long int **d) {
             diagonalMap = dm;
             matrix_shape = *d;
-            size = matrix_shape[0];
+            size = matrix_shape[0] * matrix_shape[1];
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -64,7 +64,7 @@ class diaQMatrix {
             diagonalMap = dm;
             matrix_shape = *d;
             shape = ts;
-            size = matrix_shape[0];
+            size = matrix_shape[0] * matrix_shape[1];
         }
         long int getSize() {
             return size;
@@ -135,6 +135,16 @@ class diaQMatrix {
                 it->second->print();
             }
         }
+        void print_shape() {
+            std::cout << "matrix_shape (";
+            std::cout << matrix_shape[0] << ",";
+            std::cout << matrix_shape[1] << ")" << std::endl;
+            std::cout << "tensor_shape (";
+            for(size_t i = 0; i < shape.size()-1; i++) {
+                std::cout << shape[i] << ",";
+            }
+            std::cout << shape[shape.size()-1] << ")" << std::endl;
+        }
         void createDiagonal(long int dIndex) {
             diagonal *newDiag = new diagonal(dIndex, getDiagonalLength(dIndex));
             this->diagonalMap.insert({dIndex, newDiag});
@@ -203,6 +213,27 @@ class diaQMatrix {
                     );
                 }
                 diagNew->free();
+            }
+        }
+        void balance() {
+            printf("balance called\n");
+            this->print_shape();
+            if(matrix_shape[0] != matrix_shape[1]) {
+                long int overall_dim = matrix_shape[0] * matrix_shape[1]; // this is same as size, but I have to double check if I modify size everytime I modify matrix_shape.... TODO
+                long int sqrtProduct = static_cast<long int>(std::sqrt(overall_dim));
+                // Find the closest factors of the product
+                long int x = 1;
+                long int y = overall_dim;
+                for (long int i = sqrtProduct; i > 0; --i) {
+                    if (overall_dim % i == 0) {
+                        x = i;
+                        y = overall_dim / i;
+                        break;
+                    }
+                }
+                printf("new x = %ld, y = %ld\n", x, y);
+                long int *new_shape = new long int[2]{x, y};
+                this->matrix_reshape(new_shape);
             }
         }
         long int *getMatrixPosition(long int flat_index) {
@@ -416,6 +447,26 @@ class diaQMatrix {
             }
             return res;
         }
+        long int getFlatIndex(long int d_idx, long int d_pos) {
+            long int mat_x, mat_y;
+            if(d_idx == 0) {
+                mat_x = d_pos;
+                mat_y = d_pos;
+            }
+            else {
+                if(d_idx < 0) {
+                    mat_x = abs(d_idx);
+                    mat_y = 0;
+                }
+                else {
+                    mat_x = 0;
+                    mat_y = abs(d_idx);
+                }
+                mat_x += (d_pos);
+                mat_y += (d_pos);
+            }
+            return mat_x * matrix_shape[1] + mat_y;
+        }
         long int getFlatIndex(long int *matrix_pos) {
             return matrix_pos[0] * matrix_shape[1] + matrix_pos[1];
         }
@@ -535,7 +586,7 @@ class diaQMatrix {
             }
         }
         diaQMatrix *reshape(std::vector<long int> new_tensor_shape);
-        diaQMatrix *reshape(long int *new_tensor_shape);
+        diaQMatrix *matrix_reshape(long int *new_matrix_shape);
         diaQMatrix *transpose(std::vector<long int> new_order);
         diaQMatrix *transpose();
         denseMatrix *convertToDenseMatrix(long int *new_shape);

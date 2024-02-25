@@ -715,18 +715,30 @@ std::complex<valType> trace(diaQMatrix *A) {
     return t;
 }
 
-// diaQMatrix *reshape(diaQMatrix *A, long int *matrix_shape) {
-//     // ideally, we shouldn't be needing this at all.
-//     return (A->convertToDenseMatrix())->convertToQuantumSparse(matrix_shape);
-// }
+diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
+    // this is matrix_reshape.
+    printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
+    diaQMatrix *res = new diaQMatrix(&matrix_shape, A->shape);
+    std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+        valType *real_vals = it->second->getRealValues();
+        valType *imag_vals = it->second->getImagValues();
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        for(long int i = 0; i < it->second->dLength; i++) {
+            // old_d_pos has (it->first, i) for A->matrix_shape
+            long int *d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
+            long int d_len = getDiagonalLength(d_pos[0], res->matrix_shape);
+            if(real_vals[i] != 0 || imag_vals[i] != 0) { // doing this here to avoid pruning later below.
+                res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
+            }
+        }
+    }
+    // A->free();
+    return res;
+}
 
 diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape) {
-    // std::cout << "diaq/reshape called with newshape (";
-    // for(long int i = 0; i < new_tensor_shape.size()-1; i++) {
-    //     std::cout << new_tensor_shape[i] << ",";
-    // }
-    // std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
-
     long int old_product = 1;
     #pragma unroll
     for(long int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
@@ -737,52 +749,9 @@ diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape) {
         std::cout << old_product << "!=" << new_product << std::endl;
         throw std::invalid_argument("cannot reshape long into given shape");
     }
-    long int l = new_tensor_shape.size();
-    // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
-    long int *new_shape = new long int[2];
-    if(l > 2) {
-        long int i = l / 2;
-        #pragma unroll
-        for(long int r = 0; r<i ; r++) {
-            new_shape[0] = new_shape[0] * new_tensor_shape[r];
-        }
-        #pragma unroll
-        for(long int r = i; r<l ; r++) {
-            new_shape[1] = new_shape[1] * new_tensor_shape[r];
-        }
-    } else {
-        new_shape[0] = new_tensor_shape[0];
-        new_shape[1] = new_tensor_shape[1];
-    }
-
-    diaQMatrix *res = new diaQMatrix(&new_shape, new_tensor_shape);
-    std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator it;
-    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
-        for(long int i = 0; i < it->second->dLength; i++) {
-            // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
-            // std::cout << "element = " << vals[i] << std::endl;
-            std::vector<long int> ten_pos = A->getTensorPosition(it->first, i);
-            // std::cout << "tensor index = (";
-            // for(long int i = 0; i < ten_pos.size()-1; i++) {
-            //     std::cout << ten_pos[i] << ",";
-            // }
-            // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
-
-            long int *d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(ten_pos));
-            // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-            long int d_len = getDiagonalLength(d_pos[0], res->matrix_shape);
-            if(real_vals[i] != 0 || imag_vals[i] != 0) { // doing this here to avoid pruning later below.
-                res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
-            }
-            // std::cout << " -- " << std::endl;
-        }
-    }
-    // res->pruneMatrix();
-    return res;
+    // this is tensor reshape, we can just replace shape and we're good.
+    A->shape = new_tensor_shape;
+    return A;
 }
 
 std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::vector<long int> tensor_shape_B, std::vector<long int> axis_A, std::vector<long int> axis_B) {
@@ -834,6 +803,9 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 }
 
 diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
+    // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
+
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
@@ -937,30 +909,40 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         }
     }
     // res->pruneMatrix();
+
+    // end timer
+    // auto end = std::chrono::high_resolution_clock::now();
+    // printf("Time taken for transpose = %f\n", std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() * 1e-9);
+    // std::flush(std::cout);
     return res;
 }
 
 diaQMatrix *transpose(diaQMatrix *A) {
-    return transpose(A, std::vector<long int>());   
+    return transpose(A, std::vector<long int>());
 }
 
-diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
-    // std::cout << "--" << std::endl;
-    // std::cout << "tensordot called for A - " << std::endl;
-    // A.print();
-    // std::cout << "and B - " << std::endl;
-    // B.print();
-    // std::cout << "with axes - " << " (";
-    // long int i=0;
-    // for(i=0; i<axes[0].size()-1; i++)
-    //     std::cout << axes[0][i] << ",";
-    // std::cout << axes[0][i] << ") and (";
-    // for(i=0; i<axes[1].size()-1; i++)
-    //     std::cout << axes[1][i] << ",";
-    // std::cout << axes[1][i] << ")" << std::endl;
-    // std::cout << "--" << std::endl;
+diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
-    diaQMatrix *res; 
+    // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
+
+    std::cout << "--" << std::endl;
+    std::cout << "tensordot called for A - " << std::endl;
+    A->print_shape();
+    std::cout << "and B - " << std::endl;
+    B->print_shape();
+    std::cout << "with axes - " << " (";
+    long int i=0;
+    for(i=0; i<axes[0].size()-1; i++)
+        std::cout << axes[0][i] << ",";
+    std::cout << axes[0][i] << ") and (";
+    for(i=0; i<axes[1].size()-1; i++)
+        std::cout << axes[1][i] << ",";
+    std::cout << axes[1][i] << ")" << std::endl;
+    std::cout << "--" << std::endl;
+
+    diaQMatrix *res;
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
@@ -1025,14 +1007,14 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
         throw std::invalid_argument("invalid axes, can't perform tensordot");
     }
 
-    // long int *new_shape_a = new long int[2] {totalA / axes_0_product, axes_0_product};
-    // long int *new_shape_b = new long int[2] {axes_1_product, totalB / axes_1_product};
+    long int *new_shape_a = new long int[2] {totalA / axes_0_product, axes_0_product};
+    long int *new_shape_b = new long int[2] {axes_1_product, totalB / axes_1_product};
 
-    std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
-    std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
+    // std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
+    // std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
-    diaQMatrix *reshaped_A = reshape(A, new_shape_a);
-    diaQMatrix *reshaped_B = reshape(B, new_shape_b);
+    diaQMatrix *reshaped_A = A->matrix_reshape(new_shape_a);
+    diaQMatrix *reshaped_B = B->matrix_reshape(new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
     // reshaped_A->convertToDenseMatrix()->print();
@@ -1044,6 +1026,85 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     // calculating result's tensor_shape
     res->shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
     // res->pruneMatrix(); // do we really need this?
+
+    // end timer
+    auto end = std::chrono::high_resolution_clock::now();
+    printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
+    std::flush(std::cout);
+
+    return res;
+}
+
+diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
+
+    std::cout << "--" << std::endl;
+    std::cout << "tensordot called for A - " << std::endl;
+    A->print_shape();
+    std::cout << "and B - " << std::endl;
+    B->print_shape();
+    std::cout << "with axes - " << " (";
+    long int i=0;
+    for(i=0; i<axes[0].size()-1; i++)
+        std::cout << axes[0][i] << ",";
+    std::cout << axes[0][i] << ") and (";
+    for(i=0; i<axes[1].size()-1; i++)
+        std::cout << axes[1][i] << ",";
+    std::cout << axes[1][i] << ")" << std::endl;
+    std::cout << "--" << std::endl;
+
+    diaQMatrix *res;
+    // move axes
+    std::vector<long int> order_A;
+    std::vector<long int> order_B;
+    #pragma unroll
+    for(long int i = 0; i < axes[1].size(); i++)
+        order_B.push_back(axes[1][i]);
+    for(long int i = 0; i < A->shape.size(); i++) {
+        long int notin = 1;
+        for(long int p = 0; p < axes[0].size(); p++) {
+            if(i == axes[0][p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
+            order_A.push_back(i);
+        }
+    }
+    for(long int i = 0; i < B->shape.size(); i++) {
+        long int notin = 1;
+        for(long int p = 0; p < axes[1].size(); p++) {
+            if(i == axes[1][p]) {
+                notin = 0; break;
+            }
+        }
+        if(notin) {
+            order_B.push_back(i);
+        }
+    }
+    #pragma unroll
+    for(long int i = 0; i < axes[0].size(); i++)
+        order_A.push_back(axes[0][i]);
+    std::cout << "with order_A (";
+    for(long int i = 0; i < order_A.size()-1; i++)
+        std::cout << order_A[i] << ",";
+    std::cout << order_A[order_A.size()-1] << ")" << std::endl;
+    std::cout << "with order_B (";
+    for(long int i = 0; i < order_B.size()-1; i++)
+        std::cout << order_B[i] << ",";
+    std::cout << order_B[order_B.size()-1] << ")" << std::endl;
+    
+    // let's try element by element like we do with tensor transpose!
+    // TODO: here
+
+    // end timer
+    auto end = std::chrono::high_resolution_clock::now();
+    printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
+    std::flush(std::cout);
+
     return res;
 }
 
@@ -1067,9 +1128,10 @@ diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B) {
     return add(&A, &B);
 }
 
-// diaQMatrix *diaQMatrix::reshape(long int *matrix_shape) {
-//     return diaq::reshape(this, matrix_shape);
-// }
+diaQMatrix *diaQMatrix::matrix_reshape(long int *matrix_shape) {
+    printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
+    return diaq::matrix_reshape(this, matrix_shape);
+}
 
 diaQMatrix *diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
     return diaq::reshape(this, new_tensor_shape);

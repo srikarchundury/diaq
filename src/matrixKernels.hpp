@@ -19,6 +19,7 @@ diagonal *addElements(diagonal *A, diagonal *B);
 diaQMatrix *add(diaQMatrix *A, diaQMatrix *B);
 std::complex<valType> trace(diaQMatrix *A);
 diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape);
+diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape);
 std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::vector<long int> tensor_shape_B, std::vector<long int> axis_A, std::vector<long int> axis_B);
 std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vector<long int> axes);
 diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order);

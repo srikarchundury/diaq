@@ -82,14 +82,17 @@ PYBIND11_MODULE(diaq, m) {
             py::arg(),
             py::return_value_policy::reference
         )
-        // .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
+        .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
         .def(
-            "reshape",
-            [](diaq::diaQMatrix *self, std::vector<long int> new_tensor_shape) { return self->reshape(new_tensor_shape); },
+            "matrix_reshape",
+            [](diaq::diaQMatrix *self, py::array_t<long int> shape) {
+                auto shape_info = shape.request();
+                long int *shape_ptr = static_cast<long int *>(shape_info.ptr);
+                return self->matrix_reshape(shape_ptr);
+            },
             py::arg(),
             py::return_value_policy::reference
         )
-        // .def("transpose", &diaq::diaQMatrix::transpose, py::return_value_policy::reference)
         .def(
             "transpose",
             [](diaq::diaQMatrix *self, std::vector<long int> new_order) { return self->transpose(new_order); },
@@ -192,6 +195,17 @@ PYBIND11_MODULE(diaq, m) {
     m.def("add", &diaq::add, py::return_value_policy::reference);
     m.def("trace", &diaq::trace, py::return_value_policy::reference);
     m.def("reshape", &diaq::reshape, py::return_value_policy::reference);
+    m.def(
+        "matrix_reshape",
+        [](diaq::diaQMatrix *A, py::array_t<long int> shape) {
+            auto shape_info = shape.request();
+            long int *shape_ptr = static_cast<long int *>(shape_info.ptr);
+            return diaq::matrix_reshape(A, shape_ptr);
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
     m.def("array", &diaq::array, py::return_value_policy::reference);
     m.def(
         "tensordot",

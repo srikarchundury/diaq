@@ -1530,11 +1530,18 @@ int main(int argc, char **argv) {
         q_B8->print();
         std::cout << " -- " << std::endl;
 
-        std::vector<long int> new_dims{4,16};
+        std::vector<long int> new_dims{4, 16};
         diaq::diaQMatrix *reshaped_q_B8 = reshape(q_B8, new_dims);
         reshaped_q_B8->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- Reshape Done -- " << std::endl;
+        std::cout << " -- Tensor Reshape Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        // testing matrix_reshape
+        long int *new_mat_dims = new long int[2]{4, 16};
+        diaq::diaQMatrix *matrix_reshaped_q_B8 = matrix_reshape(q_B8, new_mat_dims);
+        matrix_reshaped_q_B8->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Matrix Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "matrix_transpose") == 0) {
