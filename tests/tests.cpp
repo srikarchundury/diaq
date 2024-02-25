@@ -1682,7 +1682,7 @@ int main(int argc, char **argv) {
         q_A47->shape = std::vector<long int>{2,2,2,2};
         q_A47->print();
         std::cout << " -- " << std::endl;
-        diaq::diaQMatrix *res = q_A47->transpose(std::vector<long int>{});
+        diaq::diaQMatrix *res = diaq::transpose(q_A47, std::vector<long int>{});
         res->print();
         std::cout << " -- " << std::endl;
         res->convertToDenseMatrix(res->matrix_shape)->print();
@@ -1983,10 +1983,13 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res = diaq::tensordot(q_A24, q_B24, axes);
-        res->print();
+        diaq::diaQMatrix *res1 = diaq::old_tensordot(q_A24, q_B24, axes);
+        res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix *res2 = diaq::tensordot(q_A24, q_B24, axes);
+        res2->print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "tensordot_2") == 0) {

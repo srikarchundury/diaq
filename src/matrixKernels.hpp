@@ -25,6 +25,7 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order);
 diaQMatrix *transpose(diaQMatrix *A);
 diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes);
+diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes);
 diaQMatrix *array(diaQMatrix *A);
 diaQMatrix *einsum(diaQMatrix *A, std::vector<long int> axes);
 diaQMatrix *operator*(diaQMatrix &A, diaQMatrix &B);

@@ -949,20 +949,20 @@ diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<
 
     // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    std::cout << "--" << std::endl;
-    std::cout << "tensordot called for A - " << std::endl;
-    A->print_shape();
-    std::cout << "and B - " << std::endl;
-    B->print_shape();
-    std::cout << "with axes - " << " (";
-    long int i=0;
-    for(i=0; i<axes[0].size()-1; i++)
-        std::cout << axes[0][i] << ",";
-    std::cout << axes[0][i] << ") and (";
-    for(i=0; i<axes[1].size()-1; i++)
-        std::cout << axes[1][i] << ",";
-    std::cout << axes[1][i] << ")" << std::endl;
-    std::cout << "--" << std::endl;
+    // std::cout << "--" << std::endl;
+    // std::cout << "tensordot called for A - " << std::endl;
+    // A->print_shape();
+    // std::cout << "and B - " << std::endl;
+    // B->print_shape();
+    // std::cout << "with axes - " << " (";
+    // long int i=0;
+    // for(i=0; i<axes[0].size()-1; i++)
+    //     std::cout << axes[0][i] << ",";
+    // std::cout << axes[0][i] << ") and (";
+    // for(i=0; i<axes[1].size()-1; i++)
+    //     std::cout << axes[1][i] << ",";
+    // std::cout << axes[1][i] << ")" << std::endl;
+    // std::cout << "--" << std::endl;
 
     diaQMatrix *res;
     // move axes
@@ -1035,8 +1035,8 @@ diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<
     // std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
     // std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
-    diaQMatrix *reshaped_A = A->matrix_reshape(new_shape_a);
-    diaQMatrix *reshaped_B = B->matrix_reshape(new_shape_b);
+    diaQMatrix *reshaped_A = matrix_reshape(A, new_shape_a);
+    diaQMatrix *reshaped_B = matrix_reshape(B, new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
     // reshaped_A->convertToDenseMatrix()->print();
@@ -1048,6 +1048,8 @@ diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<
     // calculating result's tensor_shape
     res->shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
     // res->pruneMatrix(); // do we really need this?
+
+    // res->transpose(); // to make sure x and y dims are balanced in the underlying matrix format
 
     // end timer
     auto end = std::chrono::high_resolution_clock::now();
@@ -1093,22 +1095,32 @@ std::vector<long int> getTenPos(const std::vector<long int>& ten_pos_A,
                                      const std::vector<long int>& axes_B,
                                      const std::vector<long int>& shape_A,
                                      const std::vector<long int>& shape_B) {
-    // Ensure the common axes have the same size
-    if (shape_A[axes_A[0]] != shape_B[axes_B[0]]) {
-        throw std::invalid_argument("Common axes must have the same size.");
-    }
-
-    // Make a copy of ten_pos_A to avoid modifying the original
-    std::vector<long int> result_coord = ten_pos_A;
-
-    // Iterate over the axes_A and axes_B to update the result_coord
-    for (size_t i = 0; i < axes_A.size(); ++i) {
-        if (axes_A[i] != axes_B[i]) {
-            result_coord.push_back(ten_pos_B[axes_B[i]]);
+    std::vector<long int> res;
+    for (long int i = 0; i < ten_pos_A.size(); i++) {
+        long int notin = 1;
+        for (long int p = 0; p < axes_A.size(); p++) {
+            if (i == axes_A[p]) {
+                notin = 0;
+                break;
+            }
+        }
+        if (notin) {
+            res.push_back(ten_pos_A[i]);
         }
     }
-
-    return result_coord;
+    for (long int i = 0; i < ten_pos_B.size(); i++) {
+        long int notin = 1;
+        for (long int p = 0; p < axes_B.size(); p++) {
+            if (i == axes_B[p]) {
+                notin = 0;
+                break;
+            }
+        }
+        if (notin) {
+            res.push_back(ten_pos_B[i]);
+        }
+    }
+    return res;
 }
 
 diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
@@ -1120,25 +1132,27 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
 
     // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    std::cout << "--" << std::endl;
-    std::cout << "tensordot called for A - " << std::endl;
-    A->print();
-    std::cout << "and B - " << std::endl;
-    B->print();
-    std::cout << "with axes - " << " (";
-    long int i=0;
-    for(i=0; i<axes_A.size()-1; i++)
-        std::cout << axes_A[i] << ",";
-    std::cout << axes_A[i] << ") and (";
-    for(i=0; i<axes_B.size()-1; i++)
-        std::cout << axes_B[i] << ",";
-    std::cout << axes_B[i] << ")" << std::endl;
-    std::cout << "--" << std::endl;
+    // std::cout << "--" << std::endl;
+    // std::cout << "tensordot called for A - " << std::endl;
+    // A->print();
+    // std::cout << "and B - " << std::endl;
+    // B->print();
+    // std::cout << "with axes - " << " (";
+    // long int i=0;
+    // for(i=0; i<axes_A.size()-1; i++)
+    //     std::cout << axes_A[i] << ",";
+    // std::cout << axes_A[i] << ") and (";
+    // for(i=0; i<axes_B.size()-1; i++)
+    //     std::cout << axes_B[i] << ",";
+    // std::cout << axes_B[i] << ")" << std::endl;
+    // std::cout << "--" << std::endl;
 
     // let's try element by element like we do with tensor transpose!
     std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes_A, axes_B);
     long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
     diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
+    // printf("res matrix shape\n");
+    // res->print_shape();
 
     // element by element tensordot multiplication, inspired from COO format
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
@@ -1156,27 +1170,37 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                 valType *imag_vals_B = diagB->getImagValues();
                 for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
                     std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
-                    // print ten_pos_A and ten_pos_B
-                    // printf("ten_pos_A = (");
-                    // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
-                    //     printf("%ld, ", ten_pos_A[i]);
-                    // }
-                    // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
-                    // printf("ten_pos_B = (");
-                    // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
-                    //     printf("%ld, ", ten_pos_B[i]);
-                    // }
-                    // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
                     // if the common axes
                     if (ten_pos_A[axes_A[0]] == ten_pos_B[axes_B[0]]) {
+                        // print ten_pos_A and ten_pos_B
+                        // printf("ten_pos_A = (");
+                        // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
+                        //     printf("%ld, ", ten_pos_A[i]);
+                        // }
+                        // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
+                        // printf("ten_pos_B = (");
+                        // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
+                        //     printf("%ld, ", ten_pos_B[i]);
+                        // }
+                        // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
                         // Calculate resulting coordinates after contraction
                         std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes_A, axes_B, A->shape, B->shape);
+                        // printing result_coords
+                        // printf("result_coords = (");
+                        // for (long int i = 0; i < result_coords.size() - 1; i++) {
+                        //     printf("%ld, ", result_coords[i]);
+                        // }
+                        // printf("%ld)\n", result_coords[result_coords.size() - 1]);
+
+                        // get the diagonal position and length
                         long int *res_diag_pos = res->getDiagonalPosition(result_coords);
                         long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
                         valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
                         valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
                         if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
-                            res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, real_val, imag_val);
+                            valType new_real_val = res->getItem_real(res_diag_pos[0], res_diag_pos[1]) + real_val;
+                            valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
+                            res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
                         }
                     }
                 }
@@ -1212,19 +1236,28 @@ diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B) {
     return add(&A, &B);
 }
 
-diaQMatrix *diaQMatrix::matrix_reshape(long int *matrix_shape) {
+void diaQMatrix::matrix_reshape(long int *matrix_shape) {
     // printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    return diaq::matrix_reshape(this, matrix_shape);
+    diaQMatrix *temp = diaq::matrix_reshape(this, matrix_shape);
+    *this = *temp;
+    delete temp;
 }
 
 diaQMatrix *diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
     return diaq::reshape(this, new_tensor_shape);
 }
 
-diaQMatrix *diaQMatrix::transpose(std::vector<long int> new_order) {
-    return diaq::transpose(this, new_order);
+void diaQMatrix::transpose(std::vector<long int> new_order) {
+    diaQMatrix *temp = diaq::transpose(this, new_order);
+    *this = *temp;
+    delete temp;
 }
 
+void diaQMatrix::transpose() {
+    diaQMatrix *temp = diaq::transpose(this);
+    *this = *temp;
+    delete temp;
+}
 
 vector *spMV(diaQMatrix *A, vector *x) {
     #ifdef CUDA_ENABLED

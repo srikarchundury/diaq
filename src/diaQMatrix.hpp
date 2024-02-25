@@ -258,8 +258,8 @@ class diaQMatrix {
             }
         }
         void balance() {
-            printf("balance called\n");
-            this->print_shape();
+            // printf("balance called\n");
+            // this->print_shape();
             if(matrix_shape[0] != matrix_shape[1]) {
                 long int overall_dim = matrix_shape[0] * matrix_shape[1]; // this is same as size, but I have to double check if I modify size everytime I modify matrix_shape.... TODO
                 long int sqrtProduct = static_cast<long int>(std::sqrt(overall_dim));
@@ -273,7 +273,7 @@ class diaQMatrix {
                         break;
                     }
                 }
-                printf("new x = %ld, y = %ld\n", x, y);
+                // printf("new x = %ld, y = %ld\n", x, y);
                 long int *new_shape = new long int[2]{x, y};
                 this->matrix_reshape(new_shape);
             }
@@ -627,9 +627,9 @@ class diaQMatrix {
             }
         }
         diaQMatrix *reshape(std::vector<long int> new_tensor_shape);
-        diaQMatrix *matrix_reshape(long int *new_matrix_shape);
-        diaQMatrix *transpose(std::vector<long int> new_order);
-        diaQMatrix *transpose();
+        void matrix_reshape(long int *new_matrix_shape);
+        void transpose(std::vector<long int> new_order);
+        void transpose();
         denseMatrix *convertToDenseMatrix(long int *new_shape);
         denseMatrix *convertToDenseMatrix();
     private:
