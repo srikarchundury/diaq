@@ -782,6 +782,28 @@ std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::
     return res;
 }
 
+long int *newMatrixShape(std::vector<long int> tensorShape) {
+    long int product = 1;
+    for (long int i = 0; i < tensorShape.size(); i++) {
+        product *= tensorShape[i];
+    }
+    long int sqrtProduct = static_cast<long int>(std::sqrt(product));
+    // Find the closest factors of the product
+    long int x = 1;
+    long int y = product;
+    for (long int i = sqrtProduct; i > 0; --i) {
+        if (product % i == 0) {
+            x = i;
+            y = product / i;
+            break;
+        }
+    }
+    long int *new_shape = new long int[2];
+    new_shape[0] = x;
+    new_shape[1] = y;
+    return new_shape;
+}
+
 std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vector<long int> axes) {
     std::vector<long int> nShape;
     int tShapeSize = tShape.size();
@@ -1035,6 +1057,36 @@ diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<
     return res;
 }
 
+long int *getMatrixShape(std::vector<long int> tensor_shape) {
+    // print tensor_shape
+    // printf("tensor_shape = (");
+    // for (long int i = 0; i < tensor_shape.size() - 1; i++) {
+    //     printf("%ld, ", tensor_shape[i]);
+    // }
+    // printf("%ld)\n", tensor_shape[tensor_shape.size() - 1]);
+    // Calculate the product of the tensor shape
+    long int product = 1;
+    for (long int i = 0; i < tensor_shape.size(); i++) {
+        product *= tensor_shape[i];
+    }
+    long int sqrtProduct = static_cast<long int>(std::sqrt(product));
+    // Find the closest factors of the product
+    long int x = 1;
+    long int y = product;
+    for (long int i = sqrtProduct; i > 0; --i) {
+        if (product % i == 0) {
+            x = i;
+            y = product / i;
+            break;
+        }
+    }
+    long int *new_shape = new long int[2];
+    new_shape[0] = y;
+    new_shape[1] = x;
+    // printf("new_shape = (%ld, %ld)\n", new_shape[0], new_shape[1]);
+    return new_shape;
+}
+
 diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
     // start timer
     auto start = std::chrono::high_resolution_clock::now();
@@ -1056,8 +1108,12 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     std::cout << axes[1][i] << ")" << std::endl;
     std::cout << "--" << std::endl;
 
-    diaQMatrix *res;
-    // move axes
+    // let's try element by element like we do with tensor transpose!
+    std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
+    long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
+    diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
+
+    // permute axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
     #pragma unroll
@@ -1096,9 +1152,20 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     for(long int i = 0; i < order_B.size()-1; i++)
         std::cout << order_B[i] << ",";
     std::cout << order_B[order_B.size()-1] << ")" << std::endl;
-    
-    // let's try element by element like we do with tensor transpose!
-    // TODO: here
+
+    A = transpose(A, order_A);
+    // optional balance
+    // A->balance();
+    B = transpose(B, order_B);
+    // optional balance
+    // B->balance();
+
+    printf("A after transpose\n");
+    A->print();
+    printf("B after transpose\n");
+    B->print();
+
+    // element by element multiplication TODO
 
     // end timer
     auto end = std::chrono::high_resolution_clock::now();

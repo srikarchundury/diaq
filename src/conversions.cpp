@@ -137,8 +137,8 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
                 }
             }
             long int *new_shape = new long int[2];
-            new_shape[0] = x;
-            new_shape[1] = y;
+            new_shape[0] = y;
+            new_shape[1] = x;
             denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, shape);
             return d->convertToQuantumSparse(new_shape);
         } else {
