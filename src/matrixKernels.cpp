@@ -717,7 +717,7 @@ std::complex<valType> trace(diaQMatrix *A) {
 
 diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
     // this is matrix_reshape.
-    printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
+    // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     diaQMatrix *res = new diaQMatrix(&matrix_shape, A->shape);
     std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -1087,85 +1087,115 @@ long int *getMatrixShape(std::vector<long int> tensor_shape) {
     return new_shape;
 }
 
+std::vector<long int> getTenPosition(const std::vector<long int>& ten_pos_A,
+                                     const std::vector<long int>& ten_pos_B,
+                                     const std::vector<long int>& axes_A,
+                                     const std::vector<long int>& axes_B,
+                                     const std::vector<long int>& shape_A,
+                                     const std::vector<long int>& shape_B) {
+    // Ensure the common axes have the same size
+    if (shape_A[axes_A[0]] != shape_B[axes_B[0]]) {
+        throw std::invalid_argument("Common axes must have the same size.");
+    }
+
+    // Make a copy of ten_pos_A to avoid modifying the original
+    std::vector<long int> result_coord = ten_pos_A;
+
+    // Iterate over the axes_A and axes_B to update the result_coord
+    for (size_t i = 0; i < axes_A.size(); ++i) {
+        if (axes_A[i] != axes_B[i]) {
+            result_coord.push_back(ten_pos_B[axes_B[i]]);
+        }
+    }
+
+    return result_coord;
+}
+
 diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
     // start timer
     auto start = std::chrono::high_resolution_clock::now();
 
     // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    std::cout << "--" << std::endl;
-    std::cout << "tensordot called for A - " << std::endl;
-    A->print_shape();
-    std::cout << "and B - " << std::endl;
-    B->print_shape();
-    std::cout << "with axes - " << " (";
-    long int i=0;
-    for(i=0; i<axes[0].size()-1; i++)
-        std::cout << axes[0][i] << ",";
-    std::cout << axes[0][i] << ") and (";
-    for(i=0; i<axes[1].size()-1; i++)
-        std::cout << axes[1][i] << ",";
-    std::cout << axes[1][i] << ")" << std::endl;
-    std::cout << "--" << std::endl;
+    // std::cout << "--" << std::endl;
+    // std::cout << "tensordot called for A - " << std::endl;
+    // A->print();
+    // std::cout << "and B - " << std::endl;
+    // B->print();
+    // std::cout << "with axes - " << " (";
+    // long int i=0;
+    // for(i=0; i<axes[0].size()-1; i++)
+    //     std::cout << axes[0][i] << ",";
+    // std::cout << axes[0][i] << ") and (";
+    // for(i=0; i<axes[1].size()-1; i++)
+    //     std::cout << axes[1][i] << ",";
+    // std::cout << axes[1][i] << ")" << std::endl;
+    // std::cout << "--" << std::endl;
 
     // let's try element by element like we do with tensor transpose!
     std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
     long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
     diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
 
-    // permute axes
-    std::vector<long int> order_A;
-    std::vector<long int> order_B;
-    #pragma unroll
-    for(long int i = 0; i < axes[1].size(); i++)
-        order_B.push_back(axes[1][i]);
-    for(long int i = 0; i < A->shape.size(); i++) {
-        long int notin = 1;
-        for(long int p = 0; p < axes[0].size(); p++) {
-            if(i == axes[0][p]) {
-                notin = 0; break;
+    // element by element tensordot multiplication, inspired from COO format
+    std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator itA, itB;
+    for (itA = mapA.begin(); itA != mapA.end(); itA++) {
+        diagonal *diagA = itA->second;
+        valType *real_vals_A = diagA->getRealValues();
+        valType *imag_vals_A = diagA->getImagValues();
+        for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
+            std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
+            for (itB = mapB.begin(); itB != mapB.end(); itB++) {
+                diagonal *diagB = itB->second;
+                valType *real_vals_B = diagB->getRealValues();
+                valType *imag_vals_B = diagB->getImagValues();
+                for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
+                    std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
+                    // print ten_pos_A and ten_pos_B
+                    printf("ten_pos_A = (");
+                    for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
+                        printf("%ld, ", ten_pos_A[i]);
+                    }
+                    printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
+                    printf("ten_pos_B = (");
+                    for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
+                        printf("%ld, ", ten_pos_B[i]);
+                    }
+                    printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
+
+                    // now we have ten_pos_A and ten_pos_B, we need use axes to decide if we need to multiply or not
+                    long int match = 1;
+                    for(long int i = 0; i < axes[0].size(); i++) {
+                        if(ten_pos_A[axes[0][i]] != ten_pos_B[axes[1][i]]) {
+                            match = 0;
+                            break;
+                        }
+                    }
+                    if(match) {
+                        std::vector<long int> ten_pos_res = getTenPosition(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
+                        // printing ten_pos_res
+                        printf("ten_pos_res = (");
+                        for (long int i = 0; i < ten_pos_res.size() - 1; i++) {
+                            printf("%ld, ", ten_pos_res[i]);
+                        }
+                        printf("%ld)\n", ten_pos_res[ten_pos_res.size() - 1]);
+
+                        long int *d_pos = res->getDiagonalPosition(ten_pos_res);
+                        long int d_len = getDiagonalLength(d_pos[0], res->matrix_shape);                        
+                        valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
+                        valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
+                        if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
+                            valType cur_real_val = res->getItem_real(d_pos[0], d_pos[1]);
+                            valType cur_imag_val = res->getItem_imag(d_pos[0], d_pos[1]);
+                            res->setDiagonalElement(d_pos[0], d_pos[1], d_len, cur_real_val + real_val, cur_imag_val + imag_val);
+                        }
+                    }
+                }
             }
         }
-        if(notin) {
-            order_A.push_back(i);
-        }
     }
-    for(long int i = 0; i < B->shape.size(); i++) {
-        long int notin = 1;
-        for(long int p = 0; p < axes[1].size(); p++) {
-            if(i == axes[1][p]) {
-                notin = 0; break;
-            }
-        }
-        if(notin) {
-            order_B.push_back(i);
-        }
-    }
-    #pragma unroll
-    for(long int i = 0; i < axes[0].size(); i++)
-        order_A.push_back(axes[0][i]);
-    std::cout << "with order_A (";
-    for(long int i = 0; i < order_A.size()-1; i++)
-        std::cout << order_A[i] << ",";
-    std::cout << order_A[order_A.size()-1] << ")" << std::endl;
-    std::cout << "with order_B (";
-    for(long int i = 0; i < order_B.size()-1; i++)
-        std::cout << order_B[i] << ",";
-    std::cout << order_B[order_B.size()-1] << ")" << std::endl;
-
-    A = transpose(A, order_A);
-    // optional balance
-    // A->balance();
-    B = transpose(B, order_B);
-    // optional balance
-    // B->balance();
-
-    printf("A after transpose\n");
-    A->print();
-    printf("B after transpose\n");
-    B->print();
-
-    // element by element multiplication TODO
 
     // end timer
     auto end = std::chrono::high_resolution_clock::now();
@@ -1196,7 +1226,7 @@ diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B) {
 }
 
 diaQMatrix *diaQMatrix::matrix_reshape(long int *matrix_shape) {
-    printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
+    // printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     return diaq::matrix_reshape(this, matrix_shape);
 }
 
