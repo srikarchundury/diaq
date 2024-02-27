@@ -19,7 +19,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -48,7 +48,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -67,7 +67,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;

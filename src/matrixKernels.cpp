@@ -534,7 +534,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
             // std::cout << " ------ diags ------ " << std::endl;
@@ -672,7 +672,7 @@ diagonal *addElements(diagonal *A, diagonal *B) {
     diagonal *res = new diagonal(A->dIndex, A->dLength);
     valType *real_valsC = res->getRealValues();
     valType *imag_valsC = res->getImagValues();
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i=0; i < A->dLength; i++) {
         real_valsC[i] = real_valsA[i] + real_valsB[i];
         imag_valsC[i] = imag_valsA[i] + imag_valsB[i];
@@ -716,6 +716,9 @@ std::complex<valType> trace(diaQMatrix *A) {
 }
 
 diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
+    // start time
+    auto start = std::chrono::high_resolution_clock::now();
+
     // this is matrix_reshape.
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     diaQMatrix *res = new diaQMatrix(&matrix_shape, A->shape);
@@ -724,7 +727,7 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < it->second->dLength; i++) {
             // old_d_pos has (it->first, i) for A->matrix_shape
             long int *d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
@@ -734,6 +737,10 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
             }
         }
     }
+    // end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // measure time
+    printf("matrix_reshape took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
     // A->free();
     return res;
 }
@@ -809,14 +816,14 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
     int tShapeSize = tShape.size();
     if(axes.size() == 0) {
         nShape.resize(tShape.size(), 1);
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < tShape.size(); i++) {
             nShape[i] = tShape[tShapeSize - i - 1];
         }
     }
     else {
         nShape.resize(axes.size(), 1);
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < axes.size(); i++) {
             nShape[i] = tShape[axes[i]];
         }
@@ -826,11 +833,11 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 
 diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < A->shape.size(); i++) {
             new_order[i] = A->shape.size() - i - 1;
         }
@@ -846,7 +853,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
         std::unordered_map<long int, diagonal *>::iterator it;
         std::unordered_map<long int, diagonal *> newDiagMap;
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
             it->second->setIndex(-1 * it->first);
             newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
@@ -893,7 +900,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     std::unordered_map<long int, diagonal*>::iterator it;
     std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
 
-    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
     //     res->createDiagonal(i);
     // }
@@ -903,7 +910,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < it->second->dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -916,7 +923,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
 
             // modify ten_pos to perform the transposition using the new_order
             std::vector<long int> new_ten_pos(new_order.size(), 1);
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i=0; i < new_order.size(); i++) {
                 new_ten_pos[i] = ten_pos[new_order[i]];
             }
@@ -933,9 +940,9 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     // res->pruneMatrix();
 
     // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // printf("Time taken for transpose = %f\n", std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() * 1e-9);
-    // std::flush(std::cout);
+    auto end = std::chrono::high_resolution_clock::now();
+    printf("transpose took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+    std::flush(std::cout);
     return res;
 }
 
@@ -943,26 +950,27 @@ diaQMatrix *transpose(diaQMatrix *A) {
     return transpose(A, std::vector<long int>());
 }
 
-diaQMatrix *old_tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
+diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
     // start timer
     auto start = std::chrono::high_resolution_clock::now();
 
-    // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
+    A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
+    B->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    // std::cout << "--" << std::endl;
-    // std::cout << "tensordot called for A - " << std::endl;
-    // A->print_shape();
-    // std::cout << "and B - " << std::endl;
-    // B->print_shape();
-    // std::cout << "with axes - " << " (";
-    // long int i=0;
-    // for(i=0; i<axes[0].size()-1; i++)
-    //     std::cout << axes[0][i] << ",";
-    // std::cout << axes[0][i] << ") and (";
-    // for(i=0; i<axes[1].size()-1; i++)
-    //     std::cout << axes[1][i] << ",";
-    // std::cout << axes[1][i] << ")" << std::endl;
-    // std::cout << "--" << std::endl;
+    std::cout << "--" << std::endl;
+    std::cout << "tensordot called for A - " << std::endl;
+    A->print_meta();
+    std::cout << "and B - " << std::endl;
+    B->print_meta();
+    std::cout << "with axes - " << " (";
+    long int i=0;
+    for(i=0; i<axes[0].size()-1; i++)
+        std::cout << axes[0][i] << ",";
+    std::cout << axes[0][i] << ") and (";
+    for(i=0; i<axes[1].size()-1; i++)
+        std::cout << axes[1][i] << ",";
+    std::cout << axes[1][i] << ")" << std::endl;
+    std::cout << "--" << std::endl;
 
     diaQMatrix *res;
     // move axes
@@ -1125,30 +1133,25 @@ std::vector<long int> getTenPos(const std::vector<long int>& ten_pos_A,
 
 diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
     // start timer
-    auto start = std::chrono::high_resolution_clock::now();
-
-    std::vector<long int> axes_A = axes[0];
-    std::vector<long int> axes_B = axes[1];
-
-    // A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
+    // auto start = std::chrono::high_resolution_clock::now();
 
     // std::cout << "--" << std::endl;
     // std::cout << "tensordot called for A - " << std::endl;
-    // A->print();
+    // A->print_meta();
     // std::cout << "and B - " << std::endl;
-    // B->print();
+    // B->print_meta();
     // std::cout << "with axes - " << " (";
     // long int i=0;
-    // for(i=0; i<axes_A.size()-1; i++)
-    //     std::cout << axes_A[i] << ",";
-    // std::cout << axes_A[i] << ") and (";
-    // for(i=0; i<axes_B.size()-1; i++)
-    //     std::cout << axes_B[i] << ",";
-    // std::cout << axes_B[i] << ")" << std::endl;
+    // for(i=0; i<axes[0].size()-1; i++)
+    //     std::cout << axes[0][i] << ",";
+    // std::cout << axes[0][i] << ") and (";
+    // for(i=0; i<axes[1].size()-1; i++)
+    //     std::cout << axes[1][i] << ",";
+    // std::cout << axes[1][i] << ")" << std::endl;
     // std::cout << "--" << std::endl;
 
     // let's try element by element like we do with tensor transpose!
-    std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes_A, axes_B);
+    std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
     long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
     diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
     // printf("res matrix shape\n");
@@ -1158,20 +1161,24 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         diagonal *diagA = itA->second;
         valType *real_vals_A = diagA->getRealValues();
         valType *imag_vals_A = diagA->getImagValues();
+        #pragma omp parallel for num_threads(diagA->dLength / 2)
         for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
             std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (itB = mapB.begin(); itB != mapB.end(); itB++) {
                 diagonal *diagB = itB->second;
                 valType *real_vals_B = diagB->getRealValues();
                 valType *imag_vals_B = diagB->getImagValues();
+                #pragma omp parallel for num_threads(diagB->dLength / 2)
                 for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
                     std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
                     // if the common axes
-                    if (ten_pos_A[axes_A[0]] == ten_pos_B[axes_B[0]]) {
+                    if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
                         // print ten_pos_A and ten_pos_B
                         // printf("ten_pos_A = (");
                         // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
@@ -1184,7 +1191,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                         // }
                         // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
                         // Calculate resulting coordinates after contraction
-                        std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes_A, axes_B, A->shape, B->shape);
+                        std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
                         // printing result_coords
                         // printf("result_coords = (");
                         // for (long int i = 0; i < result_coords.size() - 1; i++) {
@@ -1202,6 +1209,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                             valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
                             res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
                         }
+                        std::free(res_diag_pos);
                     }
                 }
             }
@@ -1209,9 +1217,9 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     }
 
     // end timer
-    auto end = std::chrono::high_resolution_clock::now();
-    printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
-    std::flush(std::cout);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
+    // std::flush(std::cout);
 
     return res;
 }
@@ -1286,7 +1294,7 @@ vector *spMV(diaQMatrix *A, vector *x) {
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
@@ -1332,7 +1340,7 @@ vector *MV(denseMatrix *A, vector *x) {
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < A->matrix_shape[1]; j++) {
             std::complex<valType> elem = A->get(i, j);
             res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
@@ -1406,7 +1414,7 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
 //     for(long int i = 0; i < dLengthA; i++) {
 //         valType each_real = real_valsA[i];
 //         valType each_imag = imag_valsA[i];
-//         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+//         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 //         for(long int j = 0; j < dLengthB; j++) {
 //             long int c_pos = i * dLengthB + j;
 //             real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
@@ -1452,7 +1460,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
 
         // printf("here 1.5\n");
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
@@ -1520,7 +1528,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         diagonal *diag = itA->second;
         long int diagonal_length = diag->dLength;
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
@@ -1575,7 +1583,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             diagonal *kron_block_diag = itK->second;
             long int kron_block_diag_length = kron_block_diag->dLength;
 
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                 long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);

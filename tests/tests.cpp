@@ -1983,7 +1983,7 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res1 = diaq::old_tensordot(q_A24, q_B24, axes);
+        diaq::diaQMatrix *res1 = diaq::tensordot1(q_A24, q_B24, axes);
         res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
@@ -2048,7 +2048,7 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{1};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res1 = diaq::old_tensordot(q_first, q_second, axes);
+        diaq::diaQMatrix *res1 = diaq::tensordot1(q_first, q_second, axes);
         res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;

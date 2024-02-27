@@ -58,10 +58,12 @@ PYBIND11_MODULE(diaq, m) {
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
+        .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)
         .def("getDiagonal", &diaq::diaQMatrix::getDiagonal, py::return_value_policy::reference)
         .def("setDiagonal", &diaq::diaQMatrix::setDiagonal, py::return_value_policy::reference)
         .def("addDiagonal", &diaq::diaQMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
+        .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         // operator bindings
         .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
