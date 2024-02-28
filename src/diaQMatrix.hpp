@@ -238,7 +238,7 @@ class diaQMatrix {
             }
         }
         void setDiagonal(long int dIndex, diagonal *diagNew) {
-            this->diagonalMap.erase(dIndex);
+            // this->diagonalMap.erase(dIndex);
             this->diagonalMap.insert({dIndex, diagNew});
         }
         void addDiagonal(long int dIndex, diagonal *diagNew) {

@@ -106,6 +106,10 @@ class vector {
         valType *getImagValues() {
             return imagValues_;
         }
+        void free() {
+            std::free(realValues_);
+            std::free(imagValues_);
+        }
 
     private:
         size_t numRows_;
