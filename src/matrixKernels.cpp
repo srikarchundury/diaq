@@ -1802,8 +1802,8 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     // printf("\tB Matrix:\n");
     // B->print();
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
@@ -1900,23 +1900,17 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         valType *newDiag_imag_vals = newDiag->getImagValues();
         // loop n times
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for (long int j = 0; j < n; j++) {
-            for (long int i = 0; i < dLength; i++) {
+        for(long int j = 0; j < n; j++) {
+            for(long int i = 0; i < dLength; i++) {
                 newDiag_real_vals[j * dLength + i] = real_vals[i];
                 newDiag_imag_vals[j * dLength + i] = imag_vals[i];
             }
-            // Pad zeros or offset the loop
-            if (j < n - 1) {
-                valType* zeros_real_vals = new valType[std::abs(dIndex)]();
-                valType* zeros_imag_vals = new valType[std::abs(dIndex)]();
-                for (long int i = 0; i < std::abs(dIndex); i++) {
-                    zeros_real_vals[i] = 0.0;
-                    zeros_imag_vals[i] = 0.0;
+            // I have to pad zeros, or offset the above loop, I have to pad std::abs(dIndex) number of 0s at the end
+            if(j < n - 1) {
+                for(long int i = 0; i < std::abs(dIndex); i++) {
+                    newDiag_real_vals[j * dLength + dLength + i] = 0.0;
+                    newDiag_imag_vals[j * dLength + dLength + i] = 0.0;
                 }
-                std::copy(zeros_real_vals, zeros_real_vals + std::abs(dIndex), newDiag_real_vals + (j * dLength + dLength));
-                std::copy(zeros_imag_vals, zeros_imag_vals + std::abs(dIndex), newDiag_imag_vals + (j * dLength + dLength));
-                delete[] zeros_real_vals;
-                delete[] zeros_imag_vals;
             }
         }
         result->setDiagonal(dIndex, newDiag);
@@ -1943,11 +1937,11 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
         valType *newDiag_real_vals = newDiag->getRealValues();
         valType *newDiag_imag_vals = newDiag->getImagValues();
 
-        #pragma omp parallel for collapse(2)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < dLength; i++) {
+            valType each_real = real_vals[i];
+            valType each_imag = imag_vals[i];
             for(long int j = 0; j < n; j++) {
-                valType each_real = real_vals[i];
-                valType each_imag = imag_vals[i];
                 newDiag_real_vals[j + i * n] = each_real;
                 newDiag_imag_vals[j + i * n] = each_imag;
             }
