@@ -37,6 +37,9 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
 
+diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
+diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
+
 diaQMatrix *dagger(diaQMatrix *A);
 diaQMatrix *conjbar(diaQMatrix *A);
 

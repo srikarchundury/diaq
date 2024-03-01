@@ -1555,8 +1555,8 @@ vector *spMV(diaQMatrix *A, vector *x) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // // measure start time
-    // auto start = std::chrono::high_resolution_clock::now();
+    // measure start time
+    auto start = std::chrono::high_resolution_clock::now();
 
     if(A->matrix_shape[1] != x->num_rows()) {
         throw std::invalid_argument("Not multiplyable");
@@ -1629,12 +1629,12 @@ vector *spMV(diaQMatrix *A, vector *x) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("SpMV took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("SpMV took %f seconds\n", duration.count());
     return y;
     #endif
 }
@@ -1771,7 +1771,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
 
         // printf("here 1.5\n");
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp simd
         for (long int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
@@ -1795,12 +1795,179 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
 }
 
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
+
+    // printf("\tdiaq::kron_product\n");
+    // printf("\tA Meta:\n");
+    // A->print_meta();
+    // printf("\tB Matrix:\n");
+    // B->print();
+
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
+
+    long int *shape_a = A->matrix_shape;
+    long int *shape_b = B->matrix_shape;
+
+    // map of unique A elements and their corresponding kron blocks
+    std::map<std::pair<valType, valType>, diaQMatrix *> unique_kron_blocks;
+
+    // Calculate dimensions for the resulting matrix
+    long int *result_shape = new long int[2];
+    result_shape[0] = shape_a[0] * shape_b[0];
+    result_shape[1] = shape_a[1] * shape_b[1];
+    diaQMatrix *result = new diaQMatrix(&result_shape);
+
+    std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator itA;
+
+    for (itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); itA++) {
+        long int diagonal_index = itA->first;
+        diagonal *diag = itA->second;
+        long int diagonal_length = diag->dLength;
+
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
+            // skippihg zero elements
+            if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
+                continue;
+            }
+            diaQMatrix *kron_block;
+            // dynamic programming for unique kron blocks
+            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
+                kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+                // printf("printing kron_block\n");
+                // kron_block->print();
+                // store in unique_kron_blocks
+                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)), kron_block));
+            } else {
+                kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)))->second;
+            }
+            long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
+            std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
+            std::unordered_map<long int, diagonal*>::iterator itK;
+            for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
+                long int kron_block_diag_index = itK->first;
+                diagonal *kron_block_diag = itK->second;
+                long int kron_block_diag_length = kron_block_diag->dLength;
+
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+
+                    long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                    long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+
+                    result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
+
+                    // free(res_diag_pos);
+                    // free(B_mat_pos);
+                    // free(res_mat_pos);
+                }
+            }
+            // free(A_pos);
+            // kron_block->free();
+        }
+    }
+
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("Kron product took %f seconds\n", duration.count());
+
+    // return result;
+    return result;
+}
+
+diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
+    // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
+    // we just repeat A, n times in the result matrix
+    long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
+    diaQMatrix *result = new diaQMatrix(&result_shape);
+    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
+        valType *real_vals = diag->getRealValues();
+        valType *imag_vals = diag->getImagValues();
+        // result diag
+        diagonal *newDiag = new diagonal(dIndex, result->getDiagonalLength(dIndex));
+        valType *newDiag_real_vals = newDiag->getRealValues();
+        valType *newDiag_imag_vals = newDiag->getImagValues();
+        // loop n times
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for (long int j = 0; j < n; j++) {
+            for (long int i = 0; i < dLength; i++) {
+                newDiag_real_vals[j * dLength + i] = real_vals[i];
+                newDiag_imag_vals[j * dLength + i] = imag_vals[i];
+            }
+            // Pad zeros or offset the loop
+            if (j < n - 1) {
+                valType* zeros_real_vals = new valType[std::abs(dIndex)]();
+                valType* zeros_imag_vals = new valType[std::abs(dIndex)]();
+                for (long int i = 0; i < std::abs(dIndex); i++) {
+                    zeros_real_vals[i] = 0.0;
+                    zeros_imag_vals[i] = 0.0;
+                }
+                std::copy(zeros_real_vals, zeros_real_vals + std::abs(dIndex), newDiag_real_vals + (j * dLength + dLength));
+                std::copy(zeros_imag_vals, zeros_imag_vals + std::abs(dIndex), newDiag_imag_vals + (j * dLength + dLength));
+                delete[] zeros_real_vals;
+                delete[] zeros_imag_vals;
+            }
+        }
+        result->setDiagonal(dIndex, newDiag);
+    }
+    return result;
+}
+
+diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
+    // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
+    // we just repeat A, n times in the result matrix
+    long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
+    diaQMatrix *result = new diaQMatrix(&result_shape);
+    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
+        valType *real_vals = diag->getRealValues();
+        valType *imag_vals = diag->getImagValues();
+        // result diag
+        diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
+        valType *newDiag_real_vals = newDiag->getRealValues();
+        valType *newDiag_imag_vals = newDiag->getImagValues();
+
+        #pragma omp parallel for collapse(2)
+        for(long int i = 0; i < dLength; i++) {
+            for(long int j = 0; j < n; j++) {
+                valType each_real = real_vals[i];
+                valType each_imag = imag_vals[i];
+                newDiag_real_vals[j + i * n] = each_real;
+                newDiag_imag_vals[j + i * n] = each_imag;
+            }
+        }
+
+        result->setDiagonal(dIndex * n, newDiag);
+    }
+    return result;
+}
+
+diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     // A: m x n
     // B: p x q
     // C: mp x nq
 
-    // measure start time
-    // auto start = std::chrono::high_resolution_clock::now();
+    // printf("\tdiaq::kron_product\n");
+    // printf("\tA Meta:\n");
+    // A->print_meta();
+    // printf("\tB Matrix:\n");
+    // B->print();
 
     // if(logger.log_level == DEEP_DEBUG) {
     //     std::cout << " --- " << std::endl;
@@ -1811,6 +1978,9 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     //     B.print();
     //     std::cout << " --- " << std::endl;
     // }
+
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
@@ -1929,7 +2099,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // // measure end time
+    // measure end time
     // auto end = std::chrono::high_resolution_clock::now();
     // // calculate duration
     // std::chrono::duration<double> duration = end - start;

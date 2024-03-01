@@ -2114,6 +2114,38 @@ int main(int argc, char **argv) {
         std::cout << " -- kron test -- " << std::endl;
         kron_test(A14, B14);
     }
+    else if(strcmp(argv[1], "kron_4") == 0 ) {
+        // testing identity_kron_matrix
+        std::cout << " -- testing identity_kron_matrix -- " << std::endl;
+        diaq::diaQMatrix *qspa = B4->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, qspa);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa );
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "kron_5") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing matrix_kron_identity -- " << std::endl;
+        diaq::diaQMatrix *qspa = A25->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(qspa, id4);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::matrix_kron_identity(qspa, (long int)4);
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if (strcmp(argv[1], "id") == 0 ) {
         std::cout << " -- testing identity class -- " << std::endl;
         diaq::identityMatrix *id4 = new diaq::identityMatrix((long int)4);
