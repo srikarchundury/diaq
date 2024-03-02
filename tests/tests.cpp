@@ -1968,6 +1968,46 @@ int main(int argc, char **argv) {
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "spmv_7") == 0) {
+        // matrix_shape (16,16)
+        // tensor_shape (16,16)
+        // (dIndex=-1) [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
+        // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
+        // -- current vector --
+        // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
+        diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        for(int i = 0; i < 8; i++) imags[i] = 1;
+        diaq::diagonal *d1 = new diaq::diagonal(-1, 15, reals, imags);
+
+        diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        for(int i = 0; i < 8; i++) im[i] = -1;
+        diaq::diagonal *d2 = new diaq::diagonal(-1, 15, r, im);
+
+        diaq::diaQMatrix *q_mat = new diaq::diaQMatrix((long int)16);
+        q_mat->setDiagonal(-1, d1);
+        q_mat->setDiagonal(1, d2);
+
+        printf("Matrix:\n");
+        q_mat->print();
+
+        std::cout << " --x-- " << std::endl;
+        diaq::valType x_real_vals[16] = {0};
+        diaq::valType x_imag_vals[16] = {0};
+        x_imag_vals[2] = 1.0;
+        diaq::vector *x = new diaq::vector(16, x_real_vals, x_imag_vals);
+        x->print();
+        std::cout << " --MV-- " << std::endl;
+        diaq::vector *dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x);
+        dense_y->print();
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector *y = diaq::spMV(q_mat, x);
+        y->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl; 
+    }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24->shape = std::vector<long int>{3,3,2};
@@ -2141,6 +2181,22 @@ int main(int argc, char **argv) {
         res_correct->print();
         printf(" -- new way to do it -- \n");
         diaq::diaQMatrix *res = diaq::matrix_kron_identity(qspa, (long int)4);
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "kron_6") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing matrix_kron_identity -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, qspa);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa);
         res->print();
         printf(" -- check -- \n");
         std::cout << checkResult(res, res_correct) << std::endl;

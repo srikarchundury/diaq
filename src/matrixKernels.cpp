@@ -775,6 +775,10 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
  * @return diaQMatrix  C
  */
 diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
+    
+    // A->print_meta();
+    // B->print_meta();
+
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -888,10 +892,10 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // end timer
+    // // end timer
     // auto end = std::chrono::high_resolution_clock::now();
     // std::chrono::duration<double> elapsed = end - start;
-    // printf("\t\t\tUnitary multiplication took %f seconds\n", elapsed.count());
+    // printf("\t\tUnitary multiplication took %f seconds\n", elapsed.count());
 
     return result;
     #endif
@@ -1011,10 +1015,10 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
             }
         }
     }
-    // end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // measure time
-    printf("matrix_reshape took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+    // // end timer
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // measure time
+    // printf("matrix_reshape took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
     // A->free();
     return res;
 }
@@ -1106,8 +1110,8 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
 }
 
 diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
@@ -1213,10 +1217,10 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     }
     // res->pruneMatrix();
 
-    // end timer
-    auto end = std::chrono::high_resolution_clock::now();
-    printf("transpose took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-    std::flush(std::cout);
+    // // end timer
+    // auto end = std::chrono::high_resolution_clock::now();
+    // printf("transpose took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+    // std::flush(std::cout);
     return res;
 }
 
@@ -1225,8 +1229,8 @@ diaQMatrix *transpose(diaQMatrix *A) {
 }
 
 diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
     B->balance(); // to make sure x and y dims are balanced in the underlying matrix format
@@ -1333,10 +1337,10 @@ diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<lon
 
     // res->transpose(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    // end timer
-    auto end = std::chrono::high_resolution_clock::now();
-    printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
-    std::flush(std::cout);
+    // // end timer
+    // auto end = std::chrono::high_resolution_clock::now();
+    // printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
+    // std::flush(std::cout);
 
     return res;
 }
@@ -1555,7 +1559,12 @@ vector *spMV(diaQMatrix *A, vector *x) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // measure start time
+    // printf("Analyzing SpM\n");
+    // A->print_meta();
+    // printf("Analyzing V\n");
+    // x->print_meta();
+
+    // measure start timer
     auto start = std::chrono::high_resolution_clock::now();
 
     if(A->matrix_shape[1] != x->num_rows()) {
@@ -1634,7 +1643,7 @@ vector *spMV(diaQMatrix *A, vector *x) {
     // calculate duration
     std::chrono::duration<double> duration = end - start;
     // log duration
-    printf("SpMV took %f seconds\n", duration.count());
+    printf("\t\tSpMV took %f seconds\n", duration.count());
     return y;
     #endif
 }
@@ -1802,8 +1811,8 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     // printf("\tB Matrix:\n");
     // B->print();
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
@@ -1881,6 +1890,9 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
 }
 
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
     long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
@@ -1890,35 +1902,42 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
+        // printf("A's diagonal\n");
+        // diag->print();
         long int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
         valType *real_vals = diag->getRealValues();
         valType *imag_vals = diag->getImagValues();
+
         // result diag
-        diagonal *newDiag = new diagonal(dIndex, result->getDiagonalLength(dIndex));
+        long int new_dLength = result->getDiagonalLength(dIndex); // TODO: there should be a better way to get this using n and dLength.
+        diagonal *newDiag = new diagonal(dIndex, new_dLength);
         valType *newDiag_real_vals = newDiag->getRealValues();
         valType *newDiag_imag_vals = newDiag->getImagValues();
-        // loop n times
+
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int j = 0; j < n; j++) {
-            for(long int i = 0; i < dLength; i++) {
-                newDiag_real_vals[j * dLength + i] = real_vals[i];
-                newDiag_imag_vals[j * dLength + i] = imag_vals[i];
-            }
-            // I have to pad zeros, or offset the above loop, I have to pad std::abs(dIndex) number of 0s at the end
-            if(j < n - 1) {
-                for(long int i = 0; i < std::abs(dIndex); i++) {
-                    newDiag_real_vals[j * dLength + dLength + i] = 0.0;
-                    newDiag_imag_vals[j * dLength + dLength + i] = 0.0;
-                }
-            }
+        for(long int i = 0; i < new_dLength; i++) {
+            newDiag_real_vals[i] = real_vals[i % dLength]; // real_vals[i % dLength
+            newDiag_imag_vals[i] = imag_vals[i % dLength]; // imag_vals[i % dLength
         }
         result->setDiagonal(dIndex, newDiag);
+
     }
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
+
     return result;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
     long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
@@ -1940,7 +1959,7 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < dLength; i++) {
             valType each_real = real_vals[i];
-            valType each_imag = imag_vals[i];
+            valType each_imag = imag_vals[i];            
             for(long int j = 0; j < n; j++) {
                 newDiag_real_vals[j + i * n] = each_real;
                 newDiag_imag_vals[j + i * n] = each_imag;
@@ -1949,6 +1968,14 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
 
         result->setDiagonal(dIndex * n, newDiag);
     }
+    // result->pruneMatrix();
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
     return result;
 }
 

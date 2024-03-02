@@ -128,7 +128,7 @@ class diagonal {
         long int numNonZeros() {
             long int count = 0;
             for(long int i = 0; i < dLength; i++) {
-                if(realValues[i] != 0 || imagValues[i] != 0) {
+                if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     count++;
                 }
             }
