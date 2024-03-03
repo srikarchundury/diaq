@@ -19,6 +19,8 @@ res_dq = dq.tensordot(
 
 res_dq.print()
 
+res_dq.print_meta()
+
 print("Testing tensordot : ", (
     res_np == np.array(dq.to_numpy(res_dq)).reshape(res_dq.shape)
 ).all())

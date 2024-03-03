@@ -14,15 +14,16 @@ namespace diaq {
 
 class denseMatrix {
     public:
-        std::vector<long int> matrix_shape;
+        long int *matrix_shape;
         std::vector<long int> shape;
         long int size;
         denseMatrix(const long int s) {
             size = s*s;
             realData = (valType *)calloc(size, sizeof(valType));
             imagData = (valType *)calloc(size, sizeof(valType));
-            matrix_shape.push_back(s);
-            matrix_shape.push_back(s);
+            matrix_shape = new long int[2];
+            matrix_shape[0] = s;
+            matrix_shape[1] = s;
             shape.push_back(s);
             shape.push_back(s);
         } 
@@ -30,8 +31,9 @@ class denseMatrix {
             size = s*s;
             realData = real_data;
             imagData = (valType *)calloc(size, sizeof(valType));
-            matrix_shape.push_back(s);
-            matrix_shape.push_back(s);
+            matrix_shape = new long int[2];
+            matrix_shape[0] = s;
+            matrix_shape[1] = s;
             shape.push_back(s);
             shape.push_back(s);
         }
@@ -39,35 +41,38 @@ class denseMatrix {
             size = s*s;
             realData = real_data;
             imagData = imag_data;
-            matrix_shape.push_back(s);
-            matrix_shape.push_back(s);
+            matrix_shape = new long int[2];
+            matrix_shape[0] = s;
+            matrix_shape[1] = s;
             shape.push_back(s);
             shape.push_back(s);
         }
-        denseMatrix(std::vector<long int> *d, valType *real_data) {
+        denseMatrix(long int **d, valType *real_data) {
             matrix_shape = *d;
             size = matrix_shape[0] * matrix_shape[1];
             realData = real_data;
             imagData = (valType *)calloc(size, sizeof(valType));
-            shape = *d;
+            shape.push_back(matrix_shape[0]);
+            shape.push_back(matrix_shape[1]);
         }
-        denseMatrix(std::vector<long int> *d, valType *real_data, valType *imag_data) {
+        denseMatrix(long int **d, valType *real_data, valType *imag_data) {
             realData = real_data;
             imagData = imag_data;
             matrix_shape = *d;
             size = matrix_shape[0] * matrix_shape[1];
-            shape = *d;
+            shape.push_back(matrix_shape[0]);
+            shape.push_back(matrix_shape[1]);
         }
-        denseMatrix(std::vector<long int> *d, valType *real_data, valType *imag_data, std::vector<long int> *ts) {
+        denseMatrix(long int **d, valType *real_data, valType *imag_data, std::vector<long int> ts) {
             realData = real_data;
             imagData = imag_data;
             matrix_shape = *d;
             size = matrix_shape[0] * matrix_shape[1];
-            shape = *ts;
+            shape = ts;
         }
-        std::vector<std::complex<valType> > getData_forPy() {
-            std::vector<std::complex<valType> > res(size, 0);
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+        std::complex<valType> *getData_forPy() {
+            std::complex<valType> *res = new std::complex<valType>[size]();
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -75,7 +80,7 @@ class denseMatrix {
         }
         std::complex<valType> *getData() {
             std::complex<valType> *res = (std::complex<valType> *)malloc(size * sizeof(std::complex<valType>));
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -110,10 +115,7 @@ class denseMatrix {
         }
         void print() {
             std::cout << "matrix_shape (";
-            for(size_t i = 0; i < matrix_shape.size()-1; i++) {
-                std::cout << matrix_shape[i] << ",";
-            }
-            std::cout << matrix_shape[matrix_shape.size()-1] << ")" << std::endl;
+            printf("%ld,%ld)\n", matrix_shape[0], matrix_shape[1]);
             std::cout << "tensor_shape (";
             for(size_t i = 0; i < shape.size()-1; i++) {
                 std::cout << shape[i] << ",";
@@ -177,6 +179,7 @@ class denseMatrix {
             std::free(imagData);
         }
         diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
+        diaQMatrix *convertToQuantumSparse(long int *new_matrix_shape);
         diaQMatrix *convertToQuantumSparse();
     private:
         valType *realData;

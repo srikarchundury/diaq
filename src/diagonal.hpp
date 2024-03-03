@@ -27,7 +27,7 @@ class diagonal {
             #else
                 realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
                 imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i<dl; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
@@ -48,7 +48,7 @@ class diagonal {
             imagValues = new_imagVals;
         }
         void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];
@@ -64,9 +64,11 @@ class diagonal {
             return ans;
         }
         valType getRealValue(long int i) {
+            // printf("getRealVal i=%ld, dLength=%ld\n", i, dLength);
             return realValues[i];
         }
         valType getImagValue(long int i) {
+            // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
         bool isEmpty() {
@@ -126,7 +128,7 @@ class diagonal {
         long int numNonZeros() {
             long int count = 0;
             for(long int i = 0; i < dLength; i++) {
-                if(realValues[i] != 0 || imagValues[i] != 0) {
+                if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     count++;
                 }
             }

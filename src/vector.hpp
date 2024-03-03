@@ -19,7 +19,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -48,7 +48,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -67,7 +67,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) schedule(dynamic)
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(size_t i = 0; i<M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -99,12 +99,31 @@ class vector {
             printf("(%lf,%lf)]\n", realValues_[numRows_ - 1], imagValues_[numRows_ - 1]);
         }
 
+        void print_meta() {
+            std::cout << "length (" << numRows_ << ")" << std::endl;
+            std::cout << "sparsity = " << sparsity() << std::endl;
+        }
+
+        valType sparsity() {
+            long int num_nonzeros = 0;
+            for (size_t i = 0; i < numRows_; ++i) {
+                if(realValues_[i] != 0.0 || imagValues_[i] != 0.0) {
+                    num_nonzeros++;
+                }
+            }
+            return (valType)1.0 - ((valType)num_nonzeros / (valType)numRows_);
+        }
+
         valType *getRealValues() {
             return realValues_;
         }
 
         valType *getImagValues() {
             return imagValues_;
+        }
+        void free() {
+            std::free(realValues_);
+            std::free(imagValues_);
         }
 
     private:

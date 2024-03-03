@@ -795,14 +795,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase23);
 
     // -----------------------------------------
-    std::vector<long int> shapeA24{3, 6};
+    long int *shapeA24 = new long int[2]{3, 6};
     diaq::valType a24[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18,
     };
     diaq::denseMatrix *A24 = new diaq::denseMatrix(&shapeA24, a24);
-    std::vector<long int> shapeB24{6, 2};
+    long int *shapeB24 = new long int[2]{6, 2};
     diaq::valType b24[12] = {
         1,2,
         3,4,
@@ -818,14 +818,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase24);
 
     // -----------------------------------------
-    std::vector<long int> shapeA25{3, 6};
+    long int *shapeA25 = new long int[2]{3, 6};
     diaq::valType a25[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18
     };
     diaq::denseMatrix *A25 = new diaq::denseMatrix(&shapeA25, a25);
-    std::vector<long int> shapeB25{6,4};
+    long int *shapeB25 = new long int[2]{6, 4};
     diaq::valType b25[24] = {
         20,21,22,23,
         24,25,26,27,
@@ -842,14 +842,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA26{3, 6};
+    long int *shapeA26 = new long int[2]{3, 6};
     diaq::valType a26[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     diaq::denseMatrix *A26 = new diaq::denseMatrix(&shapeA26, a26);
-    std::vector<long int> shapeB26{6,4};
+    long int *shapeB26 = new long int[2]{6, 4};
     diaq::valType b26[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -866,14 +866,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA27{3, 6};
+    long int *shapeA27 = new long int[2]{3, 6};
     diaq::valType a27[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     diaq::denseMatrix *A27 = new diaq::denseMatrix(&shapeA27, a27);
-    std::vector<long int> shapeB27{6,4};
+    long int *shapeB27 = new long int[2]{6, 4};
     diaq::valType b27[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -889,14 +889,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase27);
 
     // -----------------------------------------
-    std::vector<long int> shapeA28{3, 6};
+    long int *shapeA28 = new long int[2]{3, 6};
     diaq::valType a28[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
     diaq::denseMatrix *A28 = new diaq::denseMatrix(&shapeA28, a28);
-    std::vector<long int> shapeB28{6,4};
+    long int *shapeB28 = new long int[2]{6, 4};
     diaq::valType b28[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -913,14 +913,14 @@ int main(int argc, char **argv) {
 
 
         // -----------------------------------------
-    std::vector<long int> shapeA29{3, 6};
+    long int *shapeA29 = new long int[2]{3, 6};
     diaq::valType a29[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     diaq::denseMatrix *A29 = new diaq::denseMatrix(&shapeA29, a29);
-    std::vector<long int> shapeB29{6,4};
+    long int *shapeB29 = new long int[2]{6, 4};
     diaq::valType b29[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -937,14 +937,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA30{3, 6};
+    long int *shapeA30 = new long int[2]{3, 6};
     diaq::valType a30[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     diaq::denseMatrix *A30 = new diaq::denseMatrix(&shapeA30, a30);
-    std::vector<long int> shapeB30{6,4};
+    long int *shapeB30 = new long int[2]{6, 4};
     diaq::valType b30[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -960,14 +960,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase30);
 
     // -----------------------------------------
-    std::vector<long int> shapeA31{3, 6};
+    long int *shapeA31 = new long int[2]{3, 6};
     diaq::valType a31[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
     diaq::denseMatrix *A31 = new diaq::denseMatrix(&shapeA31, a31);
-    std::vector<long int> shapeB31{6,4};
+    long int *shapeB31 = new long int[2]{6, 4};
     diaq::valType b31[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -984,14 +984,14 @@ int main(int argc, char **argv) {
     
 
     // -----------------------------------------
-    std::vector<long int> shapeA32{3, 6};
+    long int *shapeA32 = new long int[2]{3, 6};
     diaq::valType a32[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     diaq::denseMatrix *A32 = new diaq::denseMatrix(&shapeA32, a32);
-    std::vector<long int> shapeB32{6,4};
+    long int *shapeB32 = new long int[2]{6, 4};
     diaq::valType b32[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -1008,14 +1008,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA33{3, 6};
+    long int *shapeA33 = new long int[2]{3, 6};
     diaq::valType a33[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     diaq::denseMatrix *A33 = new diaq::denseMatrix(&shapeA33, a33);
-    std::vector<long int> shapeB33{6,4};
+    long int *shapeB33 = new long int[2]{6, 4};
     diaq::valType b33[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -1031,14 +1031,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase33);
 
     // -----------------------------------------
-    std::vector<long int> shapeA34{3, 6};
+    long *shapeA34 = new long int[2]{3, 6};
     diaq::valType a34[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
     diaq::denseMatrix *A34 = new diaq::denseMatrix(&shapeA34, a34);
-    std::vector<long int> shapeB34{6,4};
+    long *shapeB34 = new long int[2]{6, 4};
     diaq::valType b34[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -1054,14 +1054,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase34);
 
     // -----------------------------------------
-    std::vector<long int> shapeA35{3, 6};
+    long int *shapeA35 = new long int[2]{3, 6};
     diaq::valType a35[18] = {
         0,0,0,0,5,0,
         0,0,0,0,0,6,
         0,0,0,0,0,0,
     };
     diaq::denseMatrix *A35 = new diaq::denseMatrix(&shapeA35, a35);
-    std::vector<long int> shapeB35{6, 2};
+    long int *shapeB35 = new long int[2]{6, 2};
     diaq::valType b35[12] = {
         0,0,
         0,0,
@@ -1078,14 +1078,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA36{3, 6};
+    long int *shapeA36 = new long int[2]{3, 6};
     diaq::valType a36[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         5,0,0,0,0,0,
     };
     diaq::denseMatrix *A36 = new diaq::denseMatrix(&shapeA36, a36);
-    std::vector<long int> shapeB36{6,4};
+    long int *shapeB36 = new long int[2]{6, 4};
     diaq::valType b36[24] = {
         0,0,0,10,
         0,0,0,0,
@@ -1102,14 +1102,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA37{3, 6};
+    long int *shapeA37 = new long int[2]{3, 6};
     diaq::valType a37[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         1,0,0,0,0,0,
     };
     diaq::denseMatrix *A37 = new diaq::denseMatrix(&shapeA37, a37);
-    std::vector<long int> shapeB37{6,2};
+    long int *shapeB37 = new long int[2]{6, 2};
     diaq::valType b37[12] = {
         0,2,
         0,0,
@@ -1125,7 +1125,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase37);
 
     // -----------------------------------------
-    std::vector<long int> shapeA38{16, 4};
+    long int *shapeA38 = new long int[2]{16, 4};
     diaq::valType a38[64] = {
         8,0,0,0,
         0,0,0,0,
@@ -1145,7 +1145,7 @@ int main(int argc, char **argv) {
         0,0,0,15,
     };
     diaq::denseMatrix *A38 = new diaq::denseMatrix(&shapeA38, a38);
-    std::vector<long int> shapeB38{4,16};
+    long int *shapeB38 = new long int[2]{4, 16};
     diaq::valType b38[64] = {
         8,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,11,0,0,0,0,
@@ -1159,7 +1159,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase38);
 
     // -----------------------------------------
-    std::vector<long int> shapeA39{16, 4};
+    long int *shapeA39 = new long int[2]{16, 4};
     diaq::valType a39[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1179,7 +1179,7 @@ int main(int argc, char **argv) {
         0,0,0,15,
     };
     diaq::denseMatrix *A39 = new diaq::denseMatrix(&shapeA39, a39);
-    std::vector<long int> shapeB39{4,16};
+    long int *shapeB39 = new long int[2]{4, 16};
     diaq::valType b39[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1194,7 +1194,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA40{16, 4};
+    long int *shapeA40 = new long int[2]{16, 4};
     diaq::valType a40[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1214,7 +1214,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A40 = new diaq::denseMatrix(&shapeA40, a40);
-    std::vector<long int> shapeB40{4,16};
+    long int *shapeB40 = new long int[2]{4, 16};
     diaq::valType b40[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1229,7 +1229,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA41{16, 4};
+    long int *shapeA41 = new long int[2]{16, 4};
     diaq::valType a41[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1249,7 +1249,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A41 = new diaq::denseMatrix(&shapeA41, a41);
-    std::vector<long int> shapeB41{4,16};
+    long int *shapeB41 = new long int[2]{4, 16};
     diaq::valType b41[64] = {
         8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1263,7 +1263,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase41);
 
     // -----------------------------------------
-    std::vector<long int> shapeA42{16, 4};
+    long int *shapeA42 = new long int[2]{16, 4};
     diaq::valType a42[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1283,7 +1283,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A42 = new diaq::denseMatrix(&shapeA42, a42);
-    std::vector<long int> shapeB42{4,16};
+    long int *shapeB42 = new long int[2]{4, 16};
     diaq::valType b42[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1297,7 +1297,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase42);
 
     // -----------------------------------------
-    std::vector<long int> shapeA43{16, 4};
+    long int *shapeA43 = new long int[2]{16, 4};
     diaq::valType a43[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1317,7 +1317,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A43 = new diaq::denseMatrix(&shapeA43, a43);
-    std::vector<long int> shapeB43{4,16};
+    long int *shapeB43 = new long int[2]{4, 16};
     diaq::valType b43[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1331,7 +1331,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase43);
 
     // -----------------------------------------
-    std::vector<long int> shapeA44{16, 4};
+    long int *shapeA44 = new long int[2]{16, 4};
     diaq::valType a44[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1351,7 +1351,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A44 = new diaq::denseMatrix(&shapeA44, a44);
-    std::vector<long int> shapeB44{4,16};
+    long int *shapeB44 = new long int[2]{4, 16};
     diaq::valType b44[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,
@@ -1365,7 +1365,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase44);
 
     // -----------------------------------------
-    std::vector<long int> shapeA45{16, 4};
+    long int *shapeA45 = new long int[2]{16, 4};
     diaq::valType a45[64] = {
         8,0,0,0,
         0,0,0,0,
@@ -1385,7 +1385,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
     };
     diaq::denseMatrix *A45 = new diaq::denseMatrix(&shapeA45, a45);
-    std::vector<long int> shapeB45{4,16};
+    long int *shapeB45 = new long int[2]{4, 16};
     diaq::valType b45[64] = {
         0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1399,7 +1399,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase45);
 
     // -----------------------------------------
-    std::vector<long int> shapeA46{32, 2};
+    long int *shapeA46 = new long int[2]{32, 2};
     diaq::valType a46[64] = {
         1,0,
         0,0,
@@ -1435,7 +1435,7 @@ int main(int argc, char **argv) {
         0,0,
     };
     diaq::denseMatrix *A46 = new diaq::denseMatrix(&shapeA46, a46);
-    std::vector<long int> shapeB46{2,8};
+    long int *shapeB46 = new long int[2]{2, 8};
     diaq::valType b46[64] = {
         1,0,0,1,0,0,0,0,
         0,0,0,0,0,1,1,0,
@@ -1448,7 +1448,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    std::vector<long int> shapeA47{8, 2};
+    long int *shapeA47 = new long int[2]{8, 2};
     diaq::valType a47[16] = {
         0.707107,0,
         0,0,
@@ -1460,7 +1460,7 @@ int main(int argc, char **argv) {
         0.707107,0,
     };
     diaq::denseMatrix *A47 = new diaq::denseMatrix(&shapeA47, a47);
-    std::vector<long int> shapeB47{2,2};
+    long int *shapeB47 = new long int[2]{2, 2};
     diaq::valType b47[4] = {
         0.707107,0,
         0,-0.707107,
@@ -1472,7 +1472,7 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase47);
 
     // -----------------------------------------
-    std::vector<long int> shapeA48{4, 5};
+    long int *shapeA48 = new long int[2]{4, 5};
     diaq::valType a48[20] = {
         1, 2, 3, 4, 5,
         6, 7, 8, 9, 10,
@@ -1480,7 +1480,7 @@ int main(int argc, char **argv) {
         16, 17, 18, 19, 20,
     };
     diaq::denseMatrix *A48 = new diaq::denseMatrix(&shapeA48, a48);
-    std::vector<long int> shapeB48{5, 3};
+    long int *shapeB48 = new long int[2]{5, 3};
     diaq::valType b48[15] = {
         1, 6, 11,
         2, 7, 12,
@@ -1530,11 +1530,18 @@ int main(int argc, char **argv) {
         q_B8->print();
         std::cout << " -- " << std::endl;
 
-        std::vector<long int> new_dims{4,16};
+        std::vector<long int> new_dims{4, 16};
         diaq::diaQMatrix *reshaped_q_B8 = reshape(q_B8, new_dims);
         reshaped_q_B8->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- Reshape Done -- " << std::endl;
+        std::cout << " -- Tensor Reshape Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        // testing matrix_reshape
+        long int *new_mat_dims = new long int[2]{4, 16};
+        diaq::diaQMatrix *matrix_reshaped_q_B8 = matrix_reshape(q_B8, new_mat_dims);
+        matrix_reshaped_q_B8->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- Matrix Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "matrix_transpose") == 0) {
@@ -1571,7 +1578,7 @@ int main(int argc, char **argv) {
         long int dp = 2;
 
         std::cout << "getting element in diaq::diagonal idx = " << di << " position = " << dp << std::endl;
-        std::vector<long int> mat_pos = q_A24->getMatrixPosition(di, dp);
+        long int *mat_pos = q_A24->getMatrixPosition(di, dp);
         std::cout << "matrix position - " << mat_pos[0] << "," << mat_pos[1] << std::endl;
 
         std::vector<long int> ten_pos = q_A24->getTensorPosition(di, dp);
@@ -1660,8 +1667,8 @@ int main(int argc, char **argv) {
         diaq::diaQMatrix *q_A24 = A24->convertToQuantumSparse(A24->matrix_shape);
         q_A24->print();
         std::cout << " -- " << std::endl;
-        std::vector<std::complex<diaq::valType>> values = q_A24->flatten();
-        for (long int i = 0; i < values.size(); i++) {
+        std::complex<diaq::valType> *values = q_A24->flatten();
+        for (long int i = 0; i < q_A24->matrix_shape[0] * q_A24->matrix_shape[1]; i++) {
             std::cout << values[i] << " ";
         }
         std::cout << std::endl;
@@ -1675,7 +1682,7 @@ int main(int argc, char **argv) {
         q_A47->shape = std::vector<long int>{2,2,2,2};
         q_A47->print();
         std::cout << " -- " << std::endl;
-        diaq::diaQMatrix *res = q_A47->transpose(std::vector<long int>{});
+        diaq::diaQMatrix *res = diaq::transpose(q_A47, std::vector<long int>{});
         res->print();
         std::cout << " -- " << std::endl;
         res->convertToDenseMatrix(res->matrix_shape)->print();
@@ -1718,7 +1725,7 @@ int main(int argc, char **argv) {
         // length (8) [(0.395882,0.121511), (-5.55112e-17,-2.08167e-17), (0,0), (0,0), (0,0), (0,0), (0.178448,0.892563), (-5.55112e-17,0)]
         // testing spMV here.
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        std::vector<long int> shape_mat{8, 8};
+        long int *shape_mat = new long int[2]{8, 8};
         diaq::valType mat_vals[64] = {
             h_val,                h_val,                0,                0,                0,                0,                0,                0,
 
@@ -1759,7 +1766,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "spmv_3") == 0) {
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        std::vector<long int> shape_mat{8, 8};
+        long int *shape_mat = new long int[2]{8, 8};
         diaq::valType mat_vals_real[64] = {
             0,                0,                0,                0,                0,                0,                0,                0,
 
@@ -1825,7 +1832,7 @@ int main(int argc, char **argv) {
         // -- current vector --
         // length (8) [(0.279931,0.085921), (0.000000,0.000000), (0.126182,0.631137), (0.000000,0.000000), (0.279931,0.085921), (0.000000,0.000000), (0.126182,0.631137), (0.000000,0.000000)]
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        std::vector<long int> shape_mat{8, 8};
+        long int *shape_mat = new long int[2]{8, 8};
         diaq::valType mat_vals_real[64] = {
             1,                0,                0,                0,                0,                0,                0,                0,
 
@@ -1866,7 +1873,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "spmv_5") == 0) {
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        std::vector<long int> shape_mat{8, 8};
+        long int *shape_mat = new long int[2]{8, 8};
         diaq::valType mat_vals_real[64] = {
             0,                1,                0,                0,                0,                0,                0,                0,
 
@@ -1905,7 +1912,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_6") == 0) {
-        std::vector<long int> shape_mat{8, 8};
+        long int *shape_mat = new long int[2]{8, 8};
         diaq::valType mat_vals_real[64] = {
             -0.483542,                0,                -0.152339,                0,                0,                0,                0,                0,
 
@@ -1961,6 +1968,61 @@ int main(int argc, char **argv) {
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "spmv_7") == 0) {
+        // matrix_shape (16,16)
+        // tensor_shape (16,16)
+        // (dIndex=-1) [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
+        // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
+        // -- current vector --
+        // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
+        diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        for(int i = 0; i < 8; i++) imags[i] = 1;
+        diaq::diagonal *d1 = new diaq::diagonal(-1, 15, reals, imags);
+
+        diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        for(int i = 0; i < 8; i++) im[i] = -1;
+        diaq::diagonal *d2 = new diaq::diagonal(-1, 15, r, im);
+
+        diaq::diaQMatrix *q_mat = new diaq::diaQMatrix((long int)16);
+        q_mat->setDiagonal(-1, d1);
+        q_mat->setDiagonal(1, d2);
+
+        printf("Matrix:\n");
+        q_mat->print();
+
+        std::cout << " --x-- " << std::endl;
+        diaq::valType x_real_vals[16] = {0};
+        diaq::valType x_imag_vals[16] = {0};
+        x_imag_vals[2] = 1.0;
+        diaq::vector *x = new diaq::vector(16, x_real_vals, x_imag_vals);
+        x->print();
+        std::cout << " --MV-- " << std::endl;
+        diaq::vector *dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x);
+        dense_y->print();
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector *y = diaq::spMV(q_mat, x);
+        y->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl; 
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *mat = diaq::kron_product(id4, qspa);
+        diaq::vector *x = new diaq::vector(32, 1.0);
+        diaq::vector *correct_y = diaq::spMV(mat, x);
+        printf(" -- correct answer -- \n");
+        correct_y->print();
+        printf(" -- new way to do it -- \n");
+        diaq::vector *y = diaq::identity_kron_matrix_times_vector((long int)4, qspa, x);
+        y->print();
+    }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24->shape = std::vector<long int>{3,3,2};
@@ -1976,10 +2038,13 @@ int main(int argc, char **argv) {
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{0};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res = diaq::tensordot(q_A24, q_B24, axes);
-        res->print();
+        diaq::diaQMatrix *res1 = diaq::tensordot1(q_A24, q_B24, axes);
+        res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix *res2 = diaq::tensordot(q_A24, q_B24, axes);
+        res2->print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "tensordot_2") == 0) {
@@ -1989,7 +2054,7 @@ int main(int argc, char **argv) {
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        std::vector<long int> shape_first_m{4,4};
+        long int *shape_first_m = new long int[2]{4,4};
         diaq::denseMatrix *dfirst = new diaq::denseMatrix(&shape_first_m, first_m);
         diaq::diaQMatrix *q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
         q_first->shape = std::vector<long int>{2,2,2,2};
@@ -1997,7 +2062,7 @@ int main(int argc, char **argv) {
             0.707107, 0,
             0, -0.707107,
         };
-        std::vector<long int> shape_second_m{2,2};
+        long int *shape_second_m = new long int[2]{2,2};
         diaq::denseMatrix *dsecond = new diaq::denseMatrix(&shape_second_m, second_m);
         diaq::diaQMatrix *q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
         q_second->shape = std::vector<long int>{2,2};
@@ -2017,32 +2082,39 @@ int main(int argc, char **argv) {
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        std::vector<long int> shape_first_m{4,4};
+        long int *shape_first_m = new long int[2]{4,4};
         diaq::denseMatrix *dfirst = new diaq::denseMatrix(&shape_first_m, first_m);
         diaq::diaQMatrix *q_first = dfirst->convertToQuantumSparse(dfirst->matrix_shape);
         q_first->shape = std::vector<long int>{2,2,2,2};
+        printf(" --- q_first matrix --- \n");
+        q_first->print();
         diaq::valType second_m[16] = {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        std::vector<long int> shape_second_m{4,4};
+        long int *shape_second_m = new long int[2]{4,4};
         diaq::denseMatrix *dsecond = new diaq::denseMatrix(&shape_second_m, second_m);
         diaq::diaQMatrix *q_second = dsecond->convertToQuantumSparse(dsecond->matrix_shape);
         q_second->shape = std::vector<long int>{2,2,2,2};
+        printf(" --- q_second matrix --- \n");
+        q_second->print();
         std::vector<long int> axes_A{2};
         std::vector<long int> axes_B{1};
         std::vector<std::vector<long int>> axes{axes_A, axes_B};
-        diaq::diaQMatrix *res = tensordot(q_first, q_second, axes);
-        res->print();
+        diaq::diaQMatrix *res1 = diaq::tensordot1(q_first, q_second, axes);
+        res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        diaq::diaQMatrix *res2 = diaq::tensordot(q_first, q_second, axes);
+        res2->print();
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "format_conversion") == 0) {
         std::cout << "Testing Format Conversion" << std::endl;
-        std::vector<std::complex<diaq::valType>> values{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+        std::complex<diaq::valType> *values = new std::complex<diaq::valType>[18]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<long int> shape{3,3,2};
         diaq::diaQMatrix *result = diaq::from_numpy(values, shape);
         result->print();
@@ -2051,18 +2123,18 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
         // test case 5 - GHZ 3 qubit unitary simulation
         std::cout << " -- Testing Multiplication --" << std::endl;
-        std::vector<std::complex<diaq::valType>> a{
-            1,0,0,0,0,0,0,0,
-            0,0,0,1,0,0,0,0,
-            0,0,1,0,0,0,0,0,
-            0,1,0,0,0,0,0,0,
-            0,0,0,0,1,0,0,0,
-            0,0,0,0,0,0,0,1,
-            0,0,0,0,0,0,1,0,
-            0,0,0,0,0,1,0,0,
+        std::complex<diaq::valType> *a = new std::complex<diaq::valType>[64]{
+            {1,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+            {0,0}, {0,1}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+            {0,0}, {0,0}, {1,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+            {0,0}, {0,0}, {0,1}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
+            {0,0}, {0,0}, {0,0}, {0,0}, {1,0}, {0,0}, {0,0}, {0,0},
+            {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {1,0},
+            {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {1,0}, {0,0},
+            {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {1,0}, {0,0}, {0,0}
         };
         std::vector<long int> a_shape{8, 8};
-        std::vector<std::complex<diaq::valType>> b{
+        std::complex<diaq::valType> *b = new std::complex<diaq::valType>[64]{
             1,0,0,0,0,0,0,0,
             0,1,0,0,0,0,0,0,
             0,0,0,0,0,0,1,0,
@@ -2096,6 +2168,92 @@ int main(int argc, char **argv) {
         // testing kron_product here
         std::cout << " -- kron test -- " << std::endl;
         kron_test(A14, B14);
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_1") == 0 ) {
+        // testing identity_kron_matrix
+        std::cout << " -- testing identity_kron_matrix -- " << std::endl;
+        diaq::diaQMatrix *qspa = B4->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, qspa);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa );
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "matrix_kron_identity_1") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing matrix_kron_identity -- " << std::endl;
+        diaq::diaQMatrix *qspa = A25->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(qspa, id4);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::matrix_kron_identity(qspa, (long int)4);
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_2") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing matrix_kron_identity -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, qspa);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa);
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_1") == 0) {
+        // vector x
+        diaq::vector *x = new diaq::vector(128);
+        x->getImagValues()[8] = 1.0;
+        // matrix_shape (64,64)
+        // tensor_shape (64,64)
+        // (dIndex=0) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
+        long int *shape = new long int[2] {64, 64};
+        diaq::diaQMatrix *qspa = new diaq::diaQMatrix(&shape);
+        diaq::diagonal *zero_d = new diaq::diagonal(0, 64);
+        diaq::valType *zero_d_real = zero_d->getRealValues();
+        diaq::valType *zero_d_imag = zero_d->getImagValues();
+        for(int i = 0; i < 48; i++) {
+            zero_d_real[i] = 1.0;
+        }
+        for(int i = 48; i < 64; i++) {
+            zero_d_real[i] = -1.0;
+        }
+        qspa->setDiagonal(0, zero_d);
+        qspa->print();
+        printf(" -- doing kron_product(qspa, I2) times vector x -- \n");
+        diaq::diaQMatrix *kp = diaq::kron_product(new diaq::identityMatrix((long int)2), qspa);
+        printf(" -- kp -- \n");
+        kp->print();
+        printf(" -- let's test identity_kron_matrix function also here -- \n");
+        diaq::diaQMatrix *kp_2 = diaq::identity_kron_matrix((long int)2, qspa);
+        printf(" -- kp_2 -- \n");
+        kp_2->print();
+        printf(" -- \n");
+        printf(" -- times x -- \n");
+        x->print();
+        printf(" -- gives -- \n");
+        diaq::vector *y = diaq::spMV(kp_2, x);
+        y->print();
+        printf(" -- Now doing identity_kron_matrix_times_vector -- \n");
+        diaq::vector *res_v = diaq::identity_kron_matrix_times_vector((long int)2, qspa, x);
+        res_v->print();
     }
     else if (strcmp(argv[1], "id") == 0 ) {
         std::cout << " -- testing identity class -- " << std::endl;
