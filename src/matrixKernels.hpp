@@ -38,6 +38,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
 
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
+vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x);
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
 
 diaQMatrix *dagger(diaQMatrix *A);

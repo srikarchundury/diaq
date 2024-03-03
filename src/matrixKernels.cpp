@@ -1586,11 +1586,11 @@ vector *spMV(diaQMatrix *A, vector *x) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
         if(dIndex < 0) { // negative diagonals
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
+            // #if VECTORIZATION_TYPE == 1
+            //     run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #elif VECTORIZATION_TYPE == 0
+            //     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = i;
@@ -1598,14 +1598,14 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            #endif
+            // #endif
         }
         else if(dIndex > 0) { // positive diagonals
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
+            // #if VECTORIZATION_TYPE == 1
+            //     run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #elif VECTORIZATION_TYPE == 0
+            //     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = dIndex + i;
@@ -1613,21 +1613,21 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            #endif
+            // #endif
         }
         else {
-            // 0th diagonal
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
+            // // 0th diagonal
+            // #if VECTORIZATION_TYPE == 1
+            //     run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #elif VECTORIZATION_TYPE == 0
+            //     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            // #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
                 }
-            #endif
+            // #endif
         }
     }
     // if(logger.log_level == DEBUG) {
@@ -1916,12 +1916,14 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         valType *newDiag_imag_vals = newDiag->getImagValues();
 
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int i = 0; i < new_dLength; i++) {
-            newDiag_real_vals[i] = real_vals[i % dLength]; // real_vals[i % dLength
-            newDiag_imag_vals[i] = imag_vals[i % dLength]; // imag_vals[i % dLength
+        for(long int rep = 0; rep < n; rep++) {
+            long int skip_places = (rep) * (dLength + abs(dIndex));
+            for(long int i = 0; i < dLength; i++) {
+                newDiag_real_vals[i + skip_places] = real_vals[i];
+                newDiag_imag_vals[i + skip_places] = imag_vals[i];
+            }
         }
         result->setDiagonal(dIndex, newDiag);
-
     }
 
     // measure end time
@@ -1932,6 +1934,131 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
 
     return result;
+}
+
+vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) {
+
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
+    vector *y = new vector(n * A->matrix_shape[0], 0.0, 0.0);
+    valType *y_real_values = y->getRealValues();
+    valType *y_imag_values = y->getImagValues();
+
+    valType *x_real_values = x->getRealValues();
+    valType *x_imag_values = x->getImagValues();
+
+    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+
+        long int dLength = diag->dLength;
+        valType *real_vals = diag->getRealValues();
+        valType *imag_vals = diag->getImagValues();
+
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int rep = 0; rep < n; rep++) {
+            long int skip_places = rep * (dLength + abs(dIndex));
+
+            #pragma omp simd
+            for(long int i = 0; i < dLength; i++) {
+                long int x_idx = (dIndex >= 0) ? dIndex + i + skip_places : i + skip_places;
+                long int y_idx = (dIndex >= 0) ? i + skip_places : i + skip_places - dIndex;
+
+                y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+            }
+        }
+    }
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+
+    return y;
+}
+
+
+vector *identity_kron_matrix_times_vector2(long int n, diaQMatrix *A, vector *x) {
+
+    printf("identity_kron_matrix_times_vector\n");
+    A->print();
+    printf("Identity dim = %ld\n", n);
+    // printf("vector x = \n");
+    // x->print();
+
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
+    vector *y = new vector(n * A->matrix_shape[0], 0.0, 0.0);
+    valType *y_real_values = y->getRealValues();
+    valType *y_imag_values = y->getImagValues();
+
+    valType *x_real_values = x->getRealValues();
+    valType *x_imag_values = x->getImagValues();
+
+    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        // printf("A's diagonal\n");
+        // diag->print();
+        long int dLength = diag->dLength;
+        // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
+        valType *real_vals = diag->getRealValues();
+        valType *imag_vals = diag->getImagValues();
+
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int rep = 0; rep < n; rep++) {
+            long int skip_places = (rep) * (dLength + abs(dIndex));
+            if(dIndex < 0) {
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = i + skip_places;
+                    long int y_idx = (i + skip_places) - dIndex;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+            }
+            else if(dIndex > 0) {
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = dIndex + (i + skip_places);
+                    long int y_idx = (i + skip_places);
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+            }
+            else {
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = i + skip_places;
+                    long int y_idx = i + skip_places;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx];
+                    y_imag_values[y_idx] += imag_vals[i] * x_imag_values[x_idx];
+                }
+            }
+        }
+    }
+
+    // printf("result y = \n");
+    // y->print();
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+
+    return y;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) {
