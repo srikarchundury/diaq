@@ -66,6 +66,11 @@ class diaQMatrix {
             shape = ts;
             size = matrix_shape[0] * matrix_shape[1];
         }
+
+        ~diaQMatrix() {
+            this->free();
+        }
+
         long int getSize() {
             return size;
         }

@@ -79,6 +79,10 @@ class vector {
             }
         }
 
+        ~vector() {
+            this->free();
+        }
+
         std::complex<valType> operator[](size_t i) {
             return std::complex<valType>(realValues_[i], imagValues_[i]);
         }

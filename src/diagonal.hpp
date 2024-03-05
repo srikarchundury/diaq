@@ -40,6 +40,9 @@ class diagonal {
             imagValues = imagVals;
             dLength = dl;
         }
+        ~diagonal() {
+            this->free();
+        }
         void setIndex(long int newIndex) {
             dIndex = newIndex;
         }

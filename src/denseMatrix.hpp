@@ -70,6 +70,9 @@ class denseMatrix {
             size = matrix_shape[0] * matrix_shape[1];
             shape = ts;
         }
+        ~denseMatrix() {
+            this->free();
+        }
         std::complex<valType> *getData_forPy() {
             std::complex<valType> *res = new std::complex<valType>[size]();
             #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
