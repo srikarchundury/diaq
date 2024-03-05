@@ -1644,6 +1644,9 @@ vector *spMV(diaQMatrix *A, vector *x) {
     // std::chrono::duration<double> duration = end - start;
     // // log duration
     // printf("\t\tSpMV took %f seconds\n", duration.count());
+
+    x->free(); // so that nwq_sim need not handle this. some tests will fail!
+
     return y;
     #endif
 }
@@ -1980,6 +1983,8 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
     // std::chrono::duration<double> duration = end - start;
     // // log duration
     // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+
+    x->free(); // so that vector is not overhead in nwq_sim
 
     return y;
 }
