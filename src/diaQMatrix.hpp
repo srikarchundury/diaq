@@ -647,6 +647,8 @@ class diaQMatrix {
         void transpose();
         denseMatrix *convertToDenseMatrix(long int *new_shape);
         denseMatrix *convertToDenseMatrix();
+        valType *getRealValues();
+        valType *getImagValues();
     private:
         std::unordered_map<long int, diagonal*> diagonalMap; // map <dIndex, diagonal object>
 };

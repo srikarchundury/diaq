@@ -3,7 +3,6 @@
 
 #include <omp.h>
 
-
 #include "denseMatrix.hpp"
 #include "config.hpp"
 #include "diaQMatrix.hpp"

@@ -6,6 +6,16 @@
 
 namespace diaq {
 
+valType *diaQMatrix::getRealValues() {
+    denseMatrix *d = this->convertToDenseMatrix();
+    return d->getRealData();
+}
+
+valType *diaQMatrix::getImagValues() {
+    denseMatrix *d = this->convertToDenseMatrix();
+    return d->getImagData();
+}
+
 denseMatrix *diaQMatrix::convertToDenseMatrix() {
     return this->convertToDenseMatrix(this->matrix_shape);
 }

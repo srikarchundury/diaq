@@ -100,7 +100,10 @@ PYBIND11_MODULE(diaq, m) {
             [](diaq::diaQMatrix *self, std::vector<long int> new_order) { return self->transpose(new_order); },
             py::arg(),
             py::return_value_policy::reference
-        );
+        )
+        .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
+        ;
+
 
     // diaq::denseMatrix class
     // m.def(
@@ -181,6 +184,29 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::reference
     );
+
+    m.def(
+        "from_numpy",
+        [](py::array_t<std::complex<diaq::valType>> vals) {
+            // Access the buffer_info of the NumPy arrays
+            auto vals_info = vals.request();
+            // make shape
+            std::vector<long int> shape;
+            for (int i = 0; i < vals_info.ndim; i++) {
+                shape.push_back(vals_info.shape[i]);
+            }
+            // Get pointers to the data
+            std::complex<diaq::valType> *vals_ptr = static_cast<std::complex<diaq::valType> *>(vals_info.ptr);
+            // Construct the diaQMatrix object
+            diaq::diaQMatrix *res = diaq::from_numpy(vals_ptr, shape);
+            // // free vals_ptr
+            // delete[] vals_ptr;
+            return res;
+        },
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
     // m.def("to_numpy", &diaq::to_numpy, py::return_value_policy::reference);
     m.def(
         "to_numpy",
