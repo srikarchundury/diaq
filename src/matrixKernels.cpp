@@ -1586,11 +1586,11 @@ vector *spMV(diaQMatrix *A, vector *x) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
         if(dIndex < 0) { // negative diagonals
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = i;
@@ -1598,14 +1598,14 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            // #endif
+            #endif
         }
         else if(dIndex > 0) { // positive diagonals
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = dIndex + i;
@@ -1613,21 +1613,21 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            // #endif
+            #endif
         }
         else {
-            // // 0th diagonal
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            // 0th diagonal
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
                 }
-            // #endif
+            #endif
         }
     }
     // if(logger.log_level == DEBUG) {
@@ -1957,22 +1957,34 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
-
         long int dLength = diag->dLength;
         valType *real_vals = diag->getRealValues();
         valType *imag_vals = diag->getImagValues();
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int rep = 0; rep < n; rep++) {
-            long int skip_places = rep * (dLength + abs(dIndex));
-
-            #pragma omp simd
-            for(long int i = 0; i < dLength; i++) {
-                long int x_idx = (dIndex >= 0) ? dIndex + i + skip_places : i + skip_places;
-                long int y_idx = (dIndex >= 0) ? i + skip_places : i + skip_places - dIndex;
-
-                y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+        if(dIndex < 0) { // for negative diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < n; rep++) {
+                long int skip_places = rep * (dLength - dIndex);
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = i + skip_places;
+                    long int y_idx = i + skip_places - dIndex;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+            }
+        }
+        else { // for 0th and positive diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < n; rep++) {
+                long int skip_places = rep * (dLength + dIndex);
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = dIndex + i + skip_places;
+                    long int y_idx = i + skip_places;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
             }
         }
     }
