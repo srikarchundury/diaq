@@ -13,6 +13,7 @@ set(SOURCES
 	${SRC_DIR}/denseMatrix.hpp
 	${SRC_DIR}/diagonal.hpp
 	${SRC_DIR}/diaQMatrix.hpp
+    ${SRC_DIR}/specialMatrices.hpp
 	${SRC_DIR}/vector.hpp
 	${SRC_DIR}/conversions.hpp
 	${SRC_DIR}/conversions.cpp
@@ -41,25 +42,35 @@ if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
     find_package(CUDA REQUIRED)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
-    cuda_add_library(diaq ${SOURCES} ${CUDA_SOURCES})
+    cuda_add_library(diaq SHARED ${SOURCES} ${CUDA_SOURCES})
     add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU vectorization
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
     set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for CUDA sources
     set(BUILD_TYPE "gpu_build")
 else()
     message(STATUS "CUDA is not enabled")
-    add_library(diaq ${SOURCES})
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU
+    add_library(diaq SHARED ${SOURCES})
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU for automatic vectorization
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
     # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
     target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
+    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
     set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for non-CUDA sources
     set(BUILD_TYPE "cpu_build")
+
+    # option(ENABLE_GPROF "Enable gprof profiling" OFF)
+    # if(ENABLE_GPROF)
+    #     message(STATUS "gprof profiling is enabled")
+    #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    # endif()
+
 endif()
 
 # Compile the tests.cpp file

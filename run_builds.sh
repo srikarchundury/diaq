@@ -7,6 +7,8 @@ then
     rm -rf cpu_build
     mkdir cpu_build
     cd cpu_build
+    # cmake -DENABLE_GPROF=ON ..
+    # cmake .. -DCMAKE_BUILD_TYPE=Debug
     cmake ..
     make -j 4
     cd ..

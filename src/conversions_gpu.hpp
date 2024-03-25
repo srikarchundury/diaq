@@ -8,6 +8,7 @@
 #include <cmath>
 #include <omp.h>
 
+
 // CUDA libraries
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"
@@ -22,8 +23,8 @@
 namespace diaq {
 
 // declarations
-diaQMatrix from_numpy_cuda(std::vector<std::complex<valType>> values, std::vector<long int> shape);
-diaQMatrix convertToQuantumSparse_cuda(denseMatrix *d, std::vector<long int> new_shape);
+diaQMatrix *from_numpy_cuda(valType **values, long int *shape);
+diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, long int *new_shape);
 
 } // namespace diaq
 

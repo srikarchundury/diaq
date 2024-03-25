@@ -21,14 +21,27 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
-            realValues = (valType *)calloc(dl, sizeof(valType));
-            imagValues = (valType *)calloc(dl, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realValues = (valType *)calloc(dl, sizeof(valType));
+                imagValues = (valType *)calloc(dl, sizeof(valType));
+            #else
+                realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
+                imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
+                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for(long int i = 0; i<dl; i++) {
+                    realValues[i] = 0.0;
+                    imagValues[i] = 0.0;
+                }
+            #endif
         }
         diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;
             realValues = realVals;
             imagValues = imagVals;
             dLength = dl;
+        }
+        ~diagonal() {
+            this->free();
         }
         void setIndex(long int newIndex) {
             dIndex = newIndex;
@@ -38,6 +51,7 @@ class diagonal {
             imagValues = new_imagVals;
         }
         void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];
@@ -53,9 +67,11 @@ class diagonal {
             return ans;
         }
         valType getRealValue(long int i) {
+            // printf("getRealVal i=%ld, dLength=%ld\n", i, dLength);
             return realValues[i];
         }
         valType getImagValue(long int i) {
+            // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
         bool isEmpty() {
@@ -101,7 +117,7 @@ class diagonal {
             return c;
         }
         // returns the dIndex based on start coords
-        long int getDIndex(long int *coords, long int matrixSize) {
+        long int getDIndex(long int *coords) {
             if(coords[0] == 0){
                 return coords[1];
             }
@@ -115,24 +131,19 @@ class diagonal {
         long int numNonZeros() {
             long int count = 0;
             for(long int i = 0; i < dLength; i++) {
-                if(realValues[i] != 0 || imagValues[i] != 0) {
+                if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     count++;
                 }
             }
             return count;
         }
         void free() {
-            delete[] realValues;
-            delete[] imagValues;
+            std::free(realValues);
+            std::free(imagValues);
         }
     private:
-        #if NUM_BYTES_ALIGNED == -1
-            valType* realValues; // real number array
-            valType* imagValues; // imaginary number array
-        #else
-            alignas(NUM_BYTES_ALIGNED) valType* realValues; // real number array
-            alignas(NUM_BYTES_ALIGNED) valType* imagValues; // imaginary number array
-        #endif
+        valType* realValues; // real number array
+        valType* imagValues; // imaginary number array
 };
 
 } // namespace diaq

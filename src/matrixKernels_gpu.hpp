@@ -14,8 +14,8 @@
 namespace diaq {
 
 // declarations
-diaQMatrix product_cuda(diaQMatrix *A, diaQMatrix *B);
-vector spmv_cuda(diaQMatrix *A, vector *x);
+diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B);
+vector *spmv_cuda(diaQMatrix *A, vector *x);
 
 } // namespace diaq
 

@@ -9,9 +9,9 @@ cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED env
 
 sources = ["include/pythonWrappers.cpp"]
 d_macros = [('VERSION_INFO', __version__)]
-compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "-fPIC"]
+compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "-msse2", "-fPIC"]
 link_args = ['-lgomp', '-lpthread']
-cpu_lib_dirs = ["./cpu_build/lib"]
+cpu_lib_dirs = [os.path.abspath("./cpu_build/lib")]
 libs = ["diaq"]
 
 if cuda_enabled:
@@ -21,11 +21,13 @@ if cuda_enabled:
     cuda_lib = os.path.join(cuda_path, "lib64")
     cuda_compile_args = ["-std=c++11", "-O3", "-I" + cuda_include]
     cuda_link_args = ["-L" + cuda_lib, "-lcudart"]
-    nvcc_args = ['--gpu-architecture=sm_75', '-O2']  # Adjust the architecture based on your GPU
+    nvcc_args = ['--gpu-architecture=sm_75', '-O3']  # Adjust the architecture based on your GPU
     compile_args.extend(cuda_compile_args)
     link_args.extend(cuda_link_args)
     d_macros.append(('CUDA_ENABLED', 1))
-    gpu_lib_dirs = ["./gpu_build/lib"]
+    gpu_lib_dirs = [os.path.abspath("./gpu_build/lib")]
+
+print("library_dirs = ", gpu_lib_dirs if cuda_enabled else cpu_lib_dirs)
 
 ext_modules = [
     Pybind11Extension(
@@ -37,6 +39,7 @@ ext_modules = [
         language='c++',
         # nvcc_args=nvcc_args if cuda_enabled else None,
         library_dirs=gpu_lib_dirs if cuda_enabled else cpu_lib_dirs,
+        runtime_library_dirs=gpu_lib_dirs if cuda_enabled else cpu_lib_dirs,
         libraries=libs,
     ),
 ]

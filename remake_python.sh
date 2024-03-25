@@ -10,5 +10,6 @@ if [ "$build_type" = "gpu" ]; then
 else
 	echo "Building CPU version..."
 	./run_builds.sh cpu
+	# ./cpu_build/bin/tests
 	pip install --no-cache-dir .
 fi

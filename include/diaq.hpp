@@ -15,6 +15,7 @@
 #include "../src/denseMatrix.hpp"
 #include "../src/diagonal.hpp"
 #include "../src/diaQMatrix.hpp"
+#include "../src/specialMatrices.hpp"
 #include "../src/vector.hpp"
 
 #endif
