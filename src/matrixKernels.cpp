@@ -240,19 +240,20 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             _mm256_storeu_pd(&y_imag_values[i - dIndex], y_imag_vals_vec);
         }
 
-        if(vec_loop * 4 < dLength) {
-            real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &real_vals[vec_loop * 4]);
-            imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &imag_vals[vec_loop * 4]);
-            x_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_real_values[vec_loop * 4]);
-            x_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_imag_values[vec_loop * 4]);
-            y_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4 - dIndex]);
-            y_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4 - dIndex]);
+        if(left_overs != 0) {
+            long int left_overs_start_at = vec_loop * 4;
+            real_vals_vec = avx_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            imag_vals_vec = avx_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            x_real_vals_vec = avx_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
+            x_imag_vals_vec = avx_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
+            y_real_vals_vec = avx_load_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex]);
+            y_imag_vals_vec = avx_load_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            avx_store_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4 - dIndex], y_real_vals_vec);
-            avx_store_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4 - dIndex], y_imag_vals_vec);
+            avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex], y_real_vals_vec);
+            avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex], y_imag_vals_vec);
         }
     }
     template<>
@@ -260,12 +261,22 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 
         // printf("run_spmv_avx_2 - Double\n");
 
+        // // cross checking with non-simd version
+        // double *temp_real = new double[dLength];
+        // double *temp_imag = new double[dLength];
+        // for(long int i = 0; i < dLength; i++) {
+        //     temp_real[i] = y_real_values[i];
+        //     temp_imag[i] = y_imag_values[i];
+        // }
+
         long int vec_loop = dLength / 4;
         long int left_overs = dLength % 4;
 
+        // printf("vec_loop = %ld, left_overs = %ld, dIndex = %ld, dLength = %ld\n", vec_loop, left_overs, dIndex, dLength);
+
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
-        for (long int i = 0; i < vec_loop; i += 4) {
+        for (long int i = 0; i < vec_loop * 4; i += 4) {
             real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
             imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
             x_real_vals_vec = _mm256_loadu_pd(&x_real_values[dIndex + i]);
@@ -281,19 +292,58 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         }
 
         if(left_overs != 0) {
-            real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &real_vals[vec_loop * 4]);
-            imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &imag_vals[vec_loop * 4]);
-            x_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_real_values[dIndex + vec_loop * 4]);
-            x_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_imag_values[dIndex + vec_loop * 4]);
-            y_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4]);
-            y_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4]);
+            long int left_overs_start_at = vec_loop * 4;
+            real_vals_vec = avx_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            imag_vals_vec = avx_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            x_real_vals_vec = avx_load_partial_double(left_overs, &x_real_values[dIndex + left_overs_start_at]);
+            x_imag_vals_vec = avx_load_partial_double(left_overs, &x_imag_values[dIndex + left_overs_start_at]);
+            y_real_vals_vec = avx_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
+            y_imag_vals_vec = avx_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            avx_store_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4], y_real_vals_vec);
-            avx_store_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4], y_imag_vals_vec);
+            avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
+            avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
         }
+        // // printing y_real_values, y_imag_values in single line
+        // printf("y_real_values = [");
+        // for(long int i = 0; i < dLength; i++) {
+        //     printf("%f, ", y_real_values[i]);
+        // }
+        // printf("]\n");
+        // printf("y_imag_values = [");
+        // for(long int i = 0; i < dLength; i++) {
+        //     printf("%f, ", y_imag_values[i]);
+        // }
+        // printf("]\n");
+        
+        // #pragma omp simd
+        // for (long int i = 0; i < dLength; i++) {
+        //     long int x_idx = dIndex + i;
+        //     long int y_idx = i;
+        //     temp_real[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+        //     temp_imag[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+        // }
+        // printf("temp_real = [");
+        // for(long int i = 0; i < dLength; i++) {
+        //     printf("%f, ", temp_real[i]);
+        // }
+        // printf("]\n");
+        // printf("temp_imag = [");
+        // for(long int i = 0; i < dLength; i++) {
+        //     printf("%f, ", temp_imag[i]);
+        // }
+        // printf("]\n");
+        // // write a quick check to see if temp_real and y_real_values are same and temp_imag and y_imag_values are same
+        // for(long int i = 0; i < dLength; i++) {
+        //     if(temp_real[i] != y_real_values[i]) {
+        //         printf("temp_real[%ld] = %f, y_real_values[%ld] = %f\n", i, temp_real[i], i, y_real_values[i]);
+        //     }
+        //     if(temp_imag[i] != y_imag_values[i]) {
+        //         printf("temp_imag[%ld] = %f, y_imag_values[%ld] = %f\n", i, temp_imag[i], i, y_imag_values[i]);
+        //     }
+        // }
     }
 
     template<>
@@ -319,19 +369,20 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             _mm256_storeu_pd(&y_imag_values[i], y_imag_vals_vec);
         }
 
-        if(vec_loop * 4 < dLength) {
-            real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &real_vals[vec_loop * 4]);
-            imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &imag_vals[vec_loop * 4]);
-            x_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_real_values[vec_loop * 4]);
-            x_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &x_imag_values[vec_loop * 4]);
-            y_real_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4]);
-            y_imag_vals_vec = avx_load_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4]);
+        if(left_overs != 0) {
+            long int left_overs_start_at = vec_loop * 4;
+            real_vals_vec = avx_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            imag_vals_vec = avx_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            x_real_vals_vec = avx_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
+            x_imag_vals_vec = avx_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
+            y_real_vals_vec = avx_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
+            y_imag_vals_vec = avx_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            avx_store_partial_double(dLength - vec_loop * 4, &y_real_values[vec_loop * 4], y_real_vals_vec);
-            avx_store_partial_double(dLength - vec_loop * 4, &y_imag_values[vec_loop * 4], y_imag_vals_vec);
+            avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
+            avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
         }
     }
 
@@ -1586,11 +1637,12 @@ vector *spMV(diaQMatrix *A, vector *x) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
         if(dIndex < 0) { // negative diagonals
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            // printf("Negative diagonal!!\n");
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = i;
@@ -1598,14 +1650,15 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            // #endif
+            #endif
         }
         else if(dIndex > 0) { // positive diagonals
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            // printf("Positive diagonal!!\n");
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     long int x_idx = dIndex + i;
@@ -1613,21 +1666,22 @@ vector *spMV(diaQMatrix *A, vector *x) {
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
-            // #endif
+            #endif
         }
         else {
-            // // 0th diagonal
-            // #if VECTORIZATION_TYPE == 1
-            //     run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #elif VECTORIZATION_TYPE == 0
-            //     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            // #else // run without vectorization
+            // 0th diagonal
+            // printf("Zero diagonal!!\n");
+            #if VECTORIZATION_TYPE == 1
+                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #elif VECTORIZATION_TYPE == 0
+                run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+            #else // run without vectorization
                 #pragma omp simd
                 for (long int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
                 }
-            // #endif
+            #endif
         }
     }
     // if(logger.log_level == DEBUG) {
@@ -1957,22 +2011,34 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
-
         long int dLength = diag->dLength;
         valType *real_vals = diag->getRealValues();
         valType *imag_vals = diag->getImagValues();
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int rep = 0; rep < n; rep++) {
-            long int skip_places = rep * (dLength + abs(dIndex));
-
-            #pragma omp simd
-            for(long int i = 0; i < dLength; i++) {
-                long int x_idx = (dIndex >= 0) ? dIndex + i + skip_places : i + skip_places;
-                long int y_idx = (dIndex >= 0) ? i + skip_places : i + skip_places - dIndex;
-
-                y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+        if(dIndex < 0) { // for negative diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < n; rep++) {
+                long int skip_places = rep * (dLength - dIndex);
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = i + skip_places;
+                    long int y_idx = i + skip_places - dIndex;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+            }
+        }
+        else { // for 0th and positive diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < n; rep++) {
+                long int skip_places = rep * (dLength + dIndex);
+                #pragma omp simd
+                for(long int i = 0; i < dLength; i++) {
+                    long int x_idx = dIndex + i + skip_places;
+                    long int y_idx = i + skip_places;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
             }
         }
     }
