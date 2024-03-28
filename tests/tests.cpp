@@ -49,6 +49,26 @@ std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
     return "true";
 }
 
+std::string check_vectors(diaq::vector *a, diaq::vector *b) {
+    if(a->num_rows() != b->num_rows()) {
+        return "false - 1";
+    }
+    diaq::valType *a_real_values = a->getRealValues();
+    diaq::valType *a_imag_values = a->getImagValues();
+    diaq::valType *b_real_values = b->getRealValues();
+    diaq::valType *b_imag_values = b->getImagValues();
+    const diaq::valType epsilon = 0.00002;
+    for(size_t i = 0; i < a->num_rows(); i++) {
+        if(a_real_values[i] - b_real_values[i] > epsilon) {
+            return "false - 2";
+        }
+        if(a_imag_values[i] - b_imag_values[i] > epsilon) {
+            return "false - 3";
+        }
+    }
+    return "true";
+}
+
 void kron_test(diaq::denseMatrix *A24, diaq::denseMatrix *B24) {
         A24->print();
         std::cout << " -- " << std::endl;
@@ -2022,6 +2042,44 @@ int main(int argc, char **argv) {
         printf(" -- new way to do it -- \n");
         diaq::vector *y = diaq::identity_kron_matrix_times_vector((long int)4, qspa, x);
         y->print();
+    }
+    else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {
+        // testing matrix_kron_identity_times_vector
+        std::cout << " -- testing matrix_kron_identity_times_vector -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        // qspa->deleteDiagonal(-4);
+        // qspa->deleteDiagonal(4);
+        qspa->print();
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)4);
+        mat->print();
+        diaq::vector *x = new diaq::vector(32, 1.0, 0.0);
+        diaq::vector *correct_y = diaq::spMV(mat, x);
+        printf(" -- correct answer -- \n");
+        correct_y->print();
+        printf(" -- new way to do it -- \n");
+        diaq::vector *y = diaq::matrix_kron_identity_times_vector(qspa, (long int)4, x);
+        y->print();
+        printf("-- check manually please -- \n");
+        std::cout << check_vectors(correct_y, y) << std::endl;
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector") == 0) {
+        // testing identity_kron_matrix_kron_identity_times_vector
+        std::cout << " -- testing identity_kron_matrix_kron_identity_times_vector -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        // qspa->deleteDiagonal(0);
+        // qspa->deleteDiagonal(4);
+        qspa->print();
+        diaq::vector *x = new diaq::vector(32, 1.0);
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)2);
+        mat->print();
+        diaq::vector *correct_y = identity_kron_matrix_times_vector((long int)2, mat, x);
+        printf(" -- correct answer -- \n");
+        correct_y->print();
+        printf(" -- new way to do it -- \n");
+        diaq::vector *y = diaq::identity_kron_matrix_kron_identity_times_vector((long int)2, qspa, (long int)2, x);
+        y->print();
+        printf("-- check manually please -- \n");
+        std::cout << check_vectors(correct_y, y) << std::endl;
     }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation

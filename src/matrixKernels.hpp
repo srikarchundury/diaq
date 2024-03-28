@@ -41,6 +41,9 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x);
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
 
+vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x);
+vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x);
+
 diaQMatrix *dagger(diaQMatrix *A);
 diaQMatrix *conjbar(diaQMatrix *A);
 
