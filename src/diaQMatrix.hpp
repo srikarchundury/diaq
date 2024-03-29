@@ -621,6 +621,13 @@ class diaQMatrix {
             }
             return (valType)1.0 - ((valType)z / (valType)size);
         }
+        void deleteDiagonal(long int dIndex) {
+            auto it = diagonalMap.find(dIndex);
+            if(it != diagonalMap.end()) {
+                it->second->free();
+                diagonalMap.erase(dIndex);
+            }
+        }
         void pruneMatrix() {
             std::vector<long int> toDelete;
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
