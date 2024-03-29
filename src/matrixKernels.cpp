@@ -1699,7 +1699,7 @@ vector *spMV(diaQMatrix *A, vector *x) {
     // // log duration
     // printf("\t\tSpMV took %f seconds\n", duration.count());
 
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
     return y;
     #endif
@@ -2051,7 +2051,7 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
     // // log duration
     // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that vector is not overhead in nwq_sim
+    x->free(); // so that vector is not overhead in nwq_sim
 
     return y;
 }
@@ -2133,7 +2133,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // // log duration
     // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that vector is not overhead in nwq_sim
+    x->free(); // so that vector is not overhead in nwq_sim
 
     return y;
 
@@ -2205,7 +2205,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
     // // log duration
     // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
     return y;
 }
