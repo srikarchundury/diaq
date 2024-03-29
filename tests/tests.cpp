@@ -2081,6 +2081,63 @@ int main(int argc, char **argv) {
         printf("-- check manually please -- \n");
         std::cout << check_vectors(correct_y, y) << std::endl;
     }
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector_2") == 0) {
+        // matrix_shape (4,4)
+        // tensor_shape (4,4)
+        // (dIndex=-2) (dLength=2) [(0,0),(1,0)]
+        // (dIndex=0) (dLength=4) [(1,0),(0,0),(1,0),(0,0)]
+        // (dIndex=2) (dLength=2) [(0,0),(1,0)]
+        // after = 4; before = 64
+        long int after = 4;
+        long int before = 64;
+        diaq::valType reals[16] = {
+            1, 0, 1, 0,
+            0, 0, 0, 0,
+            1, 0, 1, 0,
+            0, 0, 0, 0
+        };
+        long int *s = new long int[2]{4,4};
+        diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals);
+        diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
+        gate->print();
+        diaq::vector *x = new diaq::vector(1024, 1.0);
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, before);
+        diaq::vector *correct_y = diaq::identity_kron_matrix_times_vector(after, mat, x);
+        diaq::vector *y = diaq::identity_kron_matrix_kron_identity_times_vector(after, gate, before, x);
+        std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector_3") == 0) {
+        // gate matrix below
+        // matrix_shape (4,4)
+        // tensor_shape (4,4)
+        // (dIndex=0) (dLength=4) [(0.707107,0.707107),(0.707107,-0.707107),(0.707107,-0.707107),(0.707107,0.707107)]
+        // after = 8; before = 2
+        long int after = 8;
+        long int before = 2;
+        diaq::valType reals[16] = {
+            0.707107, 0, 0, 0,
+            0, 0.707107, 0, 0,
+            0, 0, 0.707107, 0,
+            0, 0, 0, 0.707107
+        };
+        diaq::valType imags[16] = {
+            0.707107, 0, 0, 0,
+            0, -0.707107, 0, 0,
+            0, 0, -0.707107, 0,
+            0, 0, 0, 0.707107
+        };
+        long int *s = new long int[2]{4,4};
+        diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals, imags);
+        diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
+        gate->print();
+        diaq::vector *x = new diaq::vector(64, 1.0);
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, before);
+        diaq::vector *correct_y = diaq::identity_kron_matrix_times_vector(after, mat, x);
+        diaq::vector *y = diaq::identity_kron_matrix_kron_identity_times_vector(after, gate, before, x);
+        std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24->shape = std::vector<long int>{3,3,2};

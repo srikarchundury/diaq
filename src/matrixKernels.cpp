@@ -1699,7 +1699,7 @@ vector *spMV(diaQMatrix *A, vector *x) {
     // // log duration
     // printf("\t\tSpMV took %f seconds\n", duration.count());
 
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
     return y;
     #endif
@@ -2051,7 +2051,7 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
     // // log duration
     // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that vector is not overhead in nwq_sim
+    x->free(); // so that vector is not overhead in nwq_sim
 
     return y;
 }
@@ -2059,12 +2059,17 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x) {
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
-    std::cout << "identity_kron_matrix_kron_identity_times_vector called" << std::endl;
+    // std::cout << "identity_kron_matrix_kron_identity_times_vector called" << std::endl;
+    // printf("gate matrix below\n");
+    // gate->print();
+    // printf("after = %ld; before = %ld\n", after, before);
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
+    
+    long int x_length = x->num_rows();
 
-    if(after * before * gate->matrix_shape[1] != x->num_rows()) {
+    if(after * before * gate->matrix_shape[1] != x_length) {
         throw std::invalid_argument("Not multiplyable");
     }
     vector *y = new vector(after * before * gate->matrix_shape[0], 0.0, 0.0);
@@ -2085,45 +2090,50 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         valType *imag_vals = diag->getImagValues();
 
         if(dIndex < 0) { // for negative diagonals
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for(long int rep = 0; rep < before; rep++) {
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength - dIndex));
                 for(long int i = 0; i < dLength; i++) {
                     #pragma omp simd
                     for(long int j = 0; j < before; j++) {
                         long int x_idx = j + i * before + skip_places;
                         long int y_idx = j + i * before + skip_places - before * dIndex;
-                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                        // if(x_idx < x_length && y_idx < x_length) {
+                            y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                        // }
                     }
                 }
             }
         }
         else { // for 0th and positive diagonals
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-            for(long int rep = 0; rep < before; rep++) {
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength + dIndex));
                 // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
                 for(long int i = 0; i < dLength; i++) {
+                    #pragma omp simd
                     for(long int j = 0; j < before; j++) {
                         long int x_idx = before * dIndex + j + i * before + skip_places;
                         long int y_idx = j + i * before + skip_places;
-                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                        // if(x_idx < x_length && y_idx < x_length) {
+                            y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                        // }
                     }
                 }
             }
         }
     }
     
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that vector is not overhead in nwq_sim
+    x->free(); // so that vector is not overhead in nwq_sim
 
     return y;
 
@@ -2132,12 +2142,14 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x) {
     // logically combine matrix_kron_identity and spMV
 
-    std::cout << "matrix_kron_identity_times_vector called" << std::endl;
+    // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
 
-    //start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // //start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    if(before * gate->matrix_shape[1] != x->num_rows()) {
+    long int x_length = x->num_rows();
+
+    if(before * gate->matrix_shape[1] != x_length) {
         throw std::invalid_argument("Not multiplyable");
     }
     vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
@@ -2179,19 +2191,21 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     y_idx = j + i * before;
                 }
                 // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                if(x_idx < x_length && y_idx < x_length) {
+                    y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                }
             }
         }
     }
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
     return y;
 }
