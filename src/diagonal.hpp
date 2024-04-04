@@ -83,7 +83,7 @@ class diagonal {
         void print() {
             std::string sep=",";
             // long int *coords= this->getCoords(matrixSize, this->dIndex);
-            std::cout << "(dIndex=" << dIndex << ") ";
+            std::cout << "(dIndex=" << dIndex << ") (dLength=" << dLength << ") ";
             std::cout << "[" << "";
             long int n = dLength;
             for (long int i = 0; i < n-1; i++) {
@@ -92,6 +92,9 @@ class diagonal {
             std::cout <<  "(" << realValues[n-1] << "," << imagValues[n-1] << ")" << "";
             std::cout << "]" << "";
             std::cout << std::endl;
+        }
+        void print_meta() {
+            std::cout << "dIndex=" << dIndex << ", dLength=" << dLength << std::endl;
         }
         valType *getRealValues() {
             return realValues;
