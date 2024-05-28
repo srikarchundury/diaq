@@ -2384,6 +2384,21 @@ int main(int argc, char **argv) {
         perm5->print();
         perm5->convertToDenseMatrix(perm5->matrix_shape)->print();
     }
+    else if (strcmp(argv[1], "dagger") == 0 ) {
+        std::cout << " -- testing dagger operation -- " << std::endl;
+        diaq::vector *y = new diaq::vector(8, 2.0, 1.0);
+        diaq::vector *y_dagger = y->dagger();
+        y_dagger->print();
+        std::cout << " -- " << std::endl;
+    }
+    else if (strcmp(argv[1], "vector_multiply") == 0 ) {
+        std::cout << " -- testing dagger operation -- " << std::endl;
+        diaq::vector *x = new diaq::vector(8, 3.0, 1.0);
+        diaq::vector *y = new diaq::vector(8, 2.0, 1.0);
+        std::complex<diaq::valType> res = x->multiply(y);
+        std::cout << res << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);

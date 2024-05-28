@@ -36,16 +36,15 @@ __global__ void convert_to_dq(
  * 			3. The values vector should be in row-major order
  * 			4. The values vector should be a flattened version of the NumPy array 
 */
-diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
-	logger.log("Using CUDA to convert NumPy array to diaQMatrix");
-	long int size = values.size();
+diaQMatrix *from_numpy_cuda(std::complex<valType> *values, std::vector<long int> shape) {
+	// logger.log("Using CUDA to convert NumPy array to diaQMatrix");
+	long int product = 1;
+	for (long int val : shape) {
+		product *= val;
+	}
 	int rank = shape.size();
 	long int x, y;
 	if(rank > 2) {
-		long int product = 1;
-		for (long int val : shape) {
-			product *= val;
-		}
 		long int sqrtProduct = (long int)sqrt(product);
 		// Find the closest factors of the product
 		x = 1;
@@ -61,21 +60,22 @@ diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
 		x = shape[0];
 		y = shape[1];
 	}
-	long int matrix_shape[2] = {x, y};
+	// long int matrix_shape[2] = {x, y};
+	long int *matrix_shape = new long int[2]{x, y};
 	long int matrix_size_x = matrix_shape[0]; // Assuming first dimension as rows
 	long int matrix_size_y = matrix_shape[1]; // Assuming second dimension as columns
 
 	// Allocate memory on the device for diaQMatrix map
 	long int* device_diagonal_idx;
 	long int* device_diagonal_pos;
-	cudaMalloc(&device_diagonal_idx, size * sizeof(long int));
-	cudaMalloc(&device_diagonal_pos, size * sizeof(long int));
+	cudaMalloc(&device_diagonal_idx, product * sizeof(long int));
+	cudaMalloc(&device_diagonal_pos, product * sizeof(long int));
 
-	int totalDataSize = size;
+	int totalDataSize = product;
 	int threadsPerBlock = 256;
 	int numBlocks = (totalDataSize + threadsPerBlock - 1) / threadsPerBlock;
 	// launch kernel
-	convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+	convert_to_dq<<<numBlocks, threadsPerBlock>>>(product, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
 	// int blockSize = 256;
 	// dim3 threadsPerBlock(blockSize, blockSize);
@@ -89,10 +89,10 @@ diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
 	// // launch kernel
 	// convert_to_dq<<<numBlocks, threadsPerBlock>>>(size, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
 
-	long int* host_diagonal_idx = (long int *)malloc(size * sizeof(long int));
-	long int* host_diagonal_pos = (long int *)malloc(size * sizeof(long int));
-	cudaMemcpy(host_diagonal_idx, device_diagonal_idx, size * sizeof(long int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(host_diagonal_pos, device_diagonal_pos, size * sizeof(long int), cudaMemcpyDeviceToHost);
+	long int* host_diagonal_idx = (long int *)malloc(product * sizeof(long int));
+	long int* host_diagonal_pos = (long int *)malloc(product * sizeof(long int));
+	cudaMemcpy(host_diagonal_idx, device_diagonal_idx, product * sizeof(long int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(host_diagonal_pos, device_diagonal_pos, product * sizeof(long int), cudaMemcpyDeviceToHost);
 
 	// Free memory on the device
 	cudaFree(device_diagonal_idx);
@@ -118,13 +118,13 @@ diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
 	// -------------- DEBUG ---------------
 
 	std::unordered_map<long int, diagonal*> diagMap;
-	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &matrix_shape, &shape);
+	diaQMatrix *diaq_res = new diaQMatrix(diagMap, &matrix_shape, shape);
 	// #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 	// for(long int i = -1 * matrix_size_x; i < matrix_size_y; i++) {
 	// 	diaq_res->createDiagonal(i);
 	// }
 	#pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-	for (long int i = 0; i < size; i++) {
+	for (long int i = 0; i < product; i++) {
 		long int dIndex = host_diagonal_idx[i];
 		long int dPos = host_diagonal_pos[i];
 		diaq_res->setDiagonalElement(dIndex, dPos, diaq_res->getDiagonalLength(dIndex), values[i].real(), values[i].imag());
@@ -142,7 +142,7 @@ diaQMatrix *from_numpy_cuda(valType **values, long int shape) {
  * 			denseMatrix
 */
 diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, long int *new_shape) {
-	logger.log("Using CUDA to convert denseMatrix to diaQMatrix");
+	// logger.log("Using CUDA to convert denseMatrix to diaQMatrix");
 	valType *realData = d->getRealData();
 	valType *ImagData = d->getImagData();
 	long int size = d->size;

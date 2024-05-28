@@ -37,12 +37,17 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
 
+vector *spMV(diaQMatrix *A, vector *x, long int qubit_smaller, long int qubit_larger);
+
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x);
+vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, long int qubit_smaller, long int qubit_larger);
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
 
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x);
+vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, long int qubit_smaller, long int qubit_larger);
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x);
+vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, long int qubit_smaller, long int qubit_larger);
 
 diaQMatrix *dagger(diaQMatrix *A);
 diaQMatrix *conjbar(diaQMatrix *A);

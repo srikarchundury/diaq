@@ -61,6 +61,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)
         .def("getDiagonal", &diaq::diaQMatrix::getDiagonal, py::return_value_policy::reference)
         .def("setDiagonal", &diaq::diaQMatrix::setDiagonal, py::return_value_policy::reference)
+        .def("setDiagonalElement", &diaq::diaQMatrix::setDiagonalElement, py::return_value_policy::reference) 
         .def("addDiagonal", &diaq::diaQMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
@@ -102,6 +103,21 @@ PYBIND11_MODULE(diaq, m) {
             py::return_value_policy::reference
         )
         .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
+        ;
+
+    // diaq::identityMatrix class
+    py::class_<diaq::identityMatrix, diaq::diaQMatrix>(m, "identityMatrix")
+        .def(py::init<long int>())
+        ;
+
+    // diaq::diaQMatrix class
+    py::class_<diaq::vector>(m, "vector")
+        .def(py::init<size_t>())
+        .def("setValue", &diaq::vector::setValue, py::return_value_policy::reference)
+        .def("print", &diaq::vector::print, py::return_value_policy::reference)
+        .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
+        .def("dagger", &diaq::vector::dagger, py::return_value_policy::reference)
+        .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
         ;
 
 

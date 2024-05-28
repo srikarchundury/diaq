@@ -95,6 +95,34 @@ class vector {
             return numRows_;
         }
 
+        void setValue(size_t i, valType real, valType imag) {
+            realValues_[i] = real;
+            imagValues_[i] = imag;
+        }
+
+        vector *dagger() {
+            vector *v = new vector(numRows_);
+            valType *realValues = v->getRealValues();
+            valType *imagValues = v->getImagValues();
+            for (size_t i = 0; i < numRows_; ++i) {
+                realValues[i] = realValues_[i];
+                imagValues[i] = -imagValues_[i];
+            }
+            return v;
+        }
+
+        std::complex<valType> multiply(vector *v) {
+            valType real_res = 0.0;
+            valType imag_res = 0.0;
+            valType *realValues = v->getRealValues();
+            valType *imagValues = v->getImagValues();
+            for (size_t i = 0; i < numRows_; ++i) {
+                real_res += realValues_[i] * realValues[i] - imagValues_[i] * imagValues[i];
+                imag_res += realValues_[i] * imagValues[i] + imagValues_[i] * realValues[i];
+            }
+            return std::complex<valType>(real_res, imag_res);
+        }
+
         void print() {
             std::cout << "length (" << numRows_ << ") [";
             for (size_t i = 0; i < numRows_ - 1; ++i) {
