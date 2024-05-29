@@ -100,6 +100,14 @@ class vector {
             imagValues_[i] = imag;
         }
 
+        std::vector<std::complex<valType> > getArray() {
+            std::vector<std::complex<valType> > v;
+            for (size_t i = 0; i < numRows_; ++i) {
+                v.push_back(std::complex<valType>(realValues_[i], imagValues_[i]));
+            }
+            return v;
+        }
+
         vector *dagger() {
             vector *v = new vector(numRows_);
             valType *realValues = v->getRealValues();

@@ -118,6 +118,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
         .def("dagger", &diaq::vector::dagger, py::return_value_policy::reference)
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
+        .def("getArray", &diaq::vector::getArray, py::return_value_policy::reference)
         ;
 
 
