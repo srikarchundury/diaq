@@ -40,7 +40,7 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
             x = -1 * it->first;
             y = 0;
         }
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
         for (long int i = 0; i < it->second->dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
@@ -79,13 +79,13 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
     diaQMatrix *qm = new diaQMatrix(&new_shape);
     // printf("printing empty matrix");
     // qm->print();
-    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    // #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
     // for(long int i = -1 * qm->matrix_shape[0]; i < qm->matrix_shape[1]; i++) {
     //     qm->createDiagonal(i);
     // }
     // #pragma omp barrier
     for(long int i = 0; i < matrix_shape[0]; i++) {
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             long int *pos = new long int[2];
@@ -126,7 +126,7 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
         valType *real_vals = (valType *)malloc(vals_len * sizeof(valType));
         valType *imag_vals = (valType *)malloc(vals_len * sizeof(valType));
         
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < vals_len; i++) {
             real_vals[i] = vals[i].real();
             imag_vals[i] = vals[i].imag();

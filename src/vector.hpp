@@ -11,6 +11,10 @@ namespace diaq {
 
 class vector {
     public:
+        size_t numRows_;
+        valType* realValues_;
+        valType* imagValues_;
+
         vector(size_t M) {
             numRows_ = M;
             #if NUM_BYTES_ALIGNED == -1
@@ -19,8 +23,8 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(size_t i = 0; i<M; i++) {
+                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
                 }
@@ -48,8 +52,8 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(size_t i = 0; i<M; i++) {
+                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
                 }
@@ -67,8 +71,8 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(size_t i = 0; i<M; i++) {
+                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
                 }
@@ -158,6 +162,13 @@ class vector {
             return realValues_;
         }
 
+        valType **getRealValuePtr() {
+            return &realValues_;
+        }
+        valType **getImagValuePtr() {
+            return &imagValues_;
+        }
+
         valType *getImagValues() {
             return imagValues_;
         }
@@ -165,11 +176,6 @@ class vector {
             std::free(realValues_);
             std::free(imagValues_);
         }
-
-    private:
-        size_t numRows_;
-        valType* realValues_;
-        valType* imagValues_;
 };
 
 } // namespace diaq
