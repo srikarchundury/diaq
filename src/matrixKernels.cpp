@@ -857,7 +857,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
             // std::cout << " ------ diags ------ " << std::endl;
@@ -1001,7 +1001,7 @@ diagonal *addElements(diagonal *A, diagonal *B) {
     diagonal *res = new diagonal(A->dIndex, A->dLength);
     valType *real_valsC = res->getRealValues();
     valType *imag_valsC = res->getImagValues();
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for(long int i=0; i < A->dLength; i++) {
         real_valsC[i] = real_valsA[i] + real_valsB[i];
         imag_valsC[i] = imag_valsA[i] + imag_valsB[i];
@@ -1056,7 +1056,7 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < it->second->dLength; i++) {
             // old_d_pos has (it->first, i) for A->matrix_shape
             long int *d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
@@ -1145,14 +1145,14 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
     int tShapeSize = tShape.size();
     if(axes.size() == 0) {
         nShape.resize(tShape.size(), 1);
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < tShape.size(); i++) {
             nShape[i] = tShape[tShapeSize - i - 1];
         }
     }
     else {
         nShape.resize(axes.size(), 1);
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < axes.size(); i++) {
             nShape[i] = tShape[axes[i]];
         }
@@ -1166,7 +1166,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
 
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < A->shape.size(); i++) {
             new_order[i] = A->shape.size() - i - 1;
         }
@@ -1182,7 +1182,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
         std::unordered_map<long int, diagonal *>::iterator it;
         std::unordered_map<long int, diagonal *> newDiagMap;
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (it = diagMap.begin(); it != diagMap.end(); it++) {
             it->second->setIndex(-1 * it->first);
             newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
@@ -1229,18 +1229,18 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     std::unordered_map<long int, diagonal*>::iterator it;
     std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
 
-    // #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
     //     res->createDiagonal(i);
     // }
 
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
 
         valType *real_vals = it->second->getRealValues();
         valType *imag_vals = it->second->getImagValues();
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < it->second->dLength; i++) {
             // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
             // std::cout << "element = " << vals[i] << std::endl;
@@ -1253,7 +1253,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
 
             // modify ten_pos to perform the transposition using the new_order
             std::vector<long int> new_ten_pos(new_order.size(), 1);
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int i=0; i < new_order.size(); i++) {
                 new_ten_pos[i] = ten_pos[new_order[i]];
             }
@@ -1491,7 +1491,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
-    // #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         diagonal *diagA = itA->second;
         valType *real_vals_A = diagA->getRealValues();
@@ -1499,7 +1499,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
         // #pragma omp parallel schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
             std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
-            // #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (itB = mapB.begin(); itB != mapB.end(); itB++) {
                 diagonal *diagB = itB->second;
                 valType *real_vals_B = diagB->getRealValues();
@@ -1616,8 +1616,8 @@ vector *spMV(diaQMatrix *A, vector *x) {
     // printf("Analyzing V\n");
     // x->print_meta();
 
-    // // measure start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // measure start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     if(A->matrix_shape[1] != x->num_rows()) {
         throw std::invalid_argument("Not multiplyable");
@@ -1631,7 +1631,7 @@ vector *spMV(diaQMatrix *A, vector *x) {
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
@@ -1693,12 +1693,12 @@ vector *spMV(diaQMatrix *A, vector *x) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\tSpMV took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\tSpMV took %f seconds\n", duration.count());
 
     // x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
@@ -1796,7 +1796,7 @@ vector *MV(denseMatrix *A, vector *x) {
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int j = 0; j < A->matrix_shape[1]; j++) {
             std::complex<valType> elem = A->get(i, j);
             res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
@@ -1870,7 +1870,7 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
 //     for(long int i = 0; i < dLengthA; i++) {
 //         valType each_real = real_valsA[i];
 //         valType each_imag = imag_valsA[i];
-//         #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+//         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
 //         for(long int j = 0; j < dLengthB; j++) {
 //             long int c_pos = i * dLengthB + j;
 //             real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
@@ -1970,7 +1970,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         diagonal *diag = itA->second;
         long int diagonal_length = diag->dLength;
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
@@ -1995,7 +1995,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
                 diagonal *kron_block_diag = itK->second;
                 long int kron_block_diag_length = kron_block_diag->dLength;
 
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                     long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
@@ -2026,8 +2026,8 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
 }
 
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
@@ -2051,7 +2051,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         valType *newDiag_real_vals = newDiag->getRealValues();
         valType *newDiag_imag_vals = newDiag->getImagValues();
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int rep = 0; rep < n; rep++) {
             long int skip_places = (rep) * (dLength + abs(dIndex));
             for(long int i = 0; i < dLength; i++) {
@@ -2062,44 +2062,44 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         result->setDiagonal(dIndex, newDiag);
     }
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
 
     return result;
 }
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     vector *y = new vector(n * A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(8) schedule(dynamic) // because there can only be max 8 diagonals in a 2q-gate.
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
         long int dLength = diag->dLength;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         if(dIndex < 0) { // for negative diagonals
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
             for(long int rep = 0; rep < n; rep++) {
                 long int skip_places = rep * (dLength - dIndex);
-                #pragma omp simd
+                // #pragma omp simd
                 for(long int i = 0; i < dLength; i++) {
                     long int x_idx = i + skip_places;
                     long int y_idx = i + skip_places - dIndex;
@@ -2109,11 +2109,11 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
             }
         }
         else { // for 0th and positive diagonals
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
             for(long int rep = 0; rep < n; rep++) {
                 long int skip_places = rep * (dLength + dIndex);
                 // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
-                #pragma omp simd
+                // #pragma omp simd
                 for(long int i = 0; i < dLength; i++) {
                     long int x_idx = dIndex + i + skip_places;
                     long int y_idx = i + skip_places;
@@ -2124,12 +2124,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x) 
         }
     }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
     // x->free(); // so that vector is not overhead in nwq_sim
 
@@ -2163,7 +2163,7 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
             case -3: {
                 long int dIndex = -1 * q_diff_exp - 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < n; rep++) {
                     long int skip_places = rep * (dLength - dIndex);
                     #pragma omp simd
@@ -2181,7 +2181,7 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
             case -2: {
                 long int dIndex = -1 * q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < n; rep++) {
                     long int skip_places = rep * (dLength - dIndex);
                     #pragma omp simd
@@ -2252,38 +2252,47 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // gate->print();
     // printf("after = %ld; before = %ld\n", after, before);
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
-    
-    long int x_length = x->num_rows();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
-    if(after * before * gate->matrix_shape[1] != x_length) {
-        throw std::invalid_argument("Not multiplyable");
-    }
-    vector *y = new vector(after * before * gate->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    long int x_length = x->numRows_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    // if(after * before * gate->matrix_shape[1] != x_length) {
+    //     throw std::invalid_argument("Not multiplyable");
+    // }
+    vector *y = new vector(after * before * gate->matrix_shape[0]);
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->getDiagonalMap();
+    // measure alloc time
+    auto mid = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration_mid = mid - start;
+    // log duration
+    printf("\t\t\t allocation took %f seconds\n", duration_mid.count());
+
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
+
+    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(8) schedule(dynamic)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
         long int dLength = diag->dLength;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        // printf("after = %ld; before = %ld, dIndex = %ld, dLength = %ld\n", after, before, dIndex, dLength);
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         if(dIndex < 0) { // for negative diagonals
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 32) schedule(dynamic)
             for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength - dIndex));
+                // #pragma unroll
                 for(long int i = 0; i < dLength; i++) {
-                    #pragma omp simd
+                    #pragma omp parallel for simd num_threads(4) schedule(dynamic)
                     for(long int j = 0; j < before; j++) {
                         long int x_idx = j + i * before + skip_places;
                         long int y_idx = j + i * before + skip_places - before * dIndex;
@@ -2296,12 +2305,13 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             }
         }
         else { // for 0th and positive diagonals
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 32) schedule(dynamic)
             for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength + dIndex));
                 // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
+                // #pragma unroll
                 for(long int i = 0; i < dLength; i++) {
-                    #pragma omp simd
+                    #pragma omp parallel for simd num_threads(4) schedule(dynamic)
                     for(long int j = 0; j < before; j++) {
                         long int x_idx = before * dIndex + j + i * before + skip_places;
                         long int y_idx = j + i * before + skip_places;
@@ -2315,12 +2325,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         }
     }
     
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - mid;
+    // log duration
+    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     // x->free(); // so that vector is not overhead in nwq_sim
 
@@ -2338,9 +2348,9 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
     long int x_length = x->num_rows();
 
-    if(after * before * gate->matrix_shape[1] != x_length) {
-        throw std::invalid_argument("Not multiplyable");
-    }
+    // if(after * before * gate->matrix_shape[1] != x_length) {
+    //     throw std::invalid_argument("Not multiplyable");
+    // }
     vector *y = new vector(after * before * gate->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->getRealValues();
     valType *y_imag_values = y->getImagValues();
@@ -2359,7 +2369,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case -3: {
                 long int dIndex = -1 * q_diff_exp - 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i++) {
@@ -2383,7 +2393,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case -2: {
                 long int dIndex = -1 * q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i += 2) {
@@ -2416,7 +2426,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case -1: {
                 long int dIndex = -1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength/2; i++) {
@@ -2452,7 +2462,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                 }
                 dIndex = -1 * q_diff_exp + 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i++) {
@@ -2476,7 +2486,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case 0: {
                 long int dIndex = 0;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength/2; i+=2) {
@@ -2533,7 +2543,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case 1: {
                 long int dIndex = 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength/2; i++) {
@@ -2569,7 +2579,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                 }
                 dIndex = q_diff_exp - 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i++) {
@@ -2593,7 +2603,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case 2: {
                 long int dIndex = q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i += 2) {
@@ -2626,7 +2636,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             case 3: {
                 long int dIndex = q_diff_exp + 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i++) {
@@ -2669,37 +2679,39 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
 
-    // //start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
-    long int x_length = x->num_rows();
+    long int x_length = x->numRows_;
 
-    if(before * gate->matrix_shape[1] != x_length) {
-        throw std::invalid_argument("Not multiplyable");
-    }
+    // if(before * gate->matrix_shape[1] != x_length) {
+    //     throw std::invalid_argument("Not multiplyable");
+    // }
     vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+
+    #pragma omp parallel for num_threads(8) schedule(auto)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
         long int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(auto)
         for(long int i = 0; i < dLength; i++) {
             valType each_real = real_vals[i];
             valType each_imag = imag_vals[i];
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+
+            #pragma omp simd
             for(long int j = 0; j < before; j++) {
                 // newDiag_real_vals[j + i * n] = each_real;
                 // newDiag_imag_vals[j + i * n] = each_imag;
@@ -2718,19 +2730,19 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     y_idx = j + i * before;
                 }
                 // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                if(x_idx < x_length && y_idx < x_length) {
+                // if(x_idx < x_length && y_idx < x_length) {
                     y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
                     y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
-                }
+                // }
             }
         }
     }
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     // x->free(); // so that nwq_sim need not handle this. some tests will fail!
 
@@ -2750,9 +2762,9 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     long int x_length = x->num_rows();
 
-    if(before * gate->matrix_shape[1] != x_length) {
-        throw std::invalid_argument("Not multiplyable");
-    }
+    // if(before * gate->matrix_shape[1] != x_length) {
+    //     throw std::invalid_argument("Not multiplyable");
+    // }
     vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->getRealValues();
     valType *y_imag_values = y->getImagValues();
@@ -2762,7 +2774,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     std::unordered_map<long int, diagonal*> diagMap = gate->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
@@ -2774,7 +2786,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1 * q_diff_exp - 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
@@ -2810,11 +2822,11 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1 * q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -2840,7 +2852,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     }
                     each_real = real_vals[1];
                     each_imag = imag_vals[1];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -2871,7 +2883,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
@@ -2901,7 +2913,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                     }
                 }
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
@@ -2934,7 +2946,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 dIndex = -1 * q_diff_exp + 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
@@ -2970,11 +2982,11 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = 0;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3000,7 +3012,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     }
                     each_real = real_vals[1];
                     each_imag = imag_vals[1];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3025,7 +3037,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                     }
                 }
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i+=2) {
                     valType each_real = real_vals[2];
                     valType each_imag = imag_vals[2];
@@ -3054,7 +3066,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     }
                     each_real = real_vals[3];
                     each_imag = imag_vals[3];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3085,12 +3097,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
-                        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int j = 0; j < before; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3116,12 +3128,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                     }
                 }
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
                         valType each_imag = imag_vals[2];
-                        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int j = 0; j < before; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3150,12 +3162,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 dIndex = q_diff_exp - 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
                         valType each_imag = imag_vals[1];
-                        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int j = 0; j < before; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3187,11 +3199,11 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3217,7 +3229,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                     }
                     each_real = real_vals[1];
                     each_imag = imag_vals[1];
-                    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int j = 0; j < before; j++) {
                         // newDiag_real_vals[j + i * n] = each_real;
                         // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3248,12 +3260,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = q_diff_exp + 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
-                        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int j = 0; j < before; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
@@ -3303,7 +3315,7 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     diaQMatrix *result = new diaQMatrix(&result_shape);
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
@@ -3319,7 +3331,7 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         valType *newDiag_real_vals = newDiag->getRealValues();
         valType *newDiag_imag_vals = newDiag->getImagValues();
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int i = 0; i < dLength; i++) {
             valType each_real = real_vals[i];
             valType each_imag = imag_vals[i];            
@@ -3394,7 +3406,7 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
         diagonal *diag = itA->second;
         long int diagonal_length = diag->dLength;
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
@@ -3431,7 +3443,7 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
 
     // traverse kron_map and add to result.
     std::map<std::pair<long int, long int>, std::pair<valType, valType>>::iterator it;
-    #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = kron_map.begin(); it != kron_map.end(); it++) {
         // for each element in A
         long int A_mat_pos[2];
@@ -3444,14 +3456,14 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
         std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
         std::unordered_map<long int, diagonal*>::iterator itK;
 
-        #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
         for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
 
             long int kron_block_diag_index = itK->first;
             diagonal *kron_block_diag = itK->second;
             long int kron_block_diag_length = kron_block_diag->dLength;
 
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                 long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
