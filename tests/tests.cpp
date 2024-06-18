@@ -2056,7 +2056,7 @@ int main(int argc, char **argv) {
         correct_y->print();
         printf(" -- new way to do it -- \n");
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
-        y = diaq::identity_kron_matrix_times_vector((long int)4, qspa, x, y);
+        y = diaq::identity_kron_matrix_times_vector((long int)2, qspa, x, y);
         y->print();
     }
     else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {
@@ -2075,7 +2075,7 @@ int main(int argc, char **argv) {
         printf(" -- correct answer -- \n");
         correct_y->print();
         printf(" -- new way to do it -- \n");
-        y = diaq::matrix_kron_identity_times_vector(qspa, (long int)4, x, y);
+        y = diaq::matrix_kron_identity_times_vector(qspa, (long int)2, x, y);
         y->print();
         printf("-- check manually please -- \n");
         std::cout << check_vectors(correct_y, y) << std::endl;
@@ -2091,12 +2091,12 @@ int main(int argc, char **argv) {
         diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)2);
         mat->print();
         diaq::vector *correct_y = new diaq::vector((long int)2 * mat->shape[0], 0.0);
-        correct_y = identity_kron_matrix_times_vector((long int)2, mat, x, correct_y);
+        correct_y = identity_kron_matrix_times_vector((long int)1, mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
         printf(" -- new way to do it -- \n");
         diaq::vector *y = new diaq::vector((long int)4 * qspa->shape[0], 0.0);
-        y = diaq::identity_kron_matrix_kron_identity_times_vector((long int)2, qspa, (long int)2, x, y);
+        y = diaq::identity_kron_matrix_kron_identity_times_vector((long int)1, qspa, (long int)1, x, y);
         y->print();
         printf("-- check manually please -- \n");
         std::cout << check_vectors(correct_y, y) << std::endl;
@@ -2108,8 +2108,8 @@ int main(int argc, char **argv) {
         // (dIndex=0) (dLength=4) [(1,0),(0,0),(1,0),(0,0)]
         // (dIndex=2) (dLength=2) [(0,0),(1,0)]
         // after = 4; before = 64
-        long int after = 4; // 2 qubits
-        long int before = 64; // 6 qubits
+        long int after = 2; // 2 qubits
+        long int before = 6; // 6 qubits
         diaq::valType reals[16] = {
             1, 0, 1, 0,
             0, 0, 0, 0,
@@ -2139,8 +2139,8 @@ int main(int argc, char **argv) {
         // tensor_shape (4,4)
         // (dIndex=0) (dLength=4) [(0.707107,0.707107),(0.707107,-0.707107),(0.707107,-0.707107),(0.707107,0.707107)]
         // after = 8; before = 2
-        long int after = 8;
-        long int before = 2;
+        long int after = 3;
+        long int before = 1;
         diaq::valType reals[16] = {
             0.707107, 0, 0, 0,
             0, 0.707107, 0, 0,
@@ -2397,7 +2397,7 @@ int main(int argc, char **argv) {
         y->print();
         printf(" -- Now doing identity_kron_matrix_times_vector -- \n");
         diaq::vector *res_v = new diaq::vector(y->numRows_, 0.0);
-        res_v = diaq::identity_kron_matrix_times_vector((long int)2, qspa, x, res_v);
+        res_v = diaq::identity_kron_matrix_times_vector((long int)1, qspa, x, res_v);
         res_v->print();
     }
     else if (strcmp(argv[1], "id") == 0 ) {

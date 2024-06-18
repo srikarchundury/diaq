@@ -34,7 +34,7 @@ using valType = double; // double or float
     printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 	
 
-#define TILE_SIZE 256
+#define TILE_SIZE 32
 
 extern Logger logger;
 

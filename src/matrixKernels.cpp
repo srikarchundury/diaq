@@ -1710,25 +1710,25 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     // // measure start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
-    long int q_diff_exp = std::pow(2, qubit_larger - qubit_smaller);
+    long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    if(A->matrix_shape[1] != x->num_rows()) {
+    if(A->matrix_shape[1] != x->numRows_) {
         throw std::invalid_argument("Not multiplyable");
     }
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
             case -3: {
                 long int dIndex = -1 * q_diff_exp - 1;
@@ -1785,14 +1785,14 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
 }
 
 vector *MV(denseMatrix *A, vector *x, vector *y) {
-    if(A->matrix_shape[1] != x->num_rows()) {
+    if(A->matrix_shape[1] != x->numRows_) {
         throw std::invalid_argument("Not multiplyable");
     }
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
@@ -2077,6 +2077,8 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
+    n = 1L << n;
+
     // vector *y = new vector(n * A->matrix_shape[0]);
     // vector *y = x;
     valType *y_real_values = y->realValues_;
@@ -2197,23 +2199,25 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
-    long int q_diff_exp = std::pow(2, qubit_larger - qubit_smaller);
+    n = 1L << n;
+
+    long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
     // vector *y = new vector(n * A->matrix_shape[0]);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
             case -3: {
                 long int dIndex = -1 * q_diff_exp - 1;
@@ -2310,6 +2314,9 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
+    after = 1L << after;
+    before = 1L << before;
+
     long int x_length = x->numRows_;
 
     // if(after * before * gate->matrix_shape[1] != x_length) {
@@ -2338,22 +2345,19 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
         long int dLength = diag->dLength;
-
-        for (long int rep = 0; rep < after; ++rep) {
+        long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
+        for (long int rep = 0; rep < after; rep++) {
+            long int skip_places = rep * (before * dLength);
             for (long int i = 0; i < dLength; ++i) {
-                valType *real_vals = diag->realValues;
-                valType *imag_vals = diag->imagValues;
                 valType real_i = real_vals[i];
                 valType imag_i = imag_vals[i];
-
                 if (real_i != 0 || imag_i != 0) {
-                    // Combined loop for negative and positive diagonals
-                    long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
-                    for (long int j = 0; j < before; ++j) {
-                        long int skip_places = rep * (before * dLength);
+                    for (long int j = 0; j < before; j++) {
                         long int x_idx = j + i * before + skip_places;
-                        long int y_idx = j + i * before + skip_places + offset;
+                        long int y_idx = x_idx + offset;
                         y_real_values[y_idx] = real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
                         y_imag_values[y_idx] = real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
                     }
@@ -2380,28 +2384,31 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
-    long int q_diff_exp = std::pow(2, qubit_larger - qubit_smaller);
+    after = 1L << after;
+    before = 1L << before;
+
+    long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    long int x_length = x->num_rows();
+    long int x_length = x->numRows_;
 
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(after * before * gate->matrix_shape[0]);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
             case -3: {
                 long int dIndex = -1 * q_diff_exp - 1;
@@ -2716,6 +2723,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
 
+    before = 1L << before;
+
     // //start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -2791,6 +2800,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
     // logically combine matrix_kron_identity and spMV
 
     // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
+
+    before = 1L << before;
 
     // //start timer
     // auto start = std::chrono::high_resolution_clock::now();
