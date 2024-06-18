@@ -2806,29 +2806,29 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
     // //start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
-    long int q_diff_exp = std::pow(2, qubit_larger - qubit_smaller);
+    long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    long int x_length = x->num_rows();
+    long int x_length = x->numRows_;
 
     // if(before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
     #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         switch(diag->dIndex) {
             case -3: {
