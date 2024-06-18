@@ -2145,7 +2145,6 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
 
-        // Process negative diagonals efficiently using vectorization
         if (dIndex < 0) {
             #pragma omp simd collapse(2)
             for (long int rep = 0; rep < n; ++rep) {

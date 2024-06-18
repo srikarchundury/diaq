@@ -18,10 +18,10 @@ class vector {
         vector(size_t M) {
             numRows_ = M;
             #if NUM_BYTES_ALIGNED == -1
-                // realValues_ = (valType *)calloc(M, sizeof(valType));
-                // imagValues_ = (valType *)calloc(M, sizeof(valType));
-                realValues_ = (valType *)malloc(M * sizeof(valType));
-                imagValues_ = (valType *)malloc(M * sizeof(valType));
+                realValues_ = (valType *)calloc(M, sizeof(valType));
+                imagValues_ = (valType *)calloc(M, sizeof(valType));
+                // realValues_ = (valType *)malloc(M * sizeof(valType));
+                // imagValues_ = (valType *)malloc(M * sizeof(valType));
                 // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 // for(size_t i = 0; i < M; i++) {
                 //     realValues_[i] = 0.0;
@@ -30,11 +30,11 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                // for(size_t i = 0; i < M; i++) {
-                //     realValues_[i] = 0.0;
-                //     imagValues_[i] = 0.0;
-                // }
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for(size_t i = 0; i < M; i++) {
+                    realValues_[i] = 0.0;
+                    imagValues_[i] = 0.0;
+                }
             #endif
         }
         vector(size_t M, valType *realVals, valType *imagVals) {
@@ -92,6 +92,14 @@ class vector {
 
         ~vector() {
             this->free();
+        }
+
+        void zeroify() {
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < numRows_; i++) {
+                realValues_[i] = 0.0;
+                imagValues_[i] = 0.0;
+            }
         }
 
         std::complex<valType> operator[](size_t i) {
