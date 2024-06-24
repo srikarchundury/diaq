@@ -1616,8 +1616,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     // printf("Analyzing V\n");
     // x->print_meta();
 
-    // // measure start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // measure start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     if(A->matrix_shape[1] != x->num_rows()) {
         throw std::invalid_argument("Not multiplyable");
@@ -1693,22 +1693,25 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\tSpMV took %f seconds\n", duration.count());
-
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t spMV took %f seconds\n", duration.count());
 
     return y;
+
     #endif
 }
 
 vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
-    // // measure start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+
+    // DID NOT IMPLEMENT YET!
+    // TODO: PLS IMPLEMENT!!
+
+    // measure start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -1725,6 +1728,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
         valType *real_vals = diag->realValues;
@@ -1774,12 +1778,14 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
         }
     }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\tSpMV took %f seconds\n", duration.count());
+    free(new_gate_shape);
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2074,8 +2080,8 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2180,14 +2186,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     }
 
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - mid;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
-
-    // x->free(); // so that vector is not overhead in nwq_sim
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2195,8 +2199,8 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2292,12 +2296,14 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
         }
     }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    free(new_gate_shape);
+
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2310,8 +2316,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // gate->print();
     // printf("\t\tafter = %ld; before = %ld\n", after, before);
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2340,39 +2346,92 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for collapse(2) schedule(static) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i, skip_places, x_idx, y_idx)
+    // #pragma omp parallel for collapse(2) schedule(static) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i, skip_places, x_idx, y_idx)
+    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
+    //     long int dIndex = it->first;
+    //     diagonal *diag = it->second;
+    //     valType *real_vals = diag->realValues;
+    //     valType *imag_vals = diag->imagValues;
+    //     long int dLength = diag->dLength;
+    //     long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
+    //     for (long int rep = 0; rep < after; rep++) {
+    //         long int skip_places = rep * (before * dLength);
+    //         for (long int i = 0; i < dLength; ++i) {
+    //             valType real_i = real_vals[i];
+    //             valType imag_i = imag_vals[i];
+    //             if (real_i != 0 || imag_i != 0) {
+    //                 for (long int j = 0; j < before; j++) {
+    //                     long int x_idx = j + i * before + skip_places;
+    //                     long int y_idx = x_idx + offset;
+    //                     y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+    //                     y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    #pragma omp parallel for num_threads(8) schedule(dynamic)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        // printf("after = %ld; before = %ld, dIndex = %ld, dLength = %ld\n", after, before, dIndex, dLength);
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
-        long int dLength = diag->dLength;
-        long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
-        for (long int rep = 0; rep < after; rep++) {
-            long int skip_places = rep * (before * dLength);
-            for (long int i = 0; i < dLength; ++i) {
-                valType real_i = real_vals[i];
-                valType imag_i = imag_vals[i];
-                if (real_i != 0 || imag_i != 0) {
-                    for (long int j = 0; j < before; j++) {
-                        long int x_idx = j + i * before + skip_places;
-                        long int y_idx = x_idx + offset;
-                        y_real_values[y_idx] = real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-                        y_imag_values[y_idx] = real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+
+        if(dIndex < 0) { // for negative diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
+            for(long int rep = 0; rep < after; rep++) {
+                long int skip_places = rep * (before * (dLength - dIndex));
+                // #pragma unroll
+                for(long int i = 0; i < dLength; i++) {
+                    valType real_i = real_vals[i];
+                    valType imag_i = imag_vals[i];
+                    if(real_i != 0 || imag_i != 0) {
+                        #pragma omp simd
+                        for(long int j = 0; j < before; j++) {
+                            long int x_idx = j + i * before + skip_places;
+                            long int y_idx = j + i * before + skip_places - before * dIndex;
+                            // if(x_idx < x_length && y_idx < x_length) {
+                                y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+                            // }
+                        }
+                    }
+                }
+            }
+        }
+        else { // for 0th and positive diagonals
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
+            for(long int rep = 0; rep < after; rep++) {
+                long int skip_places = rep * (before * (dLength + dIndex));
+                // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
+                // #pragma unroll
+                for(long int i = 0; i < dLength; i++) {
+                    valType real_i = real_vals[i];
+                    valType imag_i = imag_vals[i];
+                    if(real_i != 0 || imag_i != 0) {
+                        #pragma omp simd
+                        for(long int j = 0; j < before; j++) {
+                            long int x_idx = before * dIndex + j + i * before + skip_places;
+                            long int y_idx = j + i * before + skip_places;
+                            // if(x_idx < x_length && y_idx < x_length) {
+                            y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+                            // }
+                        }
                     }
                 }
             }
         }
     }
 
-    // // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
-
-    // x->free(); // so that vector is not overhead in nwq_sim
+    // // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 
@@ -2380,8 +2439,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2424,8 +2483,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2447,8 +2506,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
                             // }
                         }
                         valType real_val_1 = real_vals[1];
@@ -2458,8 +2517,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2481,8 +2540,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2496,8 +2555,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2517,8 +2576,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2540,8 +2599,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                             // }
                         }
                         real_val = real_vals[1];
@@ -2551,8 +2610,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2564,8 +2623,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                             // }
                         }
                         real_val = real_vals[3];
@@ -2575,8 +2634,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2598,8 +2657,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2613,8 +2672,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2634,8 +2693,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2657,8 +2716,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
                             // }
                         }
                         valType real_val_1 = real_vals[1];
@@ -2668,8 +2727,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
                             // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
+                                y_real_values[y_idx] += real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2691,8 +2750,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                                 long int x_idx = j + i * before + skip_places;
                                 long int y_idx = j + i * before + skip_places - before * dIndex;
                                 // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
                                 // }
                             }
                         }
@@ -2707,12 +2766,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
     }
     
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2720,12 +2779,10 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y) {
     // logically combine matrix_kron_identity and spMV
 
-    // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
-
     before = 1L << before;
 
-    // //start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     long int x_length = x->numRows_;
 
@@ -2774,23 +2831,21 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         x_idx = j + i * before;
                         y_idx = j + i * before;
                     }
-                    // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                    // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] += %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                     // if(x_idx < x_length && y_idx < x_length) {
-                        y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                        y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                     // }
                 }
             }
         }
     }
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
-
-    // x->free(); // so that nwq_sim need not handle this. some tests will fail!
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2802,8 +2857,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     before = 1L << before;
 
-    // //start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -2858,8 +2913,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -2892,10 +2947,10 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             x_idx = j + i * before;
                             y_idx = j + i * before;
                         }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                     each_real = real_vals[1];
@@ -2920,8 +2975,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                 }
@@ -2955,8 +3010,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -2985,8 +3040,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3018,8 +3073,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3054,8 +3109,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                     each_real = real_vals[1];
@@ -3081,7 +3136,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
                             y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                 }
@@ -3108,8 +3163,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                     each_real = real_vals[3];
@@ -3134,8 +3189,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                 }
@@ -3170,8 +3225,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3201,8 +3256,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3235,8 +3290,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3271,8 +3326,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                     each_real = real_vals[1];
@@ -3297,8 +3352,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         }
                         // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                         if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                         }
                     }
                 }
@@ -3333,8 +3388,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                             if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                             }
                         }
                     }
@@ -3343,19 +3398,19 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine this with operations that happen later.
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
@@ -3393,12 +3448,12 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     }
     // result->pruneMatrix();
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
 
     return result;
 }
