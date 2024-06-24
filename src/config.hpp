@@ -30,6 +30,12 @@ namespace diaq {
 using valType = double; // double or float
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
 
+#define PRINT_WITH_LINE(fmt, ...) \
+    printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+	
+
+#define TILE_SIZE 32
+
 extern Logger logger;
 
 } // namespace diaq

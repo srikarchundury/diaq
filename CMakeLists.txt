@@ -81,10 +81,13 @@ else()
 
 endif()
 
-# Compile the tests.cpp file
-add_executable(tests ${TESTS_DIR}/tests.cpp)
-# Link your library to the tests
-target_link_libraries(tests diaq)
+
+if(DEFINED ENV{MAKE_TESTS} AND "$ENV{MAKE_TESTS}" STREQUAL "1")
+    # Compile the tests.cpp file
+    add_executable(tests ${TESTS_DIR}/tests.cpp)
+    # Link your library to the tests
+    target_link_libraries(tests diaq)
+endif()
 
 # Set the output directory for the compiled libraries and executables
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
