@@ -1616,8 +1616,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     // printf("Analyzing V\n");
     // x->print_meta();
 
-    // measure start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // measure start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     if(A->matrix_shape[1] != x->num_rows()) {
         throw std::invalid_argument("Not multiplyable");
@@ -1693,12 +1693,12 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     //     std::cout << " --- " << std::endl;
     // }
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t spMV took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t spMV took %f seconds\n", duration.count());
 
     return y;
 
@@ -1710,8 +1710,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     // DID NOT IMPLEMENT YET!
     // TODO: PLS IMPLEMENT!!
 
-    // measure start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // measure start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -1780,12 +1780,12 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
 
     free(new_gate_shape);
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2080,8 +2080,8 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2186,12 +2186,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     }
 
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2199,8 +2199,8 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2298,12 +2298,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
     free(new_gate_shape);
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2316,8 +2316,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     // gate->print();
     // printf("\t\tafter = %ld; before = %ld\n", after, before);
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2426,12 +2426,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         }
     }
 
-    // // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 
@@ -2439,8 +2439,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2766,12 +2766,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
     }
     
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2781,8 +2781,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     before = 1L << before;
 
-    //start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // //start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     long int x_length = x->numRows_;
 
@@ -2840,12 +2840,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2857,8 +2857,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     before = 1L << before;
 
-    //start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // //start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -3398,19 +3398,19 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine this with operations that happen later.
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    // // start timer
+    // auto start = std::chrono::high_resolution_clock::now();
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
@@ -3448,12 +3448,12 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     }
     // result->pruneMatrix();
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
+    // // measure end time
+    // auto end = std::chrono::high_resolution_clock::now();
+    // // calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // // log duration
+    // printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
 
     return result;
 }
