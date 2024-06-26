@@ -23,7 +23,7 @@
 namespace diaq {
 
 // declarations
-diaQMatrix *from_numpy_cuda(valType **values, long int *shape);
+diaQMatrix *from_numpy_cuda(std::complex<valType> *values, std::vector<long int> shape);
 diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, long int *new_shape);
 
 } // namespace diaq

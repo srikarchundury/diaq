@@ -16,7 +16,7 @@ namespace diaq {
 	#define NUMBER_OF_OMP_THREADS 32
 #endif
 
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 128
 
 // #define NUMBER_OF_OMP_THREADS 16
 
@@ -26,9 +26,15 @@ namespace diaq {
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
 
-#define NUM_BYTES_ALIGNED -1 // set -1 for unaligned then default behavior whatever compiler does it does! // has errors as of now, let's deal with them later.
+#define NUM_BYTES_ALIGNED 256 // set -1 for unaligned then default behavior whatever compiler does it does! // has errors as of now, let's deal with them later.
 using valType = double; // double or float
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
+
+#define PRINT_WITH_LINE(fmt, ...) \
+    printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+	
+
+#define TILE_SIZE 32
 
 extern Logger logger;
 

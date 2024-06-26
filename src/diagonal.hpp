@@ -13,8 +13,12 @@ namespace diaq {
 
 class diagonal {
     public:
+        valType* realValues; // real number array
+        valType* imagValues; // imaginary number array
+
         long int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
         long int dLength;
+
         diagonal(long int di) {
             dIndex = di;
         }
@@ -27,8 +31,8 @@ class diagonal {
             #else
                 realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
                 imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(long int i = 0; i<dl; i++) {
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                for(long int i = 0; i < dl; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
@@ -144,9 +148,6 @@ class diagonal {
             std::free(realValues);
             std::free(imagValues);
         }
-    private:
-        valType* realValues; // real number array
-        valType* imagValues; // imaginary number array
 };
 
 } // namespace diaq

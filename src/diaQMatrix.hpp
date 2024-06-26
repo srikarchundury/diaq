@@ -19,6 +19,7 @@ class diaQMatrix {
         long int size;
         long int *matrix_shape; // as of now, this is always a 2 element array
         std::vector<long int> shape;
+        std::unordered_map<long int, diagonal*> diagonalMap; // map <dIndex, diagonal object>
 
         diaQMatrix(long int s) {
             std::unordered_map<long int, diagonal*> d;
@@ -223,7 +224,7 @@ class diaQMatrix {
                     #else
                         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
                         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
-                        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int i = 0; i<dLen; i++) {
                             real_vals[i] = 0.0;
                             imag_vals[i] = 0.0;
@@ -370,8 +371,8 @@ class diaQMatrix {
                     #else
                         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
                         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
-                        // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                        for(long int i = 0; i<dLength; i++) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int i = 0; i < dLength; i++) {
                             real_vals[i] = 0.0;
                             imag_vals[i] = 0.0;
                         }
@@ -431,7 +432,7 @@ class diaQMatrix {
                 #else
                     (*real_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
                     (*imag_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
-                    // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                     for(long int i = 0; i < *num_elements; i++) {
                         (*real_data)[i] = 0.0;
                         (*real_data)[i] = 0.0;
@@ -656,8 +657,6 @@ class diaQMatrix {
         denseMatrix *convertToDenseMatrix();
         valType *getRealValues();
         valType *getImagValues();
-    private:
-        std::unordered_map<long int, diagonal*> diagonalMap; // map <dIndex, diagonal object>
 };
 
 } // namespace diaq

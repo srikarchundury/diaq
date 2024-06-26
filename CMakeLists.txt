@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
+# Setting things to be very optimized
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+# set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+# set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 # Set the source files
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -73,10 +81,13 @@ else()
 
 endif()
 
-# Compile the tests.cpp file
-add_executable(tests ${TESTS_DIR}/tests.cpp)
-# Link your library to the tests
-target_link_libraries(tests diaq)
+
+if(DEFINED ENV{MAKE_TESTS} AND "$ENV{MAKE_TESTS}" STREQUAL "1")
+    # Compile the tests.cpp file
+    add_executable(tests ${TESTS_DIR}/tests.cpp)
+    # Link your library to the tests
+    target_link_libraries(tests diaq)
+endif()
 
 # Set the output directory for the compiled libraries and executables
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
