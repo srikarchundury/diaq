@@ -1710,8 +1710,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     // DID NOT IMPLEMENT YET!
     // TODO: PLS IMPLEMENT!!
 
-    // // measure start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // measure start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -1780,12 +1780,12 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
 
     free(new_gate_shape);
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2080,8 +2080,8 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2143,7 +2143,7 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     //     }
     // }
 
-    #pragma omp parallel for collapse(2) schedule(dynamic) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i)
+    #pragma omp parallel for collapse(2) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
@@ -2186,12 +2186,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     }
 
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2199,8 +2199,8 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     n = 1L << n;
 
@@ -2298,12 +2298,12 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
     free(new_gate_shape);
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2311,13 +2311,13 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y) {
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
+
     // std::cout << "identity_kron_matrix_kron_identity_times_vector called" << std::endl;
     // printf("gate matrix below\n");
     // gate->print();
     // printf("\t\tafter = %ld; before = %ld\n", after, before);
-
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2370,7 +2370,6 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
     //         }
     //     }
     // }
-    #pragma omp parallel for num_threads(8) schedule(dynamic)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
@@ -2380,7 +2379,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         valType *imag_vals = diag->imagValues;
 
         if(dIndex < 0) { // for negative diagonals
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength - dIndex));
                 // #pragma unroll
@@ -2388,13 +2387,13 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                     valType real_i = real_vals[i];
                     valType imag_i = imag_vals[i];
                     if(real_i != 0 || imag_i != 0) {
-                        #pragma omp simd
+                        // #pragma omp simd
                         for(long int j = 0; j < before; j++) {
                             long int x_idx = j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2402,7 +2401,7 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
             }
         }
         else { // for 0th and positive diagonals
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for(long int rep = 0; rep < after; rep++) {
                 long int skip_places = rep * (before * (dLength + dIndex));
                 // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
@@ -2411,13 +2410,13 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                     valType real_i = real_vals[i];
                     valType imag_i = imag_vals[i];
                     if(real_i != 0 || imag_i != 0) {
-                        #pragma omp simd
+                        // #pragma omp simd
                         for(long int j = 0; j < before; j++) {
                             long int x_idx = before * dIndex + j + i * before + skip_places;
                             long int y_idx = j + i * before + skip_places;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                            y_real_values[y_idx] = real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+                            y_imag_values[y_idx] = real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
                             // }
                         }
                     }
@@ -2426,12 +2425,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         }
     }
 
-    // // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 
@@ -2439,8 +2438,8 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     after = 1L << after;
     before = 1L << before;
@@ -2478,14 +2477,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2499,27 +2500,31 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i += 2) {
-                        valType real_val_0 = real_vals[0];
-                        valType imag_val_0 = imag_vals[0];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
-                            // }
+                        valType real_val = real_vals[0];
+                        valType imag_val = imag_vals[0];
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
-                        valType real_val_1 = real_vals[1];
-                        valType imag_val_1 = imag_vals[1];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
-                            // }
+                        real_val = real_vals[1];
+                        imag_val = imag_vals[1];
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                     }
                 }
@@ -2535,14 +2540,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2550,14 +2557,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[2];
                             valType imag_val = imag_vals[2];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2571,14 +2580,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 != 0) {
                             valType real_val = real_vals[1];
                             valType imag_val = imag_vals[1];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2594,49 +2605,57 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                     for(long int i = 0; i < dLength/2; i+=2) {
                         valType real_val = real_vals[0];
                         valType imag_val = imag_vals[0];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                            // }
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                         real_val = real_vals[1];
                         imag_val = imag_vals[1];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                            // }
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                     }
                     for(long int i = dLength/2; i < dLength; i+=2) {
                         valType real_val = real_vals[2];
                         valType imag_val = imag_vals[2];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                            // }
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                         real_val = real_vals[3];
                         imag_val = imag_vals[3];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                            // }
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                     }
                 }
@@ -2652,14 +2671,22 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        // printf("y_real_values[%ld] = %f\n", y_idx, y_real_values[y_idx]);
+                                        // printf("y_imag_values[%ld] = %f\n", y_idx, y_imag_values[y_idx]);
+                                        // printf("x_real_values[%ld] = %f\n", x_idx, x_real_values[x_idx]);
+                                        // printf("x_imag_values[%ld] = %f\n", x_idx, x_imag_values[x_idx]);
+                                        // printf("real_val = %f\n", real_val);
+                                        // printf("imag_val = %f\n", imag_val);
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2667,14 +2694,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[2];
                             valType imag_val = imag_vals[2];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2688,14 +2717,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 != 0) {
                             valType real_val = real_vals[1];
                             valType imag_val = imag_vals[1];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2709,27 +2740,31 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                 for(long int rep = 0; rep < after; rep++) {
                     long int skip_places = rep * (before * (dLength - dIndex));
                     for(long int i = 0; i < dLength; i += 2) {
-                        valType real_val_0 = real_vals[0];
-                        valType imag_val_0 = imag_vals[0];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val_0 * x_real_values[x_idx] - imag_val_0 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val_0 * x_imag_values[x_idx] + imag_val_0 * x_real_values[x_idx];
-                            // }
+                        valType real_val = real_vals[0];
+                        valType imag_val = imag_vals[0];
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
-                        valType real_val_1 = real_vals[1];
-                        valType imag_val_1 = imag_vals[1];
-                        #pragma omp simd
-                        for(long int j = 0; j < before; j++) {
-                            long int x_idx = j + i * before + skip_places;
-                            long int y_idx = j + i * before + skip_places - before * dIndex;
-                            // if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += real_val_1 * x_real_values[x_idx] - imag_val_1 * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += real_val_1 * x_imag_values[x_idx] + imag_val_1 * x_real_values[x_idx];
-                            // }
+                        real_val = real_vals[1];
+                        imag_val = imag_vals[1];
+                        if(real_val != 0 || imag_val != 0) {
+                            #pragma omp simd
+                            for(long int j = 0; j < before; j++) {
+                                long int x_idx = j + i * before + skip_places;
+                                long int y_idx = j + i * before + skip_places - before * dIndex;
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                // }
+                            }
                         }
                     }
                 }
@@ -2745,14 +2780,16 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
-                            #pragma omp simd
-                            for(long int j = 0; j < before; j++) {
-                                long int x_idx = j + i * before + skip_places;
-                                long int y_idx = j + i * before + skip_places - before * dIndex;
-                                // if(x_idx < x_length && y_idx < x_length) {
-                                    y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
-                                    y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
-                                // }
+                            if(real_val != 0 || imag_val != 0) {
+                                #pragma omp simd
+                                for(long int j = 0; j < before; j++) {
+                                    long int x_idx = j + i * before + skip_places;
+                                    long int y_idx = j + i * before + skip_places - before * dIndex;
+                                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                        y_real_values[y_idx] += real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
+                                        y_imag_values[y_idx] += real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
+                                    // }
+                                }
                             }
                         }
                     }
@@ -2766,12 +2803,12 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
     }
     
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2779,10 +2816,10 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y) {
     // logically combine matrix_kron_identity and spMV
 
-    before = 1L << before;
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
-    // //start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    before = 1L << before;
 
     long int x_length = x->numRows_;
 
@@ -2799,7 +2836,6 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for num_threads(8) schedule(dynamic)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         diagonal *diag = it->second;
@@ -2808,12 +2844,11 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
 
-        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS / 8) schedule(dynamic)
         for(long int i = 0; i < dLength; i++) {
             valType each_real = real_vals[i];
             valType each_imag = imag_vals[i];
             if(each_real != 0 || each_imag != 0) {
-                #pragma omp simd
+                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int j = 0; j < before; j++) {
                     // newDiag_real_vals[j + i * n] = each_real;
                     // newDiag_imag_vals[j + i * n] = each_imag;
@@ -2832,20 +2867,20 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                         y_idx = j + i * before;
                     }
                     // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] += %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                    // if(x_idx < x_length && y_idx < x_length) {
-                        y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                        y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                        y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                        y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                     // }
                 }
             }
         }
     }
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
 
     return y;
 }
@@ -2853,12 +2888,10 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
     // logically combine matrix_kron_identity and spMV
 
-    // std::cout << "matrix_kron_identity_times_vector called" << std::endl;
+    //start timer
+    auto start = std::chrono::high_resolution_clock::now();
 
     before = 1L << before;
-
-    // //start timer
-    // auto start = std::chrono::high_resolution_clock::now();
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -2877,7 +2910,7 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         diagonal *diag = it->second;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
@@ -2889,32 +2922,34 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1 * q_diff_exp - 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -2925,58 +2960,61 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1 * q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                     each_real = real_vals[1];
                     each_imag = imag_vals[1];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                 }
@@ -2986,62 +3024,66 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = -1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
                 }
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
                         valType each_imag = imag_vals[2];
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -3049,32 +3091,34 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 dIndex = -1 * q_diff_exp + 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
                         valType each_imag = imag_vals[1];
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -3085,112 +3129,119 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = 0;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                     each_real = real_vals[1];
                     each_imag = imag_vals[1];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                 }
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i+=2) {
                     valType each_real = real_vals[2];
                     valType each_imag = imag_vals[2];
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                     each_real = real_vals[3];
                     each_imag = imag_vals[3];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
                         }
                     }
                 }
@@ -3200,64 +3251,66 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = 1;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
-                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
                 }
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
                         valType each_imag = imag_vals[2];
-                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -3265,33 +3318,34 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 dIndex = q_diff_exp - 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
                         valType each_imag = imag_vals[1];
-                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                        for(long int j = 0; j < before; j++) {
-                            // newDiag_real_vals[j + i * n] = each_real;
-                            // newDiag_imag_vals[j + i * n] = each_imag;
-                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            long int x_idx, y_idx;
-                            if(dIndex < 0) { // negative diagonals
-                                x_idx = j + i * before;
-                                y_idx = j + i * before - before * dIndex;
-                            }
-                            else if (dIndex > 0) { // positive diagonals
-                                x_idx = before * dIndex + j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            else { // principal diagonal
-                                x_idx = j + i * before;
-                                y_idx = j + i * before;
-                            }
-                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -3302,72 +3356,10 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                 long int dIndex = q_diff_exp;
                 long int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                 for(long int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
-                        }
-                    }
-                    each_real = real_vals[1];
-                    each_imag = imag_vals[1];
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                    for(long int j = 0; j < before; j++) {
-                        // newDiag_real_vals[j + i * n] = each_real;
-                        // newDiag_imag_vals[j + i * n] = each_imag;
-                        // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                        long int x_idx, y_idx;
-                        if(dIndex < 0) { // negative diagonals
-                            x_idx = j + i * before;
-                            y_idx = j + i * before - before * dIndex;
-                        }
-                        else if (dIndex > 0) { // positive diagonals
-                            x_idx = before * dIndex + j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        else { // principal diagonal
-                            x_idx = j + i * before;
-                            y_idx = j + i * before;
-                        }
-                        // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                        if(x_idx < x_length && y_idx < x_length) {
-                            y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                            y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
-                        }
-                    }
-                }
-                break;
-            }
-            case 3: {
-                long int dIndex = q_diff_exp + 1;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                // do something
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(long int i = 0; i < dLength; i++) {
-                    if(i % 2 == 0) {
-                        valType each_real = real_vals[0];
-                        valType each_imag = imag_vals[0];
+                    if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
                         for(long int j = 0; j < before; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
@@ -3387,9 +3379,75 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
                                 y_idx = j + i * before;
                             }
                             // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
-                            if(x_idx < x_length && y_idx < x_length) {
-                                y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                                y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
+                        }
+                    }
+                    each_real = real_vals[1];
+                    each_imag = imag_vals[1];
+                    if(each_real != 0 || each_imag != 0) {
+                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        for(long int j = 0; j < before; j++) {
+                            // newDiag_real_vals[j + i * n] = each_real;
+                            // newDiag_imag_vals[j + i * n] = each_imag;
+                            // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                            long int x_idx, y_idx;
+                            if(dIndex < 0) { // negative diagonals
+                                x_idx = j + i * before;
+                                y_idx = j + i * before - before * dIndex;
+                            }
+                            else if (dIndex > 0) { // positive diagonals
+                                x_idx = before * dIndex + j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            else { // principal diagonal
+                                x_idx = j + i * before;
+                                y_idx = j + i * before;
+                            }
+                            // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                            // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                            // }
+                        }
+                    }
+                }
+                break;
+            }
+            case 3: {
+                long int dIndex = q_diff_exp + 1;
+                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // do something
+                for(long int i = 0; i < dLength; i++) {
+                    if(i % 2 == 0) {
+                        valType each_real = real_vals[0];
+                        valType each_imag = imag_vals[0];
+                        if(each_real != 0 || each_imag != 0) {
+                            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                            for(long int j = 0; j < before; j++) {
+                                // newDiag_real_vals[j + i * n] = each_real;
+                                // newDiag_imag_vals[j + i * n] = each_imag;
+                                // do SPMV for these newDiag_real_vals and newDiag_imag_vals
+                                long int x_idx, y_idx;
+                                if(dIndex < 0) { // negative diagonals
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before - before * dIndex;
+                                }
+                                else if (dIndex > 0) { // positive diagonals
+                                    x_idx = before * dIndex + j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                else { // principal diagonal
+                                    x_idx = j + i * before;
+                                    y_idx = j + i * before;
+                                }
+                                // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] = %f, y_imag_values[y_idx] = %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
+                                // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
+                                    y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                                    y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                                // }
                             }
                         }
                     }
@@ -3398,12 +3456,12 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    // measure end time
+    auto end = std::chrono::high_resolution_clock::now();
+    // calculate duration
+    std::chrono::duration<double> duration = end - start;
+    // log duration
+    printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
 
     return y;
 }

@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
-# Setting things to be very optimized
+if(DEFINED ENV{DEBUG} AND "$ENV{DEBUG}" STREQUAL "1")
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()

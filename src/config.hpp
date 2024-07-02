@@ -10,7 +10,7 @@ namespace diaq {
 
 #if defined(__x86_64__) || defined(_M_X64)
 	#define HERE 1
-	#define NUMBER_OF_OMP_THREADS std::thread::hardware_concurrency()
+	#define NUMBER_OF_OMP_THREADS (std::thread::hardware_concurrency()/2)
 #else
 	#define HERE 2
 	#define NUMBER_OF_OMP_THREADS 32
