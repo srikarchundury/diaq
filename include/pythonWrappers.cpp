@@ -274,13 +274,13 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::reference
     );
-    m.def(
-        "spMV",
-        [](diaq::diaQMatrix *A, diaq::vector *x) { return diaq::spMV(A, x); },
-        py::arg(),
-        py::arg(),
-        py::return_value_policy::reference
-    );
+    // m.def(
+    //     "spMV",
+    //     [](diaq::diaQMatrix *A, diaq::vector *x) { return diaq::spMV(A, x); },
+    //     py::arg(),
+    //     py::arg(),
+    //     py::return_value_policy::reference
+    // );
     m.def(
         "einsum",
         [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
