@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
-if(DEFINED ENV{DEBUG} AND "$ENV{DEBUG}" STREQUAL "1")
+# Check if DEBUG variable is set
+if(DEFINED DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
+    add_definitions(-DDEBUG)  # Define DEBUG preprocessor flag
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -12,6 +14,15 @@ endif()
 # set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+# Check if PAPI_ON variable is set
+if(DEFINED PAPI_ON)
+    message(STATUS "PAPI is enabled")
+    # you might need to module avail papi and load it before you get here!
+    message(STATUS "PAPI_DIR: $ENV{PAPI_DIR}")
+    include_directories($ENV{PAPI_DIR}/include)
+    add_definitions(-DPAPI_ON)  # Define PAPI_ON preprocessor flag
+endif()
+
 # Set the source files
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -20,7 +31,6 @@ set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
 set(SOURCES
     ${SRC_DIR}/config.hpp
 	${SRC_DIR}/config.cpp
-	${SRC_DIR}/logger.hpp
 	${SRC_DIR}/denseMatrix.hpp
 	${SRC_DIR}/diagonal.hpp
 	${SRC_DIR}/diaQMatrix.hpp
@@ -48,7 +58,7 @@ set(CUDA_SOURCES
 include_directories(${INC_DIR})
 
 # Check if CUDA_ENABLED variable is set
-if(DEFINED ENV{CUDA_ENABLED} AND "$ENV{CUDA_ENABLED}" STREQUAL "1")
+if(DEFINED CUDA_ENABLED)
     message(STATUS "CUDA is enabled")
     find_package(CUDA REQUIRED)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
@@ -84,13 +94,24 @@ else()
 
 endif()
 
+# Check if PAPI_ON variable is set
+if(DEFINED PAPI_ON)
+    target_link_libraries(diaq $ENV{PAPI_DIR}/lib/libpapi.so)
+    message(STATUS "PAPI is linked")
+endif()
 
-if(DEFINED ENV{MAKE_TESTS} AND "$ENV{MAKE_TESTS}" STREQUAL "1")
+# Check if MAKE_TESTS variable is set
+if(DEFINED MAKE_TESTS)
     # Compile the tests.cpp file
     add_executable(tests ${TESTS_DIR}/tests.cpp)
     # Link your library to the tests
     target_link_libraries(tests diaq)
+    # Link PAPI library if PAPI_ON is defined to tests
+    if(DEFINED PAPI_ON)
+        target_link_libraries(tests $ENV{PAPI_DIR}/lib/libpapi.so)
+    endif()
 endif()
+
 
 # Set the output directory for the compiled libraries and executables
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})

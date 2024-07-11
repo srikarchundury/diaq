@@ -390,17 +390,14 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     // ------------------------AVX FLOAT----------------------------------------
     template<>
     void run_spmv_avx_1<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using AVX-Float vectorization for SPMV");
         // TODO
     }
     template<>
     void run_spmv_avx_2<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using AVX-Float vectorization for SPMV");
         // TODO
     }
     template<>
     void run_spmv_avx_0<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using AVX-Float vectorization for SPMV");
         // TODO
     }
 
@@ -438,7 +435,6 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-        // logger.log("Using SSE-Float vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -516,7 +512,6 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-        // logger.log("Using SSE-Double vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -572,17 +567,14 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     // ------------------------SSE FLOAT----------------------------------------
     template<>
     void run_spmv_sse_1<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using SSE-Float vectorization for SPMV");
         // TODO
     }
     template<>
     void run_spmv_sse_2<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using SSE-Float vectorization for SPMV");
         // TODO
     }
     template<>
     void run_spmv_sse_0<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, long int dIndex, long int dLength) {
-        // logger.log("Using SSE-Float vectorization for SPMV");
         // TODO
     }
 
@@ -837,7 +829,8 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     #ifdef CUDA_ENABLED
         return product_cuda(A, B);
     #else
-    // if(logger.log_level == DEBUG) {
+
+    #ifdef DEEP_DEBUG
     //     std::cout << " --- " << std::endl;
     //     std::cout << " --- product --- " << std::endl;
     //     std::cout << " --- " << std::endl;
@@ -845,7 +838,8 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //     std::cout << " --- times --- " << std::endl;
     //     B.print();
     //     std::cout << " --- " << std::endl;
-    // }
+    #endif
+
     if(A->matrix_shape[1] != B->matrix_shape[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -883,72 +877,62 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         }
     }
 
-    // result->pruneMatrix(); // we don't need to check this, because we check isEmpty above itself
-
-    // std::cout << " ------ final result ------ " << std::endl;
-    // result->print();
-    // std::cout << " ------ final result ------ " << std::endl;
-    // result->print();
-    // if (logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-	// 	// --- First matrix ---
-	// 	std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
-    //     // get keys of A_diagonalMap
-    //     std::vector<long int> A_keys;
-    //     std::unordered_map<long int, diagonal*>::iterator A_it;
-    //     for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
-    //         A_keys.push_back(A_it->first);
-    //     }
-    //     // print keys
-    //     std::cout << "keys of A_diagonalMap: ";
-    //     for(long int i = 0; i < A_keys.size(); i++) {
-    //         std::cout << A_keys[i] << " ";
-    //     }
-    //     std::cout << std::endl;
-	// 	// --- Second matrix ---
-    //     std::unordered_map<long int, diagonal*> B_diagonalMap = B->getDiagonalMap();
-    //     // get keys of B_diagonalMap
-    //     std::vector<long int> B_keys;
-    //     std::unordered_map<long int, diagonal*>::iterator B_it;
-    //     for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
-    //         B_keys.push_back(B_it->first);
-    //     }
-    //     // print keys
-    //     std::cout << "keys of B_diagonalMap: ";
-    //     for(long int i = 0; i < B_keys.size(); i++) {
-    //         std::cout << B_keys[i] << " ";
-    //     }
-    //     std::cout << std::endl;
-	// 	// --- Result matrix ---
-    //     std::unordered_map<long int, diagonal*> result_diagonalMap = result->getDiagonalMap();
-    //     // get keys of result_diagonalMap
-    //     std::vector<long int> result_keys;
-    //     std::unordered_map<long int, diagonal*>::iterator result_it;
-    //     for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
-    //         result_keys.push_back(result_it->first);
-    //     }
-    //     // print keys
-    //     std::cout << "keys of result_diagonalMap: ";
-    //     for(long int i = 0; i < result_keys.size(); i++) {
-    //         std::cout << result_keys[i] << " ";
-    //     }
-    //     std::cout << std::endl;
-    //     std::cout << " --- " << std::endl;
-	// }
-    // if(logger.log_level == DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- product result --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     result->print();
-    //     std::cout << " --- " << std::endl;
-    // }
-
-    // // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed = end - start;
-    // printf("\t\tUnitary multiplication took %f seconds\n", elapsed.count());
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+		// --- First matrix ---
+		std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
+        // get keys of A_diagonalMap
+        std::vector<long int> A_keys;
+        std::unordered_map<long int, diagonal*>::iterator A_it;
+        for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
+            A_keys.push_back(A_it->first);
+        }
+        // print keys
+        std::cout << "keys of A_diagonalMap: ";
+        for(long int i = 0; i < A_keys.size(); i++) {
+            std::cout << A_keys[i] << " ";
+        }
+        std::cout << std::endl;
+		// --- Second matrix ---
+        std::unordered_map<long int, diagonal*> B_diagonalMap = B->getDiagonalMap();
+        // get keys of B_diagonalMap
+        std::vector<long int> B_keys;
+        std::unordered_map<long int, diagonal*>::iterator B_it;
+        for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
+            B_keys.push_back(B_it->first);
+        }
+        // print keys
+        std::cout << "keys of B_diagonalMap: ";
+        for(long int i = 0; i < B_keys.size(); i++) {
+            std::cout << B_keys[i] << " ";
+        }
+        std::cout << std::endl;
+		// --- Result matrix ---
+        std::unordered_map<long int, diagonal*> result_diagonalMap = result->getDiagonalMap();
+        // get keys of result_diagonalMap
+        std::vector<long int> result_keys;
+        std::unordered_map<long int, diagonal*>::iterator result_it;
+        for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
+            result_keys.push_back(result_it->first);
+        }
+        // print keys
+        std::cout << "keys of result_diagonalMap: ";
+        for(long int i = 0; i < result_keys.size(); i++) {
+            std::cout << result_keys[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << " --- " << std::endl;
+        std::cout << " --- product result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result->print();
+        std::cout << " --- " << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        printf("\t\tUnitary multiplication took %f seconds\n", elapsed.count());
+    #endif
 
     return result;
+
     #endif
 }
 
@@ -1601,23 +1585,24 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     #ifdef CUDA_ENABLED
         return spmv_cuda(A, x);
     #else
-    // if(logger.log_level == DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- spMV --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     A.print();
-    //     std::cout << " --- times --- " << std::endl;
-    //     x.print();
-    //     std::cout << " --- " << std::endl;
-    // }
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- spMV --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A.print();
+        std::cout << " --- times --- " << std::endl;
+        x.print();
+        std::cout << " --- " << std::endl;
+        printf("Analyzing SpM\n");
+        A->print_meta();
+        printf("Analyzing V\n");
+        x->print_meta();
+    #endif
 
-    // printf("Analyzing SpM\n");
-    // A->print_meta();
-    // printf("Analyzing V\n");
-    // x->print_meta();
-
-    // // measure start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // measure start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     if(A->matrix_shape[1] != x->num_rows()) {
         throw std::invalid_argument("Not multiplyable");
@@ -1685,20 +1670,23 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
             #endif
         }
     }
-    // if(logger.log_level == DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- spMV result --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     y.print();
-    //     std::cout << " --- " << std::endl;
-    // }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t spMV took %f seconds\n", duration.count());
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- spMV result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        y.print();
+        std::cout << " --- " << std::endl;
+    #endif
+
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t spMV took %f seconds\n", duration.count());
+    #endif
 
     return y;
 
@@ -1710,8 +1698,10 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     // DID NOT IMPLEMENT YET!
     // TODO: PLS IMPLEMENT!!
 
-    // measure start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // measure start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
@@ -1780,12 +1770,14 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
 
     free(new_gate_shape);
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
@@ -1858,45 +1850,16 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
     return result;
 }
 
-// diagonal multiplyEntireDiagonals(std::vector<long int> shapeA, std::vector<long int> shapeB, diagonal diagA, diagonal diagB) {
-//     // std::cout << "multiplyEntireDiagonals called" << std::endl;
-//     // diagA.print();
-//     // diagB.print();
-//     long int dIndexA = diagA->dIndex;
-//     long int dIndexB = diagB->dIndex;
-//     long int dLengthA = diagA->dLength;
-//     long int dLengthB = diagB->dLength;
-//     long int dLength = dLengthA * dLengthB;
-//     valType *real_valsA = diagA.getRealValues();
-//     valType *imag_valsA = diagA.getImagValues();
-//     valType *real_valsB = diagB.getRealValues();
-//     valType *imag_valsB = diagB.getImagValues();
-//     valType *real_valsC = (valType *)calloc(dLength, sizeof(valType));
-//     valType *imag_valsC = (valType *)calloc(dLength, sizeof(valType));
-//     for(long int i = 0; i < dLengthA; i++) {
-//         valType each_real = real_valsA[i];
-//         valType each_imag = imag_valsA[i];
-//         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-//         for(long int j = 0; j < dLengthB; j++) {
-//             long int c_pos = i * dLengthB + j;
-//             real_valsC[c_pos] = each_real * real_valsB[j] - each_imag * imag_valsB[j];
-//             imag_valsC[c_pos] = each_real * imag_valsB[j] + each_imag * real_valsB[j];
-//         }
-//     }
-//     long int dIndexC = dIndexA + dIndexB;
-//     return diagonal(dIndexC, dLength, real_valsC, imag_valsC);
-// }
-
 diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatrix *A) {
-    // if(logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- multiply_by_scalar --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
-    //     std::cout << " --- times --- " << std::endl;
-    //     A.print();
-    //     std::cout << " --- " << std::endl;
-    // }
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- multiply_by_scalar --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
+        std::cout << " --- times --- " << std::endl;
+        A.print();
+        std::cout << " --- " << std::endl;
+    #endif
     // if(scalar_real == 0.0 && scalar_imag == 0.0) {
     //     logger.log("diaq/multiply_by_scalar called with scalar = 0.0");
     //     // can handle this better. TODO
@@ -1935,26 +1898,31 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
 
     // printf("here 2\n");
 
-    // if(logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- multiply_by_scalar result --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     result.print();
-    //     std::cout << " --- " << std::endl;
-    // }
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- multiply_by_scalar result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result.print();
+        std::cout << " --- " << std::endl;
+    #endif
+
     return result;
 }
 
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
 
-    // printf("\tdiaq::kron_product\n");
-    // printf("\tA Meta:\n");
-    // A->print_meta();
-    // printf("\tB Matrix:\n");
-    // B->print();
+    #ifdef DEEP_DEBUG
+        printf("\tdiaq::kron_product\n");
+        printf("\tA Meta:\n");
+        A->print_meta();
+        printf("\tB Matrix:\n");
+        B->print();
+    #endif
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // measure start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
@@ -2020,20 +1988,37 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         }
     }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("Kron product took %f seconds\n", duration.count());
+    #ifdef DEEP_DEBUG
+        printf("\tResult Meta:\n");
+        result->print_meta();
+    #endif
+
+
+    #ifdef DEBUG
+        // measure end timer
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t kron_product took %f seconds\n", duration.count());
+    #endif
 
     // return result;
     return result;
 }
 
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+
+    #ifdef DEEP_DEBUG
+        printf("\tdiaq::identity_kron_matrix\n");
+        printf("\tA Meta:\n");
+        A->print_meta();
+    #endif
+
+    #ifdef DEBUG
+        // measure start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
@@ -2068,20 +2053,29 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         result->setDiagonal(dIndex, newDiag);
     }
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
+    #ifdef DEEP_DEBUG
+        printf("\tResult Meta:\n");
+        result->print_meta();
+    #endif
+
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
+    #endif
 
     return result;
 }
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     n = 1L << n;
 
@@ -2186,12 +2180,14 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
     }
 
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
@@ -2199,8 +2195,10 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
 vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     n = 1L << n;
 
@@ -2298,12 +2296,14 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 
     free(new_gate_shape);
 
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
@@ -2311,8 +2311,10 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y) {
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     // std::cout << "identity_kron_matrix_kron_identity_times_vector called" << std::endl;
     // printf("gate matrix below\n");
@@ -2425,12 +2427,14 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
         }
     }
 
-    // // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    #endif
 
     return y;
 
@@ -2438,8 +2442,10 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
 vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
-    // start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     after = 1L << after;
     before = 1L << before;
@@ -2803,12 +2809,14 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 
     }
     
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
@@ -2816,8 +2824,10 @@ vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatr
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y) {
     // logically combine matrix_kron_identity and spMV
 
-    //start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        //start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     before = 1L << before;
 
@@ -2875,12 +2885,15 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
@@ -2888,8 +2901,10 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
 vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
     // logically combine matrix_kron_identity and spMV
 
-    //start timer
-    auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        //start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     before = 1L << before;
 
@@ -3456,19 +3471,25 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector 
             }
         }
     }
-    // measure end time
-    auto end = std::chrono::high_resolution_clock::now();
-    // calculate duration
-    std::chrono::duration<double> duration = end - start;
-    // log duration
-    printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+    #endif
 
     return y;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine this with operations that happen later.
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
@@ -3506,12 +3527,14 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     }
     // result->pruneMatrix();
 
-    // // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
+    #endif
 
     return result;
 }
@@ -3520,25 +3543,20 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     // A: m x n
     // B: p x q
     // C: mp x nq
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- kron product --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A.print();
+        std::cout << " --- times --- " << std::endl;
+        B.print();
+        std::cout << " --- " << std::endl;
+    #endif
 
-    // printf("\tdiaq::kron_product\n");
-    // printf("\tA Meta:\n");
-    // A->print_meta();
-    // printf("\tB Matrix:\n");
-    // B->print();
-
-    // if(logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- kron product --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     A.print();
-    //     std::cout << " --- times --- " << std::endl;
-    //     B.print();
-    //     std::cout << " --- " << std::endl;
-    // }
-
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
@@ -3594,11 +3612,11 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
             kron_map.insert(std::pair<std::pair<long int, long int>, std::pair<valType, valType>>(key, val));
         }
     }
-    // if(logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
-    //     std::cout << " --- " << std::endl;
-    // }
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << "kron_map.size() = " << kron_map.size() << std::endl;
+        std::cout << " --- " << std::endl;
+    #endif
 
     // pre-allocate resutl's diagonals and paralleize this below later,! TODO
 
@@ -3631,12 +3649,12 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
                 long int res_mat_pos[2] = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
                 long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
-                // if(logger.log_level == DEEP_DEBUG) {
-                //     std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
-                //     std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
-                //     std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
-                //     std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
-                // }
+                #ifdef DEEP_DEBUG
+                    std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
+                    std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
+                    std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
+                    std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
+                #endif
 
                 result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
             }
@@ -3651,22 +3669,23 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     // denseMatrix denseC = dense_kron_product(denseA, denseB);
     // diaQMatrix result = denseC.convertToQuantumSparse(denseC->shape);
 
-    // if(logger.log_level == DEEP_DEBUG) {
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- kron result --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     result->print();
-    //     std::cout << " --- " << std::endl;
-    // }
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- kron result --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        result->print();
+        std::cout << " --- " << std::endl;
+    #endif
 
-    // measure end time
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // // log duration
-    // printf("Kron product took %f seconds\n", duration.count());
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        std::chrono::duration<double> duration = end - start;
+        // log duration
+        printf("\t\t Kron product took %f seconds\n", duration.count());
+    #endif
 
-    // return result;
     return result;
 }
 
@@ -3685,8 +3704,5 @@ diaq::diaQMatrix* dagger(diaq::diaQMatrix *A) {
 diaq::diaQMatrix *conjbar(diaq::diaQMatrix *A) {
     return diaq::multiply_by_scalar(1.0, -1.0, A);
 }
-
-
-
 
 } // namespace diaq

@@ -108,6 +108,11 @@ void kron_test(diaq::denseMatrix *A24, diaq::denseMatrix *B24) {
 }
 
 int main(int argc, char **argv) {
+
+    #ifdef PAPI_ON
+        diaq::initPAPI();
+    #endif
+
     std::vector<std::vector<diaq::denseMatrix *> > testCases;
 
     // test case 0
@@ -2430,6 +2435,10 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "test") == 0) {
+        #ifdef PAPI_ON
+            diaq::startPAPI();
+        #endif
+
         const std::string str_i = argv[2];
         long int i = std::stoi(str_i);
         std::cout << "test case - " << i;
@@ -2455,6 +2464,12 @@ int main(int argc, char **argv) {
         std::cout << " -- qp -- " << std::endl;
         std::string check = checkResult(dp, qp);
         std::cout << " = " << check << std::endl;
+        #ifdef PAPI_ON
+            diaq::stopPAPI("test " + str_i);
+        #endif
     }
+    #ifdef PAPI_ON
+        diaq::cleanupPAPI();
+    #endif
     return 0;
 }
