@@ -2114,8 +2114,8 @@ int main(int argc, char **argv) {
         // (dIndex=2) (dLength=2) [(0,0),(1,0)]
         // after = 4; before = 64
         long int after = 2; // 2 qubits
-        long int before = 6; // 6 qubits
-        diaq::valType reals[16] = {
+        long int before = 2; // 2 qubits
+        diaq::valType reals[16] = { // this is a 2-qubit gate matrix
             1, 0, 1, 0,
             0, 0, 0, 0,
             1, 0, 1, 0,
@@ -2125,16 +2125,19 @@ int main(int argc, char **argv) {
         diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals);
         diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
         gate->print();
-        diaq::vector *x = new diaq::vector(1024, 1.0);
+        diaq::vector *x = new diaq::vector(16, 1.0);
         diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, before);
-        // mat->print();
-        diaq::vector *correct_y = new diaq::vector(1024, 0.0);
-        correct_y = diaq::identity_kron_matrix_times_vector(after, mat, x, correct_y);
-        // correct_y->print();
 
+        diaq::diaQMatrix *I_after = (diaq::diaQMatrix *) (new diaq::identityMatrix(after));
+        diaq::diaQMatrix *u_mat = diaq::kron_product(mat, I_after);
+        diaq::vector *correct_y = new diaq::vector(16, 0.0);
+        correct_y = diaq::spMV(u_mat, x, correct_y);
+        std::cout << " -- correct answer -- " << std::endl;
+        correct_y->print();
         diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
         y = diaq::identity_kron_matrix_kron_identity_times_vector(after, gate, before, x, y);
-        // y->print();
+        std::cout << " -- new way to do it -- " << std::endl;
+        y->print();
         std::cout << check_vectors(correct_y, y) << std::endl;
         std::cout << " -- " << std::endl;
     }
