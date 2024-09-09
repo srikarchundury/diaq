@@ -2063,6 +2063,10 @@ int main(int argc, char **argv) {
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
         y = diaq::identity_kron_matrix_times_vector((long int)2, qspa, x, y);
         y->print();
+
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;   
     }
     else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {
         // testing matrix_kron_identity_times_vector
@@ -2071,19 +2075,24 @@ int main(int argc, char **argv) {
         // qspa->deleteDiagonal(-4);
         // qspa->deleteDiagonal(4);
         qspa->print();
-        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)4);
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)2);
         mat->print();
-        diaq::vector *x = new diaq::vector(32, 1.0, 0.0);
+
+        diaq::vector *x = new diaq::vector(mat->shape[0], 1.0, 0.0);
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
         diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
         correct_y = diaq::spMV(mat, x, correct_y);
+
         printf(" -- correct answer -- \n");
         correct_y->print();
+
         printf(" -- new way to do it -- \n");
         y = diaq::matrix_kron_identity_times_vector(qspa, (long int)2, x, y);
         y->print();
-        printf("-- check manually please -- \n");
+
+        std::cout << "Checking correctness: ";
         std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector") == 0) {
         // testing identity_kron_matrix_kron_identity_times_vector
@@ -2092,30 +2101,25 @@ int main(int argc, char **argv) {
         // qspa->deleteDiagonal(0);
         // qspa->deleteDiagonal(4);
         qspa->print();
-        diaq::vector *x = new diaq::vector(32, 1.0);
+        diaq::vector *x = new diaq::vector(64, 1.0);
         diaq::diaQMatrix *mat = diaq::matrix_kron_identity(qspa, (long int)2);
         mat->print();
         diaq::vector *correct_y = new diaq::vector((long int)2 * mat->shape[0], 0.0);
         correct_y = identity_kron_matrix_times_vector((long int)1, mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
+
         printf(" -- new way to do it -- \n");
-        diaq::vector *y = new diaq::vector((long int)4 * qspa->shape[0], 0.0);
-        y = diaq::identity_kron_matrix_kron_identity_times_vector((long int)1, qspa, (long int)1, x, y);
+        diaq::vector *y = new diaq::vector(64, 0.0);
+        diaq::identity_kron_matrix_kron_identity_times_vector((long int)1, qspa, (long int)2, x, y);
         y->print();
-        printf("-- check manually please -- \n");
+
+        std::cout << "Checking correctness: ";
         std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector_2") == 0) {
-        // matrix_shape (4,4)
-        // tensor_shape (4,4)
-        // (dIndex=-2) (dLength=2) [(0,0),(1,0)]
-        // (dIndex=0) (dLength=4) [(1,0),(0,0),(1,0),(0,0)]
-        // (dIndex=2) (dLength=2) [(0,0),(1,0)]
-        // after = 4; before = 64
-        long int after = 2; // 2 qubits
-        long int before = 2; // 2 qubits
-        diaq::valType reals[16] = { // this is a 2-qubit gate matrix
+        diaq::valType reals[16] = { // 2 qubit gate, all elements 16x16
             1, 0, 1, 0,
             0, 0, 0, 0,
             1, 0, 1, 0,
@@ -2125,21 +2129,36 @@ int main(int argc, char **argv) {
         diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals);
         diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
         gate->print();
-        diaq::vector *x = new diaq::vector(16, 1.0);
-        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, before);
 
-        diaq::diaQMatrix *I_after = (diaq::diaQMatrix *) (new diaq::identityMatrix(after));
+        long int before = 1; // qubits before gate
+        long int after = 2; // qubits after gate
+        long int vec_length = 1 << (before + 2 + after);
+
+        diaq::vector *x = new diaq::vector(vec_length, 1.0);
+        diaq::diaQMatrix *mat = diaq::identity_kron_matrix(before, gate);
+
+        // mat->print();
+
+        diaq::diaQMatrix *I_after = (diaq::diaQMatrix *) (new diaq::identityMatrix(1L << after));
         diaq::diaQMatrix *u_mat = diaq::kron_product(mat, I_after);
-        diaq::vector *correct_y = new diaq::vector(16, 0.0);
+
+        u_mat->print();
+
+        diaq::vector *correct_y = new diaq::vector(vec_length, 0.0);
+
         correct_y = diaq::spMV(u_mat, x, correct_y);
         std::cout << " -- correct answer -- " << std::endl;
         correct_y->print();
+
         diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
-        y = diaq::identity_kron_matrix_kron_identity_times_vector(after, gate, before, x, y);
+        diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
         std::cout << " -- new way to do it -- " << std::endl;
         y->print();
+
+        std::cout << "Checking correctness: ";
         std::cout << check_vectors(correct_y, y) << std::endl;
         std::cout << " -- " << std::endl;
+
     }
     else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector_3") == 0) {
         // gate matrix below
@@ -2147,8 +2166,8 @@ int main(int argc, char **argv) {
         // tensor_shape (4,4)
         // (dIndex=0) (dLength=4) [(0.707107,0.707107),(0.707107,-0.707107),(0.707107,-0.707107),(0.707107,0.707107)]
         // after = 8; before = 2
-        long int after = 3;
         long int before = 1;
+        long int after = 3;
         diaq::valType reals[16] = {
             0.707107, 0, 0, 0,
             0, 0.707107, 0, 0,
@@ -2164,13 +2183,21 @@ int main(int argc, char **argv) {
         long int *s = new long int[2]{4,4};
         diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals, imags);
         diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
-        gate->print();
-        diaq::vector *x = new diaq::vector(64, 1.0);
-        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, before);
-        diaq::vector *correct_y = new diaq::vector((long int)after * (long int)before * gate->shape[0], 0.0);
-        correct_y = diaq::identity_kron_matrix_times_vector(after, mat, x, correct_y);
+        gate->print(); // 2 qubit gate, 4x4 unitary matrix
+
+        diaq::vector *x = new diaq::vector((1L << before) * (gate->shape[0]) * (1L << after), 1.0);
+        diaq::diaQMatrix *mat = diaq::matrix_kron_identity(gate, after);
+        diaq::vector *correct_y = new diaq::vector((1L << before) * (gate->shape[0]) * (1L << after), 0.0);
+        diaq::identity_kron_matrix_times_vector(before, mat, x, correct_y);
+        std::cout << " -- correct answer -- " << std::endl;
+        correct_y->print();
+
+        std::cout << " -- new way to do it -- " << std::endl;
         diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
-        y = diaq::identity_kron_matrix_kron_identity_times_vector(after, gate, before, x, y);
+        diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
+        y->print();
+
+        std::cout << "Checking correctness: ";
         std::cout << check_vectors(correct_y, y) << std::endl;
         std::cout << " -- " << std::endl;
     }
