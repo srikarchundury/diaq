@@ -7,6 +7,11 @@ if(DEFINED DEBUG)
     add_definitions(-DDEBUG)  # Define DEBUG preprocessor flag
 endif()
 
+if(DEFINED DEEP_DEBUG)
+    set(CMAKE_BUILD_TYPE Debug)
+    add_definitions(-DDEEP_DEBUG)  # Define DEEP_DEBUG preprocessor flag
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()

@@ -40,12 +40,12 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
 vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
 
 diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
-vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y);
-vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y);
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
 
-vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y);
-vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y);
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
 void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y);
 void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y,long int qubit_smaller, long int qubit_larger);
 

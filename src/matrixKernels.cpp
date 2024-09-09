@@ -822,8 +822,11 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     // A->print_meta();
     // B->print_meta();
 
-    // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
 
     #ifdef CUDA_ENABLED
@@ -831,13 +834,13 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     #else
 
     #ifdef DEEP_DEBUG
-    //     std::cout << " --- " << std::endl;
-    //     std::cout << " --- product --- " << std::endl;
-    //     std::cout << " --- " << std::endl;
-    //     A.print();
-    //     std::cout << " --- times --- " << std::endl;
-    //     B.print();
-    //     std::cout << " --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        std::cout << " --- product --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A->print();
+        std::cout << " --- times --- " << std::endl;
+        B->print();
+        std::cout << " --- " << std::endl;
     #endif
 
     if(A->matrix_shape[1] != B->matrix_shape[0]) {
@@ -926,6 +929,9 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         std::cout << " --- " << std::endl;
         result->print();
         std::cout << " --- " << std::endl;
+    #endif
+
+    #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - start;
         printf("\t\tUnitary multiplication took %f seconds\n", elapsed.count());
@@ -1589,9 +1595,9 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         std::cout << " --- " << std::endl;
         std::cout << " --- spMV --- " << std::endl;
         std::cout << " --- " << std::endl;
-        A.print();
+        A->print();
         std::cout << " --- times --- " << std::endl;
-        x.print();
+        x->print();
         std::cout << " --- " << std::endl;
         printf("Analyzing SpM\n");
         A->print_meta();
@@ -1675,7 +1681,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         std::cout << " --- " << std::endl;
         std::cout << " --- spMV result --- " << std::endl;
         std::cout << " --- " << std::endl;
-        y.print();
+        y->print();
         std::cout << " --- " << std::endl;
     #endif
 
@@ -1857,7 +1863,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         std::cout << " --- " << std::endl;
         std::cout << "scalar_real = " << scalar_real << "; scalar_imag = " << scalar_imag << std::endl;
         std::cout << " --- times --- " << std::endl;
-        A.print();
+        A->print();
         std::cout << " --- " << std::endl;
     #endif
     // if(scalar_real == 0.0 && scalar_imag == 0.0) {
@@ -1902,7 +1908,7 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         std::cout << " --- " << std::endl;
         std::cout << " --- multiply_by_scalar result --- " << std::endl;
         std::cout << " --- " << std::endl;
-        result.print();
+        result->print();
         std::cout << " --- " << std::endl;
     #endif
 
@@ -2072,7 +2078,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     return result;
 }
 
-vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
 
     #ifdef DEBUG
         // start timer
@@ -2191,11 +2197,10 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
         printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
     #endif
 
-    return y;
 }
 
 
-vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
 
     #ifdef DEBUG
         // start timer
@@ -2307,7 +2312,6 @@ vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, 
         printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
     #endif
 
-    return y;
 }
 
 void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix *gate, long int after, vector *x, vector *y) {
@@ -2810,12 +2814,19 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
 
 }
 
-vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, vector *y) {
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, vector *y) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
         //start timer
         auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    #ifdef DEEP_DEBUG
+        printf("matrix_kron_identity_times_vector called\n");
+        printf("gate matrix below\n");
+        gate->print();
+        printf("\t\tafter = %ld\n", after);
     #endif
 
     after = 1L << after;
@@ -2867,8 +2878,8 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *
                     }
                     // printf("x_idx = %ld; y_idx = %ld, each_real = %f, each_imag = %f, y_real_values[y_idx] += %f, y_imag_values[y_idx] += %f, x_real_values[x_idx] = %f, x_imag_values[x_idx] = %f\n", x_idx, y_idx, each_real, each_imag, y_real_values[y_idx], y_imag_values[y_idx], x_real_values[x_idx], x_imag_values[x_idx]);
                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
-                        y_real_values[y_idx] = each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
-                        y_imag_values[y_idx] = each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
+                        y_real_values[y_idx] += each_real * x_real_values[x_idx] - each_imag * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += each_real * x_imag_values[x_idx] + each_imag * x_real_values[x_idx];
                     // }
                 }
             }
@@ -2884,10 +2895,15 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *
         printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
     #endif
 
-    return y;
+    #ifdef DEEP_DEBUG
+        printf("matrix_kron_identity_times_vector done\n");
+        printf("y vector below\n");
+        y->print();
+    #endif
+
 }
 
-vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
@@ -3470,7 +3486,6 @@ vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *
         printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
     #endif
 
-    return y;
 }
 
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine this with operations that happen later.
@@ -3538,9 +3553,9 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
         std::cout << " --- " << std::endl;
         std::cout << " --- kron product --- " << std::endl;
         std::cout << " --- " << std::endl;
-        A.print();
+        A->print();
         std::cout << " --- times --- " << std::endl;
-        B.print();
+        B->print();
         std::cout << " --- " << std::endl;
     #endif
 
