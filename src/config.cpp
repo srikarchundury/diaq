@@ -5,6 +5,7 @@ namespace diaq {
 #ifdef PAPI_ON
 	// Static variables for PAPI
     static int EventSet = PAPI_NULL;
+    std::vector<int> event_codes;
 
     // init a vector of strings to store the PAPI event names
     static std::vector<std::string> papi_event_names;
@@ -23,110 +24,45 @@ namespace diaq {
             // Handle EventSet creation error as needed
         }
 
-        // event: total instructions
-        if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_TOT_INS!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_TOT_INS");
+        // List of selected native events
+        std::vector<std::string> native_events = {
+            "perf::CYCLES",
+            "perf::INSTRUCTIONS",
+            "perf::CACHE-REFERENCES",
+            "perf::CACHE-MISSES",
+            "perf::L1-DCACHE-LOADS",
+            "perf::L1-DCACHE-LOAD-MISSES",
+            "perf::LLC-LOADS",
+            "perf::LLC-LOAD-MISSES",
+            "perf::BRANCH-INSTRUCTIONS",
+            "perf::BRANCH-MISSES",
+            "perf::RETIRED_BRANCH_INSTRUCTIONS",
+            "perf::RETIRED_TAKEN_BRANCH_INSTRUCTIONS_MISPREDICTED",
+            "perf::STALLED-CYCLES-FRONTEND",
+            "perf::STALLED-CYCLES-BACKEND",
+            "perf::IDLE-CYCLES-FRONTEND",
+            "perf::IDLE-CYCLES-BACKEND",
+            "perf::CONTEXT-SWITCHES",
+            "perf::PAGE-FAULTS",
+            "perf::CPU-CLOCK",
+            "perf::CPU-MIGRATIONS"
+        };
 
-        // event: total cycles
-        if (PAPI_add_event(EventSet, PAPI_TOT_CYC) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_TOT_CYC!" << std::endl;
+        // Convert native event names to event codes
+        for (const std::string& event_name : native_events) {
+            int event_code;
+            if (PAPI_event_name_to_code(event_name.c_str(), &event_code) == PAPI_OK) {
+                if (PAPI_add_event(EventSet, event_code) == PAPI_OK) {
+                    papi_event_names.push_back(event_name);
+                    event_codes.push_back(event_code);
+                } else {
+                    std::cerr << "PAPI add event error for " << event_name << "!" << std::endl;
+                }
+            } else {
+                std::cerr << "PAPI event name to code conversion error for " << event_name << "!" << std::endl;
+            }
         }
-        papi_event_names.push_back("PAPI_TOT_CYC");
 
-        // event: L1 data cache misses
-        if (PAPI_add_event(EventSet, PAPI_L1_DCM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L1_DCM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L1_DCM");
-
-        // event: L2 data cache misses
-        if (PAPI_add_event(EventSet, PAPI_L2_DCM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L2_DCM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L2_DCM");
-
-        // event: L3 data cache misses
-        if (PAPI_add_event(EventSet, PAPI_L3_TCM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L3_TCM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L3_TCM");
-
-        // event: L1 instruction cache misses
-        if (PAPI_add_event(EventSet, PAPI_L1_ICM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L1_ICM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L1_ICM");
-
-        // event: L2 instruction cache misses
-        if (PAPI_add_event(EventSet, PAPI_L2_ICM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L2_ICM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L2_ICM");
-
-        // event: L3 instruction cache misses
-        if (PAPI_add_event(EventSet, PAPI_L3_ICM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_L3_ICM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_L3_ICM");
-
-        // event: branch mispredictions
-        if (PAPI_add_event(EventSet, PAPI_BR_MSP) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_BR_MSP!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_BR_MSP");
-
-        // event: conditional branch instructions
-        if (PAPI_add_event(EventSet, PAPI_BR_CN) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_BR_CN!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_BR_CN");
-
-        // event: total load instructions
-        if (PAPI_add_event(EventSet, PAPI_LD_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_LD_INS!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_LD_INS");
-
-        // event: total store instructions
-        if (PAPI_add_event(EventSet, PAPI_SR_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_SR_INS!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_SR_INS");
-
-        // event: floating point instructions
-        if (PAPI_add_event(EventSet, PAPI_FP_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_FP_INS!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_FP_INS");
-
-        // event: vector instructions
-        if (PAPI_add_event(EventSet, PAPI_VEC_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_VEC_INS!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_VEC_INS");
-
-        // event: TLB data misses
-        if (PAPI_add_event(EventSet, PAPI_TLB_DM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_TLB_DM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_TLB_DM");
-
-        // event: instruction TLB misses
-        if (PAPI_add_event(EventSet, PAPI_TLB_IM) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_TLB_IM!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_TLB_IM");
-
-        // event: stalled cycles
-        if (PAPI_add_event(EventSet, PAPI_STL_CCY) != PAPI_OK) {
-            std::cerr << "PAPI add event error for PAPI_STL_CCY!" << std::endl;
-        }
-        papi_event_names.push_back("PAPI_STL_CCY");
-
-        // more events can be added here
-        // ...
     }
 
     // Cleanup PAPI resources
