@@ -6,6 +6,9 @@ namespace diaq {
 	// Static variables for PAPI
     static int EventSet = PAPI_NULL;
 
+    // init a vector of strings to store the PAPI event names
+    static std::vector<std::string> papi_event_names;
+
     // Initialize PAPI
     void initPAPI() {
         // Initialize the PAPI library
@@ -20,35 +23,114 @@ namespace diaq {
             // Handle EventSet creation error as needed
         }
 
-        // Add PAPI events to the EventSet
+        // event: total instructions
         if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) {
-            std::cerr << "PAPI add event error!" << std::endl;
-            // Handle adding event error as needed
+            std::cerr << "PAPI add event error for PAPI_TOT_INS!" << std::endl;
         }
-        if (PAPI_add_event(EventSet, PAPI_TOT_CYC) != PAPI_OK) {
-            std::cerr << "PAPI add event error!" << std::endl;
-            // Handle adding event error as needed
-        }
+        papi_event_names.push_back("PAPI_TOT_INS");
 
-        // // Optionally, start counting immediately
-        // if (PAPI_start(EventSet) != PAPI_OK) {
-        //     std::cerr << "PAPI start counters error!" << std::endl;
-        //     // Handle starting counters error as needed
-        // }
+        // event: total cycles
+        if (PAPI_add_event(EventSet, PAPI_TOT_CYC) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TOT_CYC!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TOT_CYC");
+
+        // event: L1 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L1_DCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_DCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_DCM");
+
+        // event: L2 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L2_DCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L2_DCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L2_DCM");
+
+        // event: L3 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L3_TCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L3_TCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L3_TCM");
+
+        // event: L1 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L1_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_ICM");
+
+        // event: L2 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L2_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L2_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L2_ICM");
+
+        // event: L3 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L3_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L3_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L3_ICM");
+
+        // event: branch mispredictions
+        if (PAPI_add_event(EventSet, PAPI_BR_MSP) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_MSP!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_MSP");
+
+        // event: conditional branch instructions
+        if (PAPI_add_event(EventSet, PAPI_BR_CN) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_CN!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_CN");
+
+        // event: total load instructions
+        if (PAPI_add_event(EventSet, PAPI_LD_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_LD_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_LD_INS");
+
+        // event: total store instructions
+        if (PAPI_add_event(EventSet, PAPI_SR_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_SR_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_SR_INS");
+
+        // event: floating point instructions
+        if (PAPI_add_event(EventSet, PAPI_FP_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_FP_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_FP_INS");
+
+        // event: vector instructions
+        if (PAPI_add_event(EventSet, PAPI_VEC_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_VEC_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_VEC_INS");
+
+        // event: TLB data misses
+        if (PAPI_add_event(EventSet, PAPI_TLB_DM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TLB_DM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TLB_DM");
+
+        // event: instruction TLB misses
+        if (PAPI_add_event(EventSet, PAPI_TLB_IM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TLB_IM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TLB_IM");
+
+        // event: stalled cycles
+        if (PAPI_add_event(EventSet, PAPI_STL_CCY) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_STL_CCY!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_STL_CCY");
+
+        // more events can be added here
+        // ...
     }
 
     // Cleanup PAPI resources
     void cleanupPAPI() {
-        // // Stop counting
-        // long long values[2];
-        // if (PAPI_stop(EventSet, values) != PAPI_OK) {
-        //     std::cerr << "PAPI stop counters error!" << std::endl;
-        //     // Handle stopping counters error as needed
-        // }
-
-        // // Print the results (example)
-        // std::cout << "Total instructions: " << values[0] << std::endl;
-        // std::cout << "Total cycles: " << values[1] << std::endl;
 
         // Cleanup EventSet
         if (PAPI_cleanup_eventset(EventSet) != PAPI_OK) {
@@ -75,14 +157,15 @@ namespace diaq {
     // Stop PAPI counters
     void stopPAPI(std::string message) {
         // Stop counting
-        long long values[2];
+        long int num_events = papi_event_names.size();
+        long long values[num_events];
         if (PAPI_stop(EventSet, values) != PAPI_OK) {
             std::cerr << "PAPI stop counters error!" << std::endl;
             // Handle stopping counters error as needed
         }
-        std::time_t now = std::time(nullptr);
-        std::cout << std::put_time(std::localtime(&now), "%F %T") << " - " << message << " - Total instructions: " << values[0] << std::endl;
-        std::cout << std::put_time(std::localtime(&now), "%F %T") << " - " << message << " - Total cycles: " << values[1] << std::endl;
+        for(int i = 0; i < num_events; i++) {
+            std::cout << message << "," << papi_event_names[i] << "," << values[i] << std::endl;
+        }
     }
 
 #endif

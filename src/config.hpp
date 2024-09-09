@@ -7,6 +7,7 @@
 #ifdef PAPI_ON
 	#include <papi.h>
 	#include <iomanip>
+	#include <vector>
 #endif
 
 namespace diaq {
