@@ -59,10 +59,10 @@ std::string check_vectors(diaq::vector *a, diaq::vector *b) {
     diaq::valType *b_imag_values = b->getImagValues();
     const diaq::valType epsilon = 0.00002;
     for(size_t i = 0; i < a->num_rows(); i++) {
-        if(a_real_values[i] - b_real_values[i] > epsilon) {
+        if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {
             return "false - 2";
         }
-        if(a_imag_values[i] - b_imag_values[i] > epsilon) {
+        if(std::abs(a_imag_values[i] - b_imag_values[i]) > epsilon) {
             return "false - 3";
         }
     }
@@ -2047,28 +2047,41 @@ int main(int argc, char **argv) {
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0 ) {
-        // testing matrix_kron_identity
-        std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
-        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
-        qspa->print();
+    else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {
+        std::cout << " -- testing matrix_kron_identity_times_vector -- " << std::endl;
+        diaq::valType prime_vals[16] = {
+            2, 3, 5, 7,
+            11, 13, 17, 19,
+            23, 29, 31, 37,
+            41, 43, 47, 53
+        };
+        long int *shape = new long int[2]{4, 4};
+        diaq::denseMatrix *dense_prime_matrix = new diaq::denseMatrix(&shape, prime_vals);
+        diaq::diaQMatrix *gate_matrix = dense_prime_matrix->convertToQuantumSparse();
+        std::cout << " -- gate_matrix -- " << std::endl;
+        gate_matrix->print();
+
         diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
-        diaq::diaQMatrix *mat = diaq::kron_product(id4, qspa);
-        diaq::vector *x = new diaq::vector(32, 1.0);
+        diaq::diaQMatrix *mat = diaq::kron_product(gate_matrix, id4);
+        std::cout << " -- matrix kron I -- " << std::endl;
+        mat->print();
+
+        diaq::vector *x = new diaq::vector(16, 1.0);
         diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
         correct_y = diaq::spMV(mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
+
         printf(" -- new way to do it -- \n");
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
-        diaq::identity_kron_matrix_times_vector((long int)2, qspa, x, y);
+        diaq::matrix_kron_identity_times_vector(gate_matrix, (long int)2, x, y);
         y->print();
 
         std::cout << "Checking correctness: ";
         std::cout << check_vectors(correct_y, y) << std::endl;
-        std::cout << " -- " << std::endl;   
+        std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {
+    else if(strcmp(argv[1], "matrix_kron_identity_times_vector_1") == 0) {
         // testing matrix_kron_identity_times_vector
         std::cout << " -- testing matrix_kron_identity_times_vector -- " << std::endl;
         diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
@@ -2436,6 +2449,35 @@ int main(int argc, char **argv) {
         std::cout << checkResult(res, res_correct) << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector") == 0 ) {
+        // testing identity_kron_matrix_times_vector
+        std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
+        diaq::valType prime_vals[16] = {
+            2, 3, 5, 7,
+            11, 13, 17, 19,
+            23, 29, 31, 37,
+            41, 43, 47, 53
+        };
+        long int *shape = new long int[2]{4, 4};
+        diaq::denseMatrix *dense_prime_matrix = new diaq::denseMatrix(&shape, prime_vals);
+        diaq::diaQMatrix *gate_matrix = dense_prime_matrix->convertToQuantumSparse();
+        gate_matrix->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *mat = diaq::kron_product(id4, gate_matrix);
+        diaq::vector *x = new diaq::vector(16, 1.0);
+        diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
+        correct_y = diaq::spMV(mat, x, correct_y);
+        printf(" -- correct answer -- \n");
+        correct_y->print();
+        printf(" -- new way to do it -- \n");
+        diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
+        diaq::identity_kron_matrix_times_vector((long int)2, gate_matrix, x, y);
+        y->print();
+
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "identity_kron_matrix_times_vector_1") == 0) {
         // vector x
         diaq::vector *x = new diaq::vector(128);
@@ -2475,6 +2517,27 @@ int main(int argc, char **argv) {
         diaq::vector *res_v = new diaq::vector(y->numRows_, 0.0);
         diaq::identity_kron_matrix_times_vector((long int)1, qspa, x, res_v);
         res_v->print();
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *mat = diaq::kron_product(id4, qspa);
+        diaq::vector *x = new diaq::vector(32, 1.0);
+        diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
+        correct_y = diaq::spMV(mat, x, correct_y);
+        printf(" -- correct answer -- \n");
+        correct_y->print();
+        printf(" -- new way to do it -- \n");
+        diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
+        diaq::identity_kron_matrix_times_vector((long int)2, qspa, x, y);
+        y->print();
+
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(correct_y, y) << std::endl;
+        std::cout << " -- " << std::endl;   
     }
     else if (strcmp(argv[1], "id") == 0 ) {
         std::cout << " -- testing identity class -- " << std::endl;

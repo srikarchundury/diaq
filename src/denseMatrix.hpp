@@ -157,7 +157,7 @@ class denseMatrix {
             long int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
             // loop through all possible diagonals (principal and anti)
             for(long int k = -1 * size + 1; k <= 2 * size - 2; k++) {
-                diagonal* kDiag = qm->getDiagonal(k);
+                diagonal* kDiag = qm->getDiagonal_orCreateIt(k);
                 long int* kCoords = kDiag->getCoords(size, k);
                 if(isPartOf(k, kCoords[0], kCoords[1], i, j) == 0) {
                     // std::cout << i << "," << j << "=" << k << std::endl;
@@ -170,7 +170,7 @@ class denseMatrix {
                 }
             }
             if(targetDiagIndex_2 != 2 * size) {
-                return (qm->getDiagonal(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
+                return (qm->getDiagonal_orCreateIt(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal_orCreateIt(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
             }
             return targetDiagIndex_1;
         }

@@ -199,7 +199,7 @@ class diaQMatrix {
             diagonal *newDiag = new diagonal(dIndex, getDiagonalLength(dIndex));
             this->diagonalMap.insert({dIndex, newDiag});
         }
-        diagonal *getDiagonal(long int dIndex) {
+        diagonal *getDiagonal_orCreateIt(long int dIndex) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 createDiagonal(dIndex);
@@ -207,6 +207,15 @@ class diaQMatrix {
             }
             else {
                 // it->second.prlong int(size);
+                return it->second;
+            }
+        }
+        diagonal *getDiagonal(long int dIndex) {
+            auto it = diagonalMap.find(dIndex);
+            if(it == diagonalMap.end()) {
+                return nullptr;
+            }
+            else {
                 return it->second;
             }
         }
