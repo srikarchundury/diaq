@@ -161,4 +161,30 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
     #endif
 }
 
+vector *from_numpy_vector(std::complex<valType> *vals, size_t M) {
+    valType *real_vals = (valType *)malloc(M * sizeof(valType));
+    valType *imag_vals = (valType *)malloc(M * sizeof(valType));
+    
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    for(long int i = 0; i < M; i++) {
+        real_vals[i] = vals[i].real();
+        imag_vals[i] = vals[i].imag();
+    }
+
+    vector *v = new vector(M, real_vals, imag_vals);
+    return v;
+}
+
+std::complex<valType> *to_numpy_vector(vector *v) {
+    size_t M = v->numRows_;
+    std::complex<valType> *vals = (std::complex<valType> *)malloc(M * sizeof(std::complex<valType>));
+    valType *real_vals = v->getRealValues();
+    valType *imag_vals = v->getImagValues();
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    for(long int i = 0; i < M; i++) {
+        vals[i] = std::complex<valType>(real_vals[i], imag_vals[i]);
+    }
+    return vals;
+}
+
 } // namespace diaq

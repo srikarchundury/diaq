@@ -224,6 +224,19 @@ PYBIND11_MODULE(diaq, m) {
         py::return_value_policy::reference
     );
 
+    m.def(
+        "from_numpy_vector",
+        [](py::array_t<std::complex<diaq::valType>> vals) {
+            auto vals_info = vals.request();
+            // Get pointers to the data
+            std::complex<diaq::valType> *vals_ptr = static_cast<std::complex<diaq::valType> *>(vals_info.ptr);
+            diaq::vector *res = diaq::from_numpy_vector(vals_ptr, (size_t) vals.size());
+            return res;
+        },
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
     // m.def("to_numpy", &diaq::to_numpy, py::return_value_policy::reference);
     m.def(
         "to_numpy",
@@ -231,6 +244,16 @@ PYBIND11_MODULE(diaq, m) {
             std::complex<diaq::valType> *res = diaq::to_numpy(A);
             return py::array_t<std::complex<diaq::valType>>(A->matrix_shape[0] * A->matrix_shape[1], res);
         },
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "to_numpy_vector",
+        [](diaq::vector *v) {
+            std::complex<diaq::valType> *res = diaq::to_numpy_vector(v);
+            return py::array_t<std::complex<diaq::valType>>(v->numRows_, res);
+        },
+        py::arg(),
         py::return_value_policy::reference
     );
 
@@ -274,13 +297,18 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::reference
     );
-    // m.def(
-    //     "spMV",
-    //     [](diaq::diaQMatrix *A, diaq::vector *x) { return diaq::spMV(A, x); },
-    //     py::arg(),
-    //     py::arg(),
-    //     py::return_value_policy::reference
-    // );
+
+    m.def(
+        "spMV",
+        [](diaq::diaQMatrix* A, diaq::vector* x) {
+            diaq::vector* y = new diaq::vector(x->numRows_);
+            return diaq::spMV(A, x, y);
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
     m.def(
         "einsum",
         [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
