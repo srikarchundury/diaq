@@ -933,8 +933,8 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
 
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        printf("\t\tUnitary multiplication took %f seconds\n", elapsed.count());
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\tUnitary multiplication took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return result;
@@ -1056,11 +1056,6 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
             }
         }
     }
-    // // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // // measure time
-    // printf("matrix_reshape took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-    // A->free();
     return res;
 }
 
@@ -1257,12 +1252,6 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
             // std::cout << " -- " << std::endl;
         }
     }
-    // res->pruneMatrix();
-
-    // // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // printf("transpose took %ld ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
-    // std::flush(std::cout);
     return res;
 }
 
@@ -1379,10 +1368,6 @@ diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<lon
 
     // res->transpose(); // to make sure x and y dims are balanced in the underlying matrix format
 
-    // // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
-    // std::flush(std::cout);
 
     return res;
 }
@@ -1536,11 +1521,6 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
         }
     }
 
-    // end timer
-    // auto end = std::chrono::high_resolution_clock::now();
-    // printf("tensordot took %f seconds\n", std::chrono::duration<double>(end - start).count());
-    // std::flush(std::cout);
-
     return res;
 }
 
@@ -1689,9 +1669,9 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t spMV took %f seconds\n", duration.count());
+        printf("\t\t spMV took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return y;
@@ -1780,9 +1760,9 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t spMV (non-adj) took %f seconds\n", duration.count());
+        printf("\t\t spMV (non-adj) took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return y;
@@ -2004,9 +1984,9 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         // measure end timer
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t kron_product took %f seconds\n", duration.count());
+        printf("\t\t kron_product took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     // return result;
@@ -2070,9 +2050,9 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix took %f seconds\n", duration.count());
+        printf("\t\t identity_kron_matrix took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return result;
@@ -2087,17 +2067,8 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     long int N = 1L << n;
 
-    // vector *y = new vector(n * A->matrix_shape[0]);
-    // vector *y = x;
     valType *y_real_values = y->realValues_;
     valType *y_imag_values = y->imagValues_;
-
-    // // mid timer
-    // auto mid = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration_mid = mid - start;
-    // // log duration
-    // printf("\t\t\t allocation took %f seconds\n", duration_mid.count());
 
     valType *x_real_values = x->realValues_;
     valType *x_imag_values = x->imagValues_;
@@ -2188,18 +2159,18 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     // I kron A has the same number of diagonals as A, but each diagonal has N times more G elements and more 0s that we don't need to care about.
     // So, we can just iterate through the diagonals of A and repeat each diagonal N times in the result vector. But offsets are important and different for each iteration, since each is essentially a block!
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for(long int block_idx = 0; block_idx < N; block_idx++) {
-        // now for each diagonal in A
-        // index in y and x goes from (0, block_idx * diag_length)
-        for (it = diagMap.begin(); it != diagMap.end(); it++) {
-            // now we can do element wise!
-            long int dIndex = it->first;
-            diagonal *diag = it->second;
-            long int dLength = diag->dLength;
-            valType *real_vals = diag->getRealValues();
-            valType *imag_vals = diag->getImagValues();
+    // now for each diagonal in A
+    // index in y and x goes from (0, block_idx * diag_length)
+    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+        // now we can do element wise!
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        valType *real_vals = diag->getRealValues();
+        valType *imag_vals = diag->getImagValues();
 
+        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+        for(long int block_idx = 0; block_idx < N; block_idx++) {
             long int y_offset = block_idx * A_size;
             long int x_offset = block_idx * A_size;
 
@@ -2213,7 +2184,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
             // std::cout << "block_idx = " << block_idx << "; dIndex = " << dIndex << "; dLength = " << dLength << "; x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
             // now the element wise multiplication, for elements in this diagonal, and it's like atmost 4 loop and can be unrolled.
 
-            #pragma unroll
+            // #pragma omp simd
             for(long int i = 0; i < dLength; i++) {
                 long int y_idx = i + y_offset;
                 long int x_idx = i + x_offset;
@@ -2228,11 +2199,10 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_times_vector took %f seconds\n", duration.count());
+        printf("\t\t identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
-
 }
 
 
@@ -2343,9 +2313,9 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_times_vector (non-adj) took %f seconds\n", duration.count());
+        printf("\t\t identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -2378,13 +2348,6 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     valType *y_real_values = y->realValues_;
     valType *y_imag_values = y->imagValues_;
     // PRINT_WITH_LINE("here\n");
-
-    // // measure alloc time
-    // auto mid = std::chrono::high_resolution_clock::now();
-    // // calculate duration
-    // std::chrono::duration<double> duration_mid = mid - start;
-    // // log duration
-    // printf("\t\t\t allocation took %f seconds\n", duration_mid.count());
 
     valType *x_real_values = x->realValues_;
     valType *x_imag_values = x->imagValues_;
@@ -2521,9 +2484,9 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
         // // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -2901,9 +2864,9 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -2979,9 +2942,9 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t matrix_kron_identity_times_vector took %f seconds\n", duration.count());
+        printf("\t\t matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     #ifdef DEEP_DEBUG
@@ -3570,9 +3533,9 @@ void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, 
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f seconds\n", duration.count());
+        printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -3626,9 +3589,9 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t matrix_kron_identity took %f seconds\n", duration.count());
+        printf("\t\t matrix_kron_identity took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return result;
@@ -3776,9 +3739,9 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
         // calculate duration
-        std::chrono::duration<double> duration = end - start;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t Kron product took %f seconds\n", duration.count());
+        printf("\t\t Kron product took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return result;
