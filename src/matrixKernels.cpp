@@ -2161,6 +2161,9 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
     // So, we can just iterate through the diagonals of A and repeat each diagonal N times in the result vector. But offsets are important and different for each iteration, since each is essentially a block!
     // now for each diagonal in A
     // index in y and x goes from (0, block_idx * diag_length)
+
+    long int last_y_offset = (N-1) * A_size;
+
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         // now we can do element wise!
         long int dIndex = it->first;
@@ -2169,25 +2172,27 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         valType *real_vals = diag->getRealValues();
         valType *imag_vals = diag->getImagValues();
 
+        long int x_inner_offset = 0;
+        long int y_inner_offset = 0;
+
+        if(dIndex > 0) {
+            x_inner_offset += dIndex;
+        }
+        if(dIndex < 0) {
+            y_inner_offset -= dIndex; // kind of like adding abs(dIndex) to y_offset
+        }
+
         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int block_idx = 0; block_idx < N; block_idx++) {
-            long int y_offset = block_idx * A_size;
-            long int x_offset = block_idx * A_size;
+        for(long int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
+            long int x_offset = y_offset + x_inner_offset;
+            long int new_y_offset = y_offset + y_inner_offset;
 
-            if(dIndex > 0) {
-                x_offset += dIndex;
-            }
-            if(dIndex < 0) {
-                y_offset -= dIndex; // kind of like adding abs(dIndex) to y_offset
-            }
-
+            // long int block_idx = y_offset / A_size;
             // std::cout << "block_idx = " << block_idx << "; dIndex = " << dIndex << "; dLength = " << dLength << "; x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
             // now the element wise multiplication, for elements in this diagonal, and it's like atmost 4 loop and can be unrolled.
 
-            // #pragma omp simd
-            for(long int i = 0; i < dLength; i++) {
-                long int y_idx = i + y_offset;
-                long int x_idx = i + x_offset;
+            #pragma omp simd
+            for(long int y_idx = new_y_offset, x_idx = x_offset, i = 0; y_idx < dLength + new_y_offset; y_idx++, x_idx++, i++) {
                 // std::cout << " \t\t y_idx = " << y_idx << "; x_idx = " << x_idx << std::endl;
                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
