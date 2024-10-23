@@ -6,6 +6,7 @@
 
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
+#include "specialMatrices.hpp"
 #include "vector.hpp"
 #include "config.hpp"
 
@@ -51,6 +52,10 @@ void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix 
 
 diaQMatrix *dagger(diaQMatrix *A);
 diaQMatrix *conjbar(diaQMatrix *A);
+
+diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType real, valType imag);
+
+diaQMatrix *expm_negative(diaQMatrix *A);
 
 } // namespace diaq
 

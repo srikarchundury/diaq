@@ -1836,7 +1836,7 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
     return result;
 }
 
-diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMatrix *A) {
+diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scalar_imag) {
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
         std::cout << " --- multiply_by_scalar --- " << std::endl;
@@ -1846,20 +1846,16 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         A->print();
         std::cout << " --- " << std::endl;
     #endif
-    // if(scalar_real == 0.0 && scalar_imag == 0.0) {
-    //     logger.log("diaq/multiply_by_scalar called with scalar = 0.0");
-    //     // can handle this better. TODO
-    //     return diaQMatrix((long int)0);
-    // }
-    // printf("here begins 0\n");
+
     diaQMatrix *result = new diaQMatrix((long int)0);
-    // printf("here 0\n");
+
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
-    // printf("here 1\n");
 
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
+
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
@@ -1869,20 +1865,14 @@ diaQMatrix *multiply_by_scalar(valType scalar_real, valType scalar_imag, diaQMat
         valType *real_valsC = newDiag->getRealValues();
         valType *imag_valsC = newDiag->getImagValues();
 
-        // printf("here 1.5\n");
-
         #pragma omp simd
         for (long int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
 
-        // printf("printing newDiag\n");
-        // newDiag.print();
         result->setDiagonal(dIndex, newDiag);
     }
-
-    // printf("here 2\n");
 
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
@@ -1939,7 +1929,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
             if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
-                kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+                kron_block = multiply_by_scalar(B, diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
                 // printf("printing kron_block\n");
                 // kron_block->print();
                 // store in unique_kron_blocks
@@ -3660,7 +3650,7 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
             if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
-                kron_block = multiply_by_scalar(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position), B);
+                kron_block = multiply_by_scalar(B, diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
                 // printf("printing kron_block\n");
                 // kron_block->print();
                 // store in unique_kron_blocks
@@ -3752,20 +3742,54 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     return result;
 }
 
-diaq::diaQMatrix *kron_product(diaq::diaQMatrix *A, diaq::diaQMatrix *B, valType c) {
-    return diaq::multiply_by_scalar(c, 1.0, diaq::kron_product(A, B));
+diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c) {
+    return multiply_by_scalar(kron_product(A, B), c, 1.0);
 }
 
-diaq::diaQMatrix* dagger(diaq::diaQMatrix *A) {
+diaQMatrix* dagger(diaq::diaQMatrix *A) {
     // dagger is conjugate transpose
     // conjugate first
-    diaq::diaQMatrix *res = diaq::multiply_by_scalar(1.0, -1.0, A);
+    diaQMatrix *res = multiply_by_scalar(A, 1.0, -1.0);
     // then transpose
-    return diaq::transpose(res);
+    return transpose(res);
 }
 
-diaq::diaQMatrix *conjbar(diaq::diaQMatrix *A) {
-    return diaq::multiply_by_scalar(1.0, -1.0, A);
+diaQMatrix *conjbar(diaQMatrix *A) {
+    return multiply_by_scalar(A, 1.0, -1.0);
+}
+
+diaQMatrix *expm_negative(diaQMatrix *A) {
+    // A square is A times A, cube is A times A times A, etc.
+    // e power A using taylor series is I - A + A^2/2! - A^3/3! + A^4/4! - ...
+
+    #ifdef DEBUG
+        // start timer
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    // Let's start with Identity matrix
+    diaQMatrix *result = new identityMatrix(A->matrix_shape[0]);
+
+    std::unordered_map<long int, diagonal*> A_diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*>::iterator it;
+
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    for (it = A_diagMap.begin(); it != A_diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        // TODO: do something with diagnals, we want a very efficient e power -A operation somehow.
+    }
+
+    #ifdef DEBUG
+        // measure end time
+        auto end = std::chrono::high_resolution_clock::now();
+        // calculate duration
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        // log duration
+        printf("\t\t expm_negative took %f milliseconds\n", duration.count()/1000.0);
+    #endif
+
+    return result;
 }
 
 } // namespace diaq

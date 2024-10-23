@@ -316,4 +316,20 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("axes"),
         py::return_value_policy::reference
     );
+
+    m.def(
+        "multiply_by_scalar",
+        [](diaq::diaQMatrix *A, diaq::valType real, diaq::valType imag) { return diaq::multiply_by_scalar(A, real, imag); },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "expm_negative",
+        [](diaq::diaQMatrix *A) { return diaq::expm_negative(A); },
+        py::arg(),
+        py::return_value_policy::reference
+    );
 }
