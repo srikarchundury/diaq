@@ -226,7 +226,7 @@ class diaQMatrix {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                #ifndef CUDA_ENABLED
+                // #ifndef CUDA_ENABLED
                     #if NUM_BYTES_ALIGNED == -1
                         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
@@ -239,10 +239,20 @@ class diaQMatrix {
                             imag_vals[i] = 0.0;
                         }
                     #endif
-                #else
-                    valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
-                    valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
-                #endif
+                // #else
+                //     #if NUM_BYTES_ALIGNED == -1
+                //         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
+                //         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
+                //     #else
+                //         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                //         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                //         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                //         for(long int i = 0; i<dLen; i++) {
+                //             real_vals[i] = 0.0;
+                //             imag_vals[i] = 0.0;
+                //         }
+                //     #endif
+                // #endif
                 real_vals[dPos] = real_val;
                 imag_vals[dPos] = imag_val;
                 diagonal *newDiag = new diagonal(dIndex, dLen, real_vals, imag_vals);

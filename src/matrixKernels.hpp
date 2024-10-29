@@ -31,6 +31,7 @@ diaQMatrix *array(diaQMatrix *A);
 diaQMatrix *einsum(diaQMatrix *A, std::vector<long int> axes);
 diaQMatrix *operator*(diaQMatrix &A, diaQMatrix &B);
 diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B);
+
 vector *spMV(diaQMatrix *A, vector *x, vector *y);
 vector *MV(denseMatrix *A, vector *x, vector *y);
 

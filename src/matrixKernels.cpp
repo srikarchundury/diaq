@@ -226,10 +226,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm256_loadu_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+            x_real_vals_vec = _mm256_load_pd(&x_real_values[i]);
+            x_imag_vals_vec = _mm256_load_pd(&x_imag_values[i]);
+
             y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i - dIndex]);
             y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i - dIndex]);
 
@@ -277,18 +278,20 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+
             x_real_vals_vec = _mm256_loadu_pd(&x_real_values[dIndex + i]);
             x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[dIndex + i]);
-            y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i]);
+
+            y_real_vals_vec = _mm256_load_pd(&y_real_values[i]);
+            y_imag_vals_vec = _mm256_load_pd(&y_imag_values[i]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            _mm256_storeu_pd(&y_real_values[i], y_real_vals_vec);
-            _mm256_storeu_pd(&y_imag_values[i], y_imag_vals_vec);
+            _mm256_store_pd(&y_real_values[i], y_real_vals_vec);
+            _mm256_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
 
         if(left_overs != 0) {
@@ -355,18 +358,18 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm256_loadu_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[i]);
-            y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+            x_real_vals_vec = _mm256_load_pd(&x_real_values[i]);
+            x_imag_vals_vec = _mm256_load_pd(&x_imag_values[i]);
+            y_real_vals_vec = _mm256_load_pd(&y_real_values[i]);
+            y_imag_vals_vec = _mm256_load_pd(&y_imag_values[i]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            _mm256_storeu_pd(&y_real_values[i], y_real_vals_vec);
-            _mm256_storeu_pd(&y_imag_values[i], y_imag_vals_vec);
+            _mm256_store_pd(&y_real_values[i], y_real_vals_vec);
+            _mm256_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
 
         if(left_overs != 0) {
@@ -1583,6 +1586,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         A->print_meta();
         printf("Analyzing V\n");
         x->print_meta();
+        printf("Analyzing Y\n");
+        y->print_meta();
     #endif
 
     #ifdef DEBUG

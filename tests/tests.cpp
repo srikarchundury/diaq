@@ -2012,15 +2012,35 @@ int main(int argc, char **argv) {
         // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         // -- current vector --
         // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
-        diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
-        diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #else
+            diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 15; i++) {
+                reals[i] = 0;
+                imags[i] = 0;
+            }
+        #endif
         for(int i = 0; i < 8; i++) imags[i] = 1;
         diaq::diagonal *d1 = new diaq::diagonal(-1, 15, reals, imags);
 
-        diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
-        diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+            diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #else
+            diaq::valType *r = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            diaq::valType *im = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 15; i++) {
+                r[i] = 0;
+                im[i] = 0;
+            }
+        #endif
         for(int i = 0; i < 8; i++) im[i] = -1;
-        diaq::diagonal *d2 = new diaq::diagonal(-1, 15, r, im);
+        diaq::diagonal *d2 = new diaq::diagonal(1, 15, r, im);
 
         diaq::diaQMatrix *q_mat = new diaq::diaQMatrix((long int)16);
         q_mat->setDiagonal(-1, d1);
@@ -2040,9 +2060,61 @@ int main(int argc, char **argv) {
         dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(dense_y->numRows_);
         y = diaq::spMV(q_mat, x, y);
         y->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "spmv_8") == 0) {
+        // matrix_shape (16,16)
+        // tensor_shape (16,16)
+        // (dIndex=0) (dLength=16) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
+
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *reals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+        #else
+            diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 16; i++) {
+                reals[i] = 0;
+                imags[i] = 0;
+            }
+        #endif
+
+        for(int i = 0; i < 8; i++) {
+            reals[i] = 1;
+        }
+        for(int i = 8; i < 16; i++) {
+            reals[i] = -1;
+        }
+        
+        diaq::diagonal *d0 = new diaq::diagonal(0, 16, reals, imags);
+        diaq::diaQMatrix *q_mat_1 = new diaq::diaQMatrix((long int)16);
+        q_mat_1->setDiagonal(0, d0);
+
+        diaq::identityMatrix *q_mat = new diaq::identityMatrix((long int)16);
+
+        printf("Matrix:\n");
+        q_mat->print();
+
+        std::cout << " --x-- " << std::endl;
+        diaq::vector *x = new diaq::vector(16, 1.0, 0.0);
+        x->print();
+        std::cout << " --MV-- " << std::endl;
+
+        diaq::vector *dense_y = new diaq::vector(16, 0.0);
+        dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
+        dense_y->print();
+
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        y = diaq::spMV(q_mat, x, y);
+        y->print();
+        
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
