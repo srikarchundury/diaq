@@ -2640,6 +2640,49 @@ int main(int argc, char **argv) {
         std::cout << res << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if (strcmp(argv[1], "expm_negative") == 0 ) {
+        std::cout << " -- Testing expm_negative -- " << std::endl;
+        // Define a 2x2 matrix with specific real values for testing
+        diaq::valType reals[4] = {
+            0.707107, 0.707107,
+            0.707107, -0.707107
+        };
+
+        // Set the dimensions of the matrix
+        long int *s = new long int[2]{2, 2};
+
+        // Create a dense matrix from the values
+        diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals);
+
+        // Convert the dense matrix to a diaQMatrix (sparse representation)
+        diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
+        std::cout << "--------------------------------" << std::endl;
+        std::cout << "Original Matrix:" << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+        gate->print();
+        std::cout << "--------------------------------" << std::endl;
+
+        // Time parameter for exponentiation
+        diaq::valType time = 1.0; // Example time value for exp(-i * H * t)
+
+        // Calculate the matrix exponentiation e^(-i * H * t) using expm_negative
+        diaq::diaQMatrix *result = diaq::expm_negative(gate, time);
+
+        std::cout << "--------------------------------" << std::endl;
+        // Print the result
+        std::cout << "Result of exp(-i * H * t):" << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+        result->print();
+        std::cout << "--------------------------------" << std::endl;
+
+        // Clean up
+        // delete[] s;
+        // delete denseGate;
+        // delete gate;
+        // delete result;
+
+        std::cout << " -- End of test -- " << std::endl;
+    }
     else if(strcmp(argv[1], "test") == 0) {
         #ifdef PAPI_ON
             diaq::startPAPI();

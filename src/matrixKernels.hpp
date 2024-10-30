@@ -56,7 +56,7 @@ diaQMatrix *conjbar(diaQMatrix *A);
 
 diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType real, valType imag);
 
-diaQMatrix *expm_negative(diaQMatrix *A);
+diaQMatrix *expm_negative(diaQMatrix *A, valType t);
 
 } // namespace diaq
 

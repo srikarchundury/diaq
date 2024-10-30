@@ -340,7 +340,8 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "expm_negative",
-        [](diaq::diaQMatrix *A) { return diaq::expm_negative(A); },
+        [](diaq::diaQMatrix *A, diaq::valType t) { return diaq::expm_negative(A, t); },
+        py::arg(),
         py::arg(),
         py::return_value_policy::reference
     );

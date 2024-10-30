@@ -284,6 +284,51 @@ class diaQMatrix {
                 diagNew->free();
             }
         }
+        diaQMatrix *addMatrix(diaQMatrix *B) {
+            std::unordered_map<long int, diagonal*> BDiagMap = B->getDiagonalMap();
+            for (auto it = BDiagMap.begin(); it != BDiagMap.end(); it++) {
+                long int dIndex = it->first;
+                diagonal *dB = it->second;
+                auto itA = diagonalMap.find(dIndex);
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    diagonalMap.insert({dIndex, dB});
+                } else {
+                    // If the diagonal exists, add the elements
+                    diagonal *dA = itA->second;
+                    for (long int i = 0; i < dA->dLength; i++) {
+                        dA->setValue(
+                            i,
+                            dA->getRealValue(i) + dB->getRealValue(i),
+                            dA->getImagValue(i) + dB->getImagValue(i)
+                        );
+                    }
+                }
+            }
+            return this;
+        }
+
+        diaQMatrix *multiply_by_imag(valType imag);
+
+        diaQMatrix *multiplyMatrix(diaQMatrix *B);
+
+        valType norm() {
+            valType norm = 0.0;
+            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) reduction(+:norm)
+            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                diagonal *d = it->second;
+                valType *real_vals = d->getRealValues();
+                valType *imag_vals = d->getImagValues();
+                valType local_norm = 0.0; // Use a local variable to accumulate within the SIMD loop
+                // #pragma omp simd reduction(+:local_norm)
+                for (long int i = 0; i < d->dLength; i++) {
+                    local_norm += real_vals[i] * real_vals[i] + imag_vals[i] * imag_vals[i];
+                }
+                norm += local_norm; // Accumulate local_norm to norm in the parallel region
+            }
+            return std::sqrt(norm);
+        }
+
         void balance() {
             // printf("balance called\n");
             // this->print_shape();
