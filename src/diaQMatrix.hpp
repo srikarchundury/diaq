@@ -677,7 +677,8 @@ class diaQMatrix {
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second->free();
             }
-            // diagonalMap is taken care of by C++
+            // diagonalMap is taken care of by C++, but can we make it happen right now?
+            diagonalMap.clear();
         }
         valType sparsity() {
             long int z = 0;

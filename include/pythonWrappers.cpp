@@ -66,6 +66,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
+        .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
         // operator bindings
         .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
             return diaq::product(a, b);
@@ -120,6 +121,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::reference)
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::reference)
+        .def("free", &diaq::vector::free, py::return_value_policy::reference)
         ;
 
 
