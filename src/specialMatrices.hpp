@@ -15,7 +15,7 @@ class identityMatrix : public diaQMatrix {
 			#else
 				valType *real = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, s * sizeof(valType));
 				valType *imag = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, s * sizeof(valType));
-				#pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+				#pragma omp parallel for
 				for(long int i = 0; i < s; i++) {
 					real[i] = (valType)1.0;
 					imag[i] = (valType)0.0;

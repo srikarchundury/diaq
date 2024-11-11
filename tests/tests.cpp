@@ -2018,7 +2018,7 @@ int main(int argc, char **argv) {
         #else
             diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(size_t i = 0; i < 15; i++) {
                 reals[i] = 0;
                 imags[i] = 0;
@@ -2033,7 +2033,7 @@ int main(int argc, char **argv) {
         #else
             diaq::valType *r = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
             diaq::valType *im = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(size_t i = 0; i < 15; i++) {
                 r[i] = 0;
                 im[i] = 0;
@@ -2078,7 +2078,7 @@ int main(int argc, char **argv) {
         #else
             diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(size_t i = 0; i < 16; i++) {
                 reals[i] = 0;
                 imags[i] = 0;

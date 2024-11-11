@@ -22,7 +22,7 @@ class vector {
                 imagValues_ = (valType *)calloc(M, sizeof(valType));
                 // realValues_ = (valType *)malloc(M * sizeof(valType));
                 // imagValues_ = (valType *)malloc(M * sizeof(valType));
-                // #pragma omp parallel for schedule(auto)
+                // #pragma omp parallel for
                 // for(size_t i = 0; i < M; i++) {
                 //     realValues_[i] = 0.0;
                 //     imagValues_[i] = 0.0;
@@ -31,7 +31,7 @@ class vector {
                 // printf("comes here only?\n");
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                #pragma omp parallel for schedule(auto)
+                #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -64,7 +64,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                #pragma omp parallel for schedule(auto)
+                #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = init_real;
                     imagValues_[i] = init_imag;
@@ -91,7 +91,7 @@ class vector {
         }
 
         void zeroify() {
-            #pragma omp parallel for schedule(auto)
+            #pragma omp parallel for
             for(size_t i = 0; i < numRows_; i++) {
                 realValues_[i] = 0.0;
                 imagValues_[i] = 0.0;
@@ -128,7 +128,7 @@ class vector {
             valType *realValues = v->getRealValues();
             valType *imagValues = v->getImagValues();
 
-            #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for (size_t i = 0; i < numRows_; ++i) {
                 realValues[i] = realValues_[i];
                 imagValues[i] = -1 * imagValues_[i];
@@ -142,7 +142,7 @@ class vector {
             valType *realValues = v->getRealValues();
             valType *imagValues = v->getImagValues();
 
-            #pragma omp parallel for schedule(auto) reduction(+:real_res,imag_res) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for reduction(+:real_res,imag_res)
             for (size_t i = 0; i < numRows_; ++i) {
                 real_res += realValues_[i] * realValues[i] - imagValues_[i] * imagValues[i];
                 imag_res += realValues_[i] * imagValues[i] + imagValues_[i] * realValues[i];
@@ -155,7 +155,7 @@ class vector {
             valType *realValues = v->getRealValues();
             valType *imagValues = v->getImagValues();
 
-            #pragma omp parallel for schedule(auto) reduction(+:real_res) num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for reduction(+:real_res)
             for (size_t i = 0; i < numRows_; ++i) {
             // Take the conjugate of this vector in place
             valType real_conj = realValues_[i];

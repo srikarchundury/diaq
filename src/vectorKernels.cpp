@@ -53,7 +53,7 @@ void randomize(vector &x, valType scale, valType mean) {
  */
 valType one_norm(const vector &x) {
     valType sum = 0.0;
-    #pragma omp parallel for schedule(auto) reduction(+ \
+    #pragma omp parallel for reduction(+ \
                                    : sum)
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
@@ -70,7 +70,7 @@ valType one_norm(const vector &x) {
  */
 valType two_norm(const vector &x) {
     valType sum = 0.0;
-    #pragma omp parallel for schedule(auto) reduction(+ \
+    #pragma omp parallel for reduction(+ \
                                    : sum)
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
@@ -104,7 +104,7 @@ vector operator+(const vector &x, const vector &y);
 vector operator-(const vector &x, const vector &y)
 {
     vector z(x.num_rows());
-    #pragma omp parallel for schedule(auto)
+    #pragma omp parallel for
     for (size_t i = 0; i < z.num_rows(); ++i)
     {
         z[i] = x[i] - y[i];
@@ -113,7 +113,7 @@ vector operator-(const vector &x, const vector &y)
 }
 
 vector &operator*=(vector &x, valType alpha) {
-    #pragma omp parallel for schedule(auto)
+    #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
         x[i] *= alpha;
@@ -122,7 +122,7 @@ vector &operator*=(vector &x, valType alpha) {
 }
 
 vector &operator+=(vector &x, std::complex<valType> alpha) {
-    #pragma omp parallel for schedule(auto)
+    #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
         x[i] += alpha;
@@ -132,7 +132,7 @@ vector &operator+=(vector &x, std::complex<valType> alpha) {
 
 vector &operator+=(vector &x, const vector &y) {
     assert(x.num_rows() == y.num_rows());
-    #pragma omp parallel for schedule(auto)
+    #pragma omp parallel for
     for (size_t i = 0; i < x.num_rows(); ++i)
     {
         x[i] += y[i];
