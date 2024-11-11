@@ -96,12 +96,7 @@ if(DEFINED CUDA_ENABLED)
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
             $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
             $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
-            ${OpenMP_CXX_FLAGS}                        # OpenMP flags
         )
-
-        # Set OpenMP libraries
-        message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
-        target_link_libraries(diaq PRIVATE ${OpenMP_CXX_FLAGS})    # Link OpenMP libraries
 
         # Set position-independent code (PIC) for shared libraries
         set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -122,11 +117,7 @@ else()
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
             $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
             $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
-            ${OpenMP_CXX_FLAGS}                        # OpenMP flags
         )
-
-        message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
-        target_link_libraries(diaq PRIVATE ${OpenMP_CXX_FLAGS})   # Link OpenMP libraries to the target
 
         # Set position-independent code (PIC) for shared libraries
         set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -163,7 +154,6 @@ if(DEFINED MAKE_TESTS)
         target_link_libraries(tests $ENV{PAPI_DIR}/lib/libpapi.so)
     endif()
 endif()
-
 
 # Set the output directory for the compiled libraries and executables
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
