@@ -21,6 +21,8 @@ namespace diaq {
 	#define NUMBER_OF_OMP_THREADS 32
 #endif
 // #define NUMBER_OF_OMP_THREADS 16
+// ------------------------------- //
+
 
 // ------- Vectorization related ------- //
 // #if defined(__AVX__) || defined(__AVX2__)
@@ -28,19 +30,27 @@ namespace diaq {
 // #else
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
-#define NUM_BYTES_ALIGNED 64 // set -1 for unaligned then default behavior whatever compiler does it does!
+#define NUM_BYTES_ALIGNED 32 // set -1 for unaligned then default behavior whatever compiler does it does!
+// ------------------------------- //
+
 
 // ------- Data type related ------- //
 using valType = double; // double or float
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
+// ------------------------------- //
+
 
 // ------- Debugging related ------- //
 #define PRINT_WITH_LINE(fmt, ...) \
     printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+// ------------------------------- //
+
 
 // ------- Cache related ------- //
 #define TILE_SIZE 32
 #define BLOCK_SIZE 128
+// ------------------------------- //
+
 
 // ------- PAPI related ------- //
 #ifdef PAPI_ON
@@ -53,6 +63,7 @@ using valType = double; // double or float
 	// Cleanup PAPI resources
 	void cleanupPAPI();
 #endif
+// ------------------------------- //
 
 } // namespace diaq
 

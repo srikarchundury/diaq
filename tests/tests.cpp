@@ -2012,15 +2012,35 @@ int main(int argc, char **argv) {
         // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         // -- current vector --
         // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
-        diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
-        diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #else
+            diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 15; i++) {
+                reals[i] = 0;
+                imags[i] = 0;
+            }
+        #endif
         for(int i = 0; i < 8; i++) imags[i] = 1;
         diaq::diagonal *d1 = new diaq::diagonal(-1, 15, reals, imags);
 
-        diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
-        diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+            diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
+        #else
+            diaq::valType *r = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            diaq::valType *im = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 15 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 15; i++) {
+                r[i] = 0;
+                im[i] = 0;
+            }
+        #endif
         for(int i = 0; i < 8; i++) im[i] = -1;
-        diaq::diagonal *d2 = new diaq::diagonal(-1, 15, r, im);
+        diaq::diagonal *d2 = new diaq::diagonal(1, 15, r, im);
 
         diaq::diaQMatrix *q_mat = new diaq::diaQMatrix((long int)16);
         q_mat->setDiagonal(-1, d1);
@@ -2040,9 +2060,61 @@ int main(int argc, char **argv) {
         dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(dense_y->numRows_);
         y = diaq::spMV(q_mat, x, y);
         y->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "spmv_8") == 0) {
+        // matrix_shape (16,16)
+        // tensor_shape (16,16)
+        // (dIndex=0) (dLength=16) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
+
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *reals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+        #else
+            diaq::valType *reals = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
+            diaq::valType *imags = (diaq::valType *)aligned_alloc(NUM_BYTES_ALIGNED, 16 * sizeof(diaq::valType));
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            for(size_t i = 0; i < 16; i++) {
+                reals[i] = 0;
+                imags[i] = 0;
+            }
+        #endif
+
+        for(int i = 0; i < 8; i++) {
+            reals[i] = 1;
+        }
+        for(int i = 8; i < 16; i++) {
+            reals[i] = -1;
+        }
+        
+        diaq::diagonal *d0 = new diaq::diagonal(0, 16, reals, imags);
+        diaq::diaQMatrix *q_mat_1 = new diaq::diaQMatrix((long int)16);
+        q_mat_1->setDiagonal(0, d0);
+
+        diaq::identityMatrix *q_mat = new diaq::identityMatrix((long int)16);
+
+        printf("Matrix:\n");
+        q_mat->print();
+
+        std::cout << " --x-- " << std::endl;
+        diaq::vector *x = new diaq::vector(16, 1.0, 0.0);
+        x->print();
+        std::cout << " --MV-- " << std::endl;
+
+        diaq::vector *dense_y = new diaq::vector(16, 0.0);
+        dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
+        dense_y->print();
+
+        std::cout << " --spMV-- " << std::endl;
+        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        y = diaq::spMV(q_mat, x, y);
+        y->print();
+        
         std::cout << " -- " << std::endl;
         std::cout << " -- spMV Done -- " << std::endl;
         std::cout << " -- " << std::endl;
@@ -2567,6 +2639,49 @@ int main(int argc, char **argv) {
         std::complex<diaq::valType> res = x->multiply(y);
         std::cout << res << std::endl;
         std::cout << " -- " << std::endl;
+    }
+    else if (strcmp(argv[1], "expm_negative") == 0 ) {
+        std::cout << " -- Testing expm_negative -- " << std::endl;
+        // Define a 2x2 matrix with specific real values for testing
+        diaq::valType reals[4] = {
+            0.707107, 0.707107,
+            0.707107, -0.707107
+        };
+
+        // Set the dimensions of the matrix
+        long int *s = new long int[2]{2, 2};
+
+        // Create a dense matrix from the values
+        diaq::denseMatrix *denseGate = new diaq::denseMatrix(&s, reals);
+
+        // Convert the dense matrix to a diaQMatrix (sparse representation)
+        diaq::diaQMatrix *gate = denseGate->convertToQuantumSparse();
+        std::cout << "--------------------------------" << std::endl;
+        std::cout << "Original Matrix:" << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+        gate->print();
+        std::cout << "--------------------------------" << std::endl;
+
+        // Time parameter for exponentiation
+        diaq::valType time = 1.0; // Example time value for exp(-i * H * t)
+
+        // Calculate the matrix exponentiation e^(-i * H * t) using expm_negative
+        diaq::diaQMatrix *result = diaq::expm_negative(gate, time);
+
+        std::cout << "--------------------------------" << std::endl;
+        // Print the result
+        std::cout << "Result of exp(-i * H * t):" << std::endl;
+        std::cout << "--------------------------------" << std::endl;
+        result->print();
+        std::cout << "--------------------------------" << std::endl;
+
+        // Clean up
+        // delete[] s;
+        // delete denseGate;
+        // delete gate;
+        // delete result;
+
+        std::cout << " -- End of test -- " << std::endl;
     }
     else if(strcmp(argv[1], "test") == 0) {
         #ifdef PAPI_ON

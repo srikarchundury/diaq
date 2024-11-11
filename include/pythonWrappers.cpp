@@ -66,6 +66,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
+        .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
         // operator bindings
         .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
             return diaq::product(a, b);
@@ -117,8 +118,10 @@ PYBIND11_MODULE(diaq, m) {
         .def("print", &diaq::vector::print, py::return_value_policy::reference)
         .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
         .def("dagger", &diaq::vector::dagger, py::return_value_policy::reference)
+        .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::reference)
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::reference)
+        .def("free", &diaq::vector::free, py::return_value_policy::reference)
         ;
 
 
@@ -310,6 +313,17 @@ PYBIND11_MODULE(diaq, m) {
     );
 
     m.def(
+        "spMV",
+        [](diaq::diaQMatrix* A, diaq::vector* x, diaq::vector* y) {
+            return diaq::spMV(A, x, y);
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
         "einsum",
         [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
         py::arg(),
@@ -328,7 +342,8 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "expm_negative",
-        [](diaq::diaQMatrix *A) { return diaq::expm_negative(A); },
+        [](diaq::diaQMatrix *A, diaq::valType t) { return diaq::expm_negative(A, t); },
+        py::arg(),
         py::arg(),
         py::return_value_policy::reference
     );

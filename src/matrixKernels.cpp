@@ -226,10 +226,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm256_loadu_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+            x_real_vals_vec = _mm256_load_pd(&x_real_values[i]);
+            x_imag_vals_vec = _mm256_load_pd(&x_imag_values[i]);
+
             y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i - dIndex]);
             y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i - dIndex]);
 
@@ -277,18 +278,20 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+
             x_real_vals_vec = _mm256_loadu_pd(&x_real_values[dIndex + i]);
             x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[dIndex + i]);
-            y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i]);
+
+            y_real_vals_vec = _mm256_load_pd(&y_real_values[i]);
+            y_imag_vals_vec = _mm256_load_pd(&y_imag_values[i]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            _mm256_storeu_pd(&y_real_values[i], y_real_vals_vec);
-            _mm256_storeu_pd(&y_imag_values[i], y_imag_vals_vec);
+            _mm256_store_pd(&y_real_values[i], y_real_vals_vec);
+            _mm256_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
 
         if(left_overs != 0) {
@@ -355,18 +358,18 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (long int i = 0; i < vec_loop * 4; i += 4) {
-            real_vals_vec = _mm256_loadu_pd(&real_vals[i]);
-            imag_vals_vec = _mm256_loadu_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm256_loadu_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm256_loadu_pd(&x_imag_values[i]);
-            y_real_vals_vec = _mm256_loadu_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm256_loadu_pd(&y_imag_values[i]);
+            real_vals_vec = _mm256_load_pd(&real_vals[i]);
+            imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
+            x_real_vals_vec = _mm256_load_pd(&x_real_values[i]);
+            x_imag_vals_vec = _mm256_load_pd(&x_imag_values[i]);
+            y_real_vals_vec = _mm256_load_pd(&y_real_values[i]);
+            y_imag_vals_vec = _mm256_load_pd(&y_imag_values[i]);
 
             y_real_vals_vec = _mm256_add_pd(y_real_vals_vec, _mm256_sub_pd(_mm256_mul_pd(real_vals_vec, x_real_vals_vec), _mm256_mul_pd(imag_vals_vec, x_imag_vals_vec)));
             y_imag_vals_vec = _mm256_add_pd(y_imag_vals_vec, _mm256_add_pd(_mm256_mul_pd(real_vals_vec, x_imag_vals_vec), _mm256_mul_pd(imag_vals_vec, x_real_vals_vec)));
 
-            _mm256_storeu_pd(&y_real_values[i], y_real_vals_vec);
-            _mm256_storeu_pd(&y_imag_values[i], y_imag_vals_vec);
+            _mm256_store_pd(&y_real_values[i], y_real_vals_vec);
+            _mm256_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
 
         if(left_overs != 0) {
@@ -1583,6 +1586,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         A->print_meta();
         printf("Analyzing V\n");
         x->print_meta();
+        printf("Analyzing Y\n");
+        y->print_meta();
     #endif
 
     #ifdef DEBUG
@@ -3758,38 +3763,104 @@ diaQMatrix *conjbar(diaQMatrix *A) {
     return multiply_by_scalar(A, 1.0, -1.0);
 }
 
-diaQMatrix *expm_negative(diaQMatrix *A) {
-    // A square is A times A, cube is A times A times A, etc.
-    // e power A using taylor series is I - A + A^2/2! - A^3/3! + A^4/4! - ...
+diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
+    // Computes e^(-i * A * t) using the Taylor series expansion
+    // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
+    // Stops when terms become negligibly small or reach a max iteration count.
 
     #ifdef DEBUG
-        // start timer
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    // Let's start with Identity matrix
+    // Parameters
+    int max_iterations = 50; // Limit to avoid infinite loops
+    valType tolerance = 1e-6; // Tolerance for convergence
+
+    // Initialize result as the identity matrix
     diaQMatrix *result = new identityMatrix(A->matrix_shape[0]);
 
-    std::unordered_map<long int, diagonal*> A_diagMap = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator it;
+    // Initialize the first term in the series as I (identity)
+    diaQMatrix *term_so_far = new identityMatrix(A->matrix_shape[0]);
 
-    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-    for (it = A_diagMap.begin(); it != A_diagMap.end(); it++) {
-        long int dIndex = it->first;
-        diagonal *diag = it->second;
-        // TODO: do something with diagnals, we want a very efficient e power -A operation somehow.
+    // std::cout << "Starting Taylor expansion for e^(-i * A * t)..." << std::endl;
+
+    // Iterative Taylor expansion
+    for (int n = 1; n <= max_iterations; ++n) {
+
+        // Multiply the term by A
+        term_so_far = term_so_far->multiplyMatrix(A);
+        valType imag_scale = -1 * t / n;
+        // Multiply the term by -i * t / n
+        term_so_far = term_so_far->multiply_by_imag(imag_scale);
+        // so in second iteration, we multiply by -i * A * t / 2!
+
+        // add the term to the result
+        result = result->addMatrix(term_so_far);
+
+        std::cout << "Iteration " << n << "..." << std::endl;
+        std::cout << "---" << std::endl;
+        std::cout << "Term: " << std::endl;
+        term_so_far->print();
+        std::cout << "---" << std::endl;
+        std::cout << "Result: " << std::endl;
+        result->print();
+        std::cout << "---" << std::endl;
+
+        // // Check for convergence (small values in term)
+        // if (term_so_far->norm() < tolerance) {
+        //     std::cout << "---" << std::endl;
+        //     std::cout << "Converged after " << n << " iterations.\n" << std::endl;
+        //     std::cout << "---" << std::endl;
+        //     break;
+        // }
     }
 
+    // Clean up
+    delete term_so_far;
+
     #ifdef DEBUG
-        // measure end time
         auto end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t expm_negative took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
     #endif
 
     return result;
+}
+
+
+diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
+    std::unordered_map<long int, diagonal*> BDiagMap = B->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> newDiagMap;
+    for (auto itA = diagonalMap.begin(); itA != diagonalMap.end(); itA++) {
+        long int dIndexA = itA->first;
+        diagonal *dA = itA->second;
+        for (auto itB = BDiagMap.begin(); itB != BDiagMap.end(); itB++) {
+            long int dIndexB = itB->first;
+            diagonal *dB = itB->second;
+            diagonal *dNew = multiplyDiagonals(matrix_shape, matrix_shape, dIndexA, dIndexB, dA, dB);
+            if (dNew != nullptr) {
+                newDiagMap.insert({dNew->dIndex, dNew});
+            }
+        }
+    }
+    this->diagonalMap = newDiagMap;
+    return this;
+}
+
+diaQMatrix *diaQMatrix::multiply_by_imag(valType imag) {
+    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+    for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+
+        diagonal *d = it->second;
+        valType *real_vals = d->getRealValues();
+        valType *imag_vals = d->getImagValues();
+        #pragma omp simd
+        for (long int i = 0; i < d->dLength; i++) {
+            real_vals[i] = -1.0 * imag_vals[i] * imag;
+            imag_vals[i] = real_vals[i] * imag;
+        }
+    }
+    return this;
 }
 
 } // namespace diaq

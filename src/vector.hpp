@@ -28,6 +28,7 @@ class vector {
                 //     imagValues_[i] = 0.0;
                 // }
             #else
+                // printf("comes here only?\n");
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
@@ -126,9 +127,11 @@ class vector {
             vector *v = new vector(numRows_);
             valType *realValues = v->getRealValues();
             valType *imagValues = v->getImagValues();
+
+            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
             for (size_t i = 0; i < numRows_; ++i) {
                 realValues[i] = realValues_[i];
-                imagValues[i] = -imagValues_[i];
+                imagValues[i] = -1 * imagValues_[i];
             }
             return v;
         }
@@ -138,11 +141,31 @@ class vector {
             valType imag_res = 0.0;
             valType *realValues = v->getRealValues();
             valType *imagValues = v->getImagValues();
+
+            #pragma omp parallel for reduction(+:real_res,imag_res) num_threads(NUMBER_OF_OMP_THREADS)
             for (size_t i = 0; i < numRows_; ++i) {
                 real_res += realValues_[i] * realValues[i] - imagValues_[i] * imagValues[i];
                 imag_res += realValues_[i] * imagValues[i] + imagValues_[i] * realValues[i];
             }
             return std::complex<valType>(real_res, imag_res);
+        }
+
+        valType daggerMultiplyReal(vector *v) {
+            valType real_res = 0.0;
+            valType *realValues = v->getRealValues();
+            valType *imagValues = v->getImagValues();
+
+            #pragma omp parallel for reduction(+:real_res) num_threads(NUMBER_OF_OMP_THREADS)
+            for (size_t i = 0; i < numRows_; ++i) {
+            // Take the conjugate of this vector in place
+            valType real_conj = realValues_[i];
+            valType imag_conj = -imagValues_[i];
+
+            // Multiply with the corresponding elements of vector `v`
+            real_res += real_conj * realValues[i] - imag_conj * imagValues[i];
+            }
+
+            return real_res;
         }
 
         void print() {

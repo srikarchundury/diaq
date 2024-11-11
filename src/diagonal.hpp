@@ -36,7 +36,7 @@ class diagonal {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
-            #endif
+            #endif 
         }
         diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;
