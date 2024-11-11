@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FLAGS)
+    message(STATUS "OpenMP flags detected: ${OpenMP_CXX_FLAGS}")
+else()
+    message(FATAL_ERROR "OpenMP flags were not found!")
+endif()
+
 # Check if DEBUG variable is set
 if(DEFINED DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
@@ -15,6 +22,7 @@ endif()
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
+
 # set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 # set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -64,39 +72,75 @@ include_directories(${INC_DIR})
 
 # Check if CUDA_ENABLED variable is set
 if(DEFINED CUDA_ENABLED)
-    message(STATUS "CUDA is enabled")
-    find_package(CUDA REQUIRED)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++11)  # Add necessary NVCC flags here
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcompiler -fPIC)  # Add -fPIC flag for CUDA compilation
-    cuda_add_library(diaq SHARED ${SOURCES} ${CUDA_SOURCES})
-    add_definitions(-DCUDA_ENABLED)  # Define CUDA_ENABLED preprocessor flag
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU vectorization
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
-    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
-    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
-    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for CUDA sources
-    set(BUILD_TYPE "gpu_build")
+        message(STATUS "CUDA is enabled")
+
+        # Find CUDA package and set NVCC flags for CUDA compilation
+        find_package(CUDA REQUIRED)
+
+        # Set necessary NVCC flags for CUDA compilation
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11)  # Ensure C++11 standard for CUDA
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler -fPIC)  # Add -fPIC flag for CUDA
+
+        # Find OpenMP (if you need it for CPU parallelism)
+        find_package(OpenMP REQUIRED)
+
+        # Create shared CUDA library
+        cuda_add_library(diaq SHARED ${SOURCES} ${CUDA_SOURCES})
+
+        # Add preprocessor definition for CUDA
+        add_definitions(-DCUDA_ENABLED)
+
+        # Set compiler flags for C++ (CPU side)
+        target_compile_options(diaq PRIVATE 
+            $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU vectorization
+            $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
+            $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
+            $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
+            ${OpenMP_CXX_FLAGS}                        # OpenMP flags
+        )
+
+        # Set OpenMP libraries
+        message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
+        target_link_libraries(diaq PRIVATE ${OpenMP_CXX_FLAGS})    # Link OpenMP libraries
+
+        # Set position-independent code (PIC) for shared libraries
+        set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+        # Set the build type to GPU-based build
+        set(BUILD_TYPE "gpu_build")
+
 else()
-    message(STATUS "CUDA is not enabled")
-    add_library(diaq SHARED ${SOURCES})
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-march=native>) # Use -march=native for CPU for automatic vectorization
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-O3>) # Use -O3 optimization level
-    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wall>) # Enable all warnings
-    # target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wextra>) # Enable extra warnings
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-mavx2>) # Support for AVX2
-    target_compile_options(diaq PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse2>) # Support for SSE2
-    set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON) # Add -fPIC flag for non-CUDA sources
-    set(BUILD_TYPE "cpu_build")
+        # Check if CUDA is enabled or not
+        message(STATUS "CUDA is not enabled")
 
-    # option(ENABLE_GPROF "Enable gprof profiling" OFF)
-    # if(ENABLE_GPROF)
-    #     message(STATUS "gprof profiling is enabled")
-    #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-    # endif()
+        # Add the diaq library as a shared library
+        add_library(diaq SHARED ${SOURCES})
 
+        # Set compilation options for the target (CPU vectorization, optimization)
+        target_compile_options(diaq PRIVATE 
+            $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU for automatic vectorization
+            $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
+            $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
+            $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
+            ${OpenMP_CXX_FLAGS}                        # OpenMP flags
+        )
+
+        message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
+        target_link_libraries(diaq PRIVATE ${OpenMP_CXX_FLAGS})   # Link OpenMP libraries to the target
+
+        # Set position-independent code (PIC) for shared libraries
+        set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+        # Set build type to cpu_build (optional, depends on your needs)
+        set(BUILD_TYPE "cpu_build")
+
+        # Optionally enable gprof profiling if needed
+        # option(ENABLE_GPROF "Enable gprof profiling" OFF)
+        # if(ENABLE_GPROF)
+        #     message(STATUS "gprof profiling is enabled")
+        #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+        #     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+        # endif()
 endif()
 
 # Check if PAPI_ON variable is set
@@ -109,8 +153,11 @@ endif()
 if(DEFINED MAKE_TESTS)
     # Compile the tests.cpp file
     add_executable(tests ${TESTS_DIR}/tests.cpp)
-    # Link your library to the tests
-    target_link_libraries(tests diaq)
+
+    # Set compilation options for the tests target
+    message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
+    target_link_libraries(tests diaq ${OpenMP_CXX_FLAGS})
+
     # Link PAPI library if PAPI_ON is defined to tests
     if(DEFINED PAPI_ON)
         target_link_libraries(tests $ENV{PAPI_DIR}/lib/libpapi.so)
