@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <iostream>
+#include <omp.h>
 
 #ifdef PAPI_ON
 	#include <papi.h>
@@ -16,6 +17,7 @@ namespace diaq {
 #if defined(__x86_64__) || defined(_M_X64)
 	#define HERE 1
 	#define NUMBER_OF_OMP_THREADS (std::thread::hardware_concurrency())
+	// #define NUMBER_OF_OMP_THREADS 32
 #else
 	#define HERE 2
 	#define NUMBER_OF_OMP_THREADS 32
@@ -64,6 +66,14 @@ using valType = double; // double or float
 	void cleanupPAPI();
 #endif
 // ------------------------------- //
+
+void initialize_omp_settings();
+inline void ensure_omp_initialized() {
+    static bool initialized = ([]() {
+        initialize_omp_settings();  // Call it only once
+        return true;
+    })();
+}
 
 } // namespace diaq
 

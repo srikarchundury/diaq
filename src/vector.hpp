@@ -22,7 +22,7 @@ class vector {
                 imagValues_ = (valType *)calloc(M, sizeof(valType));
                 // realValues_ = (valType *)malloc(M * sizeof(valType));
                 // imagValues_ = (valType *)malloc(M * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                // #pragma omp parallel for schedule(auto)
                 // for(size_t i = 0; i < M; i++) {
                 //     realValues_[i] = 0.0;
                 //     imagValues_[i] = 0.0;
@@ -31,7 +31,7 @@ class vector {
                 // printf("comes here only?\n");
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for schedule(auto)
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
                     imagValues_[i] = 0.0;
@@ -64,7 +64,7 @@ class vector {
             #else
                 realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
                 imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for schedule(auto)
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = init_real;
                     imagValues_[i] = init_imag;
@@ -91,7 +91,7 @@ class vector {
         }
 
         void zeroify() {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for schedule(auto)
             for(size_t i = 0; i < numRows_; i++) {
                 realValues_[i] = 0.0;
                 imagValues_[i] = 0.0;
