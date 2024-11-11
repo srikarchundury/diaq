@@ -233,7 +233,7 @@ class diaQMatrix {
                     #else
                         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
                         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
-                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for schedule(auto)
                         for(long int i = 0; i<dLen; i++) {
                             real_vals[i] = 0.0;
                             imag_vals[i] = 0.0;
@@ -246,7 +246,7 @@ class diaQMatrix {
                 //     #else
                 //         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
                 //         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
-                //         #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                //         #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
                 //         for(long int i = 0; i<dLen; i++) {
                 //             real_vals[i] = 0.0;
                 //             imag_vals[i] = 0.0;
@@ -314,7 +314,7 @@ class diaQMatrix {
 
         valType norm() {
             valType norm = 0.0;
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS) reduction(+:norm)
+            // #pragma omp parallel for schedule(auto) num_threads(NUMBER_OF_OMP_THREADS) reduction(+:norm)
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 diagonal *d = it->second;
                 valType *real_vals = d->getRealValues();
@@ -435,7 +435,7 @@ class diaQMatrix {
                     #else
                         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
                         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
-                        #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                        #pragma omp parallel for schedule(auto)
                         for(long int i = 0; i < dLength; i++) {
                             real_vals[i] = 0.0;
                             imag_vals[i] = 0.0;
@@ -445,7 +445,7 @@ class diaQMatrix {
                     valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                 #endif
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for schedule(auto)
                 for (long int j = 0; j < dLength; j++) {
                     real_vals[j] = real_data[j];
                     imag_vals[j] = imag_data[j];
@@ -496,7 +496,7 @@ class diaQMatrix {
                 #else
                     (*real_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
                     (*imag_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
-                    #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                    #pragma omp parallel for schedule(auto)
                     for(long int i = 0; i < *num_elements; i++) {
                         (*real_data)[i] = 0.0;
                         (*real_data)[i] = 0.0;
@@ -509,7 +509,7 @@ class diaQMatrix {
             for (auto x : diagonalMap) {
                 valType *real_vals = x.second->getRealValues();
                 valType *imag_vals = x.second->getImagValues();
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for schedule(auto)
                 for (int i = 0; i < x.second->dLength; i++) {
                     (*real_data)[p] = real_vals[i];
                     (*imag_data)[p++] = imag_vals[i];
@@ -663,7 +663,7 @@ class diaQMatrix {
                 long int dLength = it->second->dLength;
                 valType *real_vals = it->second->getRealValues();
                 valType *imag_vals = it->second->getImagValues();
-                #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+                #pragma omp parallel for schedule(auto)
                 for (long int i = 0; i < dLength; i++) {
                     long int *mat_pos = getMatrixPosition(dIndex, i);
                     long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
@@ -673,7 +673,7 @@ class diaQMatrix {
             return res;
         }
         void free() {
-            // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            // #pragma omp parallel for schedule(auto)
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 it->second->free();
             }
@@ -709,7 +709,7 @@ class diaQMatrix {
                     toDelete.push_back(it->first);
                 }
             }
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for schedule(auto)
             for(size_t i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
             }
