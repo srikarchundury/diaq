@@ -286,6 +286,86 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
+
+    // overloading tensordot for quimb to work with contegra (seems like opt_einsum is not called now, with latest quimb)
+    m.def(
+        "tensordot",
+        [](py::array_t<std::complex<diaq::valType>> arr1, py::array_t<std::complex<diaq::valType>> arr2, std::vector<std::vector<long int>> axes) {
+            // Convert arr1 to diaq::diaQMatrix
+            auto arr1_info = arr1.request();
+            std::vector<long int> shape1(arr1_info.shape.begin(), arr1_info.shape.end());
+            std::complex<diaq::valType>* arr1_ptr = static_cast<std::complex<diaq::valType>*>(arr1_info.ptr);
+            diaq::diaQMatrix* mat1 = diaq::from_numpy(arr1_ptr, shape1);
+
+            // Convert arr2 to diaq::diaQMatrix
+            auto arr2_info = arr2.request();
+            std::vector<long int> shape2(arr2_info.shape.begin(), arr2_info.shape.end());
+            std::complex<diaq::valType>* arr2_ptr = static_cast<std::complex<diaq::valType>*>(arr2_info.ptr);
+            diaq::diaQMatrix* mat2 = diaq::from_numpy(arr2_ptr, shape2);
+
+            // Perform tensordot on diaQMatrix objects
+            diaq::diaQMatrix* result = diaq::tensordot(mat1, mat2, axes);
+
+            // Optionally, clean up mat1 and mat2 if necessary (e.g., if they need explicit deallocation)
+            // delete mat1;
+            // delete mat2;
+
+            return result;
+        },
+        py::arg("arr1"),
+        py::arg("arr2"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
+    // Overload for tensordot where first argument is diaQMatrix and second is NumPy array
+    m.def(
+        "tensordot",
+        [](diaq::diaQMatrix* mat, py::array_t<std::complex<diaq::valType>> arr, std::vector<std::vector<long int>> axes) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat_arr = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform tensordot on diaQMatrix and converted NumPy array (now diaQMatrix)
+            diaq::diaQMatrix* result = diaq::tensordot(mat, mat_arr, axes);
+
+            // Optionally, clean up mat_arr if necessary
+            // delete mat_arr;
+
+            return result;
+        },
+        py::arg("mat"),
+        py::arg("arr"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
+    // Overload for tensordot where first argument is NumPy array and second is diaQMatrix
+    m.def(
+        "tensordot",
+        [](py::array_t<std::complex<diaq::valType>> arr, diaq::diaQMatrix* mat, std::vector<std::vector<long int>> axes) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat_arr = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform tensordot on converted NumPy array (now diaQMatrix) and diaQMatrix
+            diaq::diaQMatrix* result = diaq::tensordot(mat_arr, mat, axes);
+
+            // Optionally, clean up mat_arr if necessary
+            // delete mat_arr;
+
+            return result;
+        },
+        py::arg("arr"),
+        py::arg("mat"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
     m.def(
         "transpose",
         [](diaq::diaQMatrix *A, std::vector<long int> new_order) { return diaq::transpose(A, new_order); },
