@@ -373,6 +373,30 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
+
+    // New overload for transpose with NumPy array as input
+    m.def(
+        "transpose",
+        [](py::array_t<std::complex<diaq::valType>> arr, std::vector<long int> new_order) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform the transpose operation
+            diaq::diaQMatrix* result = diaq::transpose(mat, new_order);
+
+            // Optionally, clean up mat if necessary
+            // delete mat;
+
+            return result;
+        },
+        py::arg("arr"),
+        py::arg("axes") = std::vector<long int>{},
+        py::return_value_policy::reference
+    );
+
     m.def(
         "kroneckerProduct",
         [](diaq::diaQMatrix *A, diaq::diaQMatrix *B) { return diaq::kron_product(A, B); },
@@ -403,13 +427,13 @@ PYBIND11_MODULE(diaq, m) {
         py::return_value_policy::reference
     );
 
-    m.def(
-        "einsum",
-        [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
-        py::arg(),
-        py::arg("axes"),
-        py::return_value_policy::reference
-    );
+    // m.def(
+    //     "einsum",
+    //     [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
+    //     py::arg(),
+    //     py::arg("axes"),
+    //     py::return_value_policy::reference
+    // );
 
     m.def(
         "multiply_by_scalar",
