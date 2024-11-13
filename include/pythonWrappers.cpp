@@ -67,6 +67,8 @@ PYBIND11_MODULE(diaq, m) {
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
+        .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::reference)
+        
         // operator bindings
         .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
             return diaq::product(a, b);
