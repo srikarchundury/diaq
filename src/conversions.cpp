@@ -109,10 +109,35 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
 }
 
 std::complex<valType> *to_numpy(diaQMatrix *A) {
-    denseMatrix *d = A->convertToDenseMatrix(A->matrix_shape);
-    // comment below line for tests.cpp
-    // A->free();
-    return d->getData_forPy();
+    // // This is bad, but I don't have a better way to do this right now.
+    // denseMatrix *d = A->convertToDenseMatrix(A->matrix_shape);
+    // // comment below line for tests.cpp
+    // // A->free();
+    // return d->getData_forPy();
+
+    // directly from diaQMatrix object, let's create a std::complex<valType> array
+    // TODO: This still needs a reshape to the original shape of the tensor. Can we avoid that too? I have to look at pybind11 stuff!!
+    long int *matrix_shape = A->matrix_shape;
+    long int total_elements = matrix_shape[0] * matrix_shape[1];
+    std::complex<valType> *vals = (std::complex<valType> *)malloc(total_elements * sizeof(std::complex<valType>));
+    std::fill(vals, vals + total_elements, std::complex<valType>(0.0, 0.0));
+
+    #pragma omp parallel for
+    for (auto it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
+        long int dIndex = it->first;
+        long int dLength = it->second->dLength;
+        valType *real_vals = it->second->getRealValues();
+        valType *imag_vals = it->second->getImagValues();
+
+        #pragma omp parallel for
+        for (long int i = 0; i < dLength; i++) {
+            long int *mat_pos = A->getMatrixPosition(dIndex, i);
+            long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
+            vals[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
+        }
+    }
+
+    return vals;
 }
 
 diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape) {
