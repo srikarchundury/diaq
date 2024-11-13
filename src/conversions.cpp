@@ -133,7 +133,7 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
         }
 
         long int rank = shape.size();
-        if (rank > 2) {
+        if (rank > 2) { // higher-order tensor!
             long int product = vals_len;
             long int sqrtProduct = static_cast<long int>(std::sqrt(product));
             // Find the closest factors of the product
@@ -151,12 +151,36 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
             new_shape[1] = x;
             denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, shape);
             return d->convertToQuantumSparse(new_shape);
-        } else {
+        } else { // matrix!
+
             long int *mat_shape = new long int[2];
             mat_shape[0] = shape[0];
             mat_shape[1] = shape[1];
-            denseMatrix *d = new denseMatrix(&mat_shape, real_vals, imag_vals, shape);
-            return d->convertToQuantumSparse(mat_shape);
+
+            // // This is bad, but I don't have a better way to do this right now.
+            // denseMatrix *d = new denseMatrix(&mat_shape, real_vals, imag_vals, shape);
+            // return d->convertToQuantumSparse(mat_shape);
+
+            // directly from numpy object, instead of creating this intermediate denseMatrix object!!!!
+            diaQMatrix *qm = new diaQMatrix(&mat_shape);
+            long int i, j;
+            std::complex<valType> v;
+
+            long int tot_elems = mat_shape[0] * mat_shape[1];
+
+            #pragma omp parallel for
+            for(long int flatIndex = 0; flatIndex < tot_elems; flatIndex++) {
+                v = vals[flatIndex];
+                if( v != 0.0 ) {
+                    long int *d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
+                    long int d_len = qm->getDiagonalLength(d_pos[0]);
+                    qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, v.real(), v.imag());
+                }
+            }
+
+            return qm;
+
+            // // printf("New way directly from numpy\n");
         }
     #endif
 }
