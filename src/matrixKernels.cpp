@@ -10,6 +10,9 @@ namespace diaq {
 void run_without_vectorization(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     // no vectorization
     // logger.log("No vectorization");
+    #ifdef DEBUG
+        std::cout << "No vectorization" << std::endl;
+    #endif
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
 		valType real_a = real_vals_a[k + offsetA - jump];
@@ -3787,16 +3790,37 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
         valType *res_real_vals = res_diag->getRealValues();
         valType *res_imag_vals = res_diag->getImagValues();
 
-        // Compute exact exp(-i A t) for diagonal elements
-        #pragma omp parallel for
-        for(long int i = 0; i < dLength; i++) {
-            valType a_i = real_vals[i];
-            valType b_i = imag_vals[i];
+        auto before = std::chrono::high_resolution_clock::now();
 
-            valType exp_b = std::exp(t * b_i); // e^(t b_i)
-            res_real_vals[i] = exp_b * std::cos(t * a_i);
-            res_imag_vals[i] = -exp_b * std::sin(t * a_i);
+        // Compute exact exp(-i A t) for diagonal elements
+        #pragma omp parallel for schedule(static)
+        for (long int i = 0; i < dLength; i++) {
+            #pragma omp simd
+            {
+                valType a_i = real_vals[i];
+                valType b_i = imag_vals[i];
+
+                valType t_a = t * a_i;
+                valType t_b = t * b_i;
+
+                valType exp_b = std::exp(t_b);
+                valType cos_ta = std::cos(t_a);
+                valType sin_ta = std::sin(t_a);
+
+                res_real_vals[i] = exp_b * cos_ta;
+                res_imag_vals[i] = -exp_b * sin_ta;
+            }
         }
+
+        #ifdef DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+
+            auto just_loop_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - before);
+            printf("\t\t expm_negative FOR LOOP took %f milliseconds\n", just_loop_duration.count() / 1000.0);
+
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
 
         return result;
     }
