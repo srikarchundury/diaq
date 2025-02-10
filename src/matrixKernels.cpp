@@ -3774,12 +3774,36 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
+    // Initialize result as the identity matrix
+    diaQMatrix *result = new identityMatrix(A->matrix_shape[0]);
+
+    if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
+        diagonal *d = A->getDiagonal(0);
+        long int dLength = d->dLength;
+        valType *real_vals = d->getRealValues();
+        valType *imag_vals = d->getImagValues();
+
+        diagonal *res_diag = result->getDiagonal(0);
+        valType *res_real_vals = res_diag->getRealValues();
+        valType *res_imag_vals = res_diag->getImagValues();
+
+        // Compute exact exp(-i A t) for diagonal elements
+        #pragma omp parallel for
+        for(long int i = 0; i < dLength; i++) {
+            valType a_i = real_vals[i];
+            valType b_i = imag_vals[i];
+
+            valType exp_b = std::exp(t * b_i); // e^(t b_i)
+            res_real_vals[i] = exp_b * std::cos(t * a_i);
+            res_imag_vals[i] = -exp_b * std::sin(t * a_i);
+        }
+
+        return result;
+    }
+
     // Parameters
     int max_iterations = 50; // Limit to avoid infinite loops
     valType tolerance = 1e-6; // Tolerance for convergence
-
-    // Initialize result as the identity matrix
-    diaQMatrix *result = new identityMatrix(A->matrix_shape[0]);
 
     // Initialize the first term in the series as I (identity)
     diaQMatrix *term_so_far = new identityMatrix(A->matrix_shape[0]);
@@ -3790,31 +3814,36 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     for (int n = 1; n <= max_iterations; ++n) {
 
         // Multiply the term by A
-        term_so_far = term_so_far->multiplyMatrix(A);
+        term_so_far->multiplyMatrix(A);
         valType imag_scale = -1 * t / n;
         // Multiply the term by -i * t / n
-        term_so_far = term_so_far->multiply_by_imag(imag_scale);
+        term_so_far->multiply_by_imag(imag_scale);
         // so in second iteration, we multiply by -i * A * t / 2!
 
         // add the term to the result
-        result = result->addMatrix(term_so_far);
+        result->addMatrix(term_so_far);
 
-        std::cout << "Iteration " << n << "..." << std::endl;
-        std::cout << "---" << std::endl;
-        std::cout << "Term: " << std::endl;
-        term_so_far->print();
-        std::cout << "---" << std::endl;
-        std::cout << "Result: " << std::endl;
-        result->print();
-        std::cout << "---" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Iteration " << n << "..." << std::endl;
+            std::cout << "---" << std::endl;
+            std::cout << "Term: " << std::endl;
+            term_so_far->print();
+            std::cout << "---" << std::endl;
+            std::cout << "Result: " << std::endl;
+            result->print();
+            std::cout << "---" << std::endl;
+        #endif
 
-        // // Check for convergence (small values in term)
-        // if (term_so_far->norm() < tolerance) {
-        //     std::cout << "---" << std::endl;
-        //     std::cout << "Converged after " << n << " iterations.\n" << std::endl;
-        //     std::cout << "---" << std::endl;
-        //     break;
-        // }
+        // Check for convergence (small values in term)
+        if (term_so_far->norm() < tolerance) {
+            #ifdef DEEP_DEBUG
+                std::cout << "---" << std::endl;
+                std::cout << "Converged after " << n << " iterations.\n" << std::endl;
+                std::cout << "---" << std::endl;
+            #endif
+
+            break; // break if criteria met
+        }
     }
 
     // Clean up
