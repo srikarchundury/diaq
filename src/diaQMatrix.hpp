@@ -655,6 +655,13 @@ class diaQMatrix {
         long int num_diags() {
             return diagonalMap.size();
         }
+        std::vector<long int> get_diagonals() {
+            std::vector<long int> res;
+            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+                res.push_back(it->first);
+            }
+            return res;
+        }
         std::complex<valType> *flatten() {
             std::complex<valType> *res = new std::complex<valType>[matrix_shape[0] * matrix_shape[1]];
             std::fill(res, res + matrix_shape[0] * matrix_shape[1], std::complex<valType>(1));
