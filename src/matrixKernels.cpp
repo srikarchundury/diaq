@@ -911,11 +911,9 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
     // test openmp
-    #pragma omp parallel for
-    for(int i = 0; i < 100; i++) {
-        if(i == 0) {
-            printf("thread count: %d\n", omp_get_num_threads());
-        }
+    #pragma omp parallel
+    {
+        std::cout << "========================================= OpenMP is using " << omp_get_num_threads() << " threads." << std::endl;
     }
 
     #pragma omp parallel for
