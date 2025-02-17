@@ -179,7 +179,7 @@ namespace diaq {
 
 void initialize_omp_settings() {
     omp_set_num_threads(NUMBER_OF_OMP_THREADS);  // Set the default number of threads, maximum number of threads
-    omp_set_dynamic(1);  // Enable dynamic adjustment of thread count by OpenMP
+    omp_set_dynamic(0);  // Enable dynamic adjustment of thread count by OpenMP
 }
 
 

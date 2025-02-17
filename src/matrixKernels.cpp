@@ -13,6 +13,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     #ifdef DEBUG
         std::cout << "No vectorization" << std::endl;
     #endif
+    #pragma omp simd
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
 		valType real_a = real_vals_a[k + offsetA - jump];
@@ -58,6 +59,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_avx<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
+
+        #ifdef DEBUG
+            std::cout << "Using AVX-Double vectorization" << std::endl;
+        #endif
+
         // logger.log("Using AVX-Double vectorization");
         long int loop_count = 0;
         long int k_cpy = k;
@@ -136,6 +142,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 	}
     template<>
     void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
+
+        #ifdef DEBUG
+            std::cout << "Using AVX-Float vectorization" << std::endl;
+        #endif
+        
         // logger.log("Using AVX-Float vectorization");
         // printf("Using AVX-Float vectorization\n");
         long int loop_count = 0;
@@ -222,6 +233,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     // ------------------------AVX DOUBLE----------------------------------------
     template<>
     void run_spmv_avx_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_avx_1 - Double" << std::endl;
+        #endif
+
         // printf("run_spmv_avx_1 - Double\n");
         long int vec_loop = dLength / 4;
         long int left_overs = dLength % 4;
@@ -263,7 +279,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_spmv_avx_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
 
-        // printf("run_spmv_avx_2 - Double\n");
+        // printf("run_spmv_avx_2 - Double\n");'
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_avx_2 - Double" << std::endl;
+        #endif
 
         // // cross checking with non-simd version
         // double *temp_real = new double[dLength];
@@ -354,6 +374,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
 
     template<>
     void run_spmv_avx_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_avx_0 - Double" << std::endl;
+        #endif
+
         // printf("run_spmv_avx_0 - Double\n");
         long int vec_loop = dLength / 4;
         long int left_overs = dLength % 4;
@@ -441,6 +466,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
+
+        #ifdef DEBUG
+            std::cout << "Using SSE-Float vectorization" << std::endl;
+        #endif
+        
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -518,6 +548,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
+
+        #ifdef DEBUG
+            std::cout << "Using SSE-Double vectorization" << std::endl;
+        #endif
+
         long int loop_count = 0;
         long int k_cpy = k;
         while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
@@ -587,6 +622,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     // ------------------------SSE DOUBLE----------------------------------------
     template<>
     void run_spmv_sse_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_sse_1 - Double" << std::endl;
+        #endif
+
         long int vec_loop = dLength / 2;
         long int left_overs = dLength % 2;
 
@@ -616,6 +656,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_spmv_sse_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_sse_2 - Double" << std::endl;
+        #endif
+
         long int vec_loop = dLength / 2;
         long int left_overs = dLength % 2;
 
@@ -645,6 +690,11 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     template<>
     void run_spmv_sse_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, long int dIndex, long int dLength) {
+
+        #ifdef DEBUG
+            std::cout << "run_spmv_sse_0 - Double" << std::endl;
+        #endif
+
         long int vec_loop = dLength / 2;
         long int left_overs = dLength % 2;
 
@@ -711,10 +761,10 @@ long int getDiagonalLength(long int dIndex, long int *shape) {
     return lenRes;
 }
 diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, diagonal *diagA, diagonal *diagB) {
-    if(indexA + indexB >= shapeB[1]) {
+    long int res_index = indexA + indexB;
+    if (res_index <= 0 && shapeA[0] <= abs(res_index)) {
         return NULL;
-    }
-    else if(indexA + indexB <= -1 * shapeA[0]) {
+    } else if (res_index > 0 && shapeB[1] <= res_index) {
         return NULL;
     }
     long int lenDiagA = diagA->dLength;
@@ -724,79 +774,79 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     long int lenRes = getDiagonalLength(indexA + indexB, res_dims);
     diagonal *res = new diagonal(indexA + indexB, lenRes);
     // std::cout << "diagonal length = " << lenRes << std::endl;
-    long int offsetA = abs(indexA);
-    long int offsetB = abs(indexB);
-    long int jump = 0;
-    if(indexA > 0) {
-        if(indexB > 0) {
+    long int offsetA = abs(indexA);  // Absolute value of indexA
+    long int offsetB = abs(indexB);  // Absolute value of indexB
+    long int jump = 0;  // Initialize jump
+
+    // Case 1: indexA is above the main diagonal (indexA > 0)
+    if (indexA > 0) { 
+        if (indexB > 0) { 
+            // Align both diagonals by setting offsetB = offsetA
             offsetB = offsetA;
             offsetA = 0;
-        }
-        else if(indexB < 0) {
-            // std::cout << "jump,offsetA,offsetB " << jump << "," << offsetA << "," << offsetB << std::endl;
-            if(offsetA > offsetB) {
-                offsetB = abs(indexA + indexB);
+        } 
+        else if (indexB < 0) { 
+            // Align diagonals based on their relative distance from the main diagonal
+            if (offsetA > offsetB) {
+                offsetB = abs(indexA + indexB);  // Align indexB to the result index
                 offsetA = 0;
-            }
-            else {
-                offsetA = abs(indexA + indexB);
+            } else {
+                offsetA = abs(indexA + indexB);  // Align indexA to the result index
                 offsetB = 0;
             }
-        }
-        else if(indexB == 0) {
+        } 
+        else { 
+            // indexA is above the main diagonal, indexB is on it
             offsetB = offsetA;
             offsetA = 0;
         }
-    }
-    else if(indexA < 0) {
-        if(indexB > 0) {
-            // std::cout << "jump,offsetA,offsetB " << jump << "," << offsetA << "," << offsetB << std::endl;
-            // std::cout << "lenDiagA,lenDiagB,lenRes " << lenDiagA << "," << lenDiagB << "," << lenRes << std::endl;
-            // jump decides how many positions to skip for each diagonal, depends on the length of the shorter diagonal.
-            if(lenDiagB < lenDiagA) {
-                jump = lenRes - lenDiagB;
+    } 
+
+    // Case 2: indexA is below the main diagonal (indexA < 0)
+    else if (indexA < 0) { 
+        if (indexB > 0) { 
+            // Case where indexA is below and indexB is above the main diagonal
+            // Calculate the "jump" based on the shortest diagonal
+            if (lenDiagB < lenDiagA) {
+                jump = lenRes - lenDiagB;  // Jump past extra elements in diagonal A
+            } else if (lenDiagA < lenDiagB) {
+                jump = lenRes - lenDiagA;  // Jump past extra elements in diagonal B
+            } else {
+                // If both diagonals are the same length, jump based on res_index
+                jump = (res_index < 0) ? abs(indexB) : abs(indexA);
             }
-            else if(lenDiagA < lenDiagB) {
-                jump = lenRes - lenDiagA;
-            }
-            else {
-                if(indexA + indexB < 0) {
-                    // jump = abs(indexA) - abs(shapeA[0] - shapeB[1]);
-                    jump = abs(indexB);
-                } else {
-                    jump = abs(indexA);
-                }
-            }
+            // After calculating the jump, reset both offsets
+            offsetA = 0;
+            offsetB = 0;
+        } 
+        else if (indexB < 0) { 
+            // Both diagonals are below the main diagonal, swap the offsets
+            std::swap(offsetA, offsetB); 
+            offsetB = 0;
+        } 
+        else { 
+            // indexA is below the main diagonal, indexB is on it
             offsetA = 0;
             offsetB = 0;
         }
-        else if(indexB < 0) {
+    } 
+
+    // Case 3: indexA is exactly on the main diagonal (indexA == 0)
+    else { 
+        if (indexB < 0) { 
+            // Align indexA with indexB, reset indexB
             offsetA = offsetB;
             offsetB = 0;
-        }
-        else if(indexB == 0) {
+        } else {
+            // Both diagonals are on the main diagonal
             offsetA = 0;
             offsetB = 0;
         }
     }
-    else if(indexA == 0) {
-        if(indexB > 0) {
-            offsetA = 0;
-            offsetB = 0;
-        }
-        else if(indexB < 0) {
-            offsetA = offsetB;
-            offsetB = 0;
-        }
-        else if(indexB == 0) {
-            offsetA = 0;
-            offsetB = 0;
-        }
-    }
-    long int k = 0;
-    if(jump != 0) {
-        k += jump;
-    }
+
+    // Apply the jump if necessary
+    long int k = (jump != 0) ? jump : 0;  // Set k to jump if jump > 0
+
 	valType *real_vals_a = diagA->getRealValues();
     valType *imag_vals_a = diagA->getImagValues();
     valType *real_vals_b = diagB->getRealValues();
@@ -860,6 +910,14 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
+    // test openmp
+    #pragma omp parallel for
+    for(int i = 0; i < 100; i++) {
+        if(i == 0) {
+            printf("thread count: %d\n", omp_get_num_threads());
+        }
+    }
+
     #pragma omp parallel for
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {
@@ -868,7 +926,9 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
             // itB->second->print();
             // std::cout << " ------ diags ------ " << std::endl;
             // std::cout << " --- " << std::endl;
+
             diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
+
             if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
                 // std::cout << " ------ new diag ------ " << std::endl;
                 // diagNew->print();
