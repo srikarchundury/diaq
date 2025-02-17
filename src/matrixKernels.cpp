@@ -910,12 +910,6 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
-    // test openmp
-    #pragma omp parallel
-    {
-        std::cout << "========================================= OpenMP is using " << omp_get_num_threads() << " threads." << std::endl;
-    }
-
     #pragma omp parallel for
     for (itA = mapA.begin(); itA != mapA.end(); itA++) {
         for (itB = mapB.begin(); itB != mapB.end(); itB++) {

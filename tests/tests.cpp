@@ -1546,6 +1546,15 @@ int main(int argc, char **argv) {
             std::cout << " = " << check << std::endl;
         }
     }
+    else if (strcmp(argv[1], "0") == 0) {
+        // Run OpenMP all thread tests! check if parallel regions are being multi-threaded
+        printf("This variable:  %d\n", NUMBER_OF_OMP_THREADS);
+        #pragma omp parallel num_threads(16)
+        {
+            #pragma omp single
+            std::cout << "================================================= NUMBER OF THREADS via omp_get_num_threads = " << omp_get_num_threads() << std::endl;
+        }
+    }
     else if(strcmp(argv[1], "reshape") == 0) {
         // testing reshape operations
         B8->print();
