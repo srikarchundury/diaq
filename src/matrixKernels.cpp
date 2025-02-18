@@ -847,12 +847,12 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     // Apply the jump if necessary
     long int k = (jump != 0) ? jump : 0;  // Set k to jump if jump > 0
 
-	valType *real_vals_a = diagA->getRealValues();
-    valType *imag_vals_a = diagA->getImagValues();
-    valType *real_vals_b = diagB->getRealValues();
-    valType *imag_vals_b = diagB->getImagValues();
-	valType *real_vals_final = res->getRealValues();
-    valType *imag_vals_final = res->getImagValues();
+	valType *real_vals_a = diagA->realValues;
+    valType *imag_vals_a = diagA->imagValues;
+    valType *real_vals_b = diagB->realValues;
+    valType *imag_vals_b = diagB->imagValues;
+	valType *real_vals_final = res->realValues;
+    valType *imag_vals_final = res->imagValues;
 
     #ifdef DEEP_DEBUG
         std::cout << "k=" << k << std::endl;
@@ -1095,16 +1095,16 @@ denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
 * @return diaQMatrix C
 */
 diagonal *addElements(diagonal *A, diagonal *B) {
-    valType *real_valsA = A->getRealValues();
-    valType *imag_valsA = A->getImagValues();
-    valType *real_valsB = B->getRealValues();
-    valType *imag_valsB = B->getImagValues();
+    valType *real_valsA = A->realValues;
+    valType *imag_valsA = A->imagValues;
+    valType *real_valsB = B->realValues;
+    valType *imag_valsB = B->imagValues;
     if(A->dLength != B->dLength ) {
         throw std::invalid_argument("diagonals are of different lengths!");
     }
     diagonal *res = new diagonal(A->dIndex, A->dLength);
-    valType *real_valsC = res->getRealValues();
-    valType *imag_valsC = res->getImagValues();
+    valType *real_valsC = res->realValues;
+    valType *imag_valsC = res->imagValues;
     #pragma omp parallel for
     for(long int i=0; i < A->dLength; i++) {
         real_valsC[i] = real_valsA[i] + real_valsB[i];
@@ -1158,8 +1158,8 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
     std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
         #pragma omp parallel for
         for(long int i = 0; i < it->second->dLength; i++) {
             // old_d_pos has (it->first, i) for A->matrix_shape
@@ -1346,8 +1346,8 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
 
             #pragma omp task
             {
-                valType *real_vals = it->second->getRealValues();
-                valType *imag_vals = it->second->getImagValues();
+                valType *real_vals = it->second->realValues;
+                valType *imag_vals = it->second->imagValues;
 
                 #pragma omp parallel for
                 for(long int i = 0; i < it->second->dLength; i++) {
@@ -1600,8 +1600,8 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                 #pragma omp task
                 {
                     diagonal *diagA = itA->second;
-                    valType *real_vals_A = diagA->getRealValues();
-                    valType *imag_vals_A = diagA->getImagValues();
+                    valType *real_vals_A = diagA->realValues;
+                    valType *imag_vals_A = diagA->imagValues;
                     // #pragma omp parallel for
                     for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
                         std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
@@ -1611,8 +1611,8 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                                 #pragma omp task
                                 {
                                     diagonal *diagB = itB->second;
-                                    valType *real_vals_B = diagB->getRealValues();
-                                    valType *imag_vals_B = diagB->getImagValues();
+                                    valType *real_vals_B = diagB->realValues;
+                                    valType *imag_vals_B = diagB->imagValues;
                                     #pragma omp parallel for
                                     for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
                                         std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
@@ -1996,39 +1996,40 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
         std::cout << " --- " << std::endl;
     #endif
 
+    if (scalar_real == 1.0 && scalar_imag == 0.0) {
+        return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
+    }
+
     diaQMatrix *result = new diaQMatrix((long int)0);
+
+    if (scalar_real == 0.0 && scalar_imag == 0.0) {
+        return result;
+    }
 
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            for (it = diagMap.begin(); it != diagMap.end(); it++) {
-                #pragma omp task
-                {
-                    long int dIndex = it->first;
-                    long int dLength = it->second->dLength;
-                    valType *real_vals = it->second->getRealValues();
-                    valType *imag_vals = it->second->getImagValues();
-                    diagonal *newDiag = new diagonal(dIndex, dLength);
-                    valType *real_valsC = newDiag->getRealValues();
-                    valType *imag_valsC = newDiag->getImagValues();
+    #pragma omp parallel for
+    for (size_t a = 0; a < diagMap.size(); ++a) {
+        auto it = std::next(diagMap.begin(), a);
+        long int dIndex = it->first;
+        long int dLength = it->second->dLength;
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
+        diagonal *newDiag = new diagonal(dIndex, dLength);
+        valType *real_valsC = newDiag->realValues;
+        valType *imag_valsC = newDiag->imagValues;
 
-                    #pragma omp simd
-                    for (long int i = 0; i < dLength; i++) {
-                        real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
-                        imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
-                    }
-
-                    result->setDiagonal(dIndex, newDiag);
-                }
-            }
+        #pragma omp simd
+        for (long int i = 0; i < dLength; i++) {
+            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
+            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
+
+        result->setDiagonal(dIndex, newDiag);
     }
 
     #ifdef DEEP_DEBUG
@@ -2049,7 +2050,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         printf("\tA Meta:\n");
         A->print_meta();
         printf("\tB Matrix:\n");
-        B->print();
+        B->print_meta();
     #endif
 
     #ifdef DEBUG
@@ -2069,47 +2070,55 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     result_shape[1] = shape_a[1] * shape_b[1];
     diaQMatrix *result = new diaQMatrix(&result_shape);
 
-    std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> A_diagonalMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator itA;
 
-    for (itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); itA++) {
+    // #pragma omp parallel for
+    for (long int a = 0; a < A_diagonalMap.size(); a++) {
+        auto itA = std::next(A_diagonalMap.begin(), a);
         long int diagonal_index = itA->first;
         diagonal *diag = itA->second;
         long int diagonal_length = diag->dLength;
 
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
-            if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
+            if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
                 continue;
             }
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
-            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
-                kron_block = multiply_by_scalar(B, diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
+            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
+                kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
                 // printf("printing kron_block\n");
                 // kron_block->print();
                 // store in unique_kron_blocks
-                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)), kron_block));
+                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
             } else {
-                kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)))->second;
+                kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]))->second;
             }
             long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
-            std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
+            std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->diagonalMap;
             std::unordered_map<long int, diagonal*>::iterator itK;
-            for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
+
+            // #pragma omp parallel for
+            for (long int b = 0; b < kron_block_diagMap.size(); b++) {
+                auto itK = std::next(kron_block_diagMap.begin(), b);
                 long int kron_block_diag_index = itK->first;
                 diagonal *kron_block_diag = itK->second;
                 long int kron_block_diag_length = kron_block_diag->dLength;
 
-                #pragma omp parallel for
+                // #pragma omp parallel for
                 for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                     long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
                     long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
                     long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
-                    result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
+                    // #pragma omp critical
+                    // {
+                        result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->realValues[kron_block_diag_position], kron_block_diag->imagValues[kron_block_diag_position]);
+                    // }
 
                     // free(res_diag_pos);
                     // free(B_mat_pos);
@@ -2159,7 +2168,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     // we just repeat A, N times in the result matrix
     long int *result_shape = new long int[2] {N * A->matrix_shape[0], N * A->matrix_shape[1]};
     diaQMatrix *result = new diaQMatrix(&result_shape);
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         long int dIndex = it->first;
@@ -2168,14 +2177,14 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         // diag->print();
         long int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         // result diag
         long int new_dLength = result->getDiagonalLength(dIndex); // TODO: there should be a better way to get this using n and dLength.
         diagonal *newDiag = new diagonal(dIndex, new_dLength);
-        valType *newDiag_real_vals = newDiag->getRealValues();
-        valType *newDiag_imag_vals = newDiag->getImagValues();
+        valType *newDiag_real_vals = newDiag->realValues;
+        valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for
         for(long int rep = 0; rep < N; rep++) {
@@ -2316,8 +2325,8 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         long int dIndex = it->first;
         diagonal *diag = it->second;
         long int dLength = diag->dLength;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         long int x_inner_offset = 0;
         long int y_inner_offset = 0;
@@ -2538,8 +2547,8 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
         long int dIndex = it->first;
         diagonal *diag = it->second;
         long int dLength = diag->dLength;
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
 
         if(dIndex < 0) { // for negative diagonals
             #pragma omp parallel for
@@ -3720,15 +3729,15 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
                     diagonal *diag = it->second;
                     long int dLength = diag->dLength;
                     // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-                    valType *real_vals = diag->getRealValues();
-                    valType *imag_vals = diag->getImagValues();
+                    valType *real_vals = diag->realValues;
+                    valType *imag_vals = diag->imagValues;
                     // result diag
                     diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
                     // printf("srik\n");
                     // newDiag->print_meta();
                     // printf("awesome\n");
-                    valType *newDiag_real_vals = newDiag->getRealValues();
-                    valType *newDiag_imag_vals = newDiag->getImagValues();
+                    valType *newDiag_real_vals = newDiag->realValues;
+                    valType *newDiag_imag_vals = newDiag->imagValues;
 
                     #pragma omp parallel for
                     for(long int i = 0; i < dLength; i++) {
@@ -3808,7 +3817,7 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
         #pragma omp parallel for
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
-            if(diag->getRealValue(diagonal_position) == 0.0 && diag->getImagValue(diagonal_position) == 0.0) {
+            if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
                 continue;
             }
 
@@ -3816,19 +3825,19 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
 
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
-            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position))) == unique_kron_blocks.end()) {
-                kron_block = multiply_by_scalar(B, diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
+            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
+                kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
                 // printf("printing kron_block\n");
                 // kron_block->print();
                 // store in unique_kron_blocks
-                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position)), kron_block));
+                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
             }
 
             // printf("kron here 2\n");
 
             long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
             std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
-            std::pair<valType, valType> val = std::make_pair(diag->getRealValue(diagonal_position), diag->getImagValue(diagonal_position));
+            std::pair<valType, valType> val = std::make_pair(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
             kron_map.insert(std::pair<std::pair<long int, long int>, std::pair<valType, valType>>(key, val));
         }
     }
@@ -3883,7 +3892,7 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
                                     std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
                                 #endif
 
-                                result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
+                                result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->realValues[kron_block_diag_position], kron_block_diag->imagValues[kron_block_diag_position]);
                             }
                         }
                     }
@@ -3951,12 +3960,12 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
         diagonal *d = A->getDiagonal(0);
         long int dLength = d->dLength;
-        valType *real_vals = d->getRealValues();
-        valType *imag_vals = d->getImagValues();
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
 
         diagonal *res_diag = result->getDiagonal(0);
-        valType *res_real_vals = res_diag->getRealValues();
-        valType *res_imag_vals = res_diag->getImagValues();
+        valType *res_real_vals = res_diag->realValues;
+        valType *res_imag_vals = res_diag->imagValues;
 
         #ifdef DEBUG
             auto before = std::chrono::high_resolution_clock::now();
@@ -4077,8 +4086,8 @@ diaQMatrix *diaQMatrix::multiply_by_imag(valType imag) {
             #pragma omp task
             {
                 diagonal *d = it->second;
-                valType *real_vals = d->getRealValues();
-                valType *imag_vals = d->getImagValues();
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
                 #pragma omp simd
                 for (long int i = 0; i < d->dLength; i++) {
                     real_vals[i] = -1.0 * imag_vals[i] * imag;
