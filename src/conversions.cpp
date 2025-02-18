@@ -126,28 +126,21 @@ std::complex<valType> *to_numpy(diaQMatrix *A) {
     std::complex<valType> *vals = (std::complex<valType> *)malloc(total_elements * sizeof(std::complex<valType>));
     std::fill(vals, vals + total_elements, std::complex<valType>(0.0, 0.0));
 
-    #pragma omp parallel
-    {
-        #pragma omp single
-        for (auto it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
-            #pragma omp task
-            {
-                long int dIndex = it->first;
-                long int dLength = it->second->dLength;
-                valType *real_vals = it->second->getRealValues();
-                valType *imag_vals = it->second->getImagValues();
+    #pragma omp parallel for
+    for (long int i = 0; i < A->diagonalMap.size(); i++) {
+        auto it = std::next(A->diagonalMap.begin(), i);
+        long int dIndex = it->first;
+        long int dLength = it->second->dLength;
+        valType *real_vals = it->second->getRealValues();
+        valType *imag_vals = it->second->getImagValues();
 
-                #pragma omp parallel for
-                for (long int i = 0; i < dLength; i++) {
-                    long int *mat_pos = A->getMatrixPosition(dIndex, i);
-                    long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-                    vals[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
-                }
-            }
+        #pragma omp parallel for
+        for (long int i = 0; i < dLength; i++) {
+            long int *mat_pos = A->getMatrixPosition(dIndex, i);
+            long int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
+            vals[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
         }
-        #pragma omp taskwait
     }
-
     return vals;
 }
 
@@ -185,6 +178,7 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
                 valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
                 valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
             #endif
+
             #pragma omp parallel for
             for(long int i = 0; i < vals_len; i++) {
                 real_vals[i] = vals[i].real();
