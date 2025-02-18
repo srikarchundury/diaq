@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
+# Look for OpenMP package and set OpenMP flags
 find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FLAGS)
+if(OpenMP_CXX_FOUND)
     message(STATUS "OpenMP flags detected: ${OpenMP_CXX_FLAGS}")
 else()
     message(FATAL_ERROR "OpenMP flags were not found!")
@@ -119,6 +120,9 @@ else()
             $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
         )
 
+        # Correctly link OpenMP to the `diaq` library
+        target_link_libraries(diaq PRIVATE OpenMP::OpenMP_CXX)
+
         # Set position-independent code (PIC) for shared libraries
         set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -145,9 +149,8 @@ if(DEFINED MAKE_TESTS)
     # Compile the tests.cpp file
     add_executable(tests ${TESTS_DIR}/tests.cpp)
 
-    # Set compilation options for the tests target
-    message(STATUS "OPENMP LIBRARIES: ${OpenMP_CXX_FLAGS}")
-    target_link_libraries(tests diaq ${OpenMP_CXX_FLAGS})
+    # Link the diaq library to the tests and OpenMP
+    target_link_libraries(tests PRIVATE diaq OpenMP::OpenMP_CXX)
 
     # Link PAPI library if PAPI_ON is defined to tests
     if(DEFINED PAPI_ON)

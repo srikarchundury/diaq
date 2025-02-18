@@ -13,7 +13,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     #ifdef DEBUG
         std::cout << "No vectorization" << std::endl;
     #endif
-    #pragma omp simd
+    // #pragma omp simd; this does not work as is!
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
         // std::cout << "loop k=" << k << std::endl;
 		valType real_a = real_vals_a[k + offsetA - jump];
@@ -771,8 +771,8 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     long int lenDiagB = diagB->dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
     long int res_dims[] = {shapeA[0], shapeB[1]};
-    long int lenRes = getDiagonalLength(indexA + indexB, res_dims);
-    diagonal *res = new diagonal(indexA + indexB, lenRes);
+    long int lenRes = getDiagonalLength(res_index, res_dims);
+    diagonal *res = new diagonal(res_index, lenRes);
     // std::cout << "diagonal length = " << lenRes << std::endl;
     long int offsetA = abs(indexA);  // Absolute value of indexA
     long int offsetB = abs(indexB);  // Absolute value of indexB
@@ -788,10 +788,10 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
         else if (indexB < 0) { 
             // Align diagonals based on their relative distance from the main diagonal
             if (offsetA > offsetB) {
-                offsetB = abs(indexA + indexB);  // Align indexB to the result index
+                offsetB = abs(res_index);  // Align indexB to the result index
                 offsetA = 0;
             } else {
-                offsetA = abs(indexA + indexB);  // Align indexA to the result index
+                offsetA = abs(res_index);  // Align indexA to the result index
                 offsetB = 0;
             }
         } 
@@ -853,8 +853,12 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     valType *imag_vals_b = diagB->getImagValues();
 	valType *real_vals_final = res->getRealValues();
     valType *imag_vals_final = res->getImagValues();
-    // std::cout << "k=" << k << std::endl;
-    // std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
+
+    #ifdef DEEP_DEBUG
+        std::cout << "k=" << k << std::endl;
+        std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
+    #endif
+
     #if VECTORIZATION_TYPE == 0
         run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == 1
@@ -906,33 +910,85 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
     diaQMatrix* result = new diaQMatrix(&d);
-    std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> mapA = A->diagonalMap;
+    std::unordered_map<long int, diagonal*> mapB = B->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
-    #pragma omp parallel for
-    for (itA = mapA.begin(); itA != mapA.end(); itA++) {
-        for (itB = mapB.begin(); itB != mapB.end(); itB++) {
-            // std::cout << " ------ diags ------ " << std::endl;
-            // itA->second->print();
-            // itB->second->print();
-            // std::cout << " ------ diags ------ " << std::endl;
-            // std::cout << " --- " << std::endl;
+    // #pragma omp parallel
+    // {
+    //     #pragma omp single
+    //     {
+    //         for (itA = mapA.begin(); itA != mapA.end(); itA++) {
+    //             for (itB = mapB.begin(); itB != mapB.end(); itB++) {
+    //                 #pragma omp taskgroup
+    //                 {
+    //                     #pragma omp task
+    //                     {
+    //                         #ifdef DEEP_DEBUG
+    //                             std::cout << " ------ diags ------ " << std::endl;
+    //                             itA->second->print();
+    //                             itB->second->print();
+    //                             std::cout << " ------ diags ------ " << std::endl;
+    //                             std::cout << " --- " << std::endl;
+    //                         #endif
+    //                         #ifdef DEBUG
+    //                             std::cout << "Thread ID " << omp_get_thread_num() << " is working on diagonal " << itA->first << " and " << itB->first << std::endl;
+    //                         #endif
 
-            diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
+    //                         diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
 
-            if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-                // std::cout << " ------ new diag ------ " << std::endl;
-                // diagNew->print();
-                // std::cout << " ------ new diag ------ " << std::endl;
-                result->addDiagonal(itA->first + itB->first, diagNew);
-                // std::cout << " ------ result ------ " << std::endl;
-                // result->print();
-                // std::cout << " ------ result ------ " << std::endl;
+    //                         if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
+
+    //                             #ifdef DEEP_DEBUG
+    //                                 std::cout << " ------ new diag ------ " << std::endl;
+    //                                 diagNew->print();
+    //                                 std::cout << " ------ new diag ------ " << std::endl;
+    //                             #endif
+
+    //                             #pragma omp critical
+    //                             {
+    //                                 result->addDiagonal(diagNew->dIndex, diagNew);
+    //                             }
+
+    //                             #ifdef DEEP_DEBUG
+    //                                 std::cout << " ------ result ------ " << std::endl;
+    //                                 result->print();
+    //                                 std::cout << " ------ result ------ " << std::endl;
+    //                             #endif
+
+    //                         } else if (diagNew != NULL) {
+
+    //                             #ifdef DEEP_DEBUG
+    //                                 printf(" --- printing empty diagonal --- \n");
+    //                                 diagNew->print();
+    //                                 printf(" --- --- --- \n");
+    //                             #endif
+
+    //                             diagNew->free();
+    //                         }
+    //                     } // ends omp task
+    //                 } // ends omp taskgroup
+    //             } // ends for-inner
+    //         } // ends for-outer
+    //     } // ends omp single
+    // } // ends omp parallel
+
+    #pragma omp parallel for collapse(2)
+    for (size_t a = 0; a < mapA.size(); ++a) {
+        for (size_t b = 0; b < mapB.size(); ++b) {
+            auto itA = std::next(mapA.begin(), a);
+            auto itB = std::next(mapB.begin(), b);
+
+            diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+                                                itA->first, itB->first, 
+                                                itA->second, itB->second);
+
+            if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
+                #pragma omp critical
+                {
+                    result->addDiagonal(itA->first + itB->first, diagNew);
+                }
             } else if (diagNew != NULL) {
-                // printf(" --- printing empty diagonal --- \n");
-                // diagNew->print();
-                // printf(" --- --- --- \n");
                 diagNew->free();
             }
         }
@@ -1225,10 +1281,16 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
         std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
         std::unordered_map<long int, diagonal *>::iterator it;
         std::unordered_map<long int, diagonal *> newDiagMap;
-        #pragma omp parallel for
-        for (it = diagMap.begin(); it != diagMap.end(); it++) {
-            it->second->setIndex(-1 * it->first);
-            newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
+        #pragma omp parallel
+        {
+            #pragma omp single
+            for (it = diagMap.begin(); it != diagMap.end(); it++) {
+                #pragma omp task
+                {
+                    it->second->setIndex(-1 * it->first);
+                    newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
+                }
+            }
         }
         A->setDiagonalMap(newDiagMap);
         // swap A->shape[0] and A->shape[1] and similarly for matrix_shape.
@@ -1277,37 +1339,43 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     //     res->createDiagonal(i);
     // }
 
-    #pragma omp parallel for
-    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+    #pragma omp parallel
+    {
+        #pragma omp single
+        for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
 
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+            #pragma omp task
+            {
+                valType *real_vals = it->second->getRealValues();
+                valType *imag_vals = it->second->getImagValues();
 
-        #pragma omp parallel for
-        for(long int i = 0; i < it->second->dLength; i++) {
-            // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
-            // std::cout << "element = " << vals[i] << std::endl;
-            std::vector<long int> ten_pos = A->getTensorPosition(it->first, i);
-            // std::cout << "tensor index = (";
-            // for(long int i = 0; i < ten_pos.size()-1; i++) {
-            //     std::cout << ten_pos[i] << ",";
-            // }
-            // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
+                #pragma omp parallel for
+                for(long int i = 0; i < it->second->dLength; i++) {
+                    // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
+                    // std::cout << "element = " << vals[i] << std::endl;
+                    std::vector<long int> ten_pos = A->getTensorPosition(it->first, i);
+                    // std::cout << "tensor index = (";
+                    // for(long int i = 0; i < ten_pos.size()-1; i++) {
+                    //     std::cout << ten_pos[i] << ",";
+                    // }
+                    // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
 
-            // modify ten_pos to perform the transposition using the new_order
-            std::vector<long int> new_ten_pos(new_order.size(), 1);
-            #pragma omp parallel for
-            for(long int i=0; i < new_order.size(); i++) {
-                new_ten_pos[i] = ten_pos[new_order[i]];
+                    // modify ten_pos to perform the transposition using the new_order
+                    std::vector<long int> new_ten_pos(new_order.size(), 1);
+                    #pragma omp parallel for
+                    for(long int i=0; i < new_order.size(); i++) {
+                        new_ten_pos[i] = ten_pos[new_order[i]];
+                    }
+
+                    long int *d_pos = res->getDiagonalPosition(new_ten_pos);
+                    // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
+                    long int d_len = getDiagonalLength(d_pos[0], new_shape);
+                    if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) { // to avoid pruning later.
+                        res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
+                    }
+                    // std::cout << " -- " << std::endl;
+                }
             }
-
-            long int *d_pos = res->getDiagonalPosition(new_ten_pos);
-            // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-            long int d_len = getDiagonalLength(d_pos[0], new_shape);
-            if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) { // to avoid pruning later.
-                res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
-            }
-            // std::cout << " -- " << std::endl;
         }
     }
     return res;
@@ -1524,55 +1592,68 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator itA, itB;
-    #pragma omp parallel for
-    for (itA = mapA.begin(); itA != mapA.end(); itA++) {
-        diagonal *diagA = itA->second;
-        valType *real_vals_A = diagA->getRealValues();
-        valType *imag_vals_A = diagA->getImagValues();
-        // #pragma omp parallel schedule(auto) num_threads(NUMBER_OF_OMP_THREADS)
-        for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
-            std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
-            #pragma omp parallel for
-            for (itB = mapB.begin(); itB != mapB.end(); itB++) {
-                diagonal *diagB = itB->second;
-                valType *real_vals_B = diagB->getRealValues();
-                valType *imag_vals_B = diagB->getImagValues();
-                #pragma omp parallel for
-                for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
-                    std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
-                    // if the common axes
-                    if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
-                        // print ten_pos_A and ten_pos_B
-                        // printf("ten_pos_A = (");
-                        // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
-                        //     printf("%ld, ", ten_pos_A[i]);
-                        // }
-                        // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
-                        // printf("ten_pos_B = (");
-                        // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
-                        //     printf("%ld, ", ten_pos_B[i]);
-                        // }
-                        // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
-                        // Calculate resulting coordinates after contraction
-                        std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
-                        // printing result_coords
-                        // printf("result_coords = (");
-                        // for (long int i = 0; i < result_coords.size() - 1; i++) {
-                        //     printf("%ld, ", result_coords[i]);
-                        // }
-                        // printf("%ld)\n", result_coords[result_coords.size() - 1]);
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            for (itA = mapA.begin(); itA != mapA.end(); itA++) {
+                #pragma omp task
+                {
+                    diagonal *diagA = itA->second;
+                    valType *real_vals_A = diagA->getRealValues();
+                    valType *imag_vals_A = diagA->getImagValues();
+                    // #pragma omp parallel for
+                    for(long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
+                        std::vector<long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
+                        // #pragma omp single
+                        // {
+                            for (itB = mapB.begin(); itB != mapB.end(); itB++) {
+                                #pragma omp task
+                                {
+                                    diagonal *diagB = itB->second;
+                                    valType *real_vals_B = diagB->getRealValues();
+                                    valType *imag_vals_B = diagB->getImagValues();
+                                    #pragma omp parallel for
+                                    for(long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
+                                        std::vector<long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
+                                        // if the common axes
+                                        if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
+                                            // print ten_pos_A and ten_pos_B
+                                            // printf("ten_pos_A = (");
+                                            // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
+                                            //     printf("%ld, ", ten_pos_A[i]);
+                                            // }
+                                            // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
+                                            // printf("ten_pos_B = (");
+                                            // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
+                                            //     printf("%ld, ", ten_pos_B[i]);
+                                            // }
+                                            // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
+                                            // Calculate resulting coordinates after contraction
+                                            std::vector<long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
+                                            // printing result_coords
+                                            // printf("result_coords = (");
+                                            // for (long int i = 0; i < result_coords.size() - 1; i++) {
+                                            //     printf("%ld, ", result_coords[i]);
+                                            // }
+                                            // printf("%ld)\n", result_coords[result_coords.size() - 1]);
 
-                        // get the diagonal position and length
-                        long int *res_diag_pos = res->getDiagonalPosition(result_coords);
-                        long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
-                        valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
-                        valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
-                        if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
-                            valType new_real_val = res->getItem_real(res_diag_pos[0], res_diag_pos[1]) + real_val;
-                            valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
-                            res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
-                        }
-                        std::free(res_diag_pos);
+                                            // get the diagonal position and length
+                                            long int *res_diag_pos = res->getDiagonalPosition(result_coords);
+                                            long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
+                                            valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
+                                            valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
+                                            if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
+                                                valType new_real_val = res->getItem_real(res_diag_pos[0], res_diag_pos[1]) + real_val;
+                                                valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
+                                                res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
+                                            }
+                                            std::free(res_diag_pos);
+                                        }
+                                    }
+                                }
+                            }
+                        // }
                     }
                 }
             }
@@ -1654,20 +1735,21 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         throw std::invalid_argument("Not multiplyable");
     }
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->getRealValues();
-    valType *y_imag_values = y->getImagValues();
+    valType *y_real_values = y->realValues_;
+    valType *y_imag_values = y->imagValues_;
 
-    valType *x_real_values = x->getRealValues();
-    valType *x_imag_values = x->getImagValues();
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
+    valType *x_real_values = x->realValues_;
+    valType *x_imag_values = x->imagValues_;
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
     #pragma omp parallel for
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+    for (size_t a = 0; a < diagMap.size(); ++a) {
+        auto it = std::next(diagMap.begin(), a);
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
         if(dIndex < 0) { // negative diagonals
             // printf("Negative diagonal!!\n");
             #if VECTORIZATION_TYPE == 1
@@ -1764,52 +1846,60 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        diagonal *diag = it->second;
-        valType *real_vals = diag->realValues;
-        valType *imag_vals = diag->imagValues;
-        switch(diag->dIndex) {
-            case -3: {
-                long int dIndex = -1 * q_diff_exp - 1;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case -2: {
-                long int dIndex = -1 * q_diff_exp;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case -1: {
-                long int dIndex = -1;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                // something
-                dIndex = -1 * q_diff_exp + 1;
-                dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case 0: {
-                long int dIndex = 0;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case 1: {
-                long int dIndex = 1;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                // do something
-                dIndex = q_diff_exp - 1;
-                dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case 2: {
-                long int dIndex = q_diff_exp;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
-            }
-            case 3: {
-                long int dIndex = q_diff_exp + 1;
-                long int dLength = getDiagonalLength(dIndex, new_gate_shape);
-                break;
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            for (it = diagMap.begin(); it != diagMap.end(); it++) {
+                #pragma omp task
+                {
+                    diagonal *diag = it->second;
+                    valType *real_vals = diag->realValues;
+                    valType *imag_vals = diag->imagValues;
+                    switch(diag->dIndex) {
+                        case -3: {
+                            long int dIndex = -1 * q_diff_exp - 1;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case -2: {
+                            long int dIndex = -1 * q_diff_exp;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case -1: {
+                            long int dIndex = -1;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // something
+                            dIndex = -1 * q_diff_exp + 1;
+                            dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case 0: {
+                            long int dIndex = 0;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case 1: {
+                            long int dIndex = 1;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // do something
+                            dIndex = q_diff_exp - 1;
+                            dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case 2: {
+                            long int dIndex = q_diff_exp;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                        case 3: {
+                            long int dIndex = q_diff_exp + 1;
+                            long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -1840,7 +1930,6 @@ vector *MV(denseMatrix *A, vector *x, vector *y) {
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
-        #pragma omp parallel for
         for(long int j = 0; j < A->matrix_shape[1]; j++) {
             std::complex<valType> elem = A->get(i, j);
             res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
@@ -1915,23 +2004,31 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        long int dIndex = it->first;
-        long int dLength = it->second->dLength;
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
-        diagonal *newDiag = new diagonal(dIndex, dLength);
-        valType *real_valsC = newDiag->getRealValues();
-        valType *imag_valsC = newDiag->getImagValues();
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            for (it = diagMap.begin(); it != diagMap.end(); it++) {
+                #pragma omp task
+                {
+                    long int dIndex = it->first;
+                    long int dLength = it->second->dLength;
+                    valType *real_vals = it->second->getRealValues();
+                    valType *imag_vals = it->second->getImagValues();
+                    diagonal *newDiag = new diagonal(dIndex, dLength);
+                    valType *real_valsC = newDiag->getRealValues();
+                    valType *imag_valsC = newDiag->getImagValues();
 
-        #pragma omp simd
-        for (long int i = 0; i < dLength; i++) {
-            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
-            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+                    #pragma omp simd
+                    for (long int i = 0; i < dLength; i++) {
+                        real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
+                        imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+                    }
+
+                    result->setDiagonal(dIndex, newDiag);
+                }
+            }
         }
-
-        result->setDiagonal(dIndex, newDiag);
     }
 
     #ifdef DEEP_DEBUG
@@ -3612,33 +3709,41 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     diaQMatrix *result = new diaQMatrix(&result_shape);
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel for
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        long int dIndex = it->first;
-        diagonal *diag = it->second;
-        long int dLength = diag->dLength;
-        // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-        valType *real_vals = diag->getRealValues();
-        valType *imag_vals = diag->getImagValues();
-        // result diag
-        diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
-        // printf("srik\n");
-        // newDiag->print_meta();
-        // printf("awesome\n");
-        valType *newDiag_real_vals = newDiag->getRealValues();
-        valType *newDiag_imag_vals = newDiag->getImagValues();
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            for (it = diagMap.begin(); it != diagMap.end(); it++) {
+                #pragma omp task
+                {
+                    long int dIndex = it->first;
+                    diagonal *diag = it->second;
+                    long int dLength = diag->dLength;
+                    // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
+                    valType *real_vals = diag->getRealValues();
+                    valType *imag_vals = diag->getImagValues();
+                    // result diag
+                    diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
+                    // printf("srik\n");
+                    // newDiag->print_meta();
+                    // printf("awesome\n");
+                    valType *newDiag_real_vals = newDiag->getRealValues();
+                    valType *newDiag_imag_vals = newDiag->getImagValues();
 
-        #pragma omp parallel for
-        for(long int i = 0; i < dLength; i++) {
-            valType each_real = real_vals[i];
-            valType each_imag = imag_vals[i];            
-            for(long int j = 0; j < n; j++) {
-                newDiag_real_vals[j + i * n] = each_real;
-                newDiag_imag_vals[j + i * n] = each_imag;
+                    #pragma omp parallel for
+                    for(long int i = 0; i < dLength; i++) {
+                        valType each_real = real_vals[i];
+                        valType each_imag = imag_vals[i];            
+                        for(long int j = 0; j < n; j++) {
+                            newDiag_real_vals[j + i * n] = each_real;
+                            newDiag_imag_vals[j + i * n] = each_imag;
+                        }
+                    }
+
+                    result->setDiagonal(dIndex * n, newDiag);
+                }
             }
         }
-
-        result->setDiagonal(dIndex * n, newDiag);
     }
     // result->pruneMatrix();
 
@@ -3737,41 +3842,52 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
 
     // traverse kron_map and add to result.
     std::map<std::pair<long int, long int>, std::pair<valType, valType>>::iterator it;
-    #pragma omp parallel for
-    for (it = kron_map.begin(); it != kron_map.end(); it++) {
-        // for each element in A
-        long int A_mat_pos[2];
-        A_mat_pos[0] = it->first.first;
-        A_mat_pos[1] = it->first.second;
-        // get kron_block from unique_kron_blocks
-        diaQMatrix *kron_block = unique_kron_blocks.find(it->second)->second;
+    #pragma omp parallel
+    {
+        #pragma omp single
+        for (it = kron_map.begin(); it != kron_map.end(); it++) {
+            #pragma omp task
+            {
+                // for each element in A
+                long int A_mat_pos[2];
+                A_mat_pos[0] = it->first.first;
+                A_mat_pos[1] = it->first.second;
+                // get kron_block from unique_kron_blocks
+                diaQMatrix *kron_block = unique_kron_blocks.find(it->second)->second;
 
-        // we now have to add to result's res_diag_index at res_diag_pos
-        std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
-        std::unordered_map<long int, diagonal*>::iterator itK;
+                // we now have to add to result's res_diag_index at res_diag_pos
+                std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
+                std::unordered_map<long int, diagonal*>::iterator itK;
 
-        #pragma omp parallel for
-        for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
+                #pragma omp parallel
+                {
+                    #pragma omp single
+                    for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
+                        #pragma omp task
+                        {
+                            long int kron_block_diag_index = itK->first;
+                            diagonal *kron_block_diag = itK->second;
+                            long int kron_block_diag_length = kron_block_diag->dLength;
 
-            long int kron_block_diag_index = itK->first;
-            diagonal *kron_block_diag = itK->second;
-            long int kron_block_diag_length = kron_block_diag->dLength;
+                            #pragma omp parallel for
+                            for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
-            #pragma omp parallel for
-            for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+                                long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                                long int res_mat_pos[2] = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
+                                long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
-                long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
-                long int res_mat_pos[2] = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
-                long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                                #ifdef DEEP_DEBUG
+                                    std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
+                                    std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
+                                    std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
+                                    std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
+                                #endif
 
-                #ifdef DEEP_DEBUG
-                    std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
-                    std::cout << "B_mat_pos = (" << B_mat_pos[0] << ", " << B_mat_pos[1] << ")" << std::endl;
-                    std::cout << "res_mat_pos = (" << res_mat_pos[0] << ", " << res_mat_pos[1] << ")" << std::endl;
-                    std::cout << "res_diag_pos = (" << res_diag_pos[0] << ", " << res_diag_pos[1] << ")" << std::endl;
-                #endif
-
-                result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
+                                result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->getRealValue(kron_block_diag_position), kron_block_diag->getImagValue(kron_block_diag_position));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -3842,26 +3958,25 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
         valType *res_real_vals = res_diag->getRealValues();
         valType *res_imag_vals = res_diag->getImagValues();
 
-        auto before = std::chrono::high_resolution_clock::now();
+        #ifdef DEBUG
+            auto before = std::chrono::high_resolution_clock::now();
+        #endif
 
         // Compute exact exp(-i A t) for diagonal elements
-        #pragma omp parallel for schedule(static)
+        #pragma omp parallel for
         for (long int i = 0; i < dLength; i++) {
-            #pragma omp simd
-            {
-                valType a_i = real_vals[i];
-                valType b_i = imag_vals[i];
+            valType a_i = real_vals[i];
+            valType b_i = imag_vals[i];
 
-                valType t_a = t * a_i;
-                valType t_b = t * b_i;
+            valType t_a = t * a_i;
+            valType t_b = t * b_i;
 
-                valType exp_b = std::exp(t_b);
-                valType cos_ta = std::cos(t_a);
-                valType sin_ta = std::sin(t_a);
+            valType exp_b = std::exp(t_b);
+            valType cos_ta = std::cos(t_a);
+            valType sin_ta = std::sin(t_a);
 
-                res_real_vals[i] = exp_b * cos_ta;
-                res_imag_vals[i] = -exp_b * sin_ta;
-            }
+            res_real_vals[i] = exp_b * cos_ta;
+            res_imag_vals[i] = -exp_b * sin_ta;
         }
 
         #ifdef DEBUG
@@ -3955,16 +4070,21 @@ diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
 }
 
 diaQMatrix *diaQMatrix::multiply_by_imag(valType imag) {
-    #pragma omp parallel for
-    for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-
-        diagonal *d = it->second;
-        valType *real_vals = d->getRealValues();
-        valType *imag_vals = d->getImagValues();
-        #pragma omp simd
-        for (long int i = 0; i < d->dLength; i++) {
-            real_vals[i] = -1.0 * imag_vals[i] * imag;
-            imag_vals[i] = real_vals[i] * imag;
+    #pragma omp parallel
+    {
+        #pragma omp single
+        for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+            #pragma omp task
+            {
+                diagonal *d = it->second;
+                valType *real_vals = d->getRealValues();
+                valType *imag_vals = d->getImagValues();
+                #pragma omp simd
+                for (long int i = 0; i < d->dLength; i++) {
+                    real_vals[i] = -1.0 * imag_vals[i] * imag;
+                    imag_vals[i] = real_vals[i] * imag;
+                }
+            }
         }
     }
     return this;

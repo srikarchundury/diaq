@@ -23,6 +23,7 @@ std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
         auto itB = dmB.find(itA->first);
         if(itB == dmB.end()) {
             // A->print();
+            std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
             return "false - 2";
         }
         if(itB->second->dLength != itA->second->dLength) { 
@@ -35,6 +36,8 @@ std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
                 if(itB->second->getRealValue(i) - itA->second->getRealValue(i) > epsilon) {
                     // print where the error is
                     std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
+                    std::cout << "Correct value: " << itA->second->getRealValue(i) << std::endl;
+                    std::cout << "Wrong value: " << itB->second->getRealValue(i) << std::endl;
                     return "false - 4";
                 }
                 if(itB->second->getImagValue(i) - itA->second->getImagValue(i) > epsilon) {
@@ -1549,10 +1552,12 @@ int main(int argc, char **argv) {
     else if (strcmp(argv[1], "0") == 0) {
         // Run OpenMP all thread tests! check if parallel regions are being multi-threaded
         printf("This variable:  %d\n", NUMBER_OF_OMP_THREADS);
-        #pragma omp parallel num_threads(16)
+        #pragma omp parallel
         {
             #pragma omp single
-            std::cout << "================================================= NUMBER OF THREADS via omp_get_num_threads = " << omp_get_num_threads() << std::endl;
+            {
+                std::cout << "================================================= NUMBER OF THREADS via omp_get_num_threads = " << omp_get_num_threads() << std::endl;
+            }
         }
     }
     else if(strcmp(argv[1], "reshape") == 0) {
@@ -1743,7 +1748,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(q_A25, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_2") == 0) {
@@ -1799,7 +1806,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_3") == 0) {
@@ -1859,7 +1868,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_4") == 0) {
@@ -1910,7 +1921,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_5") == 0) {
@@ -1952,7 +1965,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_6") == 0) {
@@ -2011,7 +2026,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_7") == 0) {
@@ -2073,7 +2090,9 @@ int main(int argc, char **argv) {
         y = diaq::spMV(q_mat, x, y);
         y->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_8") == 0) {
@@ -2125,7 +2144,9 @@ int main(int argc, char **argv) {
         y->print();
         
         std::cout << " -- " << std::endl;
-        std::cout << " -- spMV Done -- " << std::endl;
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(dense_y, y) << std::endl;
+        std::cout << " -- " << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "matrix_kron_identity_times_vector") == 0) {

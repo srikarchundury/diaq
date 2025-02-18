@@ -259,7 +259,8 @@ class diaQMatrix {
                 this->diagonalMap.insert({dIndex, newDiag});
             }
             else {
-                it->second->setValue(dPos, real_val, imag_val);
+                it->second->realValues[dPos] = real_val;
+                it->second->imagValues[dPos] = imag_val;
             }
         }
         void setDiagonal(long int dIndex, diagonal *diagNew) {
@@ -273,13 +274,10 @@ class diaQMatrix {
                 this->diagonalMap.insert({dIndex, diagNew});
             }
             else {
-                // std::cout << "already exists, overwrite" << std::endl;
+                #pragma omp simd
                 for(long int i = 0; i < it->second->dLength; i++) {
-                    it->second->setValue(
-                        i,
-                        it->second->getRealValue(i) + diagNew->getRealValue(i),
-                        it->second->getImagValue(i) + diagNew->getImagValue(i)
-                    );
+                    it->second->realValues[i] += diagNew->realValues[i];
+                    it->second->imagValues[i] += diagNew->imagValues[i];
                 }
                 diagNew->free();
             }
