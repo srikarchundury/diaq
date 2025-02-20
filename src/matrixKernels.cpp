@@ -1731,9 +1731,10 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    if(A->matrix_shape[1] != x->num_rows()) {
-        throw std::invalid_argument("Not multiplyable");
-    }
+    // if(A->matrix_shape[1] != x->num_rows()) {
+    //     throw std::invalid_argument("Not multiplyable");
+    // }
+
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues_;
     valType *y_imag_values = y->imagValues_;
@@ -1743,59 +1744,71 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (size_t a = 0; a < diagMap.size(); ++a) {
         auto it = std::next(diagMap.begin(), a);
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
+
         if(dIndex < 0) { // negative diagonals
-            // printf("Negative diagonal!!\n");
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
-                #pragma omp simd
-                for (long int i = 0; i < dLength; i++) {
-                    long int x_idx = i;
-                    long int y_idx = i - dIndex;
-                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-                }
-            #endif
+            // #pragma omp critical
+            // {
+                // printf("Negative diagonal!!\n");
+                #if VECTORIZATION_TYPE == 1
+                    run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #elif VECTORIZATION_TYPE == 0
+                    run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #else // run without vectorization
+                    #pragma omp simd
+                    for (long int i = 0; i < dLength; i++) {
+                        long int x_idx = i;
+                        long int y_idx = i - dIndex;
+                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                    }
+                #endif
+            // }
         }
+
         else if(dIndex > 0) { // positive diagonals
-            // printf("Positive diagonal!!\n");
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
-                #pragma omp simd
-                for (long int i = 0; i < dLength; i++) {
-                    long int x_idx = dIndex + i;
-                    long int y_idx = i;
-                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-                }
-            #endif
+            // #pragma omp critical
+            // {
+                // printf("Positive diagonal!!\n");
+                #if VECTORIZATION_TYPE == 1
+                    run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #elif VECTORIZATION_TYPE == 0
+                    run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #else // run without vectorization
+                    #pragma omp simd
+                    for (long int i = 0; i < dLength; i++) {
+                        long int x_idx = dIndex + i;
+                        long int y_idx = i;
+                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                    }
+                #endif
+            // }
         }
+
         else {
             // 0th diagonal
-            // printf("Zero diagonal!!\n");
-            #if VECTORIZATION_TYPE == 1
-                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #elif VECTORIZATION_TYPE == 0
-                run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-            #else // run without vectorization
-                #pragma omp simd
-                for (long int i = 0; i < dLength; i++) {
-                    y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
-                    y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
-                }
-            #endif
+            // #pragma omp critical
+            // {
+                // printf("Zero diagonal!!\n");
+                #if VECTORIZATION_TYPE == 1
+                    run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #elif VECTORIZATION_TYPE == 0
+                    run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                #else // run without vectorization
+                    #pragma omp simd
+                    for (long int i = 0; i < dLength; i++) {
+                        y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
+                        y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
+                    }
+                #endif
+            // }
         }
     }
 
@@ -1996,9 +2009,10 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
         std::cout << " --- " << std::endl;
     #endif
 
-    if (scalar_real == 1.0 && scalar_imag == 0.0) {
-        return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
-    }
+    // if (scalar_real == 1.0 && scalar_imag == 0.0) {
+    //     return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
+
+    // }
 
     diaQMatrix *result = new diaQMatrix((long int)0);
 
@@ -2170,7 +2184,10 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     diaQMatrix *result = new diaQMatrix(&result_shape);
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+
+    #pragma omp parallel for
+    for (long int i = 0; i < diagMap.size(); i++) {
+        auto it = std::next(diagMap.begin(), i);
         long int dIndex = it->first;
         diagonal *diag = it->second;
         // printf("A's diagonal\n");
@@ -3718,41 +3735,35 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     diaQMatrix *result = new diaQMatrix(&result_shape);
     std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*>::iterator it;
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            for (it = diagMap.begin(); it != diagMap.end(); it++) {
-                #pragma omp task
-                {
-                    long int dIndex = it->first;
-                    diagonal *diag = it->second;
-                    long int dLength = diag->dLength;
-                    // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
-                    valType *real_vals = diag->realValues;
-                    valType *imag_vals = diag->imagValues;
-                    // result diag
-                    diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
-                    // printf("srik\n");
-                    // newDiag->print_meta();
-                    // printf("awesome\n");
-                    valType *newDiag_real_vals = newDiag->realValues;
-                    valType *newDiag_imag_vals = newDiag->imagValues;
 
-                    #pragma omp parallel for
-                    for(long int i = 0; i < dLength; i++) {
-                        valType each_real = real_vals[i];
-                        valType each_imag = imag_vals[i];            
-                        for(long int j = 0; j < n; j++) {
-                            newDiag_real_vals[j + i * n] = each_real;
-                            newDiag_imag_vals[j + i * n] = each_imag;
-                        }
-                    }
+    #pragma omp parallel for
+    for(long int i = 0; i < diagMap.size(); i++) {
+        auto it = std::next(diagMap.begin(), i);
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
+        // result diag
+        diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
+        // printf("srik\n");
+        // newDiag->print_meta();
+        // printf("awesome\n");
+        valType *newDiag_real_vals = newDiag->realValues;
+        valType *newDiag_imag_vals = newDiag->imagValues;
 
-                    result->setDiagonal(dIndex * n, newDiag);
-                }
+        #pragma omp parallel for
+        for(long int i = 0; i < dLength; i++) {
+            valType each_real = real_vals[i];
+            valType each_imag = imag_vals[i];
+            for(long int j = 0; j < n; j++) {
+                newDiag_real_vals[j + i * n] = each_real;
+                newDiag_imag_vals[j + i * n] = each_imag;
             }
         }
+
+        result->setDiagonal(dIndex * n, newDiag);
     }
     // result->pruneMatrix();
 

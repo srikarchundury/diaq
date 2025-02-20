@@ -2513,7 +2513,7 @@ int main(int argc, char **argv) {
         printf(" -- correct answer -- \n");
         res_correct->print();
         printf(" -- new way to do it -- \n");
-        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa );
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)2, qspa );
         res->print();
         printf(" -- check -- \n");
         std::cout << checkResult(res, res_correct) << std::endl;
@@ -2529,7 +2529,7 @@ int main(int argc, char **argv) {
         printf(" -- correct answer -- \n");
         res_correct->print();
         printf(" -- new way to do it -- \n");
-        diaq::diaQMatrix *res = diaq::matrix_kron_identity(qspa, (long int)4);
+        diaq::diaQMatrix *res = diaq::matrix_kron_identity(qspa, (long int)2);
         res->print();
         printf(" -- check -- \n");
         std::cout << checkResult(res, res_correct) << std::endl;
@@ -2545,7 +2545,7 @@ int main(int argc, char **argv) {
         printf(" -- correct answer -- \n");
         res_correct->print();
         printf(" -- new way to do it -- \n");
-        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)4, qspa);
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix((long int)2, qspa);
         res->print();
         printf(" -- check -- \n");
         std::cout << checkResult(res, res_correct) << std::endl;

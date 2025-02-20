@@ -152,17 +152,17 @@ class vector {
 
         valType daggerMultiplyReal(vector *v) {
             valType real_res = 0.0;
-            valType *realValues = v->getRealValues();
-            valType *imagValues = v->getImagValues();
+            valType *realValues = v->realValues_;
+            valType *imagValues = v->imagValues_;
 
             #pragma omp parallel for reduction(+:real_res)
             for (size_t i = 0; i < numRows_; ++i) {
-            // Take the conjugate of this vector in place
-            valType real_conj = realValues_[i];
-            valType imag_conj = -imagValues_[i];
+                // Take the conjugate of this vector in place
+                valType real_conj = realValues_[i];
+                valType imag_conj = -imagValues_[i];
 
-            // Multiply with the corresponding elements of vector `v`
-            real_res += real_conj * realValues[i] - imag_conj * imagValues[i];
+                // Multiply with the corresponding elements of vector `v`
+                real_res += real_conj * realValues[i] - imag_conj * imagValues[i];
             }
 
             return real_res;
