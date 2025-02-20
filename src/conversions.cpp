@@ -154,6 +154,21 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
         }
 
         long int rank = shape.size();
+
+        #ifdef DEEP_DEBUG
+            std::cout << "Rank: " << rank << std::endl;
+            std::cout << "Shape: ";
+            for (long int i = 0; i < rank; i++) {
+                std::cout << shape[i] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "Vals: ";
+            for (long int i = 0; i < vals_len; i++) {
+                std::cout << vals[i] << " ";
+            }
+            std::cout << std::endl;
+        #endif
+
         if (rank > 2) { // higher-order tensor!
             long int product = vals_len;
             long int sqrtProduct = static_cast<long int>(std::sqrt(product));
@@ -209,6 +224,10 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
                     }
                 }
             }
+            #ifdef DEEP_DEBUG
+                std::cout << "from_numpy: " << std::endl;
+                qm->print();
+            #endif
             return qm;
         }
     #endif

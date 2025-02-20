@@ -2535,6 +2535,36 @@ int main(int argc, char **argv) {
         std::cout << checkResult(res, res_correct) << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "matrix_kron_identity_2") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing matrix_kron_identity -- " << std::endl;
+        diaq::valType x_vals[4] = {
+            0, 1,
+            1, 0
+        };
+        long int *x_shape = new long int[2]{2,2};
+        diaq::denseMatrix *X = new diaq::denseMatrix(&x_shape, x_vals);
+        diaq::diaQMatrix *dq_X = X->convertToQuantumSparse();
+        printf(" -- X -- \n");
+        dq_X->print();
+
+        diaq::diaQMatrix *dq_X_X = diaq::kron_product(dq_X, dq_X);
+        printf(" -- X kron X -- \n");
+        dq_X_X->print();
+
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *dq_X_X_IN = diaq::kron_product(dq_X_X, id4);
+        printf(" -- correct answer -- \n");
+        dq_X_X_IN->print();
+
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::matrix_kron_identity(dq_X_X, (long int)2);
+        res->print();
+
+        printf(" -- check -- \n");
+        std::cout << checkResult(dq_X_X_IN, res) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "identity_kron_matrix_2") == 0 ) {
         // testing matrix_kron_identity
         std::cout << " -- testing matrix_kron_identity -- " << std::endl;

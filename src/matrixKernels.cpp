@@ -1744,7 +1744,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for (size_t a = 0; a < diagMap.size(); ++a) {
         auto it = std::next(diagMap.begin(), a);
         long int dIndex = it->first;
@@ -1753,8 +1753,8 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
         valType *imag_vals = it->second->imagValues;
 
         if(dIndex < 0) { // negative diagonals
-            // #pragma omp critical
-            // {
+            #pragma omp critical
+            {
                 // printf("Negative diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
                     run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
@@ -1769,12 +1769,12 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
                         y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                     }
                 #endif
-            // }
+            }
         }
 
         else if(dIndex > 0) { // positive diagonals
-            // #pragma omp critical
-            // {
+            #pragma omp critical
+            {
                 // printf("Positive diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
                     run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
@@ -1789,13 +1789,13 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
                         y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                     }
                 #endif
-            // }
+            }
         }
 
         else {
             // 0th diagonal
-            // #pragma omp critical
-            // {
+            #pragma omp critical
+            {
                 // printf("Zero diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
                     run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
@@ -1808,7 +1808,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
                         y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
                     }
                 #endif
-            // }
+            }
         }
     }
 
@@ -2009,10 +2009,9 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
         std::cout << " --- " << std::endl;
     #endif
 
-    // if (scalar_real == 1.0 && scalar_imag == 0.0) {
-    //     return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
-
-    // }
+    if (scalar_real == 1.0 && scalar_imag == 0.0) {
+        return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
+    }
 
     diaQMatrix *result = new diaQMatrix((long int)0);
 
@@ -2087,14 +2086,14 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     std::unordered_map<long int, diagonal*> A_diagonalMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator itA;
 
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for (long int a = 0; a < A_diagonalMap.size(); a++) {
         auto itA = std::next(A_diagonalMap.begin(), a);
         long int diagonal_index = itA->first;
         diagonal *diag = itA->second;
         long int diagonal_length = diag->dLength;
 
-        // #pragma omp parallel for
+        #pragma omp parallel for
         for(long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
@@ -2115,24 +2114,24 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->diagonalMap;
             std::unordered_map<long int, diagonal*>::iterator itK;
 
-            // #pragma omp parallel for
+            #pragma omp parallel for
             for (long int b = 0; b < kron_block_diagMap.size(); b++) {
                 auto itK = std::next(kron_block_diagMap.begin(), b);
                 long int kron_block_diag_index = itK->first;
                 diagonal *kron_block_diag = itK->second;
                 long int kron_block_diag_length = kron_block_diag->dLength;
 
-                // #pragma omp parallel for
+                #pragma omp parallel for
                 for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
                     long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
                     long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
                     long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
-                    // #pragma omp critical
-                    // {
+                    #pragma omp critical
+                    {
                         result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->realValues[kron_block_diag_position], kron_block_diag->imagValues[kron_block_diag_position]);
-                    // }
+                    }
 
                     // free(res_diag_pos);
                     // free(B_mat_pos);
@@ -3733,8 +3732,7 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     // we just repeat A, n times in the result matrix
     long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
     diaQMatrix *result = new diaQMatrix(&result_shape);
-    std::unordered_map<long int, diagonal*> diagMap = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
 
     #pragma omp parallel for
     for(long int i = 0; i < diagMap.size(); i++) {
@@ -3747,20 +3745,16 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         valType *imag_vals = diag->imagValues;
         // result diag
         diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
-        // printf("srik\n");
-        // newDiag->print_meta();
-        // printf("awesome\n");
+
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for
-        for(long int i = 0; i < dLength; i++) {
-            valType each_real = real_vals[i];
-            valType each_imag = imag_vals[i];
-            for(long int j = 0; j < n; j++) {
-                newDiag_real_vals[j + i * n] = each_real;
-                newDiag_imag_vals[j + i * n] = each_imag;
-            }
+        for(long int i = 0; i < dLength * n; i++) {
+            long int diag_index = i / n;
+            long int n_index = i % n;
+            newDiag_real_vals[i] = real_vals[diag_index];
+            newDiag_imag_vals[i] = imag_vals[diag_index];
         }
 
         result->setDiagonal(dIndex * n, newDiag);
