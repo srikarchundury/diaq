@@ -56,10 +56,10 @@ std::string check_vectors(diaq::vector *a, diaq::vector *b) {
     if(a->num_rows() != b->num_rows()) {
         return "false - 1";
     }
-    diaq::valType *a_real_values = a->getRealValues();
-    diaq::valType *a_imag_values = a->getImagValues();
-    diaq::valType *b_real_values = b->getRealValues();
-    diaq::valType *b_imag_values = b->getImagValues();
+    diaq::valType *a_real_values = a->realValues_;
+    diaq::valType *a_imag_values = a->imagValues_;
+    diaq::valType *b_real_values = b->realValues_;
+    diaq::valType *b_imag_values = b->imagValues_;
     const diaq::valType epsilon = 0.00002;
     for(size_t i = 0; i < a->num_rows(); i++) {
         if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {

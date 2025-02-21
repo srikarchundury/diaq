@@ -60,7 +60,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_avx<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             std::cout << "Using AVX-Double vectorization" << std::endl;
         #endif
 
@@ -143,7 +143,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_avx<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             std::cout << "Using AVX-Float vectorization" << std::endl;
         #endif
         
@@ -467,7 +467,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_sse<float>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             std::cout << "Using SSE-Float vectorization" << std::endl;
         #endif
         
@@ -549,7 +549,7 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     template<>
     void run_sse<double>(long int k, long int lenRes, long int offsetA, long int offsetB, long int jump, long int lenDiagA, long int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             std::cout << "Using SSE-Double vectorization" << std::endl;
         #endif
 
@@ -4007,70 +4007,34 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     }
 
     // Parameters
-    int max_iterations = 50; // Limit to avoid infinite loops
-    valType tolerance = 1e-6; // Tolerance for convergence
+    int max_iterations = 100; // Limit to avoid infinite loops
+    valType tolerance = 1e-14; // Tolerance for convergence
 
-    // Initialize the first term in the series as I (identity)
-    diaQMatrix *term_so_far = new identityMatrix(A->matrix_shape[0]);
+    diaQMatrix *X = A->copy_and_scale_by_imag(-1.0 * t);
+    diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0
 
-    // std::cout << "Starting Taylor expansion for e^(-i * A * t)..." << std::endl;
-
-    // Iterative Taylor expansion
-    for (int n = 1; n <= max_iterations; ++n) {
-
-        // Multiply the term by A
-        term_so_far->multiplyMatrix(A);
-        valType imag_scale = -1 * t / n;
-        // Multiply the term by -i * t / n
-        term_so_far->multiply_by_imag(imag_scale);
-        // so in second iteration, we multiply by -i * A * t / 2!
-
-        // add the term to the result
-        result->addMatrix(term_so_far);
-
-        #ifdef DEEP_DEBUG
-            std::cout << "Iteration " << n << "..." << std::endl;
-            std::cout << "---" << std::endl;
-            std::cout << "Term: " << std::endl;
-            term_so_far->print();
-            std::cout << "---" << std::endl;
-            std::cout << "Result: " << std::endl;
-            result->print();
-            std::cout << "---" << std::endl;
-        #endif
-
-        // Check for convergence (small values in term)
-        if (term_so_far->norm() < tolerance) {
-            #ifdef DEEP_DEBUG
-                std::cout << "---" << std::endl;
-                std::cout << "Converged after " << n << " iterations.\n" << std::endl;
-                std::cout << "---" << std::endl;
-            #endif
-
-            break; // break if criteria met
-        }
+    for(int i = 1; i <= max_iterations; i++) {
+        X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
+        X_power_i_whole_divided_by_i->divide_by_int(i);
+        result->addMatrix(X_power_i_whole_divided_by_i);
+        // if(term->norm() < tolerance) {
+        //     break;
+        // }
     }
-
-    // Clean up
-    delete term_so_far;
-
-    #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
-    #endif
-
     return result;
 }
 
-
 diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
-    std::unordered_map<long int, diagonal*> BDiagMap = B->getDiagonalMap();
+    std::unordered_map<long int, diagonal*> BDiagMap = B->diagonalMap;
     std::unordered_map<long int, diagonal*> newDiagMap;
-    for (auto itA = diagonalMap.begin(); itA != diagonalMap.end(); itA++) {
+    #pragma omp parallel for
+    for (long int i = 0; i < diagonalMap.size(); i++) {
+        auto itA = std::next(diagonalMap.begin(), i);
         long int dIndexA = itA->first;
         diagonal *dA = itA->second;
-        for (auto itB = BDiagMap.begin(); itB != BDiagMap.end(); itB++) {
+        #pragma omp parallel for
+        for (long int j = 0; j < BDiagMap.size(); j++) {
+            auto itB = std::next(BDiagMap.begin(), j);
             long int dIndexB = itB->first;
             diagonal *dB = itB->second;
             diagonal *dNew = multiplyDiagonals(matrix_shape, matrix_shape, dIndexA, dIndexB, dA, dB);
@@ -4083,25 +4047,87 @@ diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
     return this;
 }
 
-diaQMatrix *diaQMatrix::multiply_by_imag(valType imag) {
-    #pragma omp parallel
-    {
-        #pragma omp single
-        for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-            #pragma omp task
-            {
-                diagonal *d = it->second;
-                valType *real_vals = d->realValues;
-                valType *imag_vals = d->imagValues;
-                #pragma omp simd
-                for (long int i = 0; i < d->dLength; i++) {
-                    real_vals[i] = -1.0 * imag_vals[i] * imag;
-                    imag_vals[i] = real_vals[i] * imag;
-                }
-            }
+diaQMatrix *diaQMatrix::scale_by_imag(valType imag) {
+    #pragma omp parallel for
+    for (long int i = 0; i < diagonalMap.size(); i++) {
+        auto it = std::next(diagonalMap.begin(), i);
+        diagonal *d = it->second;
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+        #pragma omp simd
+        for (long int i = 0; i < d->dLength; i++) {
+            valType r = real_vals[i];
+            real_vals[i] = -1.0 * imag_vals[i] * imag;
+            imag_vals[i] = r * imag;
         }
     }
     return this;
 }
+
+diaQMatrix *diaQMatrix::copy_and_scale_by_imag(valType imag) {
+    std::unordered_map<long int, diagonal*> newDiagonalMap;
+    #pragma omp parallel for
+    for (size_t i = 0; i < diagonalMap.size(); i++) {
+        auto it = std::next(diagonalMap.begin(), i);
+        diagonal *d = it->second;
+
+        #ifdef NUM_BYTES_ALIGNED
+            valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+            valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+        #else
+            valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
+            valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
+        #endif
+
+        #pragma omp parallel for
+        for (long int i = 0; i < d->dLength; i++) {
+            real_vals[i] = -1.0 * d->imagValues[i] * imag;
+            imag_vals[i] = d->realValues[i] * imag;
+        }
+        diagonal *newDiag = new diagonal(d->dIndex, d->dLength, real_vals, imag_vals);
+        newDiagonalMap.insert({d->dIndex, newDiag});
+    }
+    long int *newMatrixShape = new long int[2]{matrix_shape[0], matrix_shape[1]};
+    diaQMatrix *newMatrix = new diaQMatrix(newDiagonalMap, &newMatrixShape);
+    return newMatrix;
+}
+
+diaQMatrix *diaQMatrix::scale_by_real(valType real) {
+    #pragma omp parallel for
+    for (long int i = 0; i < diagonalMap.size(); i++) {
+        auto it = std::next(diagonalMap.begin(), i);
+        diagonal *d = it->second;
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+        #pragma omp parallel for
+        for (long int i = 0; i < d->dLength; i++) {
+            real_vals[i] = real_vals[i] * real;
+            imag_vals[i] = imag_vals[i] * real;
+        }
+    }
+    return this;
+}
+
+diaQMatrix *diaQMatrix::divide_by_int(int int_value) {
+    #pragma omp parallel for
+    for (long int i = 0; i < diagonalMap.size(); i++) {
+        auto it = std::next(diagonalMap.begin(), i);
+        diagonal *d = it->second;
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+        #pragma omp parallel for
+        for (long int i = 0; i < d->dLength; i++) {
+            real_vals[i] = real_vals[i] / valType(int_value);
+            imag_vals[i] = imag_vals[i] / valType(int_value);
+        }
+    }
+    return this;
+}
+
+diaQMatrix *diaQMatrix::inverse() {
+    throw std::logic_error("Function not yet implemented.");
+}
+
+
 
 } // namespace diaq

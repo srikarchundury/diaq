@@ -170,6 +170,19 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
         #endif
 
         if (rank > 2) { // higher-order tensor!
+            #if NUM_BYTES_ALIGNED == -1
+                valType *real_vals = (valType *)calloc(vals_len, sizeof(valType));
+                valType *imag_vals = (valType *)calloc(vals_len, sizeof(valType));
+            #else
+                valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
+                valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
+            #endif
+
+            #pragma omp parallel for
+            for(long int i = 0; i < vals_len; i++) {
+                real_vals[i] = vals[i].real();
+                imag_vals[i] = vals[i].imag();
+            }
             long int product = vals_len;
             long int sqrtProduct = static_cast<long int>(std::sqrt(product));
             // Find the closest factors of the product
@@ -185,20 +198,6 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
             long int *new_shape = new long int[2];
             new_shape[0] = y;
             new_shape[1] = x;
-
-            #if NUM_BYTES_ALIGNED == -1
-                valType *real_vals = (valType *)calloc(vals_len, sizeof(valType));
-                valType *imag_vals = (valType *)calloc(vals_len, sizeof(valType));
-            #else
-                valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
-                valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
-            #endif
-
-            #pragma omp parallel for
-            for(long int i = 0; i < vals_len; i++) {
-                real_vals[i] = vals[i].real();
-                imag_vals[i] = vals[i].imag();
-            }
 
             denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, shape);
             return d->convertToQuantumSparse(new_shape);
