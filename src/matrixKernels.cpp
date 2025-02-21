@@ -878,10 +878,11 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
  * @return diaQMatrix  C
  */
 diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
+
+    // printf("here hey hey\n");
     
     // A->print_meta();
     // B->print_meta();
-
 
     #ifdef DEBUG
         // start timer
@@ -4008,18 +4009,19 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
 
     // Parameters
     int max_iterations = 100; // Limit to avoid infinite loops
-    valType tolerance = 1e-14; // Tolerance for convergence
+    valType tolerance = 1e-7; // Tolerance for convergence, I tweaked this myself, is there a better way?
 
     diaQMatrix *X = A->copy_and_scale_by_imag(-1.0 * t);
+
     diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0
 
     for(int i = 1; i <= max_iterations; i++) {
         X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
         X_power_i_whole_divided_by_i->divide_by_int(i);
         result->addMatrix(X_power_i_whole_divided_by_i);
-        // if(term->norm() < tolerance) {
-        //     break;
-        // }
+        if(X_power_i_whole_divided_by_i->norm() < tolerance) {
+            break;
+        }
     }
     return result;
 }
@@ -4085,7 +4087,10 @@ diaQMatrix *diaQMatrix::copy_and_scale_by_imag(valType imag) {
             imag_vals[i] = d->realValues[i] * imag;
         }
         diagonal *newDiag = new diagonal(d->dIndex, d->dLength, real_vals, imag_vals);
+
+        #pragma omp critical
         newDiagonalMap.insert({d->dIndex, newDiag});
+
     }
     long int *newMatrixShape = new long int[2]{matrix_shape[0], matrix_shape[1]};
     diaQMatrix *newMatrix = new diaQMatrix(newDiagonalMap, &newMatrixShape);
