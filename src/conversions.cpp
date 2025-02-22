@@ -210,16 +210,27 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
 
             diaQMatrix *qm = new diaQMatrix(&mat_shape);
 
-            #pragma omp parallel for
-            for(long int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
-                valType r = vals[flatIndex].real();
-                valType i = vals[flatIndex].imag();
-                if (r != 0.0 || i != 0.0) {
-                    long int *d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
-                    long int d_len = qm->getDiagonalLength(d_pos[0]);
-                    #pragma omp critical
-                    {
-                        qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, r, i);
+            #pragma omp parallel
+            {
+                std::vector<std::tuple<long int, long int, valType, valType>> local_updates;
+
+                #pragma omp for nowait
+                for (long int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
+                    valType r = vals[flatIndex].real();
+                    valType i = vals[flatIndex].imag();
+                    if (r != 0.0 || i != 0.0) {
+                        long int *d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
+                        long int d_len = qm->getDiagonalLength(d_pos[0]);
+
+                        local_updates.emplace_back(d_pos[0], d_pos[1], r, i);
+                    }
+                }
+
+                // Merge results into the matrix in parallel
+                #pragma omp critical
+                {
+                    for (const auto& update : local_updates) {
+                        qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
                     }
                 }
             }

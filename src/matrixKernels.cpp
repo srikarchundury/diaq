@@ -974,23 +974,32 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //     } // ends omp single
     // } // ends omp parallel
 
-    #pragma omp parallel for collapse(2)
-    for (size_t a = 0; a < mapA.size(); ++a) {
-        for (size_t b = 0; b < mapB.size(); ++b) {
-            auto itA = std::next(mapA.begin(), a);
-            auto itB = std::next(mapB.begin(), b);
-
-            diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
-                                                itA->first, itB->first, 
-                                                itA->second, itB->second);
-
-            if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-                #pragma omp critical
-                {
-                    result->addDiagonal(itA->first + itB->first, diagNew);
+    #pragma omp parallel
+    {
+        std::vector<std::pair<long int, diagonal*>> localDiags;
+    
+        #pragma omp for collapse(2) nowait
+        for (size_t a = 0; a < mapA.size(); ++a) {
+            for (size_t b = 0; b < mapB.size(); ++b) {
+                auto itA = std::next(mapA.begin(), a);
+                auto itB = std::next(mapB.begin(), b);
+    
+                diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+                                                      itA->first, itB->first, 
+                                                      itA->second, itB->second);
+    
+                if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
+                    localDiags.emplace_back(itA->first + itB->first, diagNew);
+                } else if (diagNew != NULL) {
+                    diagNew->free();
                 }
-            } else if (diagNew != NULL) {
-                diagNew->free();
+            }
+        }
+        // Merge thread-local results into the global result map
+        #pragma omp critical
+        {
+            for (const auto& [index, diag] : localDiags) {
+                result->addDiagonal(index, diag);
             }
         }
     }
@@ -4012,13 +4021,23 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     valType tolerance = 1e-14; // Tolerance for convergence, I tweaked this myself, is there a better way?
 
     diaQMatrix *X = A->copy_and_scale_by_imag(-1.0 * t);
+    // printf("X\n");
+    // X->print_meta();
 
     diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
+    // printf("X_power_i_whole_divided_by_i\n");
+    // X_power_i_whole_divided_by_i->print_meta();
 
     for(int i = 1; i <= max_iterations; i++) {
         X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
+        // printf("X_power_i_whole_divided_by_i 0 \n");
+        // X_power_i_whole_divided_by_i->print_meta();
         X_power_i_whole_divided_by_i->divide_by_int(i);
+        // printf("X_power_i_whole_divided_by_i 1\n");
+        // X_power_i_whole_divided_by_i->print_meta();
         result->addMatrix(X_power_i_whole_divided_by_i);
+        // printf("result\n");
+        // result->print_meta();
         if(X_power_i_whole_divided_by_i->norm() < tolerance) {
             break;
         }
@@ -4050,103 +4069,5 @@ diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
     this->diagonalMap = newDiagMap;
     return this;
 }
-
-diaQMatrix *diaQMatrix::scale_by_imag(valType imag) {
-    #pragma omp parallel for
-    for (long int i = 0; i < diagonalMap.size(); i++) {
-        auto it = std::next(diagonalMap.begin(), i);
-        diagonal *d = it->second;
-        valType *real_vals = d->realValues;
-        valType *imag_vals = d->imagValues;
-        #pragma omp simd
-        for (long int i = 0; i < d->dLength; i++) {
-            valType r = real_vals[i];
-            real_vals[i] = -1.0 * imag_vals[i] * imag;
-            imag_vals[i] = r * imag;
-        }
-    }
-    return this;
-}
-
-diaQMatrix *diaQMatrix::copy_and_scale_by_imag(valType imag) {
-    std::unordered_map<long int, diagonal*> newDiagonalMap;
-
-    #pragma omp parallel for
-    for (size_t i = 0; i < diagonalMap.size(); i++) {
-        auto it = std::next(diagonalMap.begin(), i);
-        diagonal *d = it->second;
-
-        #ifdef NUM_BYTES_ALIGNED
-            valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-            valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-        #else
-            valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
-            valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
-        #endif
-
-        #pragma omp simd
-        for (long int i = 0; i < d->dLength; i++) {
-            real_vals[i] = -1.0 * d->imagValues[i] * imag;
-            imag_vals[i] = d->realValues[i] * imag;
-        }
-        diagonal *newDiag = new diagonal(d->dIndex, d->dLength, real_vals, imag_vals);
-
-        #pragma omp critical
-        newDiagonalMap.insert({d->dIndex, newDiag});
-
-    }
-    long int *newMatrixShape = new long int[2]{matrix_shape[0], matrix_shape[1]};
-    diaQMatrix *newMatrix = new diaQMatrix(newDiagonalMap, &newMatrixShape);
-    return newMatrix;
-}
-
-diaQMatrix *diaQMatrix::scale_by_real(valType real) {
-    #pragma omp parallel for
-    for (long int i = 0; i < diagonalMap.size(); i++) {
-        auto it = std::next(diagonalMap.begin(), i);
-        diagonal *d = it->second;
-        valType *real_vals = d->realValues;
-        valType *imag_vals = d->imagValues;
-        #pragma omp parallel for
-        for (long int i = 0; i < d->dLength; i++) {
-            real_vals[i] = real_vals[i] * real;
-            imag_vals[i] = imag_vals[i] * real;
-        }
-    }
-    return this;
-}
-
-diaQMatrix *diaQMatrix::divide_by_int(int int_value) {
-    if (int_value == 0) {
-        throw std::runtime_error("Division by zero error.");
-    }
-    
-    if (int_value == 1) {
-        return this;  // No division needed
-    }
-
-    valType reciprocal = 1.0 / valType(int_value);
-    valType min_threshold = std::numeric_limits<valType>::min();
-
-    #pragma omp parallel for
-    for (long int i = 0; i < diagonalMap.size(); i++) {
-        auto it = std::next(diagonalMap.begin(), i);
-        diagonal *d = it->second;
-        valType *real_vals = d->realValues;
-        valType *imag_vals = d->imagValues;
-        #pragma omp simd
-        for (long int j = 0; j < d->dLength; j++) {
-            real_vals[j] = (std::abs(real_vals[j]) > min_threshold * int_value) ? real_vals[j] * reciprocal : 0.0;
-            imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * int_value) ? imag_vals[j] * reciprocal : 0.0;
-        }
-    }
-    return this;
-}
-
-diaQMatrix *diaQMatrix::inverse() {
-    throw std::logic_error("Function not yet implemented.");
-}
-
-
 
 } // namespace diaq
