@@ -144,6 +144,23 @@ class diagonal {
             }
             return count;
         }
+        diagonal *scale_by_imag(valType imag) {
+            #pragma omp parallel for
+            for(long int i = 0; i < dLength; i++) {
+                valType r = -1.0 * imag * imagValues[i];
+                imagValues[i] = imag * realValues[i];
+                realValues[i] = r;
+            }
+            return this;
+        }
+        diagonal *scale_by_real(valType real) {
+            #pragma omp parallel for
+            for(long int i = 0; i < dLength; i++) {
+                realValues[i] *= real;
+                imagValues[i] *= real;
+            }
+            return this;
+        }
         void free() {
             std::free(realValues);
             std::free(imagValues);

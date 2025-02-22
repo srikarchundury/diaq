@@ -3,6 +3,8 @@
 
 #include <type_traits>
 #include <unordered_map>
+#include <cmath>  // For std::abs and std::numeric_limits
+#include <limits> // For std::numeric_limits
 
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
@@ -45,6 +47,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
 void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y);
 void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
 diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
+diaQMatrix *identity_kron_matrix_kron_identity(long int n, diaQMatrix *v, long int m);
 
 void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y);
 void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);

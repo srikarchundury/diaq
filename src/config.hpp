@@ -67,13 +67,29 @@ using valType = double; // double or float
 #endif
 // ------------------------------- //
 
-void initialize_omp_settings();
-inline void ensure_omp_initialized() {
-    static bool initialized = ([]() {
-        initialize_omp_settings();  // Call it only once
-        return true;
-    })();
-}
+class OMPInitializer {
+public:
+    OMPInitializer() {
+        omp_set_dynamic(1);
+        omp_set_num_threads(NUMBER_OF_OMP_THREADS);
+
+		// // testing
+        // std::cout << "OMP settings initialized with " << NUMBER_OF_OMP_THREADS 
+        //           << " threads. Max threads: " << omp_get_max_threads() << std::endl;
+
+        // #pragma omp parallel
+        // {
+		// 	std::cout << "In parallel region? " << omp_in_parallel() << std::endl;
+        //     #pragma omp single
+        //     {
+        //         std::cout << "Number of threads in parallel region: " 
+        //                   << omp_get_num_threads() << std::endl;
+        //     }
+        // }
+    }
+};
+
+static OMPInitializer omp_initializer;  // Global object to trigger initialization
 
 } // namespace diaq
 

@@ -84,8 +84,9 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
     //     qm->createDiagonal(i);
     // }
     // #pragma omp barrier
+
+    #pragma omp parallel for
     for(long int i = 0; i < matrix_shape[0]; i++) {
-        #pragma omp parallel for
         for(long int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
             long int *pos = new long int[2];
@@ -96,7 +97,10 @@ diaQMatrix *denseMatrix::convertToQuantumSparse(long int *new_shape) {
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
             if(realData[i * new_shape[1] + j] != 0.0 || imagData[i * new_shape[1] + j] != 0.0) {
                 // printf("realData[%ld] = %f, imagData[%ld] = %f\n", i * new_shape[1] + j, realData[i * new_shape[1] + j], i * new_shape[1] + j, imagData[i * new_shape[1] + j]);
-                qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
+                #pragma omp critical
+                {
+                    qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
+                }
             }
         }
     }
@@ -123,11 +127,12 @@ std::complex<valType> *to_numpy(diaQMatrix *A) {
     std::fill(vals, vals + total_elements, std::complex<valType>(0.0, 0.0));
 
     #pragma omp parallel for
-    for (auto it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
+    for (long int i = 0; i < A->diagonalMap.size(); i++) {
+        auto it = std::next(A->diagonalMap.begin(), i);
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
 
         #pragma omp parallel for
         for (long int i = 0; i < dLength; i++) {
@@ -136,7 +141,6 @@ std::complex<valType> *to_numpy(diaQMatrix *A) {
             vals[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
         }
     }
-
     return vals;
 }
 
@@ -148,17 +152,37 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
         for (long int val : shape) {
             vals_len *= val;
         }
-        valType *real_vals = (valType *)malloc(vals_len * sizeof(valType));
-        valType *imag_vals = (valType *)malloc(vals_len * sizeof(valType));
-        
-        #pragma omp parallel for
-        for(long int i = 0; i < vals_len; i++) {
-            real_vals[i] = vals[i].real();
-            imag_vals[i] = vals[i].imag();
-        }
 
         long int rank = shape.size();
+
+        #ifdef DEEP_DEBUG
+            std::cout << "Rank: " << rank << std::endl;
+            std::cout << "Shape: ";
+            for (long int i = 0; i < rank; i++) {
+                std::cout << shape[i] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "Vals: ";
+            for (long int i = 0; i < vals_len; i++) {
+                std::cout << vals[i] << " ";
+            }
+            std::cout << std::endl;
+        #endif
+
         if (rank > 2) { // higher-order tensor!
+            #if NUM_BYTES_ALIGNED == -1
+                valType *real_vals = (valType *)calloc(vals_len, sizeof(valType));
+                valType *imag_vals = (valType *)calloc(vals_len, sizeof(valType));
+            #else
+                valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
+                valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
+            #endif
+
+            #pragma omp parallel for
+            for(long int i = 0; i < vals_len; i++) {
+                real_vals[i] = vals[i].real();
+                imag_vals[i] = vals[i].imag();
+            }
             long int product = vals_len;
             long int sqrtProduct = static_cast<long int>(std::sqrt(product));
             // Find the closest factors of the product
@@ -174,38 +198,47 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
             long int *new_shape = new long int[2];
             new_shape[0] = y;
             new_shape[1] = x;
+
             denseMatrix *d = new denseMatrix(&new_shape, real_vals, imag_vals, shape);
             return d->convertToQuantumSparse(new_shape);
-        } else { // matrix!
+
+        }  else { // matrix!
 
             long int *mat_shape = new long int[2];
             mat_shape[0] = shape[0];
             mat_shape[1] = shape[1];
 
-            // // This is bad, but I don't have a better way to do this right now.
-            // denseMatrix *d = new denseMatrix(&mat_shape, real_vals, imag_vals, shape);
-            // return d->convertToQuantumSparse(mat_shape);
-
-            // directly from numpy object, instead of creating this intermediate denseMatrix object!!!!
             diaQMatrix *qm = new diaQMatrix(&mat_shape);
-            long int i, j;
-            std::complex<valType> v;
 
-            long int tot_elems = mat_shape[0] * mat_shape[1];
+            #pragma omp parallel
+            {
+                std::vector<std::tuple<long int, long int, valType, valType>> local_updates;
 
-            #pragma omp parallel for
-            for(long int flatIndex = 0; flatIndex < tot_elems; flatIndex++) {
-                v = vals[flatIndex];
-                if( v != 0.0 ) {
-                    long int *d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
-                    long int d_len = qm->getDiagonalLength(d_pos[0]);
-                    qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, v.real(), v.imag());
+                #pragma omp for nowait
+                for (long int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
+                    valType r = vals[flatIndex].real();
+                    valType i = vals[flatIndex].imag();
+                    if (r != 0.0 || i != 0.0) {
+                        long int *d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
+                        long int d_len = qm->getDiagonalLength(d_pos[0]);
+
+                        local_updates.emplace_back(d_pos[0], d_pos[1], r, i);
+                    }
+                }
+
+                // Merge results into the matrix in parallel
+                #pragma omp critical
+                {
+                    for (const auto& update : local_updates) {
+                        qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
+                    }
                 }
             }
-
+            #ifdef DEEP_DEBUG
+                std::cout << "from_numpy: " << std::endl;
+                qm->print();
+            #endif
             return qm;
-
-            // // printf("New way directly from numpy\n");
         }
     #endif
 }

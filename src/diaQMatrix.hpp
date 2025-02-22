@@ -259,7 +259,8 @@ class diaQMatrix {
                 this->diagonalMap.insert({dIndex, newDiag});
             }
             else {
-                it->second->setValue(dPos, real_val, imag_val);
+                it->second->realValues[dPos] = real_val;
+                it->second->imagValues[dPos] = imag_val;
             }
         }
         void setDiagonal(long int dIndex, diagonal *diagNew) {
@@ -273,54 +274,233 @@ class diaQMatrix {
                 this->diagonalMap.insert({dIndex, diagNew});
             }
             else {
-                // std::cout << "already exists, overwrite" << std::endl;
+                #pragma omp simd
                 for(long int i = 0; i < it->second->dLength; i++) {
-                    it->second->setValue(
-                        i,
-                        it->second->getRealValue(i) + diagNew->getRealValue(i),
-                        it->second->getImagValue(i) + diagNew->getImagValue(i)
-                    );
+                    it->second->realValues[i] += diagNew->realValues[i];
+                    it->second->imagValues[i] += diagNew->imagValues[i];
                 }
                 diagNew->free();
             }
         }
+
         diaQMatrix *addMatrix(diaQMatrix *B) {
-            std::unordered_map<long int, diagonal*> BDiagMap = B->getDiagonalMap();
-            for (auto it = BDiagMap.begin(); it != BDiagMap.end(); it++) {
-                long int dIndex = it->first;
-                diagonal *dB = it->second;
-                auto itA = diagonalMap.find(dIndex);
-                if(itA == diagonalMap.end()) {
-                    // If the diagonal does not exist in the current matrix, add it
-                    diagonalMap.insert({dIndex, dB});
-                } else {
-                    // If the diagonal exists, add the elements
-                    diagonal *dA = itA->second;
-                    for (long int i = 0; i < dA->dLength; i++) {
-                        dA->setValue(
-                            i,
-                            dA->getRealValue(i) + dB->getRealValue(i),
-                            dA->getImagValue(i) + dB->getImagValue(i)
-                        );
+            std::vector<std::pair<long int, diagonal*>> BDiagVec(B->diagonalMap.begin(), B->diagonalMap.end());
+        
+            #pragma omp parallel
+            {
+                std::unordered_map<long int, diagonal*> localUpdates;
+        
+                #pragma omp for nowait
+                for (size_t i = 0; i < BDiagVec.size(); i++) {
+                    long int dIndex = BDiagVec[i].first;
+                    diagonal *dB = BDiagVec[i].second;
+        
+                    auto itA = diagonalMap.find(dIndex);
+                    if (itA == diagonalMap.end()) {
+                        // If the diagonal does not exist in A, store it for later insertion
+                        localUpdates[dIndex] = dB;
+                    } else {
+                        // If the diagonal exists, add the elements
+                        diagonal *dA = itA->second;
+                        valType *dA_real_vals = dA->realValues;
+                        valType *dA_imag_vals = dA->imagValues;
+                        valType *dB_real_vals = dB->realValues;
+                        valType *dB_imag_vals = dB->imagValues;
+        
+                        #pragma omp simd
+                        for (long int j = 0; j < dA->dLength; j++) {
+                            dA_real_vals[j] += dB_real_vals[j];
+                            dA_imag_vals[j] += dB_imag_vals[j];
+                        }
                     }
+                }
+        
+                // Merge local updates into the global diagonalMap
+                #pragma omp critical
+                diagonalMap.insert(localUpdates.begin(), localUpdates.end());
+            }
+        
+            return this;
+        }
+
+        diaQMatrix *scale_by_imag(valType imag) {
+            #pragma omp parallel for
+            for (long int i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                diagonal *d = it->second;
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                #pragma omp simd
+                for (long int i = 0; i < d->dLength; i++) {
+                    valType r = real_vals[i];
+                    real_vals[i] = -1.0 * imag_vals[i] * imag;
+                    imag_vals[i] = r * imag;
                 }
             }
             return this;
         }
 
-        diaQMatrix *multiply_by_imag(valType imag);
+        diaQMatrix *scale_by_real(valType real) {
+            #pragma omp parallel for
+            for (long int i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                diagonal *d = it->second;
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                #pragma omp parallel for
+                for (long int i = 0; i < d->dLength; i++) {
+                    real_vals[i] = real_vals[i] * real;
+                    imag_vals[i] = imag_vals[i] * real;
+                }
+            }
+            return this;
+        }
 
-        diaQMatrix *multiplyMatrix(diaQMatrix *B);
+        diaQMatrix *multiplyMatrix(diaQMatrix *B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
+
+        diaQMatrix *inverse() {
+            throw std::logic_error("Function not yet implemented.");
+        }
+        diaQMatrix *divide_by_int(int int_value) {
+            if (int_value == 0) {
+                throw std::runtime_error("Division by zero error.");
+            }
+            
+            if (int_value == 1) {
+                return this;  // No division needed
+            }
+        
+            valType reciprocal = 1.0 / valType(int_value);
+            valType min_threshold = std::numeric_limits<valType>::min();
+        
+            #pragma omp parallel for
+            for (long int i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                diagonal *d = it->second;
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                #pragma omp simd
+                for (long int j = 0; j < d->dLength; j++) {
+                    real_vals[j] = (std::abs(real_vals[j]) > min_threshold * int_value) ? real_vals[j] * reciprocal : 0.0;
+                    imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * int_value) ? imag_vals[j] * reciprocal : 0.0;
+                }
+            }
+            return this;
+        }
+
+        diaQMatrix *copy_and_scale_by_imag(valType imag) {
+            std::vector<std::pair<long int, diagonal*>> diagVector(diagonalMap.begin(), diagonalMap.end());
+            std::unordered_map<long int, diagonal*> newDiagonalMap;
+        
+            #pragma omp parallel
+            {
+                std::unordered_map<long int, diagonal*> localMap;
+        
+                #pragma omp for nowait
+                for (size_t i = 0; i < diagVector.size(); i++) {
+                    diagonal *d = diagVector[i].second;
+        
+                    #ifdef NUM_BYTES_ALIGNED
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                    #else
+                        valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                        valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                    #endif
+        
+                    #pragma omp simd
+                    for (long int j = 0; j < d->dLength; j++) {
+                        real_vals[j] = -1.0 * d->imagValues[j] * imag;
+                        imag_vals[j] = d->realValues[j] * imag;
+                    }
+                    diagonal *newDiag = new diagonal(d->dIndex, d->dLength, real_vals, imag_vals);
+                    localMap[d->dIndex] = newDiag;
+                }
+        
+                // Merge local maps into the global map
+                #pragma omp critical
+                newDiagonalMap.insert(localMap.begin(), localMap.end());
+            }
+        
+            long int *newMatrixShape = new long int[2]{matrix_shape[0], matrix_shape[1]};
+            diaQMatrix *newMatrix = new diaQMatrix(newDiagonalMap, &newMatrixShape);
+            return newMatrix;
+        }        
+
+        diaQMatrix *subtractMatrix(diaQMatrix *B) {
+            std::unordered_map<long int, diagonal*> BDiagMap = B->diagonalMap;
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < BDiagMap.size(); i++) {
+                auto it = std::next(BDiagMap.begin(), i);
+                long int dIndex = it->first;
+                diagonal *dB = it->second;
+                auto itA = diagonalMap.find(dIndex);
+
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    diagonalMap.insert({dIndex, dB->scale_by_real(-1.0)});
+                } else {
+                    // If the diagonal exists, add the elements
+                    diagonal *dA = itA->second;
+                    valType *dA_real_vals = dA->realValues;
+                    valType *dA_imag_vals = dA->imagValues;
+                    valType *dB_real_vals = dB->realValues;
+                    valType *dB_imag_vals = dB->imagValues;
+                    #pragma omp simd
+                    for (long int i = 0; i < dA->dLength; i++) {
+                        dA_real_vals[i] -= dB_real_vals[i];
+                        dA_imag_vals[i] -= dB_imag_vals[i];
+                    }
+                }
+                #ifdef DEEP_DEBUG
+                    std::cout << "Subtracted diagonal " << dIndex << std::endl;
+                    std::cout << "Matrix A:" << std::endl;
+                    this->print();
+                #endif
+            }
+            return this;
+        }
+
+        diaQMatrix *copy() {
+            std::unordered_map<long int, diagonal*> newDiagonalMap;
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                diagonal *d = it->second;
+
+                #ifdef NUM_BYTES_ALIGNED
+                    valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                    valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                #else
+                    valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                    valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                #endif
+
+                #pragma omp parallel for
+                for (long int i = 0; i < d->dLength; i++) {
+                    real_vals[i] = d->realValues[i];
+                    imag_vals[i] = d->imagValues[i];
+                }
+                diagonal *newDiag = new diagonal(d->dIndex, d->dLength, real_vals, imag_vals);
+                newDiagonalMap.insert({d->dIndex, newDiag});
+            }
+            long int *newMatrixShape = new long int[2]{matrix_shape[0], matrix_shape[1]};
+            diaQMatrix *newMatrix = new diaQMatrix(newDiagonalMap, &newMatrixShape);
+            return newMatrix;
+        }
 
         valType norm() {
             valType norm = 0.0;
-            // #pragma omp parallel for reduction(+:norm)
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+            #pragma omp parallel for reduction(+:norm)
+            for (size_t i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
                 diagonal *d = it->second;
-                valType *real_vals = d->getRealValues();
-                valType *imag_vals = d->getImagValues();
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
                 valType local_norm = 0.0; // Use a local variable to accumulate within the SIMD loop
-                // #pragma omp simd reduction(+:local_norm)
+                #pragma omp simd reduction(+:local_norm)
                 for (long int i = 0; i < d->dLength; i++) {
                     local_norm += real_vals[i] * real_vals[i] + imag_vals[i] * imag_vals[i];
                 }
