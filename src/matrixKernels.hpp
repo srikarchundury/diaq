@@ -3,6 +3,8 @@
 
 #include <type_traits>
 #include <unordered_map>
+#include <cmath>  // For std::abs and std::numeric_limits
+#include <limits> // For std::numeric_limits
 
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"

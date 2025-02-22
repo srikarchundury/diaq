@@ -55,7 +55,7 @@ for mat in matrices_test_cases:
 	print("Testing correctness:")
 	c1 = dq.to_numpy(dq_correct_U)
 	c2 = dq.to_numpy(dq_U)
-	np.testing.assert_allclose(c1, c2, rtol=1e-5, atol=1e-8)
+	assert np.testing.assert_allclose(c1, c2, rtol=1e-5, atol=1e-8) == None
 	print("Passed.")
 	print("--")
 	print("====================================")

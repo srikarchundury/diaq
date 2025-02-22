@@ -4009,11 +4009,11 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
 
     // Parameters
     int max_iterations = 100; // Limit to avoid infinite loops
-    valType tolerance = 1e-7; // Tolerance for convergence, I tweaked this myself, is there a better way?
+    valType tolerance = 1e-14; // Tolerance for convergence, I tweaked this myself, is there a better way?
 
     diaQMatrix *X = A->copy_and_scale_by_imag(-1.0 * t);
 
-    diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0
+    diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
 
     for(int i = 1; i <= max_iterations; i++) {
         X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
@@ -4023,6 +4023,8 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
             break;
         }
     }
+    X->free();
+    X_power_i_whole_divided_by_i->free();
     return result;
 }
 
@@ -4068,6 +4070,7 @@ diaQMatrix *diaQMatrix::scale_by_imag(valType imag) {
 
 diaQMatrix *diaQMatrix::copy_and_scale_by_imag(valType imag) {
     std::unordered_map<long int, diagonal*> newDiagonalMap;
+
     #pragma omp parallel for
     for (size_t i = 0; i < diagonalMap.size(); i++) {
         auto it = std::next(diagonalMap.begin(), i);
@@ -4081,7 +4084,7 @@ diaQMatrix *diaQMatrix::copy_and_scale_by_imag(valType imag) {
             valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
         #endif
 
-        #pragma omp parallel for
+        #pragma omp simd
         for (long int i = 0; i < d->dLength; i++) {
             real_vals[i] = -1.0 * d->imagValues[i] * imag;
             imag_vals[i] = d->realValues[i] * imag;
@@ -4114,16 +4117,27 @@ diaQMatrix *diaQMatrix::scale_by_real(valType real) {
 }
 
 diaQMatrix *diaQMatrix::divide_by_int(int int_value) {
+    if (int_value == 0) {
+        throw std::runtime_error("Division by zero error.");
+    }
+    
+    if (int_value == 1) {
+        return this;  // No division needed
+    }
+
+    valType reciprocal = 1.0 / valType(int_value);
+    valType min_threshold = std::numeric_limits<valType>::min();
+
     #pragma omp parallel for
     for (long int i = 0; i < diagonalMap.size(); i++) {
         auto it = std::next(diagonalMap.begin(), i);
         diagonal *d = it->second;
         valType *real_vals = d->realValues;
         valType *imag_vals = d->imagValues;
-        #pragma omp parallel for
-        for (long int i = 0; i < d->dLength; i++) {
-            real_vals[i] = real_vals[i] / valType(int_value);
-            imag_vals[i] = imag_vals[i] / valType(int_value);
+        #pragma omp simd
+        for (long int j = 0; j < d->dLength; j++) {
+            real_vals[j] = (std::abs(real_vals[j]) > min_threshold * int_value) ? real_vals[j] * reciprocal : 0.0;
+            imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * int_value) ? imag_vals[j] * reciprocal : 0.0;
         }
     }
     return this;

@@ -290,22 +290,24 @@ class diaQMatrix {
                 auto it = std::next(BDiagMap.begin(), i);
                 long int dIndex = it->first;
                 diagonal *dB = it->second;
-                auto itA = diagonalMap.find(dIndex);
-
-                if(itA == diagonalMap.end()) {
-                    // If the diagonal does not exist in the current matrix, add it
-                    diagonalMap.insert({dIndex, dB});
-                } else {
-                    // If the diagonal exists, add the elements
-                    diagonal *dA = itA->second;
-                    valType *dA_real_vals = dA->realValues;
-                    valType *dA_imag_vals = dA->imagValues;
-                    valType *dB_real_vals = dB->realValues;
-                    valType *dB_imag_vals = dB->imagValues;
-                    #pragma omp parallel for
-                    for (long int i = 0; i < dA->dLength; i++) {
-                        dA_real_vals[i] += dB_real_vals[i];
-                        dA_imag_vals[i] += dB_imag_vals[i];
+                #pragma omp critical
+                {
+                    auto itA = diagonalMap.find(dIndex);
+                    if(itA == diagonalMap.end()) {
+                        // If the diagonal does not exist in the current matrix, add it
+                        diagonalMap.insert({dIndex, dB});
+                    } else {
+                        // If the diagonal exists, add the elements
+                        diagonal *dA = itA->second;
+                        valType *dA_real_vals = dA->realValues;
+                        valType *dA_imag_vals = dA->imagValues;
+                        valType *dB_real_vals = dB->realValues;
+                        valType *dB_imag_vals = dB->imagValues;
+                        #pragma omp simd
+                        for (long int i = 0; i < dA->dLength; i++) {
+                            dA_real_vals[i] += dB_real_vals[i];
+                            dA_imag_vals[i] += dB_imag_vals[i];
+                        }
                     }
                 }
                 #ifdef DEEP_DEBUG
@@ -341,7 +343,7 @@ class diaQMatrix {
                     valType *dA_imag_vals = dA->imagValues;
                     valType *dB_real_vals = dB->realValues;
                     valType *dB_imag_vals = dB->imagValues;
-                    #pragma omp parallel for
+                    #pragma omp simd
                     for (long int i = 0; i < dA->dLength; i++) {
                         dA_real_vals[i] -= dB_real_vals[i];
                         dA_imag_vals[i] -= dB_imag_vals[i];
