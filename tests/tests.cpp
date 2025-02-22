@@ -2581,6 +2581,23 @@ int main(int argc, char **argv) {
         std::cout << checkResult(res, res_correct) << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_1") == 0 ) {
+        // testing identity_kron_matrix_kron_identity
+        std::cout << " -- testing identity_kron_matrix_kron_identity -- " << std::endl;
+        diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, qspa);
+        res_correct = diaq::kron_product(res_correct, id4);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix_kron_identity((long int)2, qspa, (long int)2);
+        res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "identity_kron_matrix_times_vector") == 0 ) {
         // testing identity_kron_matrix_times_vector
         std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;

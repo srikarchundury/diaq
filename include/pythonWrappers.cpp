@@ -424,6 +424,15 @@ PYBIND11_MODULE(diaq, m) {
     );
 
     m.def(
+        "identity_kron_matrix_kron_identity",
+        [](long int size1, diaq::diaQMatrix *A, long int size2) { return diaq::identity_kron_matrix_kron_identity(size1, A, size2); },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
         "spMV",
         [](diaq::diaQMatrix* A, diaq::vector* x) {
             diaq::vector* y = new diaq::vector(x->numRows_);

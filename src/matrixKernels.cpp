@@ -2220,7 +2220,10 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
                 newDiag_imag_vals[i + skip_places] = imag_vals[i];
             }
         }
-        result->setDiagonal(dIndex, newDiag);
+        #pragma omp critical
+        {
+            result->setDiagonal(dIndex, newDiag);
+        }
     }
 
     #ifdef DEEP_DEBUG
@@ -3780,6 +3783,66 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
         printf("\t\t matrix_kron_identity took %f milliseconds\n", duration.count()/1000.0);
+    #endif
+
+    return result;
+}
+
+diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, long int after) {
+    #ifdef DEBUG
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- identity_kron_matrix_kron_identity --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        A->print();
+        std::cout << " --- " << std::endl;
+        std::cout << "before = " << before << std::endl;
+        std::cout << "after = " << after << std::endl;
+        std::cout << " --- " << std::endl;
+    #endif
+
+    long int before_N = 1L << before;
+    long int after_N = 1L << after;
+
+    long int *result_shape = new long int[2] {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
+    diaQMatrix *result = new diaQMatrix(&result_shape);
+
+    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
+    std::unordered_map<long int, diagonal*>::iterator it;
+
+    for(it = diagMap.begin(); it != diagMap.end(); it++) {
+        long int dIndex = it->first;
+        diagonal *diag = it->second;
+        long int dLength = diag->dLength;
+        valType *real_vals = diag->realValues;
+        valType *imag_vals = diag->imagValues;
+
+        diagonal *newDiag = new diagonal(dIndex * before_N * after_N, A->getDiagonalLength(dIndex) * before_N * after_N);
+
+        valType *newDiag_real_vals = newDiag->realValues;
+        valType *newDiag_imag_vals = newDiag->imagValues;
+
+        #pragma omp parallel for
+        for(long int i = 0; i < dLength; i++) {
+            long int diag_index = i;
+            for(long int j = 0; j < before_N; j++) {
+                for(long int k = 0; k < after_N; k++) {
+                    long int new_index = diag_index * before_N * after_N + j * after_N + k;
+                    newDiag_real_vals[new_index] = real_vals[diag_index];
+                    newDiag_imag_vals[new_index] = imag_vals[diag_index];
+                }
+            }
+        }
+        A->setDiagonal(dIndex * before_N * after_N, newDiag);
+    }
+
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\tidentity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
     #endif
 
     return result;
