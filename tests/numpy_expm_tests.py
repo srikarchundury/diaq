@@ -19,10 +19,36 @@ def matrix_exponential(A, t, tol=1e-14, max_iter=100):
 		result = result + X_power_i_whole_divided_by_i
 
 		# # If the norm of the term is small, stop early
-		# if np.linalg.norm(term) < tol:
-		# 	break
+		if np.linalg.norm(X_power_i_whole_divided_by_i) < tol:
+			break
 
 	return result
+
+
+def matrix_exponential_2(A, t, tol=1e-14, max_iter=100):
+    # Scaling factor to prevent overflow
+    norm_A = np.linalg.norm(A, ord=np.inf) * abs(t)
+    s = max(1, int(np.ceil(np.log2(norm_A))))  # Choose s such that A/s has a small norm
+
+    # Compute e^(-i A t / s)
+    result = np.eye(A.shape[0], dtype=complex)
+    X = (-1.0j * t * A) / s  # Scale matrix
+    X_power_i_whole_divided_by_i = np.eye(A.shape[0], dtype=complex)
+
+    for i in range(1, max_iter + 1):
+        X_power_i_whole_divided_by_i = np.dot(X_power_i_whole_divided_by_i, X) / i
+        result = result + X_power_i_whole_divided_by_i
+        
+        # Stop early if the added term is sufficiently small
+        if np.linalg.norm(X_power_i_whole_divided_by_i, ord=np.inf) < tol:
+            break
+
+    # Squaring step to recover original scale
+    for _ in range(s):
+        result = np.dot(result, result)
+
+    return result
+
 
 matrices_test_cases = [
 	[
@@ -48,6 +74,14 @@ matrices_test_cases = [
 		[0, 2, 0, 6],
 		[7, 0, 3, 0],
 		[0, 8, 0, 4]
+	],
+	[
+		[10, 11, 12, 13, 14, 15],
+		[16, 17, 18, 19, 20, 21],
+		[22, 23, 24, 25, 26, 27],
+		[28, 29, 30, 31, 32, 33],
+		[34, 35, 36, 37, 38, 39],
+		[40, 41, 42, 43, 44, 45]
 	]
 ]
 

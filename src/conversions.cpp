@@ -131,8 +131,8 @@ std::complex<valType> *to_numpy(diaQMatrix *A) {
         auto it = std::next(A->diagonalMap.begin(), i);
         long int dIndex = it->first;
         long int dLength = it->second->dLength;
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
 
         #pragma omp parallel for
         for (long int i = 0; i < dLength; i++) {
