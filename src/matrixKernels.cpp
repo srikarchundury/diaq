@@ -3766,8 +3766,10 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
             newDiag_real_vals[i] = real_vals[diag_index];
             newDiag_imag_vals[i] = imag_vals[diag_index];
         }
-
-        result->setDiagonal(dIndex * n, newDiag);
+        #pragma omp critical
+        {
+            result->setDiagonal(dIndex * n, newDiag);
+        }
     }
     // result->pruneMatrix();
 
