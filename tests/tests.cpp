@@ -2250,7 +2250,7 @@ int main(int argc, char **argv) {
         std::cout << check_vectors(correct_y, y) << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector") == 0) {
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_times_vector_1") == 0) {
         // testing identity_kron_matrix_kron_identity_times_vector
         std::cout << " -- testing identity_kron_matrix_kron_identity_times_vector -- " << std::endl;
         diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();
