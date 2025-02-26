@@ -53,6 +53,8 @@ set(SOURCES
 	${SRC_DIR}/conversions.hpp
 	${SRC_DIR}/conversions.cpp
 	${SRC_DIR}/kernels.hpp
+    ${SRC_DIR}/simd_kernels.hpp
+    ${SRC_DIR}/simd_kernels.cpp
 	${SRC_DIR}/matrixKernels.hpp
 	${SRC_DIR}/matrixKernels.cpp
 	${SRC_DIR}/norms.hpp

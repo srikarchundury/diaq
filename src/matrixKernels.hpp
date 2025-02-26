@@ -11,6 +11,7 @@
 #include "specialMatrices.hpp"
 #include "vector.hpp"
 #include "config.hpp"
+#include "simd_kernels.hpp"
 
 namespace diaq {
 
