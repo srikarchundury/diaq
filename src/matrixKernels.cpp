@@ -2212,39 +2212,33 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
     std::unordered_map<long int, diagonal*>::iterator it;
 
     // (A kron I) times x = y
-    #pragma omp parallel for
-    for (long int a = 0; a < diagMap.size(); a++) {
-        auto it = std::next(diagMap.begin(), a);
-        diagonal *diag = it->second;
-        valType *real_vals = diag->realValues;
-        valType *imag_vals = diag->imagValues;
-        long int dIndex = it->first;
-        long int dLength = diag->dLength;
-        for (long int i = 0; i < dLength; i++) {
-            valType real_i = real_vals[i];
-            valType imag_i = imag_vals[i];
-            // we can skip 0s
-            if(real_i == 0 && imag_i == 0) {
-                continue;
-            }
-            // each element kinda becomes an I block (scalar val at i times I block), we don't need a multiplication op here at all, instead we can cover over values of A, N times as 1 times something is just something.
-            long int y_offset = i * N;
-            long int x_offset = i * N;
-            long int new_dIndex = dIndex * N;
-            if(dIndex > 0) {
-                x_offset += new_dIndex;
-            }
-            else if(dIndex < 0) {
-                y_offset -= new_dIndex;
-            }
-            // std::cout << "dIndex = " << dIndex << "; dLength = " << dLength << std::endl;
-            // std::cout << "\t x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
-            #pragma omp parallel for
-            for (long int j = 0; j < N; j++) {
-                // std::cout << "\t\t x_idx = " << j + x_offset << "; y_idx = " << j + y_offset << std::endl;
-                #pragma omp atomic
+    #pragma omp parallel for collapse(2)
+    for (long int j = 0; j < N; j++) {
+        for (long int a = 0; a < diagMap.size(); a++) {
+            auto it = std::next(diagMap.begin(), a);
+            diagonal *diag = it->second;
+            valType *real_vals = diag->realValues;
+            valType *imag_vals = diag->imagValues;
+            long int dIndex = it->first;
+            long int dLength = diag->dLength;
+            for (long int i = 0; i < dLength; i++) {
+                valType real_i = real_vals[i];
+                valType imag_i = imag_vals[i];
+                // we can skip 0s
+                if(real_i == 0 && imag_i == 0) {
+                    continue;
+                }
+                // each element kinda becomes an I block (scalar val at i times I block), we don't need a multiplication op here at all, instead we can cover over values of A, N times as 1 times something is just something.
+                long int y_offset = i * N;
+                long int x_offset = i * N;
+                long int new_dIndex = dIndex * N;
+                if(dIndex > 0) {
+                    x_offset += new_dIndex;
+                }
+                else if(dIndex < 0) {
+                    y_offset -= new_dIndex;
+                }
                 y_real_values[j + y_offset] += real_i * x_real_values[j + x_offset] - imag_i * x_imag_values[j + x_offset];
-                #pragma omp atomic
                 y_imag_values[j + y_offset] += real_i * x_imag_values[j + x_offset] + imag_i * x_real_values[j + x_offset];
             }
         }
