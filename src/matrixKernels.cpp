@@ -1544,6 +1544,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
                 newDiag_imag_vals[i + skip_places] = imag_vals[i];
             }
         }
+        #pragma omp critical
         result->setDiagonal(dIndex, newDiag);
     }
 
