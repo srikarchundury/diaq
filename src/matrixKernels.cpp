@@ -1221,7 +1221,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t spMV (non-adj) took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t (non-adjacent) spMV took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return y;
@@ -1713,7 +1713,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t (non-adjacent) identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -1801,7 +1801,9 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
                         long int x_idx = inner_x_offset + j;
                         long int y_idx = inner_y_offset + j;
                         // if(x_idx < x_length && y_idx < x_length) {
+                            #pragma omp atomic
                             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                            #pragma omp atomic
                             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                         // }
                     }
@@ -1818,12 +1820,14 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
                 for(long int i = 0; i < dLength; i++) {
                     long int inner_x_offset = x_offset + i * after_N;
                     long int inner_y_offset = skip_places + i * after_N;
-                    #pragma omp simd
+                    #pragma omp parallel for
                     for(long int j = 0; j < after_N; j++) {
                         long int x_idx = inner_x_offset + j;
                         long int y_idx = inner_y_offset + j;
                         // if(x_idx < x_length && y_idx < x_length) {
+                            #pragma omp atomic
                             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                            #pragma omp atomic
                             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                         // }
                     }
@@ -2268,7 +2272,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t (non-adjacent) identity_kron_matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -2333,10 +2337,12 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
             }
             // std::cout << "dIndex = " << dIndex << "; dLength = " << dLength << std::endl;
             // std::cout << "\t x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
-            #pragma omp simd
+            #pragma omp parallel for
             for (long int j = 0; j < N; j++) {
                 // std::cout << "\t\t x_idx = " << j + x_offset << "; y_idx = " << j + y_offset << std::endl;
+                #pragma omp atomic
                 y_real_values[j + y_offset] += real_i * x_real_values[j + x_offset] - imag_i * x_imag_values[j + x_offset];
+                #pragma omp atomic
                 y_imag_values[j + y_offset] += real_i * x_imag_values[j + x_offset] + imag_i * x_real_values[j + x_offset];
             }
         }
@@ -2941,7 +2947,7 @@ void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, 
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
-        printf("\t\t matrix_kron_identity_times_vector (non-adj) took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t (non-adjacent) matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
 }
@@ -2981,8 +2987,8 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         #pragma omp parallel for collapse(2)
         for(long int j = 0; j < n; j++) {
             for(long int i = 0; i < dLength; i++) {
-            newDiag_real_vals[j + i * n] = real_vals[i];
-            newDiag_imag_vals[j + i * n] = imag_vals[i];
+                newDiag_real_vals[j + i * n] = real_vals[i];
+                newDiag_imag_vals[j + i * n] = imag_vals[i];
             }
         }
         #pragma omp critical
