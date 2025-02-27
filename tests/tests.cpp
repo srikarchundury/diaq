@@ -11,13 +11,13 @@ diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::dia
 }
 
 std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
-    if(A->getSize() != B->getSize()) {
+    std::unordered_map<long int, diaq::diagonal *> dmA = A->diagonalMap;
+    std::unordered_map<long int, diaq::diagonal *> dmB = B->diagonalMap;
+    if(dmA.size() != dmB.size()) {
         // A->print();
         return "false - 1";
     }
     const diaq::valType epsilon = 0.00002;
-    std::unordered_map<long int, diaq::diagonal *> dmA = A->getDiagonalMap();
-    std::unordered_map<long int, diaq::diagonal *> dmB = B->getDiagonalMap();
     std::unordered_map<long int, diaq::diagonal *>::iterator itA, itB;
     for(itA = dmA.begin(); itA != dmA.end(); itA++) {
         auto itB = dmB.find(itA->first);
@@ -2503,6 +2503,15 @@ int main(int argc, char **argv) {
         std::cout << " -- kron test -- " << std::endl;
         kron_test(A14, B14);
     }
+    else if(strcmp(argv[1], "kron_4") == 0 ) {
+        // testing matrix_kron_identity
+        std::cout << " -- testing kron_4 -- " << std::endl;
+        diaq::diaQMatrix *qspa = A25->convertToQuantumSparse();
+        qspa->print();
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::denseMatrix *dense_id4 = id4->convertToDenseMatrix();
+        kron_test(A25, dense_id4);
+    }
     else if(strcmp(argv[1], "identity_kron_matrix_1") == 0 ) {
         // testing identity_kron_matrix
         std::cout << " -- testing identity_kron_matrix -- " << std::endl;
@@ -2598,7 +2607,7 @@ int main(int argc, char **argv) {
         std::cout << checkResult(res, res_correct) << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "identity_kron_matrix_times_vector") == 0 ) {
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_1") == 0 ) {
         // testing identity_kron_matrix_times_vector
         std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
         diaq::valType prime_vals[16] = {
@@ -2627,7 +2636,7 @@ int main(int argc, char **argv) {
         std::cout << check_vectors(correct_y, y) << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_1") == 0) {
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0) {
         // vector x
         diaq::vector *x = new diaq::vector(128);
         x->getImagValues()[8] = 1.0;
@@ -2637,8 +2646,8 @@ int main(int argc, char **argv) {
         long int *shape = new long int[2] {64, 64};
         diaq::diaQMatrix *qspa = new diaq::diaQMatrix(&shape);
         diaq::diagonal *zero_d = new diaq::diagonal(0, 64);
-        diaq::valType *zero_d_real = zero_d->getRealValues();
-        diaq::valType *zero_d_imag = zero_d->getImagValues();
+        diaq::valType *zero_d_real = zero_d->realValues;
+        diaq::valType *zero_d_imag = zero_d->imagValues;
         for(int i = 0; i < 48; i++) {
             zero_d_real[i] = 1.0;
         }
@@ -2652,7 +2661,7 @@ int main(int argc, char **argv) {
         printf(" -- kp -- \n");
         kp->print();
         printf(" -- let's test identity_kron_matrix function also here -- \n");
-        diaq::diaQMatrix *kp_2 = diaq::identity_kron_matrix((long int)2, qspa);
+        diaq::diaQMatrix *kp_2 = diaq::identity_kron_matrix((long int)1, qspa);
         printf(" -- kp_2 -- \n");
         kp_2->print();
         printf(" -- \n");
@@ -2666,8 +2675,13 @@ int main(int argc, char **argv) {
         diaq::vector *res_v = new diaq::vector(y->numRows_, 0.0);
         diaq::identity_kron_matrix_times_vector((long int)1, qspa, x, res_v);
         res_v->print();
+
+        // checking correctness
+        std::cout << "Checking correctness: ";
+        std::cout << check_vectors(y, res_v) << std::endl;
+        std::cout << " -- " << std::endl;
     }
-    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0 ) {
+    else if(strcmp(argv[1], "identity_kron_matrix_times_vector_3") == 0 ) {
         // testing matrix_kron_identity
         std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
         diaq::diaQMatrix *qspa = A23->convertToQuantumSparse();

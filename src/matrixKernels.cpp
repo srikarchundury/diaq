@@ -1337,7 +1337,7 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
-
+        
         result->setDiagonal(dIndex, newDiag);
     }
 
@@ -1397,15 +1397,20 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             }
             diaQMatrix *kron_block;
             // dynamic programming for unique kron blocks
-            if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
-                kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
-                // printf("printing kron_block\n");
-                // kron_block->print();
-                // store in unique_kron_blocks
-                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
-            } else {
-                kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]))->second;
+
+            #pragma omp critical
+            {
+                if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
+                    kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
+                    // printf("printing kron_block\n");
+                    // kron_block->print();
+                    // store in unique_kron_blocks
+                    unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
+                } else {
+                    kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]))->second;
+                }
             }
+
             long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
             std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->diagonalMap;
             std::unordered_map<long int, diagonal*>::iterator itK;
@@ -1540,84 +1545,6 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    // #pragma omp parallel for schedule(dynamic) // because there can only be max 8 diagonals in a 2q-gate.
-    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
-    //     long int dIndex = it->first;
-    //     diagonal *diag = it->second;
-    //     long int dLength = diag->dLength;
-    //     valType *real_vals = diag->realValues;
-    //     valType *imag_vals = diag->imagValues;
-
-    //     if(dIndex < 0) { // for negative diagonals
-    //         #pragma omp simd
-    //         for(long int rep = 0; rep < n; rep++) {
-    //             long int skip_places = rep * (dLength - dIndex);
-    //             #pragma unroll
-    //             for(long int i = 0; i < dLength; i++) {
-    //                 long int x_idx = i + skip_places;
-    //                 long int y_idx = i + skip_places - dIndex;
-    //                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-    //                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-    //             }
-    //         }
-    //     }
-    //     else { // for 0th and positive diagonals
-    //         #pragma omp simd
-    //         for(long int rep = 0; rep < n; rep++) {
-    //             long int skip_places = rep * (dLength + dIndex);
-    //             // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
-    //             #pragma unroll
-    //             for(long int i = 0; i < dLength; i++) {
-    //                 valType each_real = real_vals[i];
-    //                 valType each_imag = imag_vals[i];
-    //                 long int skip_places = rep * (dLength + dIndex);
-    //                 long int x_idx = dIndex + i + skip_places;
-    //                 long int y_idx = i + skip_places;
-    //                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-    //                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-    //             }
-    //         }
-    //     }
-    // }
-
-    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
-    //     long int dIndex = it->first;
-    //     diagonal *diag = it->second;
-    //     long int dLength = diag->dLength;
-    //     valType *real_vals = diag->realValues;
-    //     valType *imag_vals = diag->imagValues;
-
-    //     if (dIndex < 0) {
-    //         for (long int rep = 0; rep < n; ++rep) {
-    //             long int skip_places = rep * (dLength - dIndex);
-    //             for (long int i = 0; i < dLength; ++i) {
-    //                 valType real_i = real_vals[i];
-    //                 valType imag_i = imag_vals[i];
-    //                 if (real_i != 0 || imag_i != 0) { // 0s are skipped since they don't affect the result
-    //                     long int x_idx = i + skip_places;
-    //                     long int y_idx = i + skip_places - dIndex;
-    //                     y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-    //                     y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
-    //                 }
-    //             }
-    //         }
-    //     } else { // Process 0th and positive diagonals using vectorization and loop unrolling
-    //         for (long int rep = 0; rep < n; ++rep) {
-    //             long int skip_places = rep * (dLength + dIndex);
-    //             for (long int i = 0; i < dLength; ++i) {
-    //                 valType real_i = real_vals[i];
-    //                 valType imag_i = imag_vals[i];
-    //                 if (real_i != 0 || imag_i != 0) {
-    //                     long int x_idx = dIndex + i + skip_places;
-    //                     long int y_idx = i + skip_places;
-    //                     y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-    //                     y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     long long int y_len = y->numRows_; // same as x->numRows_;
     long int A_size = A->matrix_shape[0];
 
@@ -1628,7 +1555,9 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     long int last_y_offset = (N-1) * A_size;
 
-    for (it = diagMap.begin(); it != diagMap.end(); it++) {
+    #pragma omp parallel for
+    for (long int di = 0; di < diagMap.size(); di++) {
+        auto it = std::next(diagMap.begin(), di);
         // now we can do element wise!
         long int dIndex = it->first;
         diagonal *diag = it->second;
@@ -1651,16 +1580,14 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
             long int x_offset = y_offset + x_inner_offset;
             long int new_y_offset = y_offset + y_inner_offset;
 
-            // long int block_idx = y_offset / A_size;
-            // std::cout << "block_idx = " << block_idx << "; dIndex = " << dIndex << "; dLength = " << dLength << "; x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
-            // now the element wise multiplication, for elements in this diagonal, and it's like atmost 4 loop and can be unrolled.
-
             #pragma omp simd
             for (long int y_idx = new_y_offset; y_idx < dLength + new_y_offset; y_idx++) {
                 long int x_idx = x_offset + (y_idx - new_y_offset); // adjust x_idx for each iteration
                 long int i = y_idx - new_y_offset; // if you want to match your original i loop
                 // std::cout << " \t\t y_idx = " << y_idx << "; x_idx = " << x_idx << std::endl;
+                #pragma omp atomic
                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                #pragma omp atomic
                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
             }
         }
@@ -1815,6 +1742,31 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     std::unordered_map<long int, diagonal*> &diagMap = gate->diagonalMap;
     long int A_size = gate->matrix_shape[0];
 
+    // #pragma omp parallel for collapse(2) schedule(static) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i, skip_places, x_idx, y_idx)
+    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
+    //     long int dIndex = it->first;
+    //     diagonal *diag = it->second;
+    //     valType *real_vals = diag->realValues;
+    //     valType *imag_vals = diag->imagValues;
+    //     long int dLength = diag->dLength;
+    //     long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
+    //     for (long int rep = 0; rep < after; rep++) {
+    //         long int skip_places = rep * (before * dLength);
+    //         for (long int i = 0; i < dLength; ++i) {
+    //             valType real_i = real_vals[i];
+    //             valType imag_i = imag_vals[i];
+    //             if (real_i != 0 || imag_i != 0) {
+    //                 for (long int j = 0; j < before; j++) {
+    //                     long int x_idx = j + i * before + skip_places;
+    //                     long int y_idx = x_idx + offset;
+    //                     y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
+    //                     y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
     // Parallelizing the diagonal iteration loop
     #pragma omp parallel for
     for (long int di = 0; di < diagMap.size(); di++) {
@@ -1825,6 +1777,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
         long int dIndex = it->first;
         long int dLength = diag->dLength;
 
+        #pragma omp parallel for
         for (long int i = 0; i < dLength; i++) {
             valType real_i = real_vals[i];
             valType imag_i = imag_vals[i];
@@ -2947,17 +2900,14 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
-        #pragma omp parallel for
-        for(long int i = 0; i < dLength; i++) {
-            valType each_real = real_vals[i];
-            valType each_imag = imag_vals[i];
-            #pragma omp parallel for
-            for(long int j = 0; j < n; j++) {
-                newDiag_real_vals[j + i * n] = each_real;
-                newDiag_imag_vals[j + i * n] = each_imag;
+        #pragma omp parallel for collapse(2)
+        for(long int j = 0; j < n; j++) {
+            for(long int i = 0; i < dLength; i++) {
+            newDiag_real_vals[j + i * n] = real_vals[i];
+            newDiag_imag_vals[j + i * n] = imag_vals[i];
             }
         }
-
+        #pragma omp critical
         result->setDiagonal(dIndex * n, newDiag);
     }
     // result->pruneMatrix();
@@ -2999,30 +2949,69 @@ diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, l
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    for(it = diagMap.begin(); it != diagMap.end(); it++) {
+    // // #pragma omp parallel for
+    // for(long int di = 0; di < diagMap.size(); di++) {
+    //     auto it = std::next(diagMap.begin(), di);
+    //     long int dIndex = it->first;
+    //     diagonal *diag = it->second;
+    //     long int dLength = diag->dLength;
+    //     valType *real_vals = diag->realValues;
+    //     valType *imag_vals = diag->imagValues;
+
+    //     long int new_diag_index = dIndex * after_N;
+    //     long int new_diag_length = result->getDiagonalLength(new_diag_index);
+    //     diagonal *newDiag = new diagonal(new_diag_index, new_diag_length);
+    //     valType *newDiag_real_vals = newDiag->realValues;
+    //     valType *newDiag_imag_vals = newDiag->imagValues;
+
+    //     // #pragma omp parallel for
+    //     for(long int rep = 0; rep < before_N; rep++) {
+    //         long int skip_places = (rep) * (dLength + abs(new_diag_index));
+    //         // #pragma omp parallel for
+    //         for(long int i = 0; i < dLength; i++) {
+    //             newDiag_real_vals[i + skip_places] = real_vals[i];
+    //             newDiag_imag_vals[i + skip_places] = imag_vals[i];
+    //         }
+    //     }
+    
+    //     #pragma omp critical
+    //     result->setDiagonal(dIndex * after_N, newDiag);
+    // }
+
+    #pragma omp parallel for
+    for(long int di = 0; di < diagMap.size(); di++) {
+        auto it = std::next(diagMap.begin(), di);
         long int dIndex = it->first;
         diagonal *diag = it->second;
-        long int dLength = diag->dLength;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
+        long int dLength = diag->dLength;
 
-        diagonal *newDiag = new diagonal(dIndex * before_N * after_N, A->getDiagonalLength(dIndex) * before_N * after_N);
-
+        long int new_diag_index = dIndex * after_N;
+        long int new_diag_length = result->getDiagonalLength(new_diag_index);
+        diagonal *newDiag = new diagonal(new_diag_index, new_diag_length);
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for
-        for(long int i = 0; i < dLength; i++) {
-            long int diag_index = i;
-            for(long int j = 0; j < before_N; j++) {
-                for(long int k = 0; k < after_N; k++) {
-                    long int new_index = diag_index * before_N * after_N + j * after_N + k;
-                    newDiag_real_vals[new_index] = real_vals[diag_index];
-                    newDiag_imag_vals[new_index] = imag_vals[diag_index];
+        for(long int rep = 0; rep < before_N; rep++) {
+            long int skip_places = rep * (after_N * (dLength + abs(dIndex)));
+            #pragma omp parallel for
+            for(long int i = 0; i < dLength; i++) {
+                valType each_real = real_vals[i];
+                valType each_imag = imag_vals[i];
+                if(each_real != 0 || each_imag != 0) {
+                    #pragma omp parallel for
+                    for(long int j = 0; j < after_N; j++) {
+                        long int new_idx = skip_places + i * after_N + j;
+                        newDiag_real_vals[new_idx] = each_real;
+                        newDiag_imag_vals[new_idx] = each_imag;
+                    }
                 }
             }
         }
-        A->setDiagonal(dIndex * before_N * after_N, newDiag);
+        #pragma omp critical
+        result->setDiagonal(new_diag_index, newDiag);
     }
 
     #ifdef DEBUG
