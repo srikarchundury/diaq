@@ -21,8 +21,13 @@ denseMatrix *diaQMatrix::convertToDenseMatrix() {
 }
 
 denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
-    valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
-    valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
+    #if NUM_BYTES_ALIGNED == -1
+        valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
+        valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
+    #else
+        valType *real_data = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, matrix_shape[0] * matrix_shape[1] * sizeof(valType));
+        valType *imag_data = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, matrix_shape[0] * matrix_shape[1] * sizeof(valType));
+    #endif
     std::unordered_map<long int, diagonal*>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {

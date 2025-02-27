@@ -32,7 +32,7 @@ namespace diaq {
 // #else
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
-#define NUM_BYTES_ALIGNED 64 // set -1 for unaligned then default behavior whatever compiler does it does!
+#define NUM_BYTES_ALIGNED 128 // set -1 for unaligned then default behavior whatever compiler does it does!
 // ------------------------------- //
 
 

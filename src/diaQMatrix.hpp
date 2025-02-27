@@ -400,12 +400,17 @@ class diaQMatrix {
                 for (size_t i = 0; i < diagVector.size(); i++) {
                     diagonal *d = diagVector[i].second;
         
-                    #ifdef NUM_BYTES_ALIGNED
-                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                    #else
+                    #if NUM_BYTES_ALIGNED == -1
                         valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                    #else
+                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                        #pragma omp parallel for
+                        for (long int j = 0; j < d->dLength; j++) {
+                            real_vals[j] = 0.0;
+                            imag_vals[j] = 0.0;
+                        }
                     #endif
         
                     #pragma omp simd
@@ -470,12 +475,17 @@ class diaQMatrix {
                 auto it = std::next(diagonalMap.begin(), i);
                 diagonal *d = it->second;
 
-                #ifdef NUM_BYTES_ALIGNED
-                    valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                    valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                #else
+                #if NUM_BYTES_ALIGNED == -1
                     valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
+                #else
+                    valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                    valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                    #pragma omp parallel for
+                    for (long int i = 0; i < d->dLength; i++) {
+                        real_vals[i] = d->realValues[i];
+                        imag_vals[i] = d->imagValues[i];
+                    }
                 #endif
 
                 #pragma omp parallel for
@@ -687,8 +697,8 @@ class diaQMatrix {
                 (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
             #endif
             for (auto x : diagonalMap) {
-                valType *real_vals = x.second->getRealValues();
-                valType *imag_vals = x.second->getImagValues();
+                valType *real_vals = x.second->realValues;
+                valType *imag_vals = x.second->imagValues;
                 #pragma omp parallel for
                 for (int i = 0; i < x.second->dLength; i++) {
                     (*real_data)[p] = real_vals[i];

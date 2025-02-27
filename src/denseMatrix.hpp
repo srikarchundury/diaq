@@ -19,8 +19,13 @@ class denseMatrix {
         long int size;
         denseMatrix(const long int s) {
             size = s*s;
-            realData = (valType *)calloc(size, sizeof(valType));
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realData = (valType *)calloc(size, sizeof(valType));
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                realData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+            #endif
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -30,7 +35,15 @@ class denseMatrix {
         denseMatrix(const long int s, valType *real_data) {
             size = s*s;
             realData = real_data;
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                #pragma omp parallel for
+                for(long int i = 0; i < size; i++) {
+                    imagData[i] = 0.0;
+                }
+            #endif
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -51,7 +64,15 @@ class denseMatrix {
             matrix_shape = *d;
             size = matrix_shape[0] * matrix_shape[1];
             realData = real_data;
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                #pragma omp parallel for
+                for(long int i = 0; i < size; i++) {
+                    imagData[i] = 0.0;
+                }
+            #endif
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }

@@ -366,8 +366,18 @@ denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
-    valType *real_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
-    valType *imag_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
+    #if NUM_BYTES_ALIGNED == -1
+        valType *real_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
+        valType *imag_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
+    #else
+        valType *real_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_b[1] * sizeof(valType));
+        valType *imag_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_b[1] * sizeof(valType));
+        #pragma omp parallel for
+        for(long int i = 0; i < shape_a[0] * shape_b[1]; i++) {
+            real_res[i] = 0.0;
+            imag_res[i] = 0.0;
+        }
+    #endif
     long int *d = new long int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
@@ -1274,8 +1284,18 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
     long int *d = (long int *)calloc(2, sizeof(long int));
     d[0] = shape_a[0] * shape_b[0];
     d[1] = shape_a[1] * shape_b[1];
-    valType *real_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
-    valType *imag_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
+    #if NUM_BYTES_ALIGNED == -1
+        valType *real_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
+        valType *imag_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
+    #else
+        valType *real_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
+        valType *imag_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
+        #pragma omp parallel for
+        for(long int i = 0; i < shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1]; i++) {
+            real_res[i] = 0.0;
+            imag_res[i] = 0.0;
+        }
+    #endif
     denseMatrix *result = new denseMatrix(&d, real_res, imag_res);
 
     // Iterate through the rows of matrix A
