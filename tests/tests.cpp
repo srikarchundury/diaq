@@ -13,10 +13,12 @@ diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::dia
 std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
     std::unordered_map<long int, diaq::diagonal *> dmA = A->diagonalMap;
     std::unordered_map<long int, diaq::diagonal *> dmB = B->diagonalMap;
+
     if(dmA.size() != dmB.size()) {
         // A->print();
         return "false - 1";
     }
+
     const diaq::valType epsilon = 0.00002;
     std::unordered_map<long int, diaq::diagonal *>::iterator itA, itB;
     for(itA = dmA.begin(); itA != dmA.end(); itA++) {
@@ -2504,13 +2506,35 @@ int main(int argc, char **argv) {
         kron_test(A14, B14);
     }
     else if(strcmp(argv[1], "kron_4") == 0 ) {
-        // testing matrix_kron_identity
         std::cout << " -- testing kron_4 -- " << std::endl;
         diaq::diaQMatrix *qspa = A25->convertToQuantumSparse();
         qspa->print();
         diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
         diaq::denseMatrix *dense_id4 = id4->convertToDenseMatrix();
         kron_test(A25, dense_id4);
+    }
+    else if(strcmp(argv[1], "kron_5") == 0 ) {
+        std::cout << " -- testing kron_5 -- " << std::endl;
+        diaq::identityMatrix *id2 = new diaq::identityMatrix((long int)2);
+        diaq::denseMatrix *dense_id2 = id2->convertToDenseMatrix();
+        diaq::identityMatrix *id4 = new diaq::identityMatrix((long int)4);
+        diaq::denseMatrix *dense_id4 = id4->convertToDenseMatrix();
+
+        diaq::diaQMatrix *qspa = A25->convertToQuantumSparse();
+        qspa->print();
+
+        kron_test(A25, dense_id2);
+        kron_test(dense_id4, A25);
+
+        diaq::diaQMatrix *sparse_k_p = diaq::kron_product(id2, qspa);
+        sparse_k_p = diaq::kron_product(sparse_k_p, id4);
+
+        diaq::denseMatrix *dense_k_p = diaq::dense_kron_product(dense_id2, A25);
+        dense_k_p = diaq::dense_kron_product(dense_k_p, dense_id4);
+
+        std::cout << " -- Is Kron correct? -- " << std::endl;
+        std::cout << checkResult(sparse_k_p, dense_k_p->convertToQuantumSparse()) << std::endl;
+        std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "identity_kron_matrix_1") == 0 ) {
         // testing identity_kron_matrix
@@ -2603,6 +2627,36 @@ int main(int argc, char **argv) {
         printf(" -- new way to do it -- \n");
         diaq::diaQMatrix *res = diaq::identity_kron_matrix_kron_identity((long int)2, qspa, (long int)2);
         res->print();
+        printf(" -- check -- \n");
+        std::cout << checkResult(res, res_correct) << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if(strcmp(argv[1], "identity_kron_matrix_kron_identity_2") == 0 ) {
+        // testing identity_kron_matrix_kron_identity for another case
+        std::cout << " -- testing identity_kron_matrix_kron_identity -- " << std::endl;
+        diaq::valType prime_vals[16] = {
+            2, 3, 5, 7,
+            11, 13, 17, 19,
+            23, 29, 31, 37,
+            41, 43, 47, 53
+        };
+        long int *shape = new long int[2]{4, 4};
+        diaq::denseMatrix *dense_prime_matrix = new diaq::denseMatrix(&shape, prime_vals);
+        diaq::diaQMatrix *gate_matrix = dense_prime_matrix->convertToQuantumSparse();
+        gate_matrix->print();
+
+        diaq::diaQMatrix *id2 = new diaq::identityMatrix((long int)2);
+        diaq::diaQMatrix *id4 = new diaq::identityMatrix((long int)4);
+
+        diaq::diaQMatrix *res_correct = diaq::kron_product(id4, gate_matrix);
+        res_correct = diaq::kron_product(res_correct, id4);
+        printf(" -- correct answer -- \n");
+        res_correct->print();
+
+        printf(" -- new way to do it -- \n");
+        diaq::diaQMatrix *res = diaq::identity_kron_matrix_kron_identity((long int)2, gate_matrix, (long int)2);
+        res->print();
+
         printf(" -- check -- \n");
         std::cout << checkResult(res, res_correct) << std::endl;
         std::cout << " -- " << std::endl;
