@@ -1567,8 +1567,9 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     long int last_y_offset = (N-1) * A_size;
 
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for
     for(long int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
+
         for (long int di = 0; di < diagMap.size(); di++) {
             auto it = std::next(diagMap.begin(), di);
             // now we can do element wise!
@@ -1578,23 +1579,19 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
             valType *real_vals = diag->realValues;
             valType *imag_vals = diag->imagValues;
 
-            long int x_inner_offset = 0;
-            long int y_inner_offset = 0;
+            long int x_inner_offset = (dIndex > 0) ? dIndex : 0;
+            long int y_inner_offset = (dIndex < 0) ? -dIndex : 0;
 
-            if(dIndex > 0) {
-                x_inner_offset += dIndex;
-            }
-            if(dIndex < 0) {
-                y_inner_offset -= dIndex; // kind of like adding abs(dIndex) to y_offset
-            }
             long int x_offset = y_offset + x_inner_offset;
             long int new_y_offset = y_offset + y_inner_offset;
 
-            #pragma omp simd
+            #pragma omp parallel for
             for (long int y_idx = new_y_offset; y_idx < dLength + new_y_offset; y_idx++) {
                 long int x_idx = x_offset + (y_idx - new_y_offset); // adjust x_idx for each iteration
                 long int i = y_idx - new_y_offset; // if you want to match your original i loop
+                #pragma omp atomic
                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                #pragma omp atomic
                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
             }
         }
@@ -2238,7 +2235,9 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
                 else if(dIndex < 0) {
                     y_offset -= new_dIndex;
                 }
+                #pragma omp atomic
                 y_real_values[j + y_offset] += real_i * x_real_values[j + x_offset] - imag_i * x_imag_values[j + x_offset];
+                #pragma omp atomic
                 y_imag_values[j + y_offset] += real_i * x_imag_values[j + x_offset] + imag_i * x_real_values[j + x_offset];
             }
         }
