@@ -1053,7 +1053,11 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
             {
                 // printf("Negative diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
-                    run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #ifdef __AVX512F__
+                        run_spmv_avx512_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #elif defined(__AVX__)
+                        run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #endif
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
@@ -1073,7 +1077,11 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
             {
                 // printf("Positive diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
-                    run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #ifdef __AVX512F__
+                        run_spmv_avx512_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #elif defined(__AVX__)
+                        run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #endif
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
@@ -1094,7 +1102,11 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
             {
                 // printf("Zero diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
-                    run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #ifdef __AVX512F__
+                        run_spmv_avx512_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #elif defined(__AVX__)
+                        run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #endif
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
@@ -1555,28 +1567,26 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     long int last_y_offset = (N-1) * A_size;
 
-    #pragma omp parallel for
-    for (long int di = 0; di < diagMap.size(); di++) {
-        auto it = std::next(diagMap.begin(), di);
-        // now we can do element wise!
-        long int dIndex = it->first;
-        diagonal *diag = it->second;
-        long int dLength = diag->dLength;
-        valType *real_vals = diag->realValues;
-        valType *imag_vals = diag->imagValues;
+    #pragma omp parallel for collapse(2)
+    for(long int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
+        for (long int di = 0; di < diagMap.size(); di++) {
+            auto it = std::next(diagMap.begin(), di);
+            // now we can do element wise!
+            long int dIndex = it->first;
+            diagonal *diag = it->second;
+            long int dLength = diag->dLength;
+            valType *real_vals = diag->realValues;
+            valType *imag_vals = diag->imagValues;
 
-        long int x_inner_offset = 0;
-        long int y_inner_offset = 0;
+            long int x_inner_offset = 0;
+            long int y_inner_offset = 0;
 
-        if(dIndex > 0) {
-            x_inner_offset += dIndex;
-        }
-        if(dIndex < 0) {
-            y_inner_offset -= dIndex; // kind of like adding abs(dIndex) to y_offset
-        }
-
-        #pragma omp parallel for
-        for(long int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
+            if(dIndex > 0) {
+                x_inner_offset += dIndex;
+            }
+            if(dIndex < 0) {
+                y_inner_offset -= dIndex; // kind of like adding abs(dIndex) to y_offset
+            }
             long int x_offset = y_offset + x_inner_offset;
             long int new_y_offset = y_offset + y_inner_offset;
 
@@ -1584,10 +1594,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
             for (long int y_idx = new_y_offset; y_idx < dLength + new_y_offset; y_idx++) {
                 long int x_idx = x_offset + (y_idx - new_y_offset); // adjust x_idx for each iteration
                 long int i = y_idx - new_y_offset; // if you want to match your original i loop
-                // std::cout << " \t\t y_idx = " << y_idx << "; x_idx = " << x_idx << std::endl;
-                #pragma omp atomic
                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                #pragma omp atomic
                 y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
             }
         }
@@ -1753,136 +1760,31 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    // #pragma omp parallel for collapse(2) schedule(static) private(it, dIndex, diag, dLength, rep, i, real_i, imag_i, skip_places, x_idx, y_idx)
-    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
-    //     long int dIndex = it->first;
-    //     diagonal *diag = it->second;
-    //     valType *real_vals = diag->realValues;
-    //     valType *imag_vals = diag->imagValues;
-    //     long int dLength = diag->dLength;
-    //     long int offset = (dIndex < 0) ? (before * dLength - before * dIndex) : dIndex * before;
-    //     for (long int rep = 0; rep < after; rep++) {
-    //         long int skip_places = rep * (before * dLength);
-    //         for (long int i = 0; i < dLength; ++i) {
-    //             valType real_i = real_vals[i];
-    //             valType imag_i = imag_vals[i];
-    //             if (real_i != 0 || imag_i != 0) {
-    //                 for (long int j = 0; j < before; j++) {
-    //                     long int x_idx = j + i * before + skip_places;
-    //                     long int y_idx = x_idx + offset;
-    //                     y_real_values[y_idx] += real_i * x_real_values[x_idx] - imag_i * x_imag_values[x_idx];
-    //                     y_imag_values[y_idx] += real_i * x_imag_values[x_idx] + imag_i * x_real_values[x_idx];
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    #pragma omp parallel for collapse(2)
+    for (long int rep = 0; rep < before_N; rep++) {
+        for (long int j = 0; j < after_N; j++) {
+            for (long int a = 0; a < diagMap.size(); a++) {
+                auto it = std::next(diagMap.begin(), a);
+                long int dIndex = it->first;
+                diagonal *diag = it->second;
+                long int dLength = diag->dLength;
+                valType *real_vals = diag->realValues;
+                valType *imag_vals = diag->imagValues;
 
-    #pragma omp parallel for
-    for (long int a = 0; a < diagMap.size(); a++) {
-        auto it = std::next(diagMap.begin(), a);
-        long int dIndex = it->first;
-        diagonal *diag = it->second;
-        long int dLength = diag->dLength;
-        valType *real_vals = diag->realValues;
-        valType *imag_vals = diag->imagValues;
+                long int skip_places = rep * (after_N * (dLength + (dIndex < 0 ? -dIndex : dIndex)));
+                long int x_offset = (dIndex < 0 ? skip_places : after_N * dIndex + skip_places);
+                long int y_offset = (dIndex < 0 ? skip_places - after_N * dIndex : skip_places);
 
-        if(dIndex < 0) { // for negative diagonals
-            #pragma omp parallel for
-            for(long int rep = 0; rep < before_N; rep++) {
-                long int skip_places = rep * (after_N * (dLength - dIndex));
-                long int x_offset = skip_places;
-                long int y_offset = skip_places - after_N * dIndex;
-                for(long int i = 0; i < dLength; i++) {
-                    long int inner_x_offset = x_offset + i * after_N;
-                    long int inner_y_offset = y_offset + i * after_N;
-                    #pragma omp simd
-                    for(long int j = 0; j < after_N; j++) {
-                        long int x_idx = inner_x_offset + j;
-                        long int y_idx = inner_y_offset + j;
-                        // if(x_idx < x_length && y_idx < x_length) {
-                            #pragma omp atomic
-                            y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                            #pragma omp atomic
-                            y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-                        // }
-                    }
-                }
-            }
-        }
-        else { // for 0th and positive diagonals
-            #pragma omp parallel for
-            for(long int rep = 0; rep < before_N; rep++) {
-                long int skip_places = rep * (after_N * (dLength + dIndex));
-                // printf("dLength = %ld, skip_places = %ld\n", dLength, skip_places);
-                long int x_offset = after_N * dIndex + skip_places;
-                // long int y_offset = skip_places;
-                for(long int i = 0; i < dLength; i++) {
-                    long int inner_x_offset = x_offset + i * after_N;
-                    long int inner_y_offset = skip_places + i * after_N;
-                    #pragma omp parallel for
-                    for(long int j = 0; j < after_N; j++) {
-                        long int x_idx = inner_x_offset + j;
-                        long int y_idx = inner_y_offset + j;
-                        // if(x_idx < x_length && y_idx < x_length) {
-                            #pragma omp atomic
-                            y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-                            #pragma omp atomic
-                            y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-                        // }
-                    }
+                #pragma omp simd
+                for (long int i = 0; i < dLength; i++) {
+                    long int x_idx = x_offset + i * after_N + j;
+                    long int y_idx = y_offset + i * after_N + j;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
             }
         }
     }
-
-    // long int A_size = gate->matrix_shape[0];
-
-    // // (I kron A kron I) times x = y
-    // for (it = diagMap.begin(); it != diagMap.end(); it++) {
-    //     diagonal *diag = it->second;
-    //     valType *real_vals = diag->realValues;
-    //     valType *imag_vals = diag->imagValues;
-    //     long int dIndex = it->first;
-    //     long int dLength = diag->dLength;
-    //     for (long int i = 0; i < dLength; i++) {
-    //         valType real_i = real_vals[i];
-    //         valType imag_i = imag_vals[i];
-    //         // we can skip 0s
-    //         if(real_i == 0 && imag_i == 0) {
-    //             continue;
-    //         }
-    //         // each element kinda becomes an I block (scalar val at i times I block), we don't need a multiplication op here at all, instead we can cover over values of A, N times as 1 times something is just something.
-    //         long int y_offset = i * before_N;
-    //         long int x_offset = i * before_N;
-    //         long int new_dIndex = dIndex * before_N;
-    //         if(dIndex > 0) {
-    //             x_offset += new_dIndex;
-    //         }
-    //         else if(dIndex < 0) {
-    //             y_offset -= new_dIndex;
-    //         }
-    //         // std::cout << "dIndex = " << dIndex << "; dLength = " << dLength << std::endl;
-    //         // std::cout << "\t x_offset = " << x_offset << "; y_offset = " << y_offset << std::endl;
-
-    //         for (long int j = 0; j < after_N; j++) {
-    //             // std::cout << "\t\t x_idx = " << j + x_offset << "; y_idx = " << j + y_offset << std::endl;
-    //             long int x_idx = j + x_offset;
-    //             long int y_idx = j + y_offset;
-    //             // logic till here is for matrix times Identity
-    //             for(long int block_idx = 0; block_idx < before_N; block_idx++) {
-
-    //                 long int inner_y_idx = block_idx * A_size + x_idx;
-    //                 long int inner_x_idx = block_idx * A_size + y_idx;
-
-    //                 // std::cout << " \t\t y_idx = " << y_idx << "; x_idx = " << x_idx << std::endl;
-    //                 y_real_values[inner_y_idx] += real_i * x_real_values[inner_x_idx] - imag_i * x_imag_values[inner_x_idx];
-    //                 y_imag_values[inner_y_idx] += real_i * x_imag_values[inner_x_idx] + imag_i * x_real_values[inner_x_idx];
-
-    //             }
-    //         }
-    //     }
-    // }
 
     #ifdef DEBUG
         // // measure end time
