@@ -13,8 +13,12 @@ namespace diaq {
 
 class diagonal {
     public:
+        valType* realValues; // real number array
+        valType* imagValues; // imaginary number array
+
         long int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
         long int dLength;
+
         diagonal(long int di) {
             dIndex = di;
         }
@@ -25,10 +29,10 @@ class diagonal {
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
             #else
-                realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
-                imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
-                // #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
-                for(long int i = 0; i<dl; i++) {
+                realValues = aligned_alloc_helper(dl * sizeof(valType));
+                imagValues = aligned_alloc_helper(dl * sizeof(valType));
+                #pragma omp parallel for
+                for(long int i = 0; i < dl; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
@@ -51,7 +55,7 @@ class diagonal {
             imagValues = new_imagVals;
         }
         void addElements(valType *new_realVals, valType *new_imagVals, long int from_index, long int to_index) {
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(long int i = from_index; i<=to_index; i++) {
                 realValues[i] = new_realVals[i];
                 imagValues[i] = new_imagVals[i];
@@ -74,12 +78,7 @@ class diagonal {
             // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
-        bool isEmpty() {
-            for(long int i=0; i < dLength; i++) {
-                if(realValues[i] != 0.0 or imagValues[i] != 0.0) return false;
-            }
-            return true;
-        }
+        bool isEmpty();
         void print() {
             std::string sep=",";
             // long int *coords= this->getCoords(matrixSize, this->dIndex);
@@ -140,13 +139,27 @@ class diagonal {
             }
             return count;
         }
+        diagonal *scale_by_imag(valType imag) {
+            #pragma omp parallel for
+            for(long int i = 0; i < dLength; i++) {
+                valType r = -1.0 * imag * imagValues[i];
+                imagValues[i] = imag * realValues[i];
+                realValues[i] = r;
+            }
+            return this;
+        }
+        diagonal *scale_by_real(valType real) {
+            #pragma omp parallel for
+            for(long int i = 0; i < dLength; i++) {
+                realValues[i] *= real;
+                imagValues[i] *= real;
+            }
+            return this;
+        }
         void free() {
             std::free(realValues);
             std::free(imagValues);
         }
-    private:
-        valType* realValues; // real number array
-        valType* imagValues; // imaginary number array
 };
 
 } // namespace diaq

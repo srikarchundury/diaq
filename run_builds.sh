@@ -7,9 +7,7 @@ then
     rm -rf cpu_build
     mkdir cpu_build
     cd cpu_build
-    # cmake -DENABLE_GPROF=ON ..
-    # cmake .. -DCMAKE_BUILD_TYPE=Debug
-    cmake ..
+    cmake "${@:2}" ..
     make -j 4
     cd ..
 fi
@@ -19,7 +17,7 @@ then
     rm -rf gpu_build
     mkdir gpu_build
     cd gpu_build
-    CUDA_ENABLED=1 cmake ..
+    cmake -DCUDA_ENABLED=1 "${@:2}" ..
     make -j 4
     cd ..
 fi

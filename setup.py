@@ -50,7 +50,7 @@ setup(
     description="A WIP numerical library tailored for tensor contractions in quantum simulations",
     author="Srikar Chundury",
     author_email="schundu3@ncsu.edu",
-    url="https://github.ncsu.edu/tnqs/diaq/",
+    url="https://github.ncsu.edu/qsparse/diaq/",
     long_description="",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},

@@ -19,8 +19,13 @@ class denseMatrix {
         long int size;
         denseMatrix(const long int s) {
             size = s*s;
-            realData = (valType *)calloc(size, sizeof(valType));
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                realData = (valType *)calloc(size, sizeof(valType));
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                realData = aligned_alloc_helper(size * sizeof(valType));
+                imagData = aligned_alloc_helper(size * sizeof(valType));
+            #endif
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -30,7 +35,15 @@ class denseMatrix {
         denseMatrix(const long int s, valType *real_data) {
             size = s*s;
             realData = real_data;
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                imagData = aligned_alloc_helper(size * sizeof(valType));
+                #pragma omp parallel for
+                for(long int i = 0; i < size; i++) {
+                    imagData[i] = 0.0;
+                }
+            #endif
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -51,7 +64,15 @@ class denseMatrix {
             matrix_shape = *d;
             size = matrix_shape[0] * matrix_shape[1];
             realData = real_data;
-            imagData = (valType *)calloc(size, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                imagData = (valType *)calloc(size, sizeof(valType));
+            #else
+                imagData = aligned_alloc_helper(size * sizeof(valType));
+                #pragma omp parallel for
+                for(long int i = 0; i < size; i++) {
+                    imagData[i] = 0.0;
+                }
+            #endif
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -75,7 +96,7 @@ class denseMatrix {
         }
         std::complex<valType> *getData_forPy() {
             std::complex<valType> *res = new std::complex<valType>[size]();
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -83,7 +104,7 @@ class denseMatrix {
         }
         std::complex<valType> *getData() {
             std::complex<valType> *res = (std::complex<valType> *)malloc(size * sizeof(std::complex<valType>));
-            #pragma omp parallel for num_threads(NUMBER_OF_OMP_THREADS)
+            #pragma omp parallel for
             for(long int i = 0; i < size; i++) {
                 res[i] = std::complex<valType>{realData[i], imagData[i]};
             }
@@ -157,7 +178,7 @@ class denseMatrix {
             long int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
             // loop through all possible diagonals (principal and anti)
             for(long int k = -1 * size + 1; k <= 2 * size - 2; k++) {
-                diagonal* kDiag = qm->getDiagonal(k);
+                diagonal* kDiag = qm->getDiagonal_orCreateIt(k);
                 long int* kCoords = kDiag->getCoords(size, k);
                 if(isPartOf(k, kCoords[0], kCoords[1], i, j) == 0) {
                     // std::cout << i << "," << j << "=" << k << std::endl;
@@ -170,7 +191,7 @@ class denseMatrix {
                 }
             }
             if(targetDiagIndex_2 != 2 * size) {
-                return (qm->getDiagonal(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
+                return (qm->getDiagonal_orCreateIt(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal_orCreateIt(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
             }
             return targetDiagIndex_1;
         }

@@ -61,10 +61,14 @@ PYBIND11_MODULE(diaq, m) {
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)
         .def("getDiagonal", &diaq::diaQMatrix::getDiagonal, py::return_value_policy::reference)
         .def("setDiagonal", &diaq::diaQMatrix::setDiagonal, py::return_value_policy::reference)
+        .def("setDiagonalElement", &diaq::diaQMatrix::setDiagonalElement, py::return_value_policy::reference) 
         .def("addDiagonal", &diaq::diaQMatrix::addDiagonal, py::return_value_policy::reference)
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
+        .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
+        .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::reference)
+        
         // operator bindings
         .def("__mul__", [](diaq::diaQMatrix *a, diaq::diaQMatrix *b){
             return diaq::product(a, b);
@@ -102,6 +106,24 @@ PYBIND11_MODULE(diaq, m) {
             py::return_value_policy::reference
         )
         .def("free", &diaq::diaQMatrix::free, py::return_value_policy::reference)
+        ;
+
+    // diaq::identityMatrix class
+    py::class_<diaq::identityMatrix, diaq::diaQMatrix>(m, "identityMatrix")
+        .def(py::init<long int>())
+        ;
+
+    // diaq::diaQMatrix class
+    py::class_<diaq::vector>(m, "vector")
+        .def(py::init<size_t>())
+        .def("setValue", &diaq::vector::setValue, py::return_value_policy::reference)
+        .def("print", &diaq::vector::print, py::return_value_policy::reference)
+        .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
+        .def("dagger", &diaq::vector::dagger, py::return_value_policy::reference)
+        .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::reference)
+        .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
+        .def("getArray", &diaq::vector::getArray, py::return_value_policy::reference)
+        .def("free", &diaq::vector::free, py::return_value_policy::reference)
         ;
 
 
@@ -207,6 +229,19 @@ PYBIND11_MODULE(diaq, m) {
         py::return_value_policy::reference
     );
 
+    m.def(
+        "from_numpy_vector",
+        [](py::array_t<std::complex<diaq::valType>> vals) {
+            auto vals_info = vals.request();
+            // Get pointers to the data
+            std::complex<diaq::valType> *vals_ptr = static_cast<std::complex<diaq::valType> *>(vals_info.ptr);
+            diaq::vector *res = diaq::from_numpy_vector(vals_ptr, (size_t) vals.size());
+            return res;
+        },
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
     // m.def("to_numpy", &diaq::to_numpy, py::return_value_policy::reference);
     m.def(
         "to_numpy",
@@ -214,6 +249,16 @@ PYBIND11_MODULE(diaq, m) {
             std::complex<diaq::valType> *res = diaq::to_numpy(A);
             return py::array_t<std::complex<diaq::valType>>(A->matrix_shape[0] * A->matrix_shape[1], res);
         },
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "to_numpy_vector",
+        [](diaq::vector *v) {
+            std::complex<diaq::valType> *res = diaq::to_numpy_vector(v);
+            return py::array_t<std::complex<diaq::valType>>(v->numRows_, res);
+        },
+        py::arg(),
         py::return_value_policy::reference
     );
 
@@ -243,6 +288,86 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
+
+    // overloading tensordot for quimb to work with contegra (seems like opt_einsum is not called now, with latest quimb)
+    m.def(
+        "tensordot",
+        [](py::array_t<std::complex<diaq::valType>> arr1, py::array_t<std::complex<diaq::valType>> arr2, std::vector<std::vector<long int>> axes) {
+            // Convert arr1 to diaq::diaQMatrix
+            auto arr1_info = arr1.request();
+            std::vector<long int> shape1(arr1_info.shape.begin(), arr1_info.shape.end());
+            std::complex<diaq::valType>* arr1_ptr = static_cast<std::complex<diaq::valType>*>(arr1_info.ptr);
+            diaq::diaQMatrix* mat1 = diaq::from_numpy(arr1_ptr, shape1);
+
+            // Convert arr2 to diaq::diaQMatrix
+            auto arr2_info = arr2.request();
+            std::vector<long int> shape2(arr2_info.shape.begin(), arr2_info.shape.end());
+            std::complex<diaq::valType>* arr2_ptr = static_cast<std::complex<diaq::valType>*>(arr2_info.ptr);
+            diaq::diaQMatrix* mat2 = diaq::from_numpy(arr2_ptr, shape2);
+
+            // Perform tensordot on diaQMatrix objects
+            diaq::diaQMatrix* result = diaq::tensordot(mat1, mat2, axes);
+
+            // Optionally, clean up mat1 and mat2 if necessary (e.g., if they need explicit deallocation)
+            // delete mat1;
+            // delete mat2;
+
+            return result;
+        },
+        py::arg("arr1"),
+        py::arg("arr2"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
+    // Overload for tensordot where first argument is diaQMatrix and second is NumPy array
+    m.def(
+        "tensordot",
+        [](diaq::diaQMatrix* mat, py::array_t<std::complex<diaq::valType>> arr, std::vector<std::vector<long int>> axes) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat_arr = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform tensordot on diaQMatrix and converted NumPy array (now diaQMatrix)
+            diaq::diaQMatrix* result = diaq::tensordot(mat, mat_arr, axes);
+
+            // Optionally, clean up mat_arr if necessary
+            // delete mat_arr;
+
+            return result;
+        },
+        py::arg("mat"),
+        py::arg("arr"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
+    // Overload for tensordot where first argument is NumPy array and second is diaQMatrix
+    m.def(
+        "tensordot",
+        [](py::array_t<std::complex<diaq::valType>> arr, diaq::diaQMatrix* mat, std::vector<std::vector<long int>> axes) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat_arr = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform tensordot on converted NumPy array (now diaQMatrix) and diaQMatrix
+            diaq::diaQMatrix* result = diaq::tensordot(mat_arr, mat, axes);
+
+            // Optionally, clean up mat_arr if necessary
+            // delete mat_arr;
+
+            return result;
+        },
+        py::arg("arr"),
+        py::arg("mat"),
+        py::arg("axes") = std::vector<std::vector<long int>>{},
+        py::return_value_policy::reference
+    );
+
     m.def(
         "transpose",
         [](diaq::diaQMatrix *A, std::vector<long int> new_order) { return diaq::transpose(A, new_order); },
@@ -250,6 +375,30 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("axes") = std::vector<long int>{},
         py::return_value_policy::reference
     );
+
+    // New overload for transpose with NumPy array as input
+    m.def(
+        "transpose",
+        [](py::array_t<std::complex<diaq::valType>> arr, std::vector<long int> new_order) {
+            // Convert the NumPy array to diaQMatrix
+            auto arr_info = arr.request();
+            std::vector<long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            diaq::diaQMatrix* mat = diaq::from_numpy(arr_ptr, shape);
+
+            // Perform the transpose operation
+            diaq::diaQMatrix* result = diaq::transpose(mat, new_order);
+
+            // Optionally, clean up mat if necessary
+            // delete mat;
+
+            return result;
+        },
+        py::arg("arr"),
+        py::arg("axes") = std::vector<long int>{},
+        py::return_value_policy::reference
+    );
+
     m.def(
         "kroneckerProduct",
         [](diaq::diaQMatrix *A, diaq::diaQMatrix *B) { return diaq::kron_product(A, B); },
@@ -257,18 +406,76 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::reference
     );
+
     m.def(
-        "spMV",
-        [](diaq::diaQMatrix *A, diaq::vector *x) { return diaq::spMV(A, x); },
+        "matrix_kron_identity",
+        [](diaq::diaQMatrix *A, long int size) { return diaq::matrix_kron_identity(A, size); },
         py::arg(),
         py::arg(),
         py::return_value_policy::reference
     );
+
     m.def(
-        "einsum",
-        [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
+        "identity_kron_matrix",
+        [](long int size, diaq::diaQMatrix *A) { return diaq::identity_kron_matrix(size, A); },
         py::arg(),
-        py::arg("axes"),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "identity_kron_matrix_kron_identity",
+        [](long int size1, diaq::diaQMatrix *A, long int size2) { return diaq::identity_kron_matrix_kron_identity(size1, A, size2); },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "spMV",
+        [](diaq::diaQMatrix* A, diaq::vector* x) {
+            diaq::vector* y = new diaq::vector(x->numRows_);
+            return diaq::spMV(A, x, y);
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "spMV",
+        [](diaq::diaQMatrix* A, diaq::vector* x, diaq::vector* y) {
+            return diaq::spMV(A, x, y);
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    // m.def(
+    //     "einsum",
+    //     [](diaq::diaQMatrix *A, std::vector<long int> axes) { return diaq::einsum(A, axes); },
+    //     py::arg(),
+    //     py::arg("axes"),
+    //     py::return_value_policy::reference
+    // );
+
+    m.def(
+        "multiply_by_scalar",
+        [](diaq::diaQMatrix *A, diaq::valType real, diaq::valType imag) { return diaq::multiply_by_scalar(A, real, imag); },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
+    m.def(
+        "expm_negative",
+        [](diaq::diaQMatrix *A, diaq::valType t) { return diaq::expm_negative(A, t); },
+        py::arg(),
+        py::arg(),
         py::return_value_policy::reference
     );
 }

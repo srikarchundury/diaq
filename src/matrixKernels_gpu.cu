@@ -15,34 +15,34 @@ __device__ double atomicAdddouble(double* address, double val) {
 
     return __longlong_as_double(old);
 }
-__global__ void spmv_kernel(long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, valType *real_data, valType *imag_data, valType *x_real_values, valType *x_imag_values, valType *y_real_values, valType *y_imag_values) {
-	int n = blockIdx.x * blockDim.x + threadIdx.x;
-	if(n < gridDim.x * blockDim.x && n < num_diags) {
-		long int dIndex = diagonal_indices[n];
-		long int dLength = cum_diagonal_lengths[n] - cum_diagonal_lengths[n-1];
-		for(int i = 0; i < dLength; i++) {
-			long int offset;
-			if (n == 0) {
-				offset = i;
-			} else {
-				offset = i + cum_diagonal_lengths[n-1];
-			}
-			long int x_idx = (dIndex < 0)? i : dIndex + i;
-			long int y_idx = (dIndex < 0)? i - dIndex : i;
+// __global__ void spmv_kernel(long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, valType *real_data, valType *imag_data, valType *x_real_values, valType *x_imag_values, valType *y_real_values, valType *y_imag_values) {
+// 	int n = blockIdx.x * blockDim.x + threadIdx.x;
+// 	if(n < gridDim.x * blockDim.x && n < num_diags) {
+// 		long int dIndex = diagonal_indices[n];
+// 		long int dLength = cum_diagonal_lengths[n] - cum_diagonal_lengths[n-1];
+// 		for(int i = 0; i < dLength; i++) {
+// 			long int offset;
+// 			if (n == 0) {
+// 				offset = i;
+// 			} else {
+// 				offset = i + cum_diagonal_lengths[n-1];
+// 			}
+// 			long int x_idx = (dIndex < 0)? i : dIndex + i;
+// 			long int y_idx = (dIndex < 0)? i - dIndex : i;
 
-			// ------------------ DEBUG ------------------
-			// printf("dLength = %ld, dIndex = %ld, dPos = %d, final_offset = %ld\tx_idx = %ld, y_idx = %ld\n", dLength, dIndex, i, offset, x_idx, y_idx);
-			// ------------------ DEBUG ------------------
+// 			// ------------------ DEBUG ------------------
+// 			// printf("dLength = %ld, dIndex = %ld, dPos = %d, final_offset = %ld\tx_idx = %ld, y_idx = %ld\n", dLength, dIndex, i, offset, x_idx, y_idx);
+// 			// ------------------ DEBUG ------------------
 
-			valType real_val = real_data[offset] * x_real_values[x_idx] - imag_data[offset] * x_imag_values[x_idx];
-            valType imag_val = real_data[offset] * x_imag_values[x_idx] + imag_data[offset] * x_real_values[x_idx];
+// 			valType real_val = real_data[offset] * x_real_values[x_idx] - imag_data[offset] * x_imag_values[x_idx];
+//             valType imag_val = real_data[offset] * x_imag_values[x_idx] + imag_data[offset] * x_real_values[x_idx];
 
-            atomicAdd(&y_real_values[y_idx], real_val);	// this is bad!
-            atomicAdd(&y_imag_values[y_idx], imag_val); // this is bad!
-		}
-	}
-	return;
-}
+//             atomicAdd(&y_real_values[y_idx], real_val);	// this is bad!
+//             atomicAdd(&y_imag_values[y_idx], imag_val); // this is bad!
+// 		}
+// 	}
+// 	return;
+// }
 // this is inspired from the paper Dr. Li shared with me. It works, but have to compare with the above kernel. I have a feeling it'll be better because there's no atomicAdd
 __global__ void spmv_dia_kernel(long int num_rows, long int num_cols, long int num_diags, long int num_elements, long int *diagonal_indices, long int *cum_diagonal_lengths, valType *real_data, valType *imag_data, valType *x_real_values, valType *x_imag_values, valType *y_real_values, valType *y_imag_values) {
 
@@ -86,13 +86,13 @@ __global__ void spmv_dia_kernel(long int num_rows, long int num_cols, long int n
 */
 vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	// ------------------ DEBUG ------------------
-	logger.log("Using CUDA to calculate product of matrix and vector");
+	// logger.log("Using CUDA to calculate product of matrix and vector");
 	// ------------------ DEBUG ------------------
 	if (A->matrix_shape[1] != x->num_rows()) {
 		throw std::invalid_argument("Not multiplyable");
 	}
 
-	vector *y = new vector(A->matrix_shape[0], 0);
+	vector *y = new vector((size_t)A->matrix_shape[0], (valType)0);
 	valType *y_real_values = y->getRealValues();
 	valType *y_imag_values = y->getImagValues();
 
@@ -131,8 +131,8 @@ vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	cudaMalloc((void **)&d_imag_data, num_elements * sizeof(valType));
 	cudaMalloc((void **)&d_x_real_values, x->num_rows() * sizeof(valType));
 	cudaMalloc((void **)&d_x_imag_values, x->num_rows() * sizeof(valType));
-	cudaMalloc((void **)&d_y_real_values, y.num_rows() * sizeof(valType));
-	cudaMalloc((void **)&d_y_imag_values, y.num_rows() * sizeof(valType));
+	cudaMalloc((void **)&d_y_real_values, y->num_rows() * sizeof(valType));
+	cudaMalloc((void **)&d_y_imag_values, y->num_rows() * sizeof(valType));
 	cudaMalloc((void **)&d_diagonal_indices, n_diags * sizeof(long int));
 	cudaMalloc((void **)&d_cum_diagonal_lengths, n_diags * sizeof(long int));
 	// cuda copy
@@ -140,8 +140,8 @@ vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	cudaMemcpy(d_imag_data, imag_data, num_elements * sizeof(valType), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_x_real_values, x_real_values, x->num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_x_imag_values, x_imag_values, x->num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_y_real_values, y_real_values, y.num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_y_imag_values, y_imag_values, y.num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_y_real_values, y_real_values, y->num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_y_imag_values, y_imag_values, y->num_rows() * sizeof(valType), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_diagonal_indices, diagonal_indices, n_diags * sizeof(long int), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_cum_diagonal_lengths, cum_diagonal_lengths, n_diags * sizeof(long int), cudaMemcpyHostToDevice);
 
@@ -153,8 +153,8 @@ vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	dim3 numBlocks(num_elements/16, num_elements/16, num_elements/16);
 	spmv_dia_kernel<<<numBlocks, threadsPerBlock>>>(A->matrix_shape[0], A->matrix_shape[1], n_diags, num_elements, d_diagonal_indices, d_cum_diagonal_lengths, d_real_data, d_imag_data, d_x_real_values, d_x_imag_values, d_y_real_values, d_y_imag_values);
 	// cuda copy back just y
-	cudaMemcpy(y_real_values, d_y_real_values, y.num_rows() * sizeof(valType), cudaMemcpyDeviceToHost);
-	cudaMemcpy(y_imag_values, d_y_imag_values, y.num_rows() * sizeof(valType), cudaMemcpyDeviceToHost);
+	cudaMemcpy(y_real_values, d_y_real_values, y->num_rows() * sizeof(valType), cudaMemcpyDeviceToHost);
+	cudaMemcpy(y_imag_values, d_y_imag_values, y->num_rows() * sizeof(valType), cudaMemcpyDeviceToHost);
 	// cuda free
 	cudaFree(d_real_data);
 	cudaFree(d_imag_data);
@@ -176,13 +176,13 @@ vector *spmv_cuda(diaQMatrix *A, vector *x) {
 __global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, long int *A_cum_diagonal_lengths, long int A_num_elements, valType *A_real_data, valType *A_imag_data, long int num_diags_B, long int *B_diag_indices, long int *B_cum_diagonal_lengths, long int B_num_elements, valType *B_real_data, valType *B_imag_data, long int num_diags_C, long int *C_diag_indices, long int *C_cum_diagonal_lengths, long int C_num_elements, valType *C_real_data, valType *C_imag_data) {
 	long int d_a = blockIdx.x * blockDim.x + threadIdx.x;
 	if(d_a < gridDim.x * blockDim.x && d_a < num_diags_A) {
-		printf("d_a = %ld\n", d_a);
+		// printf("d_a = %ld\n", d_a);
 		long int dIndex_A = A_diag_indices[d_a];
-		printf("dIndex_A = %ld\n", dIndex_A);
+		// printf("dIndex_A = %ld\n", dIndex_A);
 		for(long int d_b = 0; d_b < num_diags_B; d_b++) {
 			long int dIndex_B = B_diag_indices[d_b];
 			long int dIndex_C = dIndex_A + dIndex_B;
-			printf("diagonal A %ld + diagonal B %ld = diagonal C %ld\n", dIndex_A, dIndex_B, dIndex_C);
+			// printf("diagonal A %ld + diagonal B %ld = diagonal C %ld\n", dIndex_A, dIndex_B, dIndex_C);
 		}
 	}
 	return;
@@ -194,7 +194,7 @@ __global__ void product_kernel(long int num_diags_A, long int *A_diag_indices, l
  * 	@return C = A * B
 */
 diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B) {
-	logger.log("Using CUDA to calculate product of two matrices");
+	// logger.log("Using CUDA to calculate product of two matrices");
 	if(A->matrix_shape[1] != B->matrix_shape[0]) {
 		throw std::invalid_argument("Not multiplyable");
 	}
@@ -217,49 +217,50 @@ diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B) {
 	B->getDiagFlatData(&B_n_diags, &B_diagonal_indices, &B_cum_diagonal_lengths, &B_num_elements, &B_real_data, &B_imag_data);
 
 	// ------------------ DEBUG ------------------
-	std::cout << "A_n_diags = " << A_n_diags << std::endl;
-	std::cout << "A_num_elements = " << A_num_elements << std::endl;
-	std::cout << "A_diagonal_indices: [";
-	for (int i = 0; i < A_n_diags - 1; i++) {
-		std::cout << A_diagonal_indices[i] << ", ";
-	}
-	std::cout << A_diagonal_indices[A_n_diags - 1] << "]" << std::endl;
-	std::cout << "A_cum_diagonal_lengths: [";
-	for (int i = 0; i < A_n_diags - 1; i++) {
-		std::cout << A_cum_diagonal_lengths[i] << ", ";
-	}
-	std::cout << A_cum_diagonal_lengths[A_n_diags - 1] << "]" << std::endl;
-	std::cout << "(A_num_elements = " << A_num_elements << ") [";
-	for (int i = 0; i < A_num_elements - 1; i++) {
-		std::cout << "(" << A_real_data[i] << "," << A_imag_data[i] << "), ";
-	}
-	std::cout << "(" << A_real_data[A_num_elements - 1] << "," << A_imag_data[A_num_elements - 1] << ")]" << std::endl;
-	std::cout << "---" << std::endl;
-	std::cout << "B_n_diags = " << B_n_diags << std::endl;
-	std::cout << "B_num_elements = " << B_num_elements << std::endl;
-	std::cout << "B_diagonal_indices: [";
-	for (int i = 0; i < B_n_diags - 1; i++) {
-		std::cout << B_diagonal_indices[i] << ", ";
-	}
-	std::cout << B_diagonal_indices[B_n_diags - 1] << "]" << std::endl;
-	std::cout << "B_cum_diagonal_lengths: [";
-	for (int i = 0; i < B_n_diags - 1; i++) {
-		std::cout << B_cum_diagonal_lengths[i] << ", ";
-	}
-	std::cout << B_cum_diagonal_lengths[B_n_diags - 1] << "]" << std::endl;
-	std::cout << "(B_num_elements = " << B_num_elements << ") [";
-	for (int i = 0; i < B_num_elements - 1; i++) {
-		std::cout << "(" << B_real_data[i] << "," << B_imag_data[i] << "), ";
-	}
-	std::cout << "(" << B_real_data[B_num_elements - 1] << "," << B_imag_data[B_num_elements - 1] << ")]" << std::endl;
+	// std::cout << "A_n_diags = " << A_n_diags << std::endl;
+	// std::cout << "A_num_elements = " << A_num_elements << std::endl;
+	// std::cout << "A_diagonal_indices: [";
+	// for (int i = 0; i < A_n_diags - 1; i++) {
+	// 	std::cout << A_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << A_diagonal_indices[A_n_diags - 1] << "]" << std::endl;
+	// std::cout << "A_cum_diagonal_lengths: [";
+	// for (int i = 0; i < A_n_diags - 1; i++) {
+	// 	std::cout << A_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << A_cum_diagonal_lengths[A_n_diags - 1] << "]" << std::endl;
+	// std::cout << "(A_num_elements = " << A_num_elements << ") [";
+	// for (int i = 0; i < A_num_elements - 1; i++) {
+	// 	std::cout << "(" << A_real_data[i] << "," << A_imag_data[i] << "), ";
+	// }
+	// std::cout << "(" << A_real_data[A_num_elements - 1] << "," << A_imag_data[A_num_elements - 1] << ")]" << std::endl;
+	// std::cout << "---" << std::endl;
+	// std::cout << "B_n_diags = " << B_n_diags << std::endl;
+	// std::cout << "B_num_elements = " << B_num_elements << std::endl;
+	// std::cout << "B_diagonal_indices: [";
+	// for (int i = 0; i < B_n_diags - 1; i++) {
+	// 	std::cout << B_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << B_diagonal_indices[B_n_diags - 1] << "]" << std::endl;
+	// std::cout << "B_cum_diagonal_lengths: [";
+	// for (int i = 0; i < B_n_diags - 1; i++) {
+	// 	std::cout << B_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << B_cum_diagonal_lengths[B_n_diags - 1] << "]" << std::endl;
+	// std::cout << "(B_num_elements = " << B_num_elements << ") [";
+	// for (int i = 0; i < B_num_elements - 1; i++) {
+	// 	std::cout << "(" << B_real_data[i] << "," << B_imag_data[i] << "), ";
+	// }
+	// std::cout << "(" << B_real_data[B_num_elements - 1] << "," << B_imag_data[B_num_elements - 1] << ")]" << std::endl;
 	// ------------------ DEBUG ------------------
 
 
 	// CUDA stuff - Preparation Phase
 	// std::cout << "Preparation Phase" << std::endl;
-	long int C_matrix_shape[] = {A->matrix_shape[0], B->matrix_shape[1]};
+	// long int *C_matrix_shape = {A->matrix_shape[0], B->matrix_shape[1]};
+	long int *C_matrix_shape = new long int[2]{A->matrix_shape[0], B->matrix_shape[1]};
 	diaQMatrix* C = new diaQMatrix(&C_matrix_shape);
-	
+
 	// number of diagonals in C : A_matrix_shape[0] + B_matrix_shape[1] - 1
 	long int *C_diagonal_indices = (long int *)malloc((A->matrix_shape[0] + B->matrix_shape[1] - 1) * sizeof(long int));
 	long int C_n_diags = A->matrix_shape[0] + B->matrix_shape[1] - 1;
@@ -282,24 +283,24 @@ diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B) {
 		C_imag_data[i] = 0;
 	}
 	// ------------------ DEBUG C ------------------
-	std::cout << "---" << std::endl;
-	std::cout << "C_n_diags = " << C_n_diags << std::endl;
-	std::cout << "C_diagonal_indices: [";
-	for (long int i = 0; i < C_n_diags - 1; i++) {
-		std::cout << C_diagonal_indices[i] << ", ";
-	}
-	std::cout << C_diagonal_indices[C_n_diags - 1] << "]" << std::endl;
-	std::cout << "C_cum_diagonal_lengths: [";
-	for (long int i = 0; i < C_n_diags - 1; i++) {
-		std::cout << C_cum_diagonal_lengths[i] << ", ";
-	}
-	std::cout << C_cum_diagonal_lengths[C_n_diags - 1] << "]" << std::endl;
-	std::cout << "(C_num_elements = " << C_num_elements << ") [";
-	for (long int i = 0; i < C_num_elements - 1; i++) {
-		std::cout << "(" << C_real_data[i] << "," << C_imag_data[i] << "), ";
-	}
-	std::cout << "(" << C_real_data[C_num_elements - 1] << "," << C_imag_data[C_num_elements - 1] << ")]" << std::endl;
-	std::cout << "---" << std::endl;
+	// std::cout << "---" << std::endl;
+	// std::cout << "C_n_diags = " << C_n_diags << std::endl;
+	// std::cout << "C_diagonal_indices: [";
+	// for (long int i = 0; i < C_n_diags - 1; i++) {
+	// 	std::cout << C_diagonal_indices[i] << ", ";
+	// }
+	// std::cout << C_diagonal_indices[C_n_diags - 1] << "]" << std::endl;
+	// std::cout << "C_cum_diagonal_lengths: [";
+	// for (long int i = 0; i < C_n_diags - 1; i++) {
+	// 	std::cout << C_cum_diagonal_lengths[i] << ", ";
+	// }
+	// std::cout << C_cum_diagonal_lengths[C_n_diags - 1] << "]" << std::endl;
+	// std::cout << "(C_num_elements = " << C_num_elements << ") [";
+	// for (long int i = 0; i < C_num_elements - 1; i++) {
+	// 	std::cout << "(" << C_real_data[i] << "," << C_imag_data[i] << "), ";
+	// }
+	// std::cout << "(" << C_real_data[C_num_elements - 1] << "," << C_imag_data[C_num_elements - 1] << ")]" << std::endl;
+	// std::cout << "---" << std::endl;
 	// ------------------ DEBUG C ------------------
 
 

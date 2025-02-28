@@ -3,11 +3,15 @@
 
 #include <type_traits>
 #include <unordered_map>
+#include <cmath>  // For std::abs and std::numeric_limits
+#include <limits> // For std::numeric_limits
 
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
+#include "specialMatrices.hpp"
 #include "vector.hpp"
 #include "config.hpp"
+#include "simd_kernels.hpp"
 
 namespace diaq {
 
@@ -30,22 +34,33 @@ diaQMatrix *array(diaQMatrix *A);
 diaQMatrix *einsum(diaQMatrix *A, std::vector<long int> axes);
 diaQMatrix *operator*(diaQMatrix &A, diaQMatrix &B);
 diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B);
-vector *spMV(diaQMatrix *A, vector *x);
-vector *MV(denseMatrix *A, vector *x);
+
+vector *spMV(diaQMatrix *A, vector *x, vector *y);
+vector *MV(denseMatrix *A, vector *x, vector *y);
 
 denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B);
 diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
 
-diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
-vector *identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x);
-diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
+vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
 
-vector *matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x);
-vector *identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x);
+diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y);
+void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
+diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
+diaQMatrix *identity_kron_matrix_kron_identity(long int n, diaQMatrix *v, long int m);
+
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y);
+void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
+void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y);
+void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y,long int qubit_smaller, long int qubit_larger);
 
 diaQMatrix *dagger(diaQMatrix *A);
 diaQMatrix *conjbar(diaQMatrix *A);
+
+diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType real, valType imag);
+
+diaQMatrix *expm_negative(diaQMatrix *A, valType t);
 
 } // namespace diaq
 

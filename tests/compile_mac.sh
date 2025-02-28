@@ -1,1 +1,0 @@
-clang++ -fopenmp tests.cpp

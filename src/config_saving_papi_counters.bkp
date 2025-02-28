@@ -1,0 +1,268 @@
+// list of events starts below
+
+        // event: total instructions
+        if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TOT_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TOT_INS");
+
+        // event: total cycles
+        if (PAPI_add_event(EventSet, PAPI_TOT_CYC) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TOT_CYC!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TOT_CYC");
+
+        // event: L1 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L1_DCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_DCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_DCM");
+
+        // event: L2 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L2_DCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L2_DCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L2_DCM");
+
+        // event: L3 data cache misses
+        if (PAPI_add_event(EventSet, PAPI_L3_TCM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L3_TCM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L3_TCM");
+
+        // event: L1 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L1_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_ICM");
+
+        // event: L2 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L2_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L2_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L2_ICM");
+
+        // event: L3 instruction cache misses
+        if (PAPI_add_event(EventSet, PAPI_L3_ICM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L3_ICM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L3_ICM");
+
+        // event: branch mispredictions
+        if (PAPI_add_event(EventSet, PAPI_BR_MSP) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_MSP!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_MSP");
+
+        // event: conditional branch instructions
+        if (PAPI_add_event(EventSet, PAPI_BR_CN) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_CN!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_CN");
+
+        // event: total load instructions
+        if (PAPI_add_event(EventSet, PAPI_LD_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_LD_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_LD_INS");
+
+        // event: total store instructions
+        if (PAPI_add_event(EventSet, PAPI_SR_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_SR_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_SR_INS");
+
+        // event: floating point instructions
+        if (PAPI_add_event(EventSet, PAPI_FP_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_FP_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_FP_INS");
+
+        // event: vector instructions
+        if (PAPI_add_event(EventSet, PAPI_VEC_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_VEC_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_VEC_INS");
+
+        // event: TLB data misses
+        if (PAPI_add_event(EventSet, PAPI_TLB_DM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TLB_DM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TLB_DM");
+
+        // event: instruction TLB misses
+        if (PAPI_add_event(EventSet, PAPI_TLB_IM) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_TLB_IM!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_TLB_IM");
+
+        // event: stalled cycles
+        if (PAPI_add_event(EventSet, PAPI_STL_CCY) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_STL_CCY!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_STL_CCY");
+
+        // event: conditional branch instructions taken
+        if (PAPI_add_event(EventSet, PAPI_BR_TKN) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_TKN!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_TKN");
+
+        // event: branch instructions
+        if (PAPI_add_event(EventSet, PAPI_BR_INS) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_BR_INS!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_BR_INS");
+
+        // event: L1 instruction cache hits
+        if (PAPI_add_event(EventSet, PAPI_L1_ICH) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_ICH!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_ICH");
+
+        // event: L1 total cache accesses
+        if (PAPI_add_event(EventSet, PAPI_L1_TCA) != PAPI_OK) {
+            std::cerr << "PAPI add event error for PAPI_L1_TCA!" << std::endl;
+        }
+        papi_event_names.push_back("PAPI_L1_TCA");
+
+
+
+
+
+
+
+        $ papi_native_avail | grep "\-\-\-\-\-\-\-\-" -A 1 | grep "|"
+| perf::CYCLES                                                                 |
+| perf::CPU-CYCLES                                                             |
+| perf::PERF_COUNT_HW_INSTRUCTIONS                                             |
+| perf::INSTRUCTIONS                                                           |
+| perf::PERF_COUNT_HW_CACHE_REFERENCES                                         |
+| perf::CACHE-REFERENCES                                                       |
+| perf::PERF_COUNT_HW_CACHE_MISSES                                             |
+| perf::CACHE-MISSES                                                           |
+| perf::PERF_COUNT_HW_BRANCH_INSTRUCTIONS                                      |
+| perf::BRANCH-INSTRUCTIONS                                                    |
+| perf::BRANCHES                                                               |
+| perf::PERF_COUNT_HW_BRANCH_MISSES                                            |
+| perf::BRANCH-MISSES                                                          |
+| perf::PERF_COUNT_HW_BUS_CYCLES                                               |
+| perf::BUS-CYCLES                                                             |
+| perf::PERF_COUNT_HW_STALLED_CYCLES_FRONTEND                                  |
+| perf::STALLED-CYCLES-FRONTEND                                                |
+| perf::IDLE-CYCLES-FRONTEND                                                   |
+| perf::PERF_COUNT_HW_STALLED_CYCLES_BACKEND                                   |
+| perf::STALLED-CYCLES-BACKEND                                                 |
+| perf::IDLE-CYCLES-BACKEND                                                    |
+| perf::PERF_COUNT_HW_REF_CPU_CYCLES                                           |
+| perf::REF-CYCLES                                                             |
+| perf::PERF_COUNT_SW_CPU_CLOCK                                                |
+| perf::CPU-CLOCK                                                              |
+| perf::PERF_COUNT_SW_TASK_CLOCK                                               |
+| perf::TASK-CLOCK                                                             |
+| perf::PERF_COUNT_SW_PAGE_FAULTS                                              |
+| perf::PAGE-FAULTS                                                            |
+| perf::FAULTS                                                                 |
+| perf::PERF_COUNT_SW_CONTEXT_SWITCHES                                         |
+| perf::CONTEXT-SWITCHES                                                       |
+| perf::CS                                                                     |
+| perf::PERF_COUNT_SW_CPU_MIGRATIONS                                           |
+| perf::CPU-MIGRATIONS                                                         |
+| perf::MIGRATIONS                                                             |
+| perf::PERF_COUNT_SW_PAGE_FAULTS_MIN                                          |
+| perf::MINOR-FAULTS                                                           |
+| perf::PERF_COUNT_SW_PAGE_FAULTS_MAJ                                          |
+| perf::MAJOR-FAULTS                                                           |
+| perf::PERF_COUNT_HW_CACHE_L1D                                                |
+| perf::L1-DCACHE-LOADS                                                        |
+| perf::L1-DCACHE-LOAD-MISSES                                                  |
+| perf::L1-DCACHE-STORES                                                       |
+| perf::L1-DCACHE-STORE-MISSES                                                 |
+| perf::L1-DCACHE-PREFETCHES                                                   |
+| perf::L1-DCACHE-PREFETCH-MISSES                                              |
+| perf::PERF_COUNT_HW_CACHE_L1I                                                |
+| perf::L1-ICACHE-LOADS                                                        |
+| perf::L1-ICACHE-LOAD-MISSES                                                  |
+| perf::L1-ICACHE-PREFETCHES                                                   |
+| perf::L1-ICACHE-PREFETCH-MISSES                                              |
+| perf::PERF_COUNT_HW_CACHE_LL                                                 |
+| perf::LLC-LOADS                                                              |
+| perf::LLC-LOAD-MISSES                                                        |
+| perf::LLC-STORES                                                             |
+| perf::LLC-STORE-MISSES                                                       |
+| perf::LLC-PREFETCHES                                                         |
+| perf::LLC-PREFETCH-MISSES                                                    |
+| perf::PERF_COUNT_HW_CACHE_DTLB                                               |
+| perf::DTLB-LOADS                                                             |
+| perf::DTLB-LOAD-MISSES                                                       |
+| perf::DTLB-STORES                                                            |
+| perf::DTLB-STORE-MISSES                                                      |
+| perf::DTLB-PREFETCHES                                                        |
+| perf::DTLB-PREFETCH-MISSES                                                   |
+| perf::PERF_COUNT_HW_CACHE_ITLB                                               |
+| perf::ITLB-LOADS                                                             |
+| perf::ITLB-LOAD-MISSES                                                       |
+| perf::PERF_COUNT_HW_CACHE_BPU                                                |
+| perf::BRANCH-LOADS                                                           |
+| perf::BRANCH-LOAD-MISSES                                                     |
+| perf::PERF_COUNT_HW_CACHE_NODE                                               |
+| perf::NODE-LOADS                                                             |
+| perf::NODE-LOAD-MISSES                                                       |
+| perf::NODE-STORES                                                            |
+| perf::NODE-STORE-MISSES                                                      |
+| perf::NODE-PREFETCHES                                                        |
+| perf::NODE-PREFETCH-MISSES                                                   |
+| perf_raw::r0000                                                              |
+| L1_ITLB_MISS_L2_ITLB_HIT                                                     |
+| L1_ITLB_MISS_L2_ITLB_MISS                                                    |
+| DIV_CYCLES_BUSY_COUNT                                                        |
+| DIV_OP_COUNT                                                                 |
+| RETIRED_BRANCH_INSTRUCTIONS                                                  |
+| RETIRED_FAR_CONTROL_TRANSFERS                                                |
+| RETIRED_INDIRECT_BRANCH_INSTRUCTIONS_MISPREDICTED                            |
+| RETIRED_BRANCH_INSTRUCTIONS_MISPREDICTED                                     |
+| RETIRED_TAKEN_BRANCH_INSTRUCTIONS                                            |
+| RETIRED_TAKEN_BRANCH_INSTRUCTIONS_MISPREDICTED                               |
+| RETIRED_CONDITIONAL_BRANCH_INSTRUCTIONS                                      |
+| RETIRED_UOPS                                                                 |
+| RETIRED_FUSED_INSTRUCTIONS                                                   |
+| RETIRED_INSTRUCTIONS                                                         |
+| RETIRED_MMX_FP_INSTRUCTIONS                                                  |
+| RETIRED_NEAR_RETURNS                                                         |
+| RETIRED_NEAR_RETURNS_MISPREDICTED                                            |
+| TAGGED_IBS_OPS                                                               |
+| INSTRUCTION_CACHE_REFILLS_FROM_L2                                            |
+| INSTRUCTION_CACHE_REFILLS_FROM_SYSTEM                                        |
+| CORE_TO_L2_CACHEABLE_REQUEST_ACCESS_STATUS                                   |
+| L2_PREFETCH_HIT_L2                                                           |
+| L2_PREFETCH_HIT_L3                                                           |
+| REQUESTS_TO_L2_GROUP1                                                        |
+| REQUESTS_TO_L2_GROUP2                                                        |
+| BAD_STATUS_2                                                                 |
+| LS_DISPATCH                                                                  |
+| INEFFECTIVE_SOFTWARE_PREFETCH                                                |
+| SOFTWARE_PREFETCH_DATA_CACHE_FILLS                                           |
+| HARDWARE_PREFETCH_DATA_CACHE_FILLS                                           |
+| L1_DTLB_MISS                                                                 |
+| RETIRED_LOCK_INSTRUCTIONS                                                    |
+| RETIRED_CLFLUSH_INSTRUCTIONS                                                 |
+| RETIRED_CPUID_INSTRUCTIONS                                                   |
+| SMI_RECEIVED                                                                 |
+| INTERRUPT_TAKEN                                                              |
+| MAB_ALLOCATION_BY_PIPE                                                       |
+| MISALIGNED_LOADS                                                             |
+| CYCLES_NOT_IN_HALT                                                           |
+| TLB_FLUSHES                                                                  |
+| PREFETCH_INSTRUCTIONS_DISPATCHED                                             |
+| STORE_TO_LOAD_FORWARD                                                        |
+| STORE_COMMIT_CANCELS_2                                                       |
+| L1_BTB_CORRECTION                                                            |
+| L2_BTB_CORRECTION                                                            |
+| DYNAMIC_INDIRECT_PREDICTIONS                                                 |
+| DECODER_OVERRIDE_BRANCH_PRED                                                 |
+| ITLB_FETCH_HIT                                                               |
+| UOPS_QUEUE_EMPTY                                                             |
+| UOPS_DISPATCHED_FROM_DECODER                                                 |
+| DISPATCH_RESOURCE_STALL_CYCLES_1                                             |
+| DISPATCH_RESOURCE_STALL_CYCLES_0                                             |
+| RETIRED_SERIALIZING_OPS                                                      |
