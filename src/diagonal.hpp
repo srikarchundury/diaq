@@ -25,7 +25,6 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
-            printf("try to make {di=%ld, dl=%ld}\n", di, dl);
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
@@ -79,12 +78,7 @@ class diagonal {
             // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
-        bool isEmpty() {
-            for(long int i=0; i < dLength; i++) {
-                if(realValues[i] != 0.0 or imagValues[i] != 0.0) return false;
-            }
-            return true;
-        }
+        bool isEmpty();
         void print() {
             std::string sep=",";
             // long int *coords= this->getCoords(matrixSize, this->dIndex);

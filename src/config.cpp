@@ -4,7 +4,6 @@ namespace diaq {
 
     valType* aligned_alloc_helper(size_t size) {
         // Ensure `size` is a multiple of NUM_BYTES_ALIGNED
-        printf("size: %ld\n", size);
         size_t aligned_size = (size + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED * NUM_BYTES_ALIGNED;
         valType *alloced_array = (valType *)std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
         if (alloced_array == nullptr) {

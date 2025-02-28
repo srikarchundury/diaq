@@ -1,4 +1,5 @@
 #include "simd_kernels.hpp"
+#include "diagonal.hpp"
 
 namespace diaq {
 
@@ -1132,5 +1133,25 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
     }
     
 #endif
+
+bool diagonal::isEmpty() {
+    bool result = true;
+    const long int vecSize = 8;  // AVX-512 processes 8 doubles at a time
+    __m512d zero = _mm512_setzero_pd();
+
+    #pragma omp parallel for simd
+    for (long int i = 0; i < dLength; i += vecSize) {
+        __m512d realVec = _mm512_loadu_pd(&realValues[i]);
+        __m512d imagVec = _mm512_loadu_pd(&imagValues[i]);
+
+        __mmask8 cmpReal = _mm512_cmp_pd_mask(realVec, zero, _CMP_NEQ_UQ);
+        __mmask8 cmpImag = _mm512_cmp_pd_mask(imagVec, zero, _CMP_NEQ_UQ);
+
+        if (cmpReal || cmpImag) {
+            result = false;
+        }
+    }
+    return result;
+}
 
 } // namespace diaq

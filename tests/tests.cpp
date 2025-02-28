@@ -2862,6 +2862,12 @@ int main(int argc, char **argv) {
             diaq::stopPAPI("test " + str_i);
         #endif
     }
+    else if(strcmp(argv[1], "list") == 0) {
+        // this lists all the tests above by strcmp second half of the string in else cases above!
+        // call python script to list all the tests
+        std::string command = "python tests/list_tests.py";
+        system(command.c_str());
+    }
     #ifdef PAPI_ON
         diaq::cleanupPAPI();
     #endif
