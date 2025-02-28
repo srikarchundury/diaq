@@ -29,8 +29,8 @@ class vector {
                 // }
             #else
                 // printf("comes here only?\n");
-                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                realValues_ = aligned_alloc_helper(M * sizeof(valType));
+                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = 0.0;
@@ -49,7 +49,7 @@ class vector {
             #if NUM_BYTES_ALIGNED == -1
                 imagValues_ = (valType *)calloc(M, sizeof(valType));
             #else
-                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
             #endif
         }
         vector(size_t M, valType init_real, valType init_imag) {
@@ -62,8 +62,8 @@ class vector {
                     imagValues_[i] = init_imag;
                 }
             #else
-                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                realValues_ = aligned_alloc_helper(M * sizeof(valType));
+                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
                     realValues_[i] = init_real;
@@ -77,8 +77,8 @@ class vector {
                 realValues_ = (valType *)calloc(M, sizeof(valType));
                 imagValues_ = (valType *)calloc(M, sizeof(valType));
             #else
-                realValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
-                imagValues_ = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, M * sizeof(valType));
+                realValues_ = aligned_alloc_helper(M * sizeof(valType));
+                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
             #endif
             for (size_t i = 0; i < M; ++i) {
                 realValues_[i] = init_real;

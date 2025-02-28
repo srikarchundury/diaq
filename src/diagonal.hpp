@@ -29,14 +29,14 @@ class diagonal {
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
             #else
-                realValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
-                imagValues = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dl * sizeof(valType));
+                realValues = aligned_alloc_helper(dl * sizeof(valType));
+                imagValues = aligned_alloc_helper(dl * sizeof(valType));
                 #pragma omp parallel for
                 for(long int i = 0; i < dl; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
-            #endif 
+            #endif
         }
         diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;

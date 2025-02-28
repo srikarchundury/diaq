@@ -25,8 +25,8 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
         valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
         valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
     #else
-        valType *real_data = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, matrix_shape[0] * matrix_shape[1] * sizeof(valType));
-        valType *imag_data = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, matrix_shape[0] * matrix_shape[1] * sizeof(valType));
+        valType *real_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
+        valType *imag_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
     #endif
     std::unordered_map<long int, diagonal*>::iterator it;
     long int x, y;
@@ -179,8 +179,8 @@ diaQMatrix *from_numpy(std::complex<valType> *vals, std::vector<long int> shape)
                 valType *real_vals = (valType *)calloc(vals_len, sizeof(valType));
                 valType *imag_vals = (valType *)calloc(vals_len, sizeof(valType));
             #else
-                valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
-                valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, vals_len * sizeof(valType));
+                valType *real_vals = aligned_alloc_helper(vals_len * sizeof(valType));
+                valType *imag_vals = aligned_alloc_helper(vals_len * sizeof(valType));
             #endif
 
             #pragma omp parallel for

@@ -54,13 +54,19 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using AVX-Double vectorization" << std::endl;
         #endif
 
-        // logger.log("Using AVX-Double vectorization");
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m256d real_a, real_b; // a for valuesA and b for valuesB
         __m256d imag_a, imag_b; // a for valuesA and b for valuesB
         __m256d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
@@ -136,14 +142,21 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using AVX-Float vectorization" << std::endl;
         #endif
         
-        // logger.log("Using AVX-Float vectorization");
-        // printf("Using AVX-Float vectorization\n");
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // // logger.log("Using AVX-Float vectorization");
+        // // printf("Using AVX-Float vectorization\n");
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m256 real_a, real_b; // a for valuesA and b for valuesB
         __m256 imag_a, imag_b; // a for valuesA and b for valuesB
         __m256 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
@@ -459,12 +472,19 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using SSE-Float vectorization" << std::endl;
         #endif
         
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m128 real_a, real_b; // a for valuesA and b for valuesB
         __m128 imag_a, imag_b; // a for valuesA and b for valuesB
         __m128 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
@@ -540,12 +560,19 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using SSE-Double vectorization" << std::endl;
         #endif
 
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m128d real_a, real_b; // a for valuesA and b for valuesB
         __m128d imag_a, imag_b; // a for valuesA and b for valuesB
         __m128d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
@@ -734,13 +761,19 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using AVX512-Double vectorization" << std::endl;
         #endif
 
-        // logger.log("Using AVX512-Double vectorization");
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+        
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m512d real_a, real_b; // a for valuesA and b for valuesB
         __m512d imag_a, imag_b; // a for valuesA and b for valuesB
         __m512d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
@@ -809,14 +842,19 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
             std::cout << "Using AVX512-Float vectorization" << std::endl;
         #endif
         
-        // logger.log("Using AVX512-Float vectorization");
-        // printf("Using AVX512-Float vectorization\n");
-        long int loop_count = 0;
-        long int k_cpy = k;
-        while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-            loop_count++;
-            k_cpy++;
-        }
+        // long int loop_count = 0;
+        // long int k_cpy = k;
+        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+        //     loop_count++;
+        //     k_cpy++;
+        // }
+
+        long int max_lenRes = lenRes - k;
+        long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+        long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+
+        long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
         __m512 real_a, real_b; // a for valuesA and b for valuesB
         __m512 imag_a, imag_b; // a for valuesA and b for valuesB
         __m512 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;

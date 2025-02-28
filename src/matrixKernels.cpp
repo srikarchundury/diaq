@@ -53,8 +53,10 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     long int lenDiagB = diagB->dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
     long int res_dims[] = {shapeA[0], shapeB[1]};
+
     long int lenRes = getDiagonalLength(res_index, res_dims);
     diagonal *res = new diagonal(res_index, lenRes);
+
     // std::cout << "diagonal length = " << lenRes << std::endl;
     long int offsetA = abs(indexA);  // Absolute value of indexA
     long int offsetB = abs(indexB);  // Absolute value of indexB
@@ -172,6 +174,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
 
     #ifdef DEBUG
         // start timer
+        std::cout << "starting product" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -190,16 +193,15 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         std::cout << " --- " << std::endl;
     #endif
 
-    if(A->matrix_shape[1] != B->matrix_shape[0]) {
-        throw std::invalid_argument("input matrices are not multiplyable");
-    }
+    // if(A->matrix_shape[1] != B->matrix_shape[0]) {
+    //     throw std::invalid_argument("input matrices are not multiplyable");
+    // }
     long int *d = new long int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
     diaQMatrix* result = new diaQMatrix(&d);
     std::unordered_map<long int, diagonal*> mapA = A->diagonalMap;
     std::unordered_map<long int, diagonal*> mapB = B->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator itA, itB;
 
     // #pragma omp parallel
     // {
@@ -218,7 +220,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //                             std::cout << " ------ diags ------ " << std::endl;
     //                             std::cout << " --- " << std::endl;
     //                         #endif
-    //                         #ifdef DEBUG
+    //                         #ifdef DEEP_DEBUG
     //                             std::cout << "Thread ID " << omp_get_thread_num() << " is working on diagonal " << itA->first << " and " << itB->first << std::endl;
     //                         #endif
 
@@ -260,33 +262,34 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //     } // ends omp single
     // } // ends omp parallel
 
+    std::vector<std::unordered_map<long int, diagonal*>> thread_local_maps(omp_get_max_threads());
+    std::vector<std::pair<long int, diagonal*>> vecA(mapA.begin(), mapA.end());
+    std::vector<std::pair<long int, diagonal*>> vecB(mapB.begin(), mapB.end());
     #pragma omp parallel
     {
-        std::vector<std::pair<long int, diagonal*>> localDiags;
-    
-        #pragma omp for collapse(2) nowait
-        for (size_t a = 0; a < mapA.size(); ++a) {
-            for (size_t b = 0; b < mapB.size(); ++b) {
-                auto itA = std::next(mapA.begin(), a);
-                auto itB = std::next(mapB.begin(), b);
-    
+        int thread_id = omp_get_thread_num();
+        auto &local_map = thread_local_maps[thread_id];
+
+        #pragma omp for
+        for (size_t a = 0; a < vecA.size(); ++a) {
+            for (size_t b = 0; b < vecB.size(); ++b) {
                 diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
-                                                      itA->first, itB->first, 
-                                                      itA->second, itB->second);
-    
+                                                    vecA[a].first, vecB[b].first, 
+                                                    vecA[a].second, vecB[b].second);
                 if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-                    localDiags.emplace_back(itA->first + itB->first, diagNew);
+                    local_map[diagNew->dIndex] = diagNew;
                 } else if (diagNew != NULL) {
                     diagNew->free();
                 }
             }
         }
-        // Merge thread-local results into the global result map
-        #pragma omp critical
-        {
-            for (const auto& [index, diag] : localDiags) {
-                result->addDiagonal(index, diag);
-            }
+    }
+
+    #pragma omp parallel for
+    for (size_t t = 0; t < thread_local_maps.size(); ++t) {
+        for (auto &entry : thread_local_maps[t]) {
+            #pragma omp critical
+            result->addDiagonal(entry.first, entry.second);
         }
     }
 
@@ -370,8 +373,8 @@ denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
         valType *real_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
         valType *imag_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
     #else
-        valType *real_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_b[1] * sizeof(valType));
-        valType *imag_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_b[1] * sizeof(valType));
+        valType *real_res = aligned_alloc_helper(shape_a[0] * shape_b[1] * sizeof(valType));
+        valType *imag_res = aligned_alloc_helper(shape_a[0] * shape_b[1] * sizeof(valType));
         #pragma omp parallel for
         for(long int i = 0; i < shape_a[0] * shape_b[1]; i++) {
             real_res[i] = 0.0;
@@ -426,9 +429,10 @@ diaQMatrix *add(diaQMatrix *A, diaQMatrix *B) {
     diaQMatrix* result = new diaQMatrix(A->getSize());
     std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
     std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator itA, itB;
-    for (itA = mapA.begin(); itA != mapA.end(); itA++) {
-        itB = mapB.find(itA->first);
+    #pragma omp paralle for
+    for(long int a = 0; a < mapA.size(); a++) {
+        auto itA = std::next(mapA.begin(), a);
+        auto itB = mapB.find(itA->first);
         if (itB == mapB.end()) {
             result->addDiagonal(itA->first, itA->second);
         } else {
@@ -438,7 +442,6 @@ diaQMatrix *add(diaQMatrix *A, diaQMatrix *B) {
     // result->pruneMatrix();
     return result;
 }
-
 
 std::complex<valType> trace(diaQMatrix *A) {
     std::complex<valType> t = 0;
@@ -1288,8 +1291,8 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
         valType *real_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
         valType *imag_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
     #else
-        valType *real_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
-        valType *imag_res = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
+        valType *real_res = aligned_alloc_helper(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
+        valType *imag_res = aligned_alloc_helper(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
         #pragma omp parallel for
         for(long int i = 0; i < shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1]; i++) {
             real_res[i] = 0.0;
@@ -1491,7 +1494,6 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
         printf("\t\t kron_product took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
-    // return result;
     return result;
 }
 
@@ -1556,6 +1558,8 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
         // log duration
         printf("\t\t identity_kron_matrix took %f milliseconds\n", duration.count()/1000.0);
     #endif
+
+    A->free();
 
     return result;
 }
@@ -2921,6 +2925,8 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
         printf("\t\t matrix_kron_identity took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
+    A->free();
+
     return result;
 }
 
@@ -3019,6 +3025,8 @@ diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, l
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\tidentity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
     #endif
+
+    A->free();
 
     return result;
 }

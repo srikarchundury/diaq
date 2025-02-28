@@ -231,8 +231,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
                     #else
-                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
-                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                        valType *real_vals = aligned_alloc_helper(dLen * sizeof(valType));
+                        valType *imag_vals = aligned_alloc_helper(dLen * sizeof(valType));
                         #pragma omp parallel for
                         for(long int i = 0; i<dLen; i++) {
                             real_vals[i] = 0.0;
@@ -244,8 +244,8 @@ class diaQMatrix {
                 //         valType *real_vals = (valType *)calloc(dLen, sizeof(valType));
                 //         valType *imag_vals = (valType *)calloc(dLen, sizeof(valType));
                 //     #else
-                //         valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
-                //         valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLen * sizeof(valType));
+                //         valType *real_vals = aligned_alloc_helper(dLen * sizeof(valType));
+                //         valType *imag_vals = aligned_alloc_helper(dLen * sizeof(valType));
                 //         #pragma omp parallel for
                 //         for(long int i = 0; i<dLen; i++) {
                 //             real_vals[i] = 0.0;
@@ -267,6 +267,7 @@ class diaQMatrix {
             // this->diagonalMap.erase(dIndex);
             this->diagonalMap.insert({dIndex, diagNew});
         }
+
         void addDiagonal(long int dIndex, diagonal *diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
@@ -274,9 +275,11 @@ class diaQMatrix {
                 this->diagonalMap.insert({dIndex, diagNew});
             }
             else {
-                #pragma omp simd
+                #pragma omp parallel for simd
                 for(long int i = 0; i < it->second->dLength; i++) {
+                    #pragma omp atomic
                     it->second->realValues[i] += diagNew->realValues[i];
+                    #pragma omp atomic
                     it->second->imagValues[i] += diagNew->imagValues[i];
                 }
                 diagNew->free();
@@ -289,7 +292,7 @@ class diaQMatrix {
             #pragma omp parallel
             {
                 std::unordered_map<long int, diagonal*> localUpdates;
-        
+
                 #pragma omp for nowait
                 for (size_t i = 0; i < BDiagVec.size(); i++) {
                     long int dIndex = BDiagVec[i].first;
@@ -404,8 +407,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
                     #else
-                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                        valType *real_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
+                        valType *imag_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
                         #pragma omp parallel for
                         for (long int j = 0; j < d->dLength; j++) {
                             real_vals[j] = 0.0;
@@ -479,8 +482,8 @@ class diaQMatrix {
                     valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
                     valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
                 #else
-                    valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
-                    valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, d->dLength * sizeof(valType));
+                    valType *real_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
+                    valType *imag_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
                     #pragma omp parallel for
                     for (long int i = 0; i < d->dLength; i++) {
                         real_vals[i] = d->realValues[i];
@@ -623,8 +626,8 @@ class diaQMatrix {
                         valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                         valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
                     #else
-                        valType *real_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
-                        valType *imag_vals = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, dLength * sizeof(valType));
+                        valType *real_vals = aligned_alloc_helper(dLength * sizeof(valType));
+                        valType *imag_vals = aligned_alloc_helper(dLength * sizeof(valType));
                         #pragma omp parallel for
                         for(long int i = 0; i < dLength; i++) {
                             real_vals[i] = 0.0;
@@ -684,8 +687,8 @@ class diaQMatrix {
                     (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
                     (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
                 #else
-                    (*real_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
-                    (*imag_data) = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, *num_elements * sizeof(valType));
+                    (*real_data) = aligned_alloc_helper(*num_elements * sizeof(valType));
+                    (*imag_data) = aligned_alloc_helper(*num_elements * sizeof(valType));
                     #pragma omp parallel for
                     for(long int i = 0; i < *num_elements; i++) {
                         (*real_data)[i] = 0.0;

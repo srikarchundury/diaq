@@ -4,6 +4,8 @@
 #include <thread>
 #include <iostream>
 #include <omp.h>
+#include <cstring>
+#include <algorithm> // For std::min
 
 #ifdef PAPI_ON
 	#include <papi.h>
@@ -26,6 +28,9 @@ namespace diaq {
 // ------------------------------- //
 
 
+// ------- Data type related ------- //
+using valType = double; // double or float
+#define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
 // ------- Vectorization related ------- //
 // #if defined(__AVX__) || defined(__AVX2__)
 // 	#define NUM_BYTES_ALIGNED _mm256_get_cache_line_size()
@@ -33,12 +38,7 @@ namespace diaq {
 // 	#define NUM_BYTES_ALIGNED 4096
 // #endif
 #define NUM_BYTES_ALIGNED 128 // set -1 for unaligned then default behavior whatever compiler does it does!
-// ------------------------------- //
-
-
-// ------- Data type related ------- //
-using valType = double; // double or float
-#define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
+valType* aligned_alloc_helper(size_t size); // see config.cpp
 // ------------------------------- //
 
 

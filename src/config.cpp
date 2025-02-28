@@ -2,7 +2,17 @@
 
 namespace diaq {
 
-#ifdef PAPI_ON
+    valType* aligned_alloc_helper(size_t size) {
+        size_t aligned_size = (size + NUM_BYTES_ALIGNED - 1) & ~(NUM_BYTES_ALIGNED - 1);  // Ensure alignment
+        valType *alloced_array = (valType *)std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+        if (alloced_array == nullptr) {
+            std::cerr << "Aligned memory allocation failed!" << std::endl;
+            // Handle allocation error as needed
+        }
+        return alloced_array;
+    }
+
+    #ifdef PAPI_ON
 	// Static variables for PAPI
     static int EventSet = PAPI_NULL;
     std::vector<int> event_codes;

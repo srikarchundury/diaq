@@ -23,8 +23,8 @@ class denseMatrix {
                 realData = (valType *)calloc(size, sizeof(valType));
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
-                realData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
-                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                realData = aligned_alloc_helper(size * sizeof(valType));
+                imagData = aligned_alloc_helper(size * sizeof(valType));
             #endif
             matrix_shape = new long int[2];
             matrix_shape[0] = s;
@@ -38,7 +38,7 @@ class denseMatrix {
             #if NUM_BYTES_ALIGNED == -1
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
-                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                imagData = aligned_alloc_helper(size * sizeof(valType));
                 #pragma omp parallel for
                 for(long int i = 0; i < size; i++) {
                     imagData[i] = 0.0;
@@ -67,7 +67,7 @@ class denseMatrix {
             #if NUM_BYTES_ALIGNED == -1
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
-                imagData = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, size * sizeof(valType));
+                imagData = aligned_alloc_helper(size * sizeof(valType));
                 #pragma omp parallel for
                 for(long int i = 0; i < size; i++) {
                     imagData[i] = 0.0;

@@ -13,8 +13,8 @@ class identityMatrix : public diaQMatrix {
 				valType *real = (valType *)calloc(s, sizeof(valType));
 				valType *imag = (valType *)calloc(s, sizeof(valType));
 			#else
-				valType *real = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, s * sizeof(valType));
-				valType *imag = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, s * sizeof(valType));
+				valType *real = aligned_alloc_helper(s * sizeof(valType));
+				valType *imag = aligned_alloc_helper(s * sizeof(valType));
 				#pragma omp parallel for
 				for(long int i = 0; i < s; i++) {
 					real[i] = (valType)1.0;
@@ -32,7 +32,7 @@ class permutationMatrix : public diaQMatrix {
 			#if NUM_BYTES_ALIGNED == -1
 				valType *real = (valType *)calloc(s * s, sizeof(valType));
 			#else
-				valType *real = (valType *)aligned_alloc(NUM_BYTES_ALIGNED, s * s * sizeof(valType));
+				valType *real = aligned_alloc_helper(s * s * sizeof(valType));
 			#endif
 			for(long int i = 0 ; i < s; i++) {
 				for(long int j = 0; j < s; j++) {
