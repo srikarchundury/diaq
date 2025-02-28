@@ -25,6 +25,7 @@ class diagonal {
         diagonal(long int di, long int dl) {
             dIndex = di;
             dLength = dl;
+            printf("try to make {di=%ld, dl=%ld}\n", di, dl);
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));

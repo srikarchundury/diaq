@@ -767,11 +767,10 @@ void run_without_vectorization(long int k, long int lenRes, long int offsetA, lo
         //     loop_count++;
         //     k_cpy++;
         // }
-        
+
         long int max_lenRes = lenRes - k;
         long int max_lenDiagA = lenDiagA - (k + offsetA - jump);
         long int max_lenDiagB = lenDiagB - (k + offsetB - jump);
-
         long int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
 
         __m512d real_a, real_b; // a for valuesA and b for valuesB

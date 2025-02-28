@@ -174,7 +174,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
 
     #ifdef DEBUG
         // start timer
-        std::cout << "starting product" << std::endl;
+        std::cout << "starting product -- " << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 

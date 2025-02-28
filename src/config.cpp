@@ -3,14 +3,26 @@
 namespace diaq {
 
     valType* aligned_alloc_helper(size_t size) {
-        size_t aligned_size = (size + NUM_BYTES_ALIGNED - 1) & ~(NUM_BYTES_ALIGNED - 1);  // Ensure alignment
+        // Ensure `size` is a multiple of NUM_BYTES_ALIGNED
+        printf("size: %ld\n", size);
+        size_t aligned_size = (size + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED * NUM_BYTES_ALIGNED;
         valType *alloced_array = (valType *)std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
         if (alloced_array == nullptr) {
             std::cerr << "Aligned memory allocation failed!" << std::endl;
-            // Handle allocation error as needed
+            std::abort(); // Terminate program if allocation fails
         }
         return alloced_array;
-    }
+    } // 19-qubit unitary sim failed with allocation error, likely some other kernel has a memory leak!! fixing with valgrind.
+
+    // valType* aligned_alloc_helper(size_t size) {
+    //     void* ptr = nullptr;
+    //     int err = posix_memalign(&ptr, NUM_BYTES_ALIGNED, size);
+    //     if (err != 0) {
+    //         std::cerr << "posix_memalign failed with error " << err << std::endl;
+    //         std::abort();
+    //     }
+    //     return (valType*)ptr;
+    // }
 
     #ifdef PAPI_ON
 	// Static variables for PAPI
