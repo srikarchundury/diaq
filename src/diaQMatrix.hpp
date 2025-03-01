@@ -861,8 +861,8 @@ class diaQMatrix {
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 long int dIndex = it->first;
                 long int dLength = it->second->dLength;
-                valType *real_vals = it->second->getRealValues();
-                valType *imag_vals = it->second->getImagValues();
+                valType *real_vals = it->second->realValues;
+                valType *imag_vals = it->second->imagValues;
                 #pragma omp parallel for
                 for (long int i = 0; i < dLength; i++) {
                     long int *mat_pos = getMatrixPosition(dIndex, i);
@@ -873,12 +873,14 @@ class diaQMatrix {
             return res;
         }
         void free() {
-            // #pragma omp parallel for
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+            #pragma omp parallel for
+            for (long int i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
                 it->second->free();
             }
             // diagonalMap is taken care of by C++, but can we make it happen right now?
             diagonalMap.clear();
+            delete[] matrix_shape;
         }
         valType sparsity() {
             long int z = 0;
@@ -897,8 +899,8 @@ class diaQMatrix {
         void pruneMatrix() {
             std::vector<long int> toDelete;
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                valType *real_vals = it->second->getRealValues();
-                valType *imag_vals = it->second->getImagValues();
+                valType *real_vals = it->second->realValues;
+                valType *imag_vals = it->second->imagValues;
                 long int i;
                 for (i = 0; i < it->second->dLength; i++) {
                     if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) {
@@ -920,8 +922,6 @@ class diaQMatrix {
         void transpose();
         denseMatrix *convertToDenseMatrix(long int *new_shape);
         denseMatrix *convertToDenseMatrix();
-        valType *getRealValues();
-        valType *getImagValues();
 };
 
 } // namespace diaq

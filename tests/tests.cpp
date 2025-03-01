@@ -58,10 +58,10 @@ std::string check_vectors(diaq::vector *a, diaq::vector *b) {
     if(a->num_rows() != b->num_rows()) {
         return "false - 1";
     }
-    diaq::valType *a_real_values = a->realValues_;
-    diaq::valType *a_imag_values = a->imagValues_;
-    diaq::valType *b_real_values = b->realValues_;
-    diaq::valType *b_imag_values = b->imagValues_;
+    diaq::valType *a_real_values = a->realValues;
+    diaq::valType *a_imag_values = a->imagValues;
+    diaq::valType *b_real_values = b->realValues;
+    diaq::valType *b_imag_values = b->imagValues;
     const diaq::valType epsilon = 0.00002;
     for(size_t i = 0; i < a->num_rows(); i++) {
         if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {
@@ -2088,7 +2088,7 @@ int main(int argc, char **argv) {
         dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        diaq::vector *y = new diaq::vector(dense_y->numRows);
         y = diaq::spMV(q_mat, x, y);
         y->print();
         std::cout << " -- " << std::endl;
@@ -2141,7 +2141,7 @@ int main(int argc, char **argv) {
         dense_y->print();
 
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        diaq::vector *y = new diaq::vector(dense_y->numRows);
         y = diaq::spMV(q_mat, x, y);
         y->print();
         
@@ -2235,7 +2235,7 @@ int main(int argc, char **argv) {
 
         // setting x vector to ket 0
         diaq::vector *x = new diaq::vector(mat->shape[0], 0.0);
-        x->realValues_[0] = 1.0; // set to ket 0
+        x->realValues[0] = 1.0; // set to ket 0
 
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
         diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
@@ -2308,7 +2308,7 @@ int main(int argc, char **argv) {
         std::cout << " -- correct answer -- " << std::endl;
         correct_y->print();
 
-        diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(correct_y->numRows, 0.0);
         diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
         std::cout << " -- new way to do it -- " << std::endl;
         y->print();
@@ -2351,7 +2351,7 @@ int main(int argc, char **argv) {
         correct_y->print();
 
         std::cout << " -- new way to do it -- " << std::endl;
-        diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(correct_y->numRows, 0.0);
         diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
         y->print();
 
@@ -2693,7 +2693,7 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0) {
         // vector x
         diaq::vector *x = new diaq::vector(128);
-        x->getImagValues()[8] = 1.0;
+        x->imagValues[8] = 1.0;
         // matrix_shape (64,64)
         // tensor_shape (64,64)
         // (dIndex=0) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
@@ -2726,7 +2726,7 @@ int main(int argc, char **argv) {
         y = diaq::spMV(kp_2, x, y);
         y->print();
         printf(" -- Now doing identity_kron_matrix_times_vector -- \n");
-        diaq::vector *res_v = new diaq::vector(y->numRows_, 0.0);
+        diaq::vector *res_v = new diaq::vector(y->numRows, 0.0);
         diaq::identity_kron_matrix_times_vector((long int)1, qspa, x, res_v);
         res_v->print();
 

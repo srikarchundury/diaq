@@ -11,78 +11,78 @@ namespace diaq {
 
 class vector {
     public:
-        size_t numRows_;
-        valType* realValues_;
-        valType* imagValues_;
+        size_t numRows;
+        valType* realValues;
+        valType* imagValues;
 
         vector(size_t M) {
-            numRows_ = M;
+            numRows = M;
             #if NUM_BYTES_ALIGNED == -1
-                realValues_ = (valType *)calloc(M, sizeof(valType));
-                imagValues_ = (valType *)calloc(M, sizeof(valType));
-                // realValues_ = (valType *)malloc(M * sizeof(valType));
-                // imagValues_ = (valType *)malloc(M * sizeof(valType));
+                realValues = (valType *)calloc(M, sizeof(valType));
+                imagValues = (valType *)calloc(M, sizeof(valType));
+                // realValues = (valType *)malloc(M * sizeof(valType));
+                // imagValues = (valType *)malloc(M * sizeof(valType));
                 // #pragma omp parallel for
                 // for(size_t i = 0; i < M; i++) {
-                //     realValues_[i] = 0.0;
-                //     imagValues_[i] = 0.0;
+                //     realValues[i] = 0.0;
+                //     imagValues[i] = 0.0;
                 // }
             #else
                 // printf("comes here only?\n");
-                realValues_ = aligned_alloc_helper(M * sizeof(valType));
-                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
+                realValues = aligned_alloc_helper(M * sizeof(valType));
+                imagValues = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
-                    realValues_[i] = 0.0;
-                    imagValues_[i] = 0.0;
+                    realValues[i] = 0.0;
+                    imagValues[i] = 0.0;
                 }
             #endif
         }
         vector(size_t M, valType *realVals, valType *imagVals) {
-            numRows_ = M;
-            realValues_ = realVals;
-            imagValues_ = imagVals;
+            numRows = M;
+            realValues = realVals;
+            imagValues = imagVals;
         }
         vector(size_t M, valType *realVals) {
-            numRows_ = M;
-            realValues_ = realVals;
+            numRows = M;
+            realValues = realVals;
             #if NUM_BYTES_ALIGNED == -1
-                imagValues_ = (valType *)calloc(M, sizeof(valType));
+                imagValues = (valType *)calloc(M, sizeof(valType));
             #else
-                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
+                imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
         }
         vector(size_t M, valType init_real, valType init_imag) {
-            numRows_ = M;
+            numRows = M;
             #if NUM_BYTES_ALIGNED == -1
-                realValues_ = (valType *)calloc(M, sizeof(valType));
-                imagValues_ = (valType *)calloc(M, sizeof(valType));
+                realValues = (valType *)calloc(M, sizeof(valType));
+                imagValues = (valType *)calloc(M, sizeof(valType));
                 for (size_t i = 0; i < M; ++i) {
-                    realValues_[i] = init_real;
-                    imagValues_[i] = init_imag;
+                    realValues[i] = init_real;
+                    imagValues[i] = init_imag;
                 }
             #else
-                realValues_ = aligned_alloc_helper(M * sizeof(valType));
-                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
+                realValues = aligned_alloc_helper(M * sizeof(valType));
+                imagValues = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
                 for(size_t i = 0; i < M; i++) {
-                    realValues_[i] = init_real;
-                    imagValues_[i] = init_imag;
+                    realValues[i] = init_real;
+                    imagValues[i] = init_imag;
                 }
             #endif
         }
         vector(size_t M, valType init_real) {
-            numRows_ = M;
+            numRows = M;
             #if NUM_BYTES_ALIGNED == -1
-                realValues_ = (valType *)calloc(M, sizeof(valType));
-                imagValues_ = (valType *)calloc(M, sizeof(valType));
+                realValues = (valType *)calloc(M, sizeof(valType));
+                imagValues = (valType *)calloc(M, sizeof(valType));
             #else
-                realValues_ = aligned_alloc_helper(M * sizeof(valType));
-                imagValues_ = aligned_alloc_helper(M * sizeof(valType));
+                realValues = aligned_alloc_helper(M * sizeof(valType));
+                imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
             for (size_t i = 0; i < M; ++i) {
-                realValues_[i] = init_real;
-                imagValues_[i] = 0.0;
+                realValues[i] = init_real;
+                imagValues[i] = 0.0;
             }
         }
 
@@ -92,46 +92,46 @@ class vector {
 
         void zeroify() {
             #pragma omp parallel for
-            for(size_t i = 0; i < numRows_; i++) {
-                realValues_[i] = 0.0;
-                imagValues_[i] = 0.0;
+            for(size_t i = 0; i < numRows; i++) {
+                realValues[i] = 0.0;
+                imagValues[i] = 0.0;
             }
         }
 
         std::complex<valType> operator[](size_t i) {
-            return std::complex<valType>(realValues_[i], imagValues_[i]);
+            return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
         const std::complex<valType> operator[](size_t i) const {
-            return std::complex<valType>(realValues_[i], imagValues_[i]);
+            return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
         size_t num_rows() const {
-            return numRows_;
+            return numRows;
         }
 
         void setValue(size_t i, valType real, valType imag) {
-            realValues_[i] = real;
-            imagValues_[i] = imag;
+            realValues[i] = real;
+            imagValues[i] = imag;
         }
 
         std::vector<std::complex<valType> > getArray() {
             std::vector<std::complex<valType> > v;
-            for (size_t i = 0; i < numRows_; ++i) {
-                v.push_back(std::complex<valType>(realValues_[i], imagValues_[i]));
+            for (size_t i = 0; i < numRows; ++i) {
+                v.push_back(std::complex<valType>(realValues[i], imagValues[i]));
             }
             return v;
         }
 
         vector *dagger() {
-            vector *v = new vector(numRows_);
-            valType *realValues = v->getRealValues();
-            valType *imagValues = v->getImagValues();
+            vector *v = new vector(numRows);
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for
-            for (size_t i = 0; i < numRows_; ++i) {
-                realValues[i] = realValues_[i];
-                imagValues[i] = -1 * imagValues_[i];
+            for (size_t i = 0; i < numRows; ++i) {
+                realValues[i] = realValues[i];
+                imagValues[i] = -1 * imagValues[i];
             }
             return v;
         }
@@ -139,27 +139,27 @@ class vector {
         std::complex<valType> multiply(vector *v) {
             valType real_res = 0.0;
             valType imag_res = 0.0;
-            valType *realValues = v->getRealValues();
-            valType *imagValues = v->getImagValues();
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res,imag_res)
-            for (size_t i = 0; i < numRows_; ++i) {
-                real_res += realValues_[i] * realValues[i] - imagValues_[i] * imagValues[i];
-                imag_res += realValues_[i] * imagValues[i] + imagValues_[i] * realValues[i];
+            for (size_t i = 0; i < numRows; ++i) {
+                real_res += realValues[i] * realValues[i] - imagValues[i] * imagValues[i];
+                imag_res += realValues[i] * imagValues[i] + imagValues[i] * realValues[i];
             }
             return std::complex<valType>(real_res, imag_res);
         }
 
         valType daggerMultiplyReal(vector *v) {
             valType real_res = 0.0;
-            valType *realValues = v->realValues_;
-            valType *imagValues = v->imagValues_;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res)
-            for (size_t i = 0; i < numRows_; ++i) {
+            for (size_t i = 0; i < numRows; ++i) {
                 // Take the conjugate of this vector in place
-                valType real_conj = realValues_[i];
-                valType imag_conj = -imagValues_[i];
+                valType real_conj = realValues[i];
+                valType imag_conj = -imagValues[i];
 
                 // Multiply with the corresponding elements of vector `v`
                 real_res += real_conj * realValues[i] - imag_conj * imagValues[i];
@@ -169,45 +169,41 @@ class vector {
         }
 
         void print() {
-            std::cout << "length (" << numRows_ << ") [";
-            for (size_t i = 0; i < numRows_ - 1; ++i) {
-                printf("(%lf,%lf), ", realValues_[i], imagValues_[i]);
+            std::cout << "length (" << numRows << ") [";
+            for (size_t i = 0; i < numRows - 1; ++i) {
+                printf("(%lf,%lf), ", realValues[i], imagValues[i]);
             }
-            printf("(%lf,%lf)]\n", realValues_[numRows_ - 1], imagValues_[numRows_ - 1]);
+            printf("(%lf,%lf)]\n", realValues[numRows - 1], imagValues[numRows - 1]);
         }
 
         void print_meta() {
-            std::cout << "length (" << numRows_ << ")" << std::endl;
+            std::cout << "length (" << numRows << ")" << std::endl;
             std::cout << "sparsity = " << sparsity() << std::endl;
         }
 
         valType sparsity() {
             long int num_nonzeros = 0;
-            for (size_t i = 0; i < numRows_; ++i) {
-                if(realValues_[i] != 0.0 || imagValues_[i] != 0.0) {
+            for (size_t i = 0; i < numRows; ++i) {
+                if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     num_nonzeros++;
                 }
             }
-            return (valType)1.0 - ((valType)num_nonzeros / (valType)numRows_);
+            return (valType)1.0 - ((valType)num_nonzeros / (valType)numRows);
         }
 
         valType *getRealValues() {
-            return realValues_;
+            return realValues;
         }
 
         valType **getRealValuePtr() {
-            return &realValues_;
+            return &realValues;
         }
         valType **getImagValuePtr() {
-            return &imagValues_;
-        }
-
-        valType *getImagValues() {
-            return imagValues_;
+            return &imagValues;
         }
         void free() {
-            std::free(realValues_);
-            std::free(imagValues_);
+            std::free(realValues);
+            std::free(imagValues);
         }
 };
 

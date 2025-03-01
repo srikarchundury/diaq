@@ -28,8 +28,6 @@ PYBIND11_MODULE(diaq, m) {
         .def("setValue", &diaq::diagonal::setValue, py::return_value_policy::reference)
         .def("getValue", &diaq::diagonal::getValue, py::return_value_policy::reference)
         .def("print", &diaq::diagonal::print, py::return_value_policy::reference)
-        .def("getRealValues", &diaq::diagonal::getRealValues, py::return_value_policy::reference)
-        .def("getImagValues", &diaq::diagonal::getImagValues, py::return_value_policy::reference)
         .def("getCoords", &diaq::diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diaq::diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::reference);
@@ -256,7 +254,7 @@ PYBIND11_MODULE(diaq, m) {
         "to_numpy_vector",
         [](diaq::vector *v) {
             std::complex<diaq::valType> *res = diaq::to_numpy_vector(v);
-            return py::array_t<std::complex<diaq::valType>>(v->numRows_, res);
+            return py::array_t<std::complex<diaq::valType>>(v->numRows, res);
         },
         py::arg(),
         py::return_value_policy::reference
@@ -435,7 +433,7 @@ PYBIND11_MODULE(diaq, m) {
     m.def(
         "spMV",
         [](diaq::diaQMatrix* A, diaq::vector* x) {
-            diaq::vector* y = new diaq::vector(x->numRows_);
+            diaq::vector* y = new diaq::vector(x->numRows);
             return diaq::spMV(A, x, y);
         },
         py::arg(),

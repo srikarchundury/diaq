@@ -6,16 +6,6 @@
 
 namespace diaq {
 
-valType *diaQMatrix::getRealValues() {
-    denseMatrix *d = this->convertToDenseMatrix();
-    return d->getRealData();
-}
-
-valType *diaQMatrix::getImagValues() {
-    denseMatrix *d = this->convertToDenseMatrix();
-    return d->getImagData();
-}
-
 denseMatrix *diaQMatrix::convertToDenseMatrix() {
     return this->convertToDenseMatrix(this->matrix_shape);
 }
@@ -31,8 +21,8 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
     std::unordered_map<long int, diagonal*>::iterator it;
     long int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second->getRealValues();
-        valType *imag_vals = it->second->getImagValues();
+        valType *real_vals = it->second->realValues;
+        valType *imag_vals = it->second->imagValues;
         if (it->first == 0) {
             x = 0;
             y = 0;
@@ -54,8 +44,6 @@ denseMatrix *diaQMatrix::convertToDenseMatrix(long int *new_shape) {
     }
     denseMatrix *d = new denseMatrix(&new_shape, real_data, imag_data);
     d->shape = shape;
-    // comment below line for tests.cpp
-    // this->free();
     return d;
 }
 
@@ -263,10 +251,10 @@ vector *from_numpy_vector(std::complex<valType> *vals, size_t M) {
 }
 
 std::complex<valType> *to_numpy_vector(vector *v) {
-    size_t M = v->numRows_;
+    size_t M = v->numRows;
     std::complex<valType> *vals = (std::complex<valType> *)malloc(M * sizeof(std::complex<valType>));
-    valType *real_vals = v->getRealValues();
-    valType *imag_vals = v->getImagValues();
+    valType *real_vals = v->realValues;
+    valType *imag_vals = v->imagValues;
     #pragma omp parallel for
     for(long int i = 0; i < M; i++) {
         vals[i] = std::complex<valType>(real_vals[i], imag_vals[i]);

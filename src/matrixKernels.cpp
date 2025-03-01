@@ -52,9 +52,9 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     long int lenDiagA = diagA->dLength;
     long int lenDiagB = diagB->dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
-    long int res_dims[] = {shapeA[0], shapeB[1]};
-
+    long int *res_dims = new long int[2]{shapeA[0], shapeB[1]};
     long int lenRes = getDiagonalLength(res_index, res_dims);
+    delete[] res_dims;
     diagonal *res = new diagonal(res_index, lenRes);
 
     // std::cout << "diagonal length = " << lenRes << std::endl;
@@ -154,6 +154,7 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     #elif VECTORIZATION_TYPE == -1
         run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #endif
+
     return res;
 }
 
@@ -196,13 +197,6 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     // if(A->matrix_shape[1] != B->matrix_shape[0]) {
     //     throw std::invalid_argument("input matrices are not multiplyable");
     // }
-    long int *d = new long int[2];
-    d[0] = A->matrix_shape[0];
-    d[1] = B->matrix_shape[1];
-    diaQMatrix* result = new diaQMatrix(&d);
-    std::unordered_map<long int, diagonal*> mapA = A->diagonalMap;
-    std::unordered_map<long int, diagonal*> mapB = B->diagonalMap;
-
     // #pragma omp parallel
     // {
     //     #pragma omp single
@@ -262,6 +256,12 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //     } // ends omp single
     // } // ends omp parallel
 
+    long int *d = new long int[2];
+    d[0] = A->matrix_shape[0];
+    d[1] = B->matrix_shape[1];
+    diaQMatrix* result = new diaQMatrix(&d);
+    std::unordered_map<long int, diagonal*> mapA = A->diagonalMap;
+    std::unordered_map<long int, diagonal*> mapB = B->diagonalMap;
     std::vector<std::unordered_map<long int, diagonal*>> thread_local_maps(omp_get_max_threads());
     std::vector<std::pair<long int, diagonal*>> vecA(mapA.begin(), mapA.end());
     std::vector<std::pair<long int, diagonal*>> vecB(mapB.begin(), mapB.end());
@@ -284,7 +284,6 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
             }
         }
     }
-
     #pragma omp parallel for
     for (size_t t = 0; t < thread_local_maps.size(); ++t) {
         for (auto &entry : thread_local_maps[t]) {
@@ -1045,11 +1044,11 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     // }
 
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
@@ -1168,15 +1167,15 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    if(A->matrix_shape[1] != x->numRows_) {
+    if(A->matrix_shape[1] != x->numRows) {
         throw std::invalid_argument("Not multiplyable");
     }
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
@@ -1253,14 +1252,14 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
 }
 
 vector *MV(denseMatrix *A, vector *x, vector *y) {
-    if(A->matrix_shape[1] != x->numRows_) {
+    if(A->matrix_shape[1] != x->numRows) {
         throw std::invalid_argument("Not multiplyable");
     }
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
     // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
@@ -1573,16 +1572,16 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
     long int N = 1L << n;
 
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
 
-    long long int y_len = y->numRows_; // same as x->numRows_;
+    long long int y_len = y->numRows; // same as x->numRows;
     long int A_size = A->matrix_shape[0];
 
     // I kron A has the same number of diagonals as A, but each diagonal has N times more G elements and more 0s that we don't need to care about.
@@ -1646,11 +1645,11 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
     // vector *y = new vector(n * A->matrix_shape[0]);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -1765,19 +1764,19 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     long int before_N = 1L << before;
     long int after_N = 1L << after;
 
-    long int x_length = x->numRows_;
+    long int x_length = x->numRows;
 
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(after * before * gate->matrix_shape[0]);
     // y->print();
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
     // PRINT_WITH_LINE("here\n");
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -1832,17 +1831,17 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    long int x_length = x->numRows_;
+    long int x_length = x->numRows;
 
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(after * before * gate->matrix_shape[0]);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -2218,17 +2217,17 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
 
     long int N = 1L << n;
 
-    long int x_length = x->numRows_;
+    long int x_length = x->numRows;
 
     // if(before * A->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(before * A->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
@@ -2298,17 +2297,17 @@ void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
     long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
 
-    long int x_length = x->numRows_;
+    long int x_length = x->numRows;
 
     // if(before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
     // vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
-    valType *y_real_values = y->realValues_;
-    valType *y_imag_values = y->imagValues_;
+    valType *y_real_values = y->realValues;
+    valType *y_imag_values = y->imagValues;
 
-    valType *x_real_values = x->realValues_;
-    valType *x_imag_values = x->imagValues_;
+    valType *x_real_values = x->realValues;
+    valType *x_imag_values = x->imagValues;
 
     std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
     std::unordered_map<long int, diagonal*>::iterator it;
