@@ -1,11 +1,6 @@
 #ifndef DIAQ_CONVERSIONS_HPP
 #define DIAQ_CONVERSIONS_HPP
 
-#include <omp.h>
-#include <memory>
-#include <vector>
-#include <complex>
-
 #include "denseMatrix.hpp"
 #include "config.hpp"
 #include "diaQMatrix.hpp"

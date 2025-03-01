@@ -1,13 +1,6 @@
 #ifndef DIAQ_DENSEMATRIX_HPP
 #define DIAQ_DENSEMATRIX_HPP
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cmath>
-#include <complex>
-#include <memory>
-
 #include "diaQMatrix.hpp"
 
 namespace diaq {

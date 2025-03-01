@@ -1,11 +1,6 @@
 #ifndef DIAQ_VECTOR_HPP
 #define DIAQ_VECTOR_HPP
 
-#include <iostream>
-#include <vector>
-#include <complex>
-#include <memory>
-
 #include "config.hpp"
 
 namespace diaq {

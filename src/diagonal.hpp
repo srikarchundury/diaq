@@ -1,13 +1,6 @@
 #ifndef DIAQ_DIAGONAL_HPP
 #define DIAQ_DIAGONAL_HPP
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <complex>
-#include <cstddef>
-#include <memory>
-
 #include "config.hpp"
 
 namespace diaq {

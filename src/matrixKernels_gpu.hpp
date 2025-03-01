@@ -7,6 +7,7 @@
 #include "cuda_profiler_api.h"
 #include "device_launch_parameters.h"
 
+// DiaQ imports
 #include "diaQMatrix.hpp"
 #include "vector.hpp"
 #include "config.hpp"
