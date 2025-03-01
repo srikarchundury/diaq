@@ -93,11 +93,11 @@ vector *spmv_cuda(diaQMatrix *A, vector *x) {
 	}
 
 	vector *y = new vector((size_t)A->matrix_shape[0], (valType)0);
-	valType *y_real_values = y->getRealValues();
-	valType *y_imag_values = y->getImagValues();
+	valType *y_real_values = y->realValues;
+	valType *y_imag_values = y->imagValues;
 
-	valType *x_real_values = x->getRealValues();
-	valType *x_imag_values = x->getImagValues();
+	valType *x_real_values = x->realValues;
+	valType *x_imag_values = x->imagValues;
 
 	long int n_diags;
 	long int *diagonal_indices;

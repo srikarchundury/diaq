@@ -95,12 +95,6 @@ class diagonal {
         void print_meta() {
             std::cout << "dIndex=" << dIndex << ", dLength=" << dLength << std::endl;
         }
-        valType *getRealValues() {
-            return realValues;
-        }
-        valType *getImagValues() {
-            return imagValues;
-        }
         // returns the start (x, y) of diagonal of the matrix
         long int* getCoords(long int matrixSize, long int dIndex) {
             static long int c[2];

@@ -11,64 +11,65 @@ diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::dia
 }
 
 std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
-    std::unordered_map<long int, diaq::diagonal *> dmA = A->diagonalMap;
-    std::unordered_map<long int, diaq::diagonal *> dmB = B->diagonalMap;
-
-    if(dmA.size() != dmB.size()) {
+    if(A->diagonalMap.size() != B->diagonalMap.size()) {
         // A->print();
-        return "false - 1";
+        return "false - size mis-match";
     }
-
     const diaq::valType epsilon = 0.00002;
     std::unordered_map<long int, diaq::diagonal *>::iterator itA, itB;
-    for(itA = dmA.begin(); itA != dmA.end(); itA++) {
-        auto itB = dmB.find(itA->first);
-        if(itB == dmB.end()) {
+    for(itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
+        diaq::valType *a_real_values = itA->second->realValues;
+        diaq::valType *a_imag_values = itA->second->imagValues;
+        auto itB = B->diagonalMap.find(itA->first);
+        if(itB == B->diagonalMap.end()) {
             // A->print();
             std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - 2";
+            return "false - dIndex mis-match";
         }
         if(itB->second->dLength != itA->second->dLength) { 
             // A->print();
             std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - 3";
+            return "false - dLength mis-match";
         }
         else {
+            diaq::valType *b_real_values = itB->second->realValues;
+            diaq::valType *b_imag_values = itB->second->imagValues;
             for(long int i = 0; i < itA->second->dLength; i++) {
-                if(itB->second->getRealValue(i) - itA->second->getRealValue(i) > epsilon) {
+                if(b_real_values[i] - a_real_values[i] > epsilon) {
                     // print where the error is
                     std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    std::cout << "Correct value: " << itA->second->getRealValue(i) << std::endl;
-                    std::cout << "Wrong value: " << itB->second->getRealValue(i) << std::endl;
-                    return "false - 4";
+                    std::cout << "Correct value: " << a_real_values[i] << std::endl;
+                    std::cout << "Wrong value: " << b_real_values[i] << std::endl;
+                    return "false - Real mis-match";
                 }
-                if(itB->second->getImagValue(i) - itA->second->getImagValue(i) > epsilon) {
+                if(b_imag_values[i] - a_imag_values[i] > epsilon) {
                     // print where the error is
                     std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    return "false - 5";
+                    std::cout << "Correct value: " << a_imag_values[i] << std::endl;
+                    std::cout << "Wrong value: " << b_imag_values[i] << std::endl;
+                    return "false - Imag mis-match";
                 }
             }
         }
     }
-    // A->print();
     return "true";
 }
 
 std::string check_vectors(diaq::vector *a, diaq::vector *b) {
-    if(a->num_rows() != b->num_rows()) {
-        return "false - 1";
+    if(a->numRows != b->numRows) {
+        return "false - length mis-match";
     }
-    diaq::valType *a_real_values = a->realValues_;
-    diaq::valType *a_imag_values = a->imagValues_;
-    diaq::valType *b_real_values = b->realValues_;
-    diaq::valType *b_imag_values = b->imagValues_;
+    diaq::valType *a_real_values = a->realValues;
+    diaq::valType *a_imag_values = a->imagValues;
+    diaq::valType *b_real_values = b->realValues;
+    diaq::valType *b_imag_values = b->imagValues;
     const diaq::valType epsilon = 0.00002;
     for(size_t i = 0; i < a->num_rows(); i++) {
         if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {
-            return "false - 2";
+            return "false - Real mis-match";
         }
         if(std::abs(a_imag_values[i] - b_imag_values[i]) > epsilon) {
-            return "false - 3";
+            return "false - Imag mis-match";
         }
     }
     return "true";
@@ -2088,7 +2089,7 @@ int main(int argc, char **argv) {
         dense_y = diaq::MV(q_mat->convertToDenseMatrix(), x, dense_y);
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        diaq::vector *y = new diaq::vector(dense_y->numRows);
         y = diaq::spMV(q_mat, x, y);
         y->print();
         std::cout << " -- " << std::endl;
@@ -2141,7 +2142,7 @@ int main(int argc, char **argv) {
         dense_y->print();
 
         std::cout << " --spMV-- " << std::endl;
-        diaq::vector *y = new diaq::vector(dense_y->numRows_);
+        diaq::vector *y = new diaq::vector(dense_y->numRows);
         y = diaq::spMV(q_mat, x, y);
         y->print();
         
@@ -2235,7 +2236,7 @@ int main(int argc, char **argv) {
 
         // setting x vector to ket 0
         diaq::vector *x = new diaq::vector(mat->shape[0], 0.0);
-        x->realValues_[0] = 1.0; // set to ket 0
+        x->realValues[0] = 1.0; // set to ket 0
 
         diaq::vector *y = new diaq::vector(mat->shape[0], 0.0);
         diaq::vector *correct_y = new diaq::vector(mat->shape[0], 0.0);
@@ -2308,7 +2309,7 @@ int main(int argc, char **argv) {
         std::cout << " -- correct answer -- " << std::endl;
         correct_y->print();
 
-        diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(correct_y->numRows, 0.0);
         diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
         std::cout << " -- new way to do it -- " << std::endl;
         y->print();
@@ -2351,7 +2352,7 @@ int main(int argc, char **argv) {
         correct_y->print();
 
         std::cout << " -- new way to do it -- " << std::endl;
-        diaq::vector *y = new diaq::vector(correct_y->numRows_, 0.0);
+        diaq::vector *y = new diaq::vector(correct_y->numRows, 0.0);
         diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
         y->print();
 
@@ -2693,7 +2694,7 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "identity_kron_matrix_times_vector_2") == 0) {
         // vector x
         diaq::vector *x = new diaq::vector(128);
-        x->getImagValues()[8] = 1.0;
+        x->imagValues[8] = 1.0;
         // matrix_shape (64,64)
         // tensor_shape (64,64)
         // (dIndex=0) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
@@ -2726,7 +2727,7 @@ int main(int argc, char **argv) {
         y = diaq::spMV(kp_2, x, y);
         y->print();
         printf(" -- Now doing identity_kron_matrix_times_vector -- \n");
-        diaq::vector *res_v = new diaq::vector(y->numRows_, 0.0);
+        diaq::vector *res_v = new diaq::vector(y->numRows, 0.0);
         diaq::identity_kron_matrix_times_vector((long int)1, qspa, x, res_v);
         res_v->print();
 
@@ -2865,7 +2866,7 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "list") == 0) {
         // this lists all the tests above by strcmp second half of the string in else cases above!
         // call python script to list all the tests
-        std::string command = "python tests/list_tests.py";
+        std::string command = "python tests/tests_list_tests.py";
         system(command.c_str());
     }
     #ifdef PAPI_ON

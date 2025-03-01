@@ -17,6 +17,9 @@ class denseMatrix {
         long int *matrix_shape;
         std::vector<long int> shape;
         long int size;
+        valType *realData;
+        valType *imagData;
+
         denseMatrix(const long int s) {
             size = s*s;
             #if NUM_BYTES_ALIGNED == -1
@@ -201,13 +204,11 @@ class denseMatrix {
         void free() {
             std::free(realData);
             std::free(imagData);
+            delete[] matrix_shape;
         }
         diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
         diaQMatrix *convertToQuantumSparse(long int *new_matrix_shape);
         diaQMatrix *convertToQuantumSparse();
-    private:
-        valType *realData;
-        valType *imagData;
 };
 
 } // namespace diaq

@@ -98,6 +98,7 @@ if(DEFINED CUDA_ENABLED)
             $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU vectorization
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
             $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
+            $<$<COMPILE_LANGUAGE:CXX>:-mavx512f>       # Support for AVX-512
             $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
         )
 
@@ -119,6 +120,7 @@ else()
             $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU for automatic vectorization
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
             $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
+            $<$<COMPILE_LANGUAGE:CXX>:-mavx512f>       # Support for AVX-512
             $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
         )
 
