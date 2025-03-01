@@ -6,7 +6,7 @@
 
 namespace diaq {
 
-class identityMatrix : public diaQMatrix {
+class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<identityMatrix> {
 	public:
 		identityMatrix(unsigned long int s) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1
@@ -15,18 +15,18 @@ class identityMatrix : public diaQMatrix {
 			#else
 				valType *real = aligned_alloc_helper(s * sizeof(valType));
 				valType *imag = aligned_alloc_helper(s * sizeof(valType));
-				#pragma omp parallel for
-				for(unsigned long int i = 0; i < s; i++) {
-					real[i] = (valType)1.0;
-					imag[i] = (valType)0.0;
-				}
 			#endif
+			#pragma omp parallel for
+			for(unsigned long int i = 0; i < s; i++) {
+				real[i] = (valType)1.0;
+				imag[i] = (valType)0.0;
+			}
 			std::shared_ptr<diagonal> d = std::make_shared<diagonal>(0, s, real, imag);
 			this->setDiagonal(0, d);
 		}
-};
+};;
 
-class permutationMatrix : public diaQMatrix {
+class permutationMatrix : public diaQMatrix, public std::enable_shared_from_this<permutationMatrix> {
 	public:
 		permutationMatrix(unsigned long int s, std::vector<unsigned long int> row_order) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1
@@ -50,7 +50,7 @@ class permutationMatrix : public diaQMatrix {
 			this->shape = qs->shape;
 			this->size = qs->size;
 		}
-};
+};;
 
 } // namespace diaq
 

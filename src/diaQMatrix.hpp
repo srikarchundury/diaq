@@ -906,6 +906,13 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 this->diagonalMap.erase(toDelete[i]);
             }
         }
+        std::shared_ptr<diagonal> operator[](long int dIndex) {
+            auto it = diagonalMap.find(dIndex);
+            if(it == diagonalMap.end()) {
+                throw std::out_of_range("diagonal index not found");
+            }
+            return it->second;
+        }
         std::shared_ptr<diaQMatrix> reshape(std::vector<unsigned long int> new_tensor_shape);
         void matrix_reshape(unsigned long int *new_matrix_shape);
         void transpose(std::vector<unsigned long int> new_order);

@@ -151,6 +151,14 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return shared_from_this();
         }
+        std::complex<valType>& operator[](unsigned long int i) {
+            if (i >= dLength) {
+                throw std::out_of_range("Index out of range");
+            }
+            // Return a reference to a std::complex, constructed on the fly
+            // This does not create a temporary because we return a reference to the real and imag parts
+            return *(reinterpret_cast<std::complex<valType>*>(&realValues[i]));
+        }
 };
 
 } // namespace diaq

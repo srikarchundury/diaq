@@ -30,7 +30,13 @@ PYBIND11_MODULE(diaq, m) {
         .def("print", &diaq::diagonal::print, py::return_value_policy::reference)
         .def("getCoords", &diaq::diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diaq::diagonal::getDIndex, py::return_value_policy::reference)
-        .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::reference);
+        .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::reference)
+		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned long int d_pos) -> std::complex<diaq::valType> & {
+			return (*self)[d_pos];
+		}, py::return_value_policy::reference)
+		.def("scale_by_imag", &diaq::diagonal::scale_by_imag, py::return_value_policy::reference)
+		.def("scale_by_real", &diaq::diagonal::scale_by_real, py::return_value_policy::reference)
+	;
 
     // diaq::diaQMatrix class
     py::class_<diaq::diaQMatrix, std::shared_ptr<diaq::diaQMatrix>>(m, "diaQMatrix")
@@ -38,16 +44,16 @@ PYBIND11_MODULE(diaq, m) {
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
         // -- //
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getItem))
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned long int>)>(&diaq::diaQMatrix::getItem))
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int[]>)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned long int>)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int[]>)>(&diaq::diaQMatrix::getItem))
         // -- //
-		.def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))
-		.def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int> (diaq::diaQMatrix::*)(long int, unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))		
+		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int[]> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))
+		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int[]> (diaq::diaQMatrix::*)(long int, unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))
 		// -- //
-		.def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getDiagonalPosition))
-		.def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(const std::vector<unsigned long int>&)>(&diaq::diaQMatrix::getDiagonalPosition))
-		.def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int>)>(&diaq::diaQMatrix::getDiagonalPosition))		
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getDiagonalPosition))
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(std::vector<unsigned long int>)>(&diaq::diaQMatrix::getDiagonalPosition))
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
         // --- //
         .def("getSize", &diaq::diaQMatrix::getSize, py::return_value_policy::reference)
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
@@ -62,15 +68,18 @@ PYBIND11_MODULE(diaq, m) {
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::reference)
-        
         // operator bindings
         .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::product(a, b);
         }, py::is_operator())
         .def("__add__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::add(a, b);
-        }, py::is_operator())
-        // .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
+		}, py::is_operator())
+		.def("__getitem__", [](std::shared_ptr<diaq::diaQMatrix> self, long int dIndex) -> std::shared_ptr<diaq::diagonal> {
+			return (*self)[dIndex];
+		}, py::return_value_policy::reference)
+
+		// .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         .def(
             "convertToDenseMatrix",
             [](std::shared_ptr<diaq::diaQMatrix> self) { return self->convertToDenseMatrix(); },
