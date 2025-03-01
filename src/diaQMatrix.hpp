@@ -8,7 +8,7 @@ namespace diaq {
 
 class denseMatrix; // telling this class exists w/o defining it here
 
-class diaQMatrix {
+class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         long int size;
         long int *matrix_shape; // as of now, this is always a 2 element array
@@ -62,9 +62,12 @@ class diaQMatrix {
             size = matrix_shape[0] * matrix_shape[1];
         }
 
-        // ~diaQMatrix() {
-        //     this->free();
-        // }
+        ~diaQMatrix() {
+            #ifdef DEBUG
+                std::cout << "diaQMatrix destructor called" << std::endl;
+            #endif
+            // this->free();
+        }
 
         long int getSize() {
             return size;
@@ -277,7 +280,7 @@ class diaQMatrix {
                     #pragma omp atomic
                     it->second->imagValues[i] += diagNew->imagValues[i];
                 }
-                diagNew->free();
+                // diagNew->free();
             }
         }
         
@@ -318,7 +321,7 @@ class diaQMatrix {
                 diagonalMap.insert(localUpdates.begin(), localUpdates.end());
             }
         
-            return std::shared_ptr<diaQMatrix>(this);
+            return shared_from_this();
         }
 
         std::shared_ptr<diaQMatrix> scale_by_imag(valType imag) {
@@ -335,7 +338,7 @@ class diaQMatrix {
                     imag_vals[i] = r * imag;
                 }
             }
-            return std::shared_ptr<diaQMatrix>(this);
+            return shared_from_this();
         }
         
         diaQMatrix *scale_by_real(valType real) {
@@ -366,7 +369,7 @@ class diaQMatrix {
             }
             
             if (int_value == 1) {
-                return std::shared_ptr<diaQMatrix>(this);
+                return shared_from_this();
             }
         
             valType reciprocal = 1.0 / valType(int_value);
@@ -384,7 +387,7 @@ class diaQMatrix {
                     imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * int_value) ? imag_vals[j] * reciprocal : 0.0;
                 }
             }
-            return std::shared_ptr<diaQMatrix>(this);
+            return shared_from_this();
         }
         
         std::shared_ptr<diaQMatrix> copy_and_scale_by_imag(valType imag) {
@@ -461,7 +464,7 @@ class diaQMatrix {
                     this->print();
                 #endif
             }
-            return std::shared_ptr<diaQMatrix>(this);
+            return shared_from_this();
         }
 
         std::shared_ptr<diaQMatrix> copy() {
@@ -895,13 +898,13 @@ class diaQMatrix {
             }
             return (valType)1.0 - ((valType)z / (valType)size);
         }
-        void deleteDiagonal(long int dIndex) {
-            auto it = diagonalMap.find(dIndex);
-            if(it != diagonalMap.end()) {
-                it->second->free();
-                diagonalMap.erase(dIndex);
-            }
-        }
+        // void deleteDiagonal(long int dIndex) {
+        //     auto it = diagonalMap.find(dIndex);
+        //     if(it != diagonalMap.end()) {
+        //         it->second->free();
+        //         diagonalMap.erase(dIndex);
+        //     }
+        // }
         void pruneMatrix() {
             std::vector<long int> toDelete;
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {

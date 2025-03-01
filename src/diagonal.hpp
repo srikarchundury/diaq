@@ -12,7 +12,7 @@
 
 namespace diaq {
 
-class diagonal {
+class diagonal : public std::enable_shared_from_this<diagonal> {
     public:
         valType* realValues; // real number array
         valType* imagValues; // imaginary number array
@@ -46,7 +46,10 @@ class diagonal {
             dLength = dl;
         }
         ~diagonal() {
-            this->free(); // needed because we allocate memory ourserlves unlike shared_ptr!
+            #ifdef DEBUG
+                std::cout << "diagonal destructor called" << std::endl;
+            #endif
+            this->free(); // needed because we allocate memory ourserlves unlike shared_ptr! This should be the only place where we free memory manually!!!!
         }
         void setIndex(long int newIndex) {
             dIndex = newIndex;
@@ -79,7 +82,9 @@ class diagonal {
             // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
-        bool isEmpty();
+
+        bool isEmpty(); // implemented in simd_kernels.cpp
+
         void print() {
             std::string sep=",";
             // long int *coords= this->getCoords(matrixSize, this->dIndex);
@@ -141,7 +146,7 @@ class diagonal {
                 imagValues[i] = imag * realValues[i];
                 realValues[i] = r;
             }
-            return std::shared_ptr<diagonal>(this);
+            return shared_from_this();
         }
         std::shared_ptr<diagonal> scale_by_real(valType real) {
             #pragma omp parallel for
@@ -149,7 +154,7 @@ class diagonal {
                 realValues[i] *= real;
                 imagValues[i] *= real;
             }
-            return std::shared_ptr<diagonal>(this);
+            return shared_from_this();
         }
         void free() {
             std::free(realValues);

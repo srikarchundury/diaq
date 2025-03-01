@@ -12,7 +12,7 @@
 
 namespace diaq {
 
-class denseMatrix {
+class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
     public:
         long int *matrix_shape;
         std::vector<long int> shape;
@@ -95,7 +95,10 @@ class denseMatrix {
             shape = ts;
         }
         ~denseMatrix() {
-            this->free();
+            #ifdef DEBUG
+                std::cout << "denseMatrix destructor called" << std::endl;
+            #endif
+            // this->free();
         }
         std::complex<valType> *getData_forPy() {
             std::complex<valType> *res = new std::complex<valType>[size]();

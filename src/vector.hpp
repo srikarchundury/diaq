@@ -10,7 +10,7 @@
 
 namespace diaq {
 
-class vector {
+class vector : public std::enable_shared_from_this<vector> {
     public:
         size_t numRows;
         valType* realValues;

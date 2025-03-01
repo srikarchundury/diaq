@@ -1009,18 +1009,18 @@ std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::share
 }
 void diaQMatrix::matrix_reshape(long int *matrix_shape) {
     // printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    std::shared_ptr<diaQMatrix> temp = diaq::matrix_reshape(std::shared_ptr<diaQMatrix>(this), matrix_shape);
+    std::shared_ptr<diaQMatrix> temp = diaq::matrix_reshape(shared_from_this(), matrix_shape);
     *this = *temp;
 }
 std::shared_ptr<diaQMatrix> diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
-    return diaq::reshape(std::shared_ptr<diaQMatrix>(this), new_tensor_shape);
+    return diaq::reshape(shared_from_this(), new_tensor_shape);
 }
 void diaQMatrix::transpose(std::vector<long int> new_order) {
-    std::shared_ptr<diaQMatrix> temp = diaq::transpose(std::shared_ptr<diaQMatrix>(this), new_order);
+    std::shared_ptr<diaQMatrix> temp = diaq::transpose(shared_from_this(), new_order);
     *this = *temp;
 }
 void diaQMatrix::transpose() {
-    std::shared_ptr<diaQMatrix> temp = diaq::transpose(std::shared_ptr<diaQMatrix>(this));
+    std::shared_ptr<diaQMatrix> temp = diaq::transpose(shared_from_this());
     *this = *temp;
 }
 
@@ -1485,12 +1485,13 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
         }
     }
 
-    // free unique_kron_blocks
-    #pragma omp parallel for
-    for (long int a = 0; a < unique_kron_blocks.size(); a++) {
-        auto it = std::next(unique_kron_blocks.begin(), a);
-        it->second->free();
-    }
+    // // free unique_kron_blocks
+    // #pragma omp parallel for
+    // for (long int a = 0; a < unique_kron_blocks.size(); a++) {
+    //     auto it = std::next(unique_kron_blocks.begin(), a);
+    //     it->second->free();
+    // }
+    // we don't need to free unique_kron_blocks, since we are using shared_ptr
 
     #ifdef DEEP_DEBUG
         printf("\tkron_product Result Meta:\n");
@@ -1574,7 +1575,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(long int n, std::shared_ptr<dia
         printf("\t\t identity_kron_matrix took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
-    A->free();
+    // A->free();
 
     return result;
 }
@@ -2952,7 +2953,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
         printf("\t\t matrix_kron_identity took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
-    A->free();
+    // A->free();
 
     return result;
 }
@@ -3053,7 +3054,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(long int before, 
         printf("\t\tidentity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
     #endif
 
-    A->free();
+    // A->free();
 
     return result;
 }
@@ -3319,8 +3320,8 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
             break;
         }
     }
-    X->free();
-    X_power_i_whole_divided_by_i->free();
+    // X->free();
+    // X_power_i_whole_divided_by_i->free();
     #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();
 
@@ -3349,7 +3350,7 @@ std::shared_ptr<diaQMatrix> diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatri
         }
     }
     this->diagonalMap = newDiagMap;
-    return std::shared_ptr<diaQMatrix>(this);
+    return shared_from_this();
 }
 
 } // namespace diaq
