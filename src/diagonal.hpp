@@ -11,12 +11,12 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         valType* imagValues; // imaginary number array
 
         long int dIndex; // -(n-1),..0,..n-1 and n,.., 2n-2
-        long int dLength;
+        unsigned long int dLength;
 
         diagonal(long int di) {
             dIndex = di;
         }
-        diagonal(long int di, long int dl) {
+        diagonal(long int di, unsigned long int dl) {
             dIndex = di;
             dLength = dl;
             #if NUM_BYTES_ALIGNED == -1
@@ -26,23 +26,25 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
                 realValues = aligned_alloc_helper(dl * sizeof(valType));
                 imagValues = aligned_alloc_helper(dl * sizeof(valType));
                 #pragma omp parallel for
-                for(long int i = 0; i < dl; i++) {
+                for(unsigned long int i = 0; i < dl; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
             #endif
         }
-        diagonal(long int di, long int dl, valType *realVals, valType *imagVals) {
+        diagonal(long int di, unsigned long int dl, valType *realVals, valType *imagVals) {
             dIndex = di;
             realValues = realVals;
             imagValues = imagVals;
             dLength = dl;
         }
         ~diagonal() {
-            #ifdef DEBUG
+            #ifdef DEEP_DEBUG
                 std::cout << "diagonal destructor called" << std::endl;
             #endif
-            this->free(); // needed because we allocate memory ourserlves unlike shared_ptr! This should be the only place where we free memory manually!!!!
+            // needed because we allocate memory ourserlves unlike shared_ptr! This place and under vector.hpp & denseMatrix.cpp are the only places where we need to free memory manually!!!
+            std::free(realValues);
+            std::free(imagValues);
         }
         void setIndex(long int newIndex) {
             dIndex = newIndex;
@@ -58,20 +60,20 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
                 imagValues[i] = new_imagVals[i];
             }
         }
-        void setValue(long int i, valType real_val, valType imag_val) {
+        void setValue(unsigned long int i, valType real_val, valType imag_val) {
             // std::cout << "there" << std::endl;
             realValues[i] = real_val;
             imagValues[i] = imag_val;
         }
-        std::complex<valType> getValue(long int i) {
+        std::complex<valType> getValue(unsigned long int i) {
             std::complex<valType> ans{realValues[i], imagValues[i]};
             return ans;
         }
-        valType getRealValue(long int i) {
+        valType getRealValue(unsigned long int i) {
             // printf("getRealVal i=%ld, dLength=%ld\n", i, dLength);
             return realValues[i];
         }
-        valType getImagValue(long int i) {
+        valType getImagValue(unsigned long int i) {
             // printf("getImagVal i=%ld, dLength=%ld\n", i, dLength);
             return imagValues[i];
         }
@@ -80,11 +82,11 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
 
         void print() {
             std::string sep=",";
-            // long int *coords= this->getCoords(matrixSize, this->dIndex);
+            // unsigned long int *coords= this->getCoords(matrixSize, this->dIndex);
             std::cout << "(dIndex=" << dIndex << ") (dLength=" << dLength << ") ";
             std::cout << "[" << "";
-            long int n = dLength;
-            for (long int i = 0; i < n-1; i++) {
+            unsigned long int n = dLength;
+            for (unsigned long int i = 0; i < n-1; i++) {
                 std::cout <<  "(" << realValues[i] << "," << imagValues[i] << ")" << sep;
             }
             std::cout <<  "(" << realValues[n-1] << "," << imagValues[n-1] << ")" << "";
@@ -95,9 +97,9 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             std::cout << "dIndex=" << dIndex << ", dLength=" << dLength << std::endl;
         }
         // returns the start (x, y) of diagonal of the matrix
-        long int* getCoords(long int matrixSize, long int dIndex) {
-            static long int c[2];
-            if(dIndex >= matrixSize) {
+        unsigned long int* getCoords(unsigned long int matrixSize, long int dIndex) {
+            static unsigned long int c[2];
+            if(dIndex >= (long int) matrixSize) {
                 c[0] = dIndex - matrixSize + 1; c[1] = matrixSize - 1;
             }
             else if(dIndex == 0){
@@ -112,7 +114,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             return c;
         }
         // returns the dIndex based on start coords
-        long int getDIndex(long int *coords) {
+        long int getDIndex(unsigned long int *coords) {
             if(coords[0] == 0){
                 return coords[1];
             }
@@ -123,9 +125,9 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return coords[1];
         }
-        long int numNonZeros() {
-            long int count = 0;
-            for(long int i = 0; i < dLength; i++) {
+        unsigned long int numNonZeros() {
+            unsigned long int count = 0;
+            for(unsigned long int i = 0; i < dLength; i++) {
                 if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     count++;
                 }
@@ -134,7 +136,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         }
         std::shared_ptr<diagonal> scale_by_imag(valType imag) {
             #pragma omp parallel for
-            for(long int i = 0; i < dLength; i++) {
+            for(unsigned long int i = 0; i < dLength; i++) {
                 valType r = -1.0 * imag * imagValues[i];
                 imagValues[i] = imag * realValues[i];
                 realValues[i] = r;
@@ -143,15 +145,11 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         }
         std::shared_ptr<diagonal> scale_by_real(valType real) {
             #pragma omp parallel for
-            for(long int i = 0; i < dLength; i++) {
+            for(unsigned long int i = 0; i < dLength; i++) {
                 realValues[i] *= real;
                 imagValues[i] *= real;
             }
             return shared_from_this();
-        }
-        void free() {
-            std::free(realValues);
-            std::free(imagValues);
         }
 };
 

@@ -86,6 +86,13 @@ class vector : public std::enable_shared_from_this<vector> {
                 imagValues[i] = 0.0;
             }
         }
+        ~vector() {
+            #ifdef DEEP_DEBUG
+                std::cout << "vector destructor called" << std::endl;
+            #endif
+            std::free(realValues);
+            std::free(imagValues); // needed because we allocate memory ourserlves unlike shared_ptr! This place and under diagonal.hpp & denseMatrix.hpp are the only places where we need to free memory manually!!!
+        }
 
         void zeroify() {
             #pragma omp parallel for
@@ -179,7 +186,7 @@ class vector : public std::enable_shared_from_this<vector> {
         }
 
         valType sparsity() {
-            long int num_nonzeros = 0;
+            unsigned long int num_nonzeros = 0;
             for (size_t i = 0; i < numRows; ++i) {
                 if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     num_nonzeros++;

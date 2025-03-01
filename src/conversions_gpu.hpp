@@ -15,8 +15,8 @@
 namespace diaq {
 
 // declarations
-std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::vector<long int> shape);
-std::shared_ptr<diaQMatrix> convertToQuantumSparse_cuda(std::shared_ptr<denseMatrix> d, long int *new_shape);
+std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::vector<unsigned long int> shape);
+std::shared_ptr<diaQMatrix> convertToQuantumSparse_cuda(std::shared_ptr<denseMatrix> d, unsigned long int *new_shape);
 
 } // namespace diaq
 
