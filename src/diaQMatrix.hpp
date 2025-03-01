@@ -737,24 +737,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return res;
         }
 
-        std::shared_ptr<long int[]> getDiagonalPosition(unsigned long int flatIndex) {
-            long int mat_x = flatIndex / matrix_shape[1];
-            flatIndex = flatIndex - matrix_shape[1] * mat_x;
-            long int mat_y = flatIndex % matrix_shape[1];
-            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
-            std::shared_ptr<long int[]> res = std::shared_ptr<long int[]>(new long int[2]);
-            // diagonal index is just j - i
-            long int d_idx = mat_y - mat_x;
-            res[0] = (d_idx);
-            // getting the position in that diagonal
-            if(d_idx <= 0) {
-                res[1] = (mat_y);
-            } else {
-                res[1] = (mat_y - d_idx);
-            }
-            return res;
-        }
-
         unsigned long int getFlatIndex(long int d_idx, unsigned long int d_pos) {
             unsigned long int mat_x, mat_y;
             if(d_idx == 0) {
@@ -802,6 +784,24 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::shared_ptr<long int[]> res(new long int[2]);
             long int d_idx = mat_y - mat_x;
             res[0] = (d_idx);
+            if(d_idx <= 0) {
+                res[1] = (mat_y);
+            } else {
+                res[1] = (mat_y - d_idx);
+            }
+            return res;
+        }
+
+        std::shared_ptr<long int[]> getDiagonalPosition(unsigned long int flatIndex) {
+            long int mat_x = flatIndex / matrix_shape[1];
+            flatIndex = flatIndex - matrix_shape[1] * mat_x;
+            long int mat_y = flatIndex % matrix_shape[1];
+            // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
+            std::shared_ptr<long int[]> res = std::shared_ptr<long int[]>(new long int[2]);
+            // diagonal index is just j - i
+            long int d_idx = mat_y - mat_x;
+            res[0] = (d_idx);
+            // getting the position in that diagonal
             if(d_idx <= 0) {
                 res[1] = (mat_y);
             } else {
