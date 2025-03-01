@@ -11,52 +11,53 @@ diaq::diaQMatrix *testQuantumSparseMatrix(std::unordered_map<long int, diaq::dia
 }
 
 std::string checkResult(diaq::diaQMatrix *A, diaq::diaQMatrix *B) {
-    std::unordered_map<long int, diaq::diagonal *> dmA = A->diagonalMap;
-    std::unordered_map<long int, diaq::diagonal *> dmB = B->diagonalMap;
-
-    if(dmA.size() != dmB.size()) {
+    if(A->diagonalMap.size() != B->diagonalMap.size()) {
         // A->print();
-        return "false - 1";
+        return "false - size mis-match";
     }
-
     const diaq::valType epsilon = 0.00002;
     std::unordered_map<long int, diaq::diagonal *>::iterator itA, itB;
-    for(itA = dmA.begin(); itA != dmA.end(); itA++) {
-        auto itB = dmB.find(itA->first);
-        if(itB == dmB.end()) {
+    for(itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
+        diaq::valType *a_real_values = itA->second->realValues;
+        diaq::valType *a_imag_values = itA->second->imagValues;
+        auto itB = B->diagonalMap.find(itA->first);
+        if(itB == B->diagonalMap.end()) {
             // A->print();
             std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - 2";
+            return "false - dIndex mis-match";
         }
         if(itB->second->dLength != itA->second->dLength) { 
             // A->print();
             std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - 3";
+            return "false - dLength mis-match";
         }
         else {
+            diaq::valType *b_real_values = itB->second->realValues;
+            diaq::valType *b_imag_values = itB->second->imagValues;
             for(long int i = 0; i < itA->second->dLength; i++) {
-                if(itB->second->getRealValue(i) - itA->second->getRealValue(i) > epsilon) {
+                if(b_real_values[i] - a_real_values[i] > epsilon) {
                     // print where the error is
                     std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    std::cout << "Correct value: " << itA->second->getRealValue(i) << std::endl;
-                    std::cout << "Wrong value: " << itB->second->getRealValue(i) << std::endl;
-                    return "false - 4";
+                    std::cout << "Correct value: " << a_real_values[i] << std::endl;
+                    std::cout << "Wrong value: " << b_real_values[i] << std::endl;
+                    return "false - Real mis-match";
                 }
-                if(itB->second->getImagValue(i) - itA->second->getImagValue(i) > epsilon) {
+                if(b_imag_values[i] - a_imag_values[i] > epsilon) {
                     // print where the error is
                     std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    return "false - 5";
+                    std::cout << "Correct value: " << a_imag_values[i] << std::endl;
+                    std::cout << "Wrong value: " << b_imag_values[i] << std::endl;
+                    return "false - Imag mis-match";
                 }
             }
         }
     }
-    // A->print();
     return "true";
 }
 
 std::string check_vectors(diaq::vector *a, diaq::vector *b) {
-    if(a->num_rows() != b->num_rows()) {
-        return "false - 1";
+    if(a->numRows != b->numRows) {
+        return "false - length mis-match";
     }
     diaq::valType *a_real_values = a->realValues;
     diaq::valType *a_imag_values = a->imagValues;
@@ -65,10 +66,10 @@ std::string check_vectors(diaq::vector *a, diaq::vector *b) {
     const diaq::valType epsilon = 0.00002;
     for(size_t i = 0; i < a->num_rows(); i++) {
         if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {
-            return "false - 2";
+            return "false - Real mis-match";
         }
         if(std::abs(a_imag_values[i] - b_imag_values[i]) > epsilon) {
-            return "false - 3";
+            return "false - Imag mis-match";
         }
     }
     return "true";
