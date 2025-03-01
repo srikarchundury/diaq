@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <complex>
+#include <memory>
 
 #include "config.hpp"
 
@@ -38,11 +39,13 @@ class vector {
                 }
             #endif
         }
+
         vector(size_t M, valType *realVals, valType *imagVals) {
             numRows = M;
             realValues = realVals;
             imagValues = imagVals;
         }
+
         vector(size_t M, valType *realVals) {
             numRows = M;
             realValues = realVals;
@@ -52,6 +55,7 @@ class vector {
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
         }
+
         vector(size_t M, valType init_real, valType init_imag) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
@@ -71,6 +75,7 @@ class vector {
                 }
             #endif
         }
+
         vector(size_t M, valType init_real) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
@@ -80,14 +85,11 @@ class vector {
                 realValues = aligned_alloc_helper(M * sizeof(valType));
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
+            #pragma omp parallel for
             for (size_t i = 0; i < M; ++i) {
                 realValues[i] = init_real;
                 imagValues[i] = 0.0;
             }
-        }
-
-        ~vector() {
-            this->free();
         }
 
         void zeroify() {
@@ -123,10 +125,10 @@ class vector {
             return v;
         }
 
-        vector *dagger() {
-            vector *v = new vector(numRows);
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+        std::shared_ptr<vector> dagger() {
+            std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for
             for (size_t i = 0; i < numRows; ++i) {
@@ -136,11 +138,11 @@ class vector {
             return v;
         }
 
-        std::complex<valType> multiply(vector *v) {
+        std::complex<valType> multiply(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
             valType imag_res = 0.0;
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res,imag_res)
             for (size_t i = 0; i < numRows; ++i) {
@@ -150,10 +152,10 @@ class vector {
             return std::complex<valType>(real_res, imag_res);
         }
 
-        valType daggerMultiplyReal(vector *v) {
+        valType daggerMultiplyReal(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res)
             for (size_t i = 0; i < numRows; ++i) {
@@ -198,12 +200,9 @@ class vector {
         valType **getRealValuePtr() {
             return &realValues;
         }
+
         valType **getImagValuePtr() {
             return &imagValues;
-        }
-        void free() {
-            std::free(realValues);
-            std::free(imagValues);
         }
 };
 

@@ -6,6 +6,7 @@
 #include <vector>
 #include <complex>
 #include <cstddef>
+#include <memory>
 
 #include "config.hpp"
 
@@ -45,7 +46,7 @@ class diagonal {
             dLength = dl;
         }
         ~diagonal() {
-            this->free();
+            this->free(); // needed because we allocate memory ourserlves unlike shared_ptr!
         }
         void setIndex(long int newIndex) {
             dIndex = newIndex;
@@ -133,22 +134,22 @@ class diagonal {
             }
             return count;
         }
-        diagonal *scale_by_imag(valType imag) {
+        std::shared_ptr<diagonal> scale_by_imag(valType imag) {
             #pragma omp parallel for
             for(long int i = 0; i < dLength; i++) {
                 valType r = -1.0 * imag * imagValues[i];
                 imagValues[i] = imag * realValues[i];
                 realValues[i] = r;
             }
-            return this;
+            return std::shared_ptr<diagonal>(this);
         }
-        diagonal *scale_by_real(valType real) {
+        std::shared_ptr<diagonal> scale_by_real(valType real) {
             #pragma omp parallel for
             for(long int i = 0; i < dLength; i++) {
                 realValues[i] *= real;
                 imagValues[i] *= real;
             }
-            return this;
+            return std::shared_ptr<diagonal>(this);
         }
         void free() {
             std::free(realValues);

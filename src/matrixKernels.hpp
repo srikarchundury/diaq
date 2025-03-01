@@ -15,52 +15,52 @@
 
 namespace diaq {
 
-long int getDiagonalLength(long int dIndex, long int *shape);
-diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, diagonal *diagA, diagonal *diagB);
-diaQMatrix *product(diaQMatrix *A, diaQMatrix *B);
-denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B);
-diagonal *addElements(diagonal *A, diagonal *B);
-diaQMatrix *add(diaQMatrix *A, diaQMatrix *B);
-std::complex<valType> trace(diaQMatrix *A);
-diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape);
-diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape);
+long int getDiagonalLength(long int dIndex, std::shared_ptr<long int[]> matrix_shape);
+std::shared_ptr<diagonal> multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB);
+std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
+std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
+std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_ptr<diagonal> B);
+std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
+std::complex<valType> trace(std::shared_ptr<diaQMatrix> A);
+std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<long int> new_tensor_shape);
+std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, long int *matrix_shape);
 std::vector<long int> newTensorShape(std::vector<long int> tensor_shape_A, std::vector<long int> tensor_shape_B, std::vector<long int> axis_A, std::vector<long int> axis_B);
 std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vector<long int> axes);
-diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order);
-diaQMatrix *transpose(diaQMatrix *A);
-diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes);
-diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes);
-diaQMatrix *array(diaQMatrix *A);
-diaQMatrix *einsum(diaQMatrix *A, std::vector<long int> axes);
-diaQMatrix *operator*(diaQMatrix &A, diaQMatrix &B);
-diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B);
+std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<long int> new_order);
+std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A);
+std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<long int> > axes);
+std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<long int> > axes);
+std::shared_ptr<diaQMatrix> array(std::shared_ptr<diaQMatrix> A);
+std::shared_ptr<diaQMatrix> einsum(std::shared_ptr<diaQMatrix> A, std::vector<long int> axes);
+std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B);
+std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B);
 
-vector *spMV(diaQMatrix *A, vector *x, vector *y);
-vector *MV(denseMatrix *A, vector *x, vector *y);
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+std::shared_ptr<vector> MV(std::shared_ptr<denseMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
 
-denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B);
-diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B);
-diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c);
+std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
+std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
+std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, valType c);
 
-vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger);
 
-diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *res);
-void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y);
-void identity_kron_matrix_times_vector(long int n, diaQMatrix *v, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
-diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n);
-diaQMatrix *identity_kron_matrix_kron_identity(long int n, diaQMatrix *v, long int m);
+std::shared_ptr<diaQMatrix> identity_kron_matrix(long int n, std::shared_ptr<diaQMatrix> res);
+void identity_kron_matrix_times_vector(long int n, std::shared_ptr<diaQMatrix> v, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+void identity_kron_matrix_times_vector(long int n, std::shared_ptr<diaQMatrix> v, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger);
+std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, long int n);
+std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(long int n, std::shared_ptr<diaQMatrix> v, long int m);
 
-void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y);
-void matrix_kron_identity_times_vector(diaQMatrix *gate, long before, vector *x, vector *y, long int qubit_smaller, long int qubit_larger);
-void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y);
-void identity_kron_matrix_kron_identity_times_vector(long int after, diaQMatrix *gate, long int before, vector *x, vector *y,long int qubit_smaller, long int qubit_larger);
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, long before, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, long before, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger);
+void identity_kron_matrix_kron_identity_times_vector(long int after, std::shared_ptr<diaQMatrix> gate, long int before, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+void identity_kron_matrix_kron_identity_times_vector(long int after, std::shared_ptr<diaQMatrix> gate, long int before, std::shared_ptr<vector> x, std::shared_ptr<vector> y,long int qubit_smaller, long int qubit_larger);
 
-diaQMatrix *dagger(diaQMatrix *A);
-diaQMatrix *conjbar(diaQMatrix *A);
+std::shared_ptr<diaQMatrix> dagger(std::shared_ptr<diaQMatrix> A);
+std::shared_ptr<diaQMatrix> conjbar(std::shared_ptr<diaQMatrix> A);
 
-diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType real, valType imag);
+std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, valType real, valType imag);
 
-diaQMatrix *expm_negative(diaQMatrix *A, valType t);
+std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType t);
 
 } // namespace diaq
 

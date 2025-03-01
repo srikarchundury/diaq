@@ -6,7 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <complex>
-
+#include <memory>
 
 #include "diaQMatrix.hpp"
 
@@ -175,14 +175,14 @@ class denseMatrix {
         }
         // currently un-used!
         // given a polong int in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
-        long int getTargetDiagIndex(diaQMatrix *qm, long int i, long int j) {
+        long int getTargetDiagIndex(std::shared_ptr<diaQMatrix> qm, long int i, long int j) {
             // every element will be part of 2 diagonals. We choose one of them based on sparsity in each.
             // get diagonal index, based on distance or number of elements.
             long int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
             // loop through all possible diagonals (principal and anti)
             for(long int k = -1 * size + 1; k <= 2 * size - 2; k++) {
-                diagonal* kDiag = qm->getDiagonal_orCreateIt(k);
-                long int* kCoords = kDiag->getCoords(size, k);
+                std::shared_ptr<diagonal> kDiag = qm->getDiagonal_orCreateIt(k);
+                long int *kCoords = kDiag->getCoords(size, k);
                 if(isPartOf(k, kCoords[0], kCoords[1], i, j) == 0) {
                     // std::cout << i << "," << j << "=" << k << std::endl;
                     if(targetDiagIndex_1 == 2 * size) {
@@ -203,12 +203,13 @@ class denseMatrix {
         }
         void free() {
             std::free(realData);
-            std::free(imagData);
-            delete[] matrix_shape;
+            std::free(imagData); // these are malloced/aligned_alloced
+            // std::free(matrix_shape);
+            delete[] matrix_shape; // this is "new"ed
         }
-        diaQMatrix *convertToQuantumSparse(std::vector<long int> new_shape);
-        diaQMatrix *convertToQuantumSparse(long int *new_matrix_shape);
-        diaQMatrix *convertToQuantumSparse();
+        std::shared_ptr<diaQMatrix> convertToQuantumSparse(std::vector<long int> new_shape);
+        std::shared_ptr<diaQMatrix> convertToQuantumSparse(long int *new_matrix_shape);
+        std::shared_ptr<diaQMatrix> convertToQuantumSparse();
 };
 
 } // namespace diaq

@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include <memory>
 
 namespace diaq {
 

@@ -42,7 +42,10 @@ long int getDiagonalLength(long int dIndex, long int *shape) {
     // std::cout << "lenRes = " << lenRes << std::endl;
     return lenRes;
 }
-diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, diagonal *diagA, diagonal *diagB) {
+long int getDiagonalLength(long int dIndex, std::shared_ptr<long int[]> matrix_shape) {
+    return getDiagonalLength(dIndex, matrix_shape.get());
+}
+std::shared_ptr<diagonal> multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA, long int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB) {
     long int res_index = indexA + indexB;
     if (res_index <= 0 && shapeA[0] <= abs(res_index)) {
         return NULL;
@@ -52,10 +55,10 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
     long int lenDiagA = diagA->dLength;
     long int lenDiagB = diagB->dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
-    long int *res_dims = new long int[2]{shapeA[0], shapeB[1]};
+    std::shared_ptr<long int[]> res_dims(new long int[2]{shapeA[0], shapeB[1]});
     long int lenRes = getDiagonalLength(res_index, res_dims);
-    delete[] res_dims;
-    diagonal *res = new diagonal(res_index, lenRes);
+    // std::shared_ptr<diagonal> res = new diagonal(res_index, lenRes);
+    std::shared_ptr<diagonal> res = std::make_shared<diagonal>(res_index, lenRes);
 
     // std::cout << "diagonal length = " << lenRes << std::endl;
     long int offsetA = abs(indexA);  // Absolute value of indexA
@@ -166,7 +169,7 @@ diagonal *multiplyDiagonals(long int *shapeA, long int *shapeB, long int indexA,
  * 
  * @return diaQMatrix  C
  */
-diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
+std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
 
     // printf("here hey hey\n");
     
@@ -218,7 +221,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     //                             std::cout << "Thread ID " << omp_get_thread_num() << " is working on diagonal " << itA->first << " and " << itB->first << std::endl;
     //                         #endif
 
-    //                         diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
+    //                         std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
 
     //                         if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
 
@@ -259,12 +262,13 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     long int *d = new long int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
-    diaQMatrix* result = new diaQMatrix(&d);
-    std::unordered_map<long int, diagonal*> mapA = A->diagonalMap;
-    std::unordered_map<long int, diagonal*> mapB = B->diagonalMap;
-    std::vector<std::unordered_map<long int, diagonal*>> thread_local_maps(omp_get_max_threads());
-    std::vector<std::pair<long int, diagonal*>> vecA(mapA.begin(), mapA.end());
-    std::vector<std::pair<long int, diagonal*>> vecB(mapB.begin(), mapB.end());
+    // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(&d);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&d);
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    std::vector<std::unordered_map<long int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
+    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
+    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
     #pragma omp parallel
     {
         int thread_id = omp_get_thread_num();
@@ -273,14 +277,15 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         #pragma omp for
         for (size_t a = 0; a < vecA.size(); ++a) {
             for (size_t b = 0; b < vecB.size(); ++b) {
-                diagonal *diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+                std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
                                                     vecA[a].first, vecB[b].first, 
                                                     vecA[a].second, vecB[b].second);
                 if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
                     local_map[diagNew->dIndex] = diagNew;
-                } else if (diagNew != NULL) {
-                    diagNew->free();
                 }
+                // else if (diagNew != NULL) {
+                //     diagNew->free();
+                // } // this is not needed anymore since we moved to smart pointers!
             }
         }
     }
@@ -295,10 +300,10 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
 		// --- First matrix ---
-		std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
+		std::unordered_map<long int, std::shared_ptr<diagonal> > A_diagonalMap = A->diagonalMap;
         // get keys of A_diagonalMap
         std::vector<long int> A_keys;
-        std::unordered_map<long int, diagonal*>::iterator A_it;
+        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator A_it;
         for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
             A_keys.push_back(A_it->first);
         }
@@ -309,10 +314,10 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         }
         std::cout << std::endl;
 		// --- Second matrix ---
-        std::unordered_map<long int, diagonal*> B_diagonalMap = B->getDiagonalMap();
+        std::unordered_map<long int, std::shared_ptr<diagonal> > B_diagonalMap = B->diagonalMap;
         // get keys of B_diagonalMap
         std::vector<long int> B_keys;
-        std::unordered_map<long int, diagonal*>::iterator B_it;
+        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator B_it;
         for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
             B_keys.push_back(B_it->first);
         }
@@ -323,10 +328,10 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
         }
         std::cout << std::endl;
 		// --- Result matrix ---
-        std::unordered_map<long int, diagonal*> result_diagonalMap = result->getDiagonalMap();
+        std::unordered_map<long int, std::shared_ptr<diagonal> > result_diagonalMap = result->diagonalMap;
         // get keys of result_diagonalMap
         std::vector<long int> result_keys;
-        std::unordered_map<long int, diagonal*>::iterator result_it;
+        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator result_it;
         for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
             result_keys.push_back(result_it->first);
         }
@@ -362,7 +367,7 @@ diaQMatrix *product(diaQMatrix *A, diaQMatrix *B) {
  * 
  * @return denseMatrix  C
  */
-denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
+std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B) {
     long int *shape_a = A->matrix_shape;
     long int *shape_b = B->matrix_shape;
     if(shape_a[1] != shape_b[0]) {
@@ -383,7 +388,8 @@ denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
     long int *d = new long int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
-    denseMatrix *result = new denseMatrix(&d, real_res, imag_res);
+    // std::shared_ptr<denseMatrix> result = new denseMatrix(&d, real_res, imag_res);
+    std::shared_ptr<denseMatrix> result = std::make_shared<denseMatrix>(&d, real_res, imag_res);
     for(long int i = 0; i < shape_a[0]; i++) {
         for(long int k = 0; k < shape_b[1]; k++) {
             std::complex<valType> res = 0.0;
@@ -402,7 +408,7 @@ denseMatrix *denseProduct(denseMatrix *A, denseMatrix *B) {
 * @param B diaQMatrix
 * @return diaQMatrix C
 */
-diagonal *addElements(diagonal *A, diagonal *B) {
+std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_ptr<diagonal> B) {
     valType *real_valsA = A->realValues;
     valType *imag_valsA = A->imagValues;
     valType *real_valsB = B->realValues;
@@ -410,7 +416,8 @@ diagonal *addElements(diagonal *A, diagonal *B) {
     if(A->dLength != B->dLength ) {
         throw std::invalid_argument("diagonals are of different lengths!");
     }
-    diagonal *res = new diagonal(A->dIndex, A->dLength);
+    // std::shared_ptr<diagonal> res = new diagonal(A->dIndex, A->dLength);
+    std::shared_ptr<diagonal> res = std::make_shared<diagonal>(A->dIndex, A->dLength);
     valType *real_valsC = res->realValues;
     valType *imag_valsC = res->imagValues;
     #pragma omp parallel for
@@ -421,13 +428,14 @@ diagonal *addElements(diagonal *A, diagonal *B) {
     return res;
 }
 
-diaQMatrix *add(diaQMatrix *A, diaQMatrix *B) {
+std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
     if(A->getSize() != B->getSize()) {
         throw std::invalid_argument("input matrices are of different dimensions, not compatible");
     }
-    diaQMatrix* result = new diaQMatrix(A->getSize());
-    std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
+    // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(A->getSize());
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->getSize());
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->getDiagonalMap();
     #pragma omp paralle for
     for(long int a = 0; a < mapA.size(); a++) {
         auto itA = std::next(mapA.begin(), a);
@@ -442,10 +450,10 @@ diaQMatrix *add(diaQMatrix *A, diaQMatrix *B) {
     return result;
 }
 
-std::complex<valType> trace(diaQMatrix *A) {
+std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
-    std::unordered_map<long int, diagonal*>::iterator itA;
-    std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
     itA = mapA.find(0);
     if(itA == mapA.end()) {
         return t;
@@ -456,23 +464,23 @@ std::complex<valType> trace(diaQMatrix *A) {
     return t;
 }
 
-diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
+std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, long int *matrix_shape) {
     // start time
     auto start = std::chrono::high_resolution_clock::now();
 
     // this is matrix_reshape.
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    diaQMatrix *res = new diaQMatrix(&matrix_shape, A->shape);
-    std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator it;
-    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+    // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&matrix_shape, A->shape);
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(&matrix_shape, A->shape);
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    for (it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
         #pragma omp parallel for
         for(long int i = 0; i < it->second->dLength; i++) {
             // old_d_pos has (it->first, i) for A->matrix_shape
-            long int *d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
-            long int d_len = getDiagonalLength(d_pos[0], res->matrix_shape);
+            std::shared_ptr<long int[]> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
+            long int d_len = getDiagonalLength(d_pos[0], matrix_shape);
             if(real_vals[i] != 0 || imag_vals[i] != 0) { // doing this here to avoid pruning later below.
                 res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
             }
@@ -481,7 +489,7 @@ diaQMatrix *matrix_reshape(diaQMatrix *A, long int *matrix_shape) {
     return res;
 }
 
-diaQMatrix *reshape(diaQMatrix *A, std::vector<long int> new_tensor_shape) {
+std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<long int> new_tensor_shape) {
     long int old_product = 1;
     #pragma unroll
     for(long int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
@@ -567,7 +575,7 @@ std::vector<long int> modifyTensorShape(std::vector<long int> tShape, std::vecto
     return nShape;
 }
 
-diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
+std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<long int> new_order) {
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -586,9 +594,9 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
 
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
-        std::unordered_map<long int, diagonal *> diagMap = A->getDiagonalMap();
-        std::unordered_map<long int, diagonal *>::iterator it;
-        std::unordered_map<long int, diagonal *> newDiagMap;
+        std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->getDiagonalMap();
+        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+        std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
         #pragma omp parallel
         {
             #pragma omp single
@@ -596,7 +604,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
                 #pragma omp task
                 {
                     it->second->setIndex(-1 * it->first);
-                    newDiagMap.insert(std::pair<long int, diagonal *>(-1 * it->first, it->second));
+                    newDiagMap.insert(std::pair<long int, std::shared_ptr<diagonal> >(-1 * it->first, it->second));
                 }
             }
         }
@@ -635,12 +643,13 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::unordered_map<long int, diagonal*> newDiagMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
-    diaQMatrix *res = new diaQMatrix(newDiagMap, &new_shape, new_tensor_shape);
+    // std::shared_ptr<diaQMatrix> res = new diaQMatrix(newDiagMap, &new_shape, new_tensor_shape);
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(newDiagMap, &new_shape, new_tensor_shape);
     // iterate over all diagonals
-    std::unordered_map<long int, diagonal*>::iterator it;
-    std::unordered_map<long int, diagonal*> diagonalMap = A->getDiagonalMap();
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagonalMap = A->getDiagonalMap();
 
     // #pragma omp parallel for
     // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
@@ -675,7 +684,7 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
                         new_ten_pos[i] = ten_pos[new_order[i]];
                     }
 
-                    long int *d_pos = res->getDiagonalPosition(new_ten_pos);
+                    std::shared_ptr<long int[]> d_pos = res->getDiagonalPosition(new_ten_pos);
                     // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
                     long int d_len = getDiagonalLength(d_pos[0], new_shape);
                     if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) { // to avoid pruning later.
@@ -689,11 +698,11 @@ diaQMatrix *transpose(diaQMatrix *A, std::vector<long int> new_order) {
     return res;
 }
 
-diaQMatrix *transpose(diaQMatrix *A) {
+std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A) {
     return transpose(A, std::vector<long int>());
 }
 
-diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
+std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<long int> > axes) {
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -715,7 +724,7 @@ diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<lon
     std::cout << axes[1][i] << ")" << std::endl;
     std::cout << "--" << std::endl;
 
-    diaQMatrix *res;
+    std::shared_ptr<diaQMatrix> res;
     // move axes
     std::vector<long int> order_A;
     std::vector<long int> order_B;
@@ -786,8 +795,8 @@ diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<lon
     // std::vector<long int> new_shape_a{totalA / axes_0_product, axes_0_product};
     // std::vector<long int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
-    diaQMatrix *reshaped_A = matrix_reshape(A, new_shape_a);
-    diaQMatrix *reshaped_B = matrix_reshape(B, new_shape_b);
+    std::shared_ptr<diaQMatrix> reshaped_A = matrix_reshape(A, new_shape_a);
+    std::shared_ptr<diaQMatrix> reshaped_B = matrix_reshape(B, new_shape_b);
 
     // std::cout << "after reshape A - " << std::endl;
     // reshaped_A->convertToDenseMatrix()->print();
@@ -802,11 +811,15 @@ diaQMatrix *tensordot1(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<lon
 
     // res->transpose(); // to make sure x and y dims are balanced in the underlying matrix format
 
+    // free memory
+    delete[] new_shape_a;
+    delete[] new_shape_b;
 
     return res;
 }
 
-long int *getMatrixShape(std::vector<long int> tensor_shape) {
+// long int *getMatrixShape(std::vector<long int> tensor_shape) {
+std::shared_ptr<long int[]> getMatrixShape(std::vector<long int> tensor_shape) {
     // print tensor_shape
     // printf("tensor_shape = (");
     // for (long int i = 0; i < tensor_shape.size() - 1; i++) {
@@ -829,7 +842,8 @@ long int *getMatrixShape(std::vector<long int> tensor_shape) {
             break;
         }
     }
-    long int *new_shape = new long int[2];
+    // long int *new_shape = new long int[2];
+    std::shared_ptr<long int[]> new_shape = std::shared_ptr<long int[]>(new long int[2]);
     new_shape[0] = y;
     new_shape[1] = x;
     // printf("new_shape = (%ld, %ld)\n", new_shape[0], new_shape[1]);
@@ -870,7 +884,7 @@ std::vector<long int> getTenPos(const std::vector<long int>& ten_pos_A,
     return res;
 }
 
-diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long int> > axes) {
+std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<long int> > axes) {
     // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -891,15 +905,19 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
 
     // let's try element by element like we do with tensor transpose!
     std::vector<long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
-    long int *new_matrix_shape = getMatrixShape(new_tensor_shape);
-    diaQMatrix *res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
+    std::shared_ptr<long int[]> new_matrix_shape = getMatrixShape(new_tensor_shape);
+    // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
+    long int *make_new_shape = new long int[2];
+    make_new_shape[0] = new_matrix_shape[0];
+    make_new_shape[1] = new_matrix_shape[1];
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(&make_new_shape, new_tensor_shape);
     // printf("res matrix shape\n");
     // res->print_shape();
 
     // element by element tensordot multiplication, inspired from COO format
-    std::unordered_map<long int, diagonal*> mapA = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*> mapB = B->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator itA, itB;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA, itB;
     #pragma omp parallel
     {
         #pragma omp single
@@ -907,7 +925,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
             for (itA = mapA.begin(); itA != mapA.end(); itA++) {
                 #pragma omp task
                 {
-                    diagonal *diagA = itA->second;
+                    std::shared_ptr<diagonal> diagA = itA->second;
                     valType *real_vals_A = diagA->realValues;
                     valType *imag_vals_A = diagA->imagValues;
                     // #pragma omp parallel for
@@ -918,7 +936,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                             for (itB = mapB.begin(); itB != mapB.end(); itB++) {
                                 #pragma omp task
                                 {
-                                    diagonal *diagB = itB->second;
+                                    std::shared_ptr<diagonal> diagB = itB->second;
                                     valType *real_vals_B = diagB->realValues;
                                     valType *imag_vals_B = diagB->imagValues;
                                     #pragma omp parallel for
@@ -947,7 +965,7 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                                             // printf("%ld)\n", result_coords[result_coords.size() - 1]);
 
                                             // get the diagonal position and length
-                                            long int *res_diag_pos = res->getDiagonalPosition(result_coords);
+                                            std::shared_ptr<long int[]> res_diag_pos = res->getDiagonalPosition(result_coords);
                                             long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
                                             valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
                                             valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
@@ -956,7 +974,6 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
                                                 valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
                                                 res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
                                             }
-                                            std::free(res_diag_pos);
                                         }
                                     }
                                 }
@@ -971,50 +988,43 @@ diaQMatrix *tensordot(diaQMatrix *A, diaQMatrix *B, std::vector<std::vector<long
     return res;
 }
 
-diaQMatrix *array(diaQMatrix *A) {
+std::shared_ptr<diaQMatrix> array(std::shared_ptr<diaQMatrix> A) {
     // std::cout << "array called for A - " << std::endl;
     // A.print();
     // TODO: unclear as of now what this mehthod should be doing
     return A;
 }
 
-diaQMatrix *einsum(diaQMatrix *A, std::vector<long int> axes) {
+std::shared_ptr<diaQMatrix> einsum(std::shared_ptr<diaQMatrix> A, std::vector<long int> axes) {
     std::cout << axes[0] << std::endl;
     return A;
 }
 
 // overloading operators
-diaQMatrix *operator*(diaQMatrix &A, diaQMatrix &B) {
-    return product(&A, &B);
+std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B) {
+    return product(A, B);
 }
-diaQMatrix *operator+(diaQMatrix &A, diaQMatrix &B) {
-    return add(&A, &B);
+std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B) {
+    return add(A, B);
 }
-
 void diaQMatrix::matrix_reshape(long int *matrix_shape) {
     // printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    diaQMatrix *temp = diaq::matrix_reshape(this, matrix_shape);
+    std::shared_ptr<diaQMatrix> temp = diaq::matrix_reshape(std::shared_ptr<diaQMatrix>(this), matrix_shape);
     *this = *temp;
-    delete temp;
 }
-
-diaQMatrix *diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
-    return diaq::reshape(this, new_tensor_shape);
+std::shared_ptr<diaQMatrix> diaQMatrix::reshape(std::vector<long int> new_tensor_shape) {
+    return diaq::reshape(std::shared_ptr<diaQMatrix>(this), new_tensor_shape);
 }
-
 void diaQMatrix::transpose(std::vector<long int> new_order) {
-    diaQMatrix *temp = diaq::transpose(this, new_order);
+    std::shared_ptr<diaQMatrix> temp = diaq::transpose(std::shared_ptr<diaQMatrix>(this), new_order);
     *this = *temp;
-    delete temp;
 }
-
 void diaQMatrix::transpose() {
-    diaQMatrix *temp = diaq::transpose(this);
+    std::shared_ptr<diaQMatrix> temp = diaq::transpose(std::shared_ptr<diaQMatrix>(this));
     *this = *temp;
-    delete temp;
 }
 
-vector *spMV(diaQMatrix *A, vector *x, vector *y) {
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     #ifdef CUDA_ENABLED
         return spmv_cuda(A, x);
     #else
@@ -1043,14 +1053,14 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
 
-    // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
+    // std::shared_ptr<vector> y = new vector(A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < diagMap.size(); ++a) {
@@ -1154,7 +1164,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y) {
     #endif
 }
 
-vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger) {
 
     // DID NOT IMPLEMENT YET!
     // TODO: PLS IMPLEMENT!!
@@ -1165,19 +1175,22 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     #endif
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    std::shared_ptr<long int[]> new_gate_shape = std::shared_ptr<long int[]>(new long int[2]);
+    new_gate_shape[0] = q_diff_exp;
+    new_gate_shape[1] = q_diff_exp;
 
     if(A->matrix_shape[1] != x->numRows) {
         throw std::invalid_argument("Not multiplyable");
     }
-    // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
+    // std::shared_ptr<vector> y = new vector(A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel
     {
@@ -1186,7 +1199,7 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
             for (it = diagMap.begin(); it != diagMap.end(); it++) {
                 #pragma omp task
                 {
-                    diagonal *diag = it->second;
+                    std::shared_ptr<diagonal> diag = it->second;
                     valType *real_vals = diag->realValues;
                     valType *imag_vals = diag->imagValues;
                     switch(diag->dIndex) {
@@ -1237,8 +1250,6 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
         }
     }
 
-    free(new_gate_shape);
-
     #ifdef DEBUG
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
@@ -1251,13 +1262,13 @@ vector *spMV(diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long i
     return y;
 }
 
-vector *MV(denseMatrix *A, vector *x, vector *y) {
+std::shared_ptr<vector> MV(std::shared_ptr<denseMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     if(A->matrix_shape[1] != x->numRows) {
         throw std::invalid_argument("Not multiplyable");
     }
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
-    // vector *y = new vector(A->matrix_shape[0], 0.0, 0.0);
+    // std::shared_ptr<vector> y = new vector(A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
     for(long int i = 0; i < A->matrix_shape[0]; i++) {
@@ -1274,7 +1285,7 @@ vector *MV(denseMatrix *A, vector *x, vector *y) {
     return y;
 }
 
-denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
+std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B) {
     // A: m x n
     // B: p x q
     // C: mp x nq
@@ -1298,7 +1309,8 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
             imag_res[i] = 0.0;
         }
     #endif
-    denseMatrix *result = new denseMatrix(&d, real_res, imag_res);
+    // std::shared_ptr<denseMatrix> result = new denseMatrix(&d, real_res, imag_res);
+    std::shared_ptr<denseMatrix> result = std::make_shared<denseMatrix>(&d, real_res, imag_res);
 
     // Iterate through the rows of matrix A
     for (long int i = 0; i < A->matrix_shape[0]; i++) {
@@ -1328,7 +1340,7 @@ denseMatrix *dense_kron_product(denseMatrix *A, denseMatrix *B) {
     return result;
 }
 
-diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scalar_imag) {
+std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, valType scalar_real, valType scalar_imag) {
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
         std::cout << " --- multiply_by_scalar --- " << std::endl;
@@ -1343,7 +1355,8 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
         return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
     }
 
-    diaQMatrix *result = new diaQMatrix((long int)0);
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix((long int)0);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>((long int)0);
 
     if (scalar_real == 0.0 && scalar_imag == 0.0) {
         return result;
@@ -1352,7 +1365,7 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
 
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
@@ -1361,7 +1374,8 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
         long int dLength = it->second->dLength;
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
-        diagonal *newDiag = new diagonal(dIndex, dLength);
+        // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, dLength);
+        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLength);
         valType *real_valsC = newDiag->realValues;
         valType *imag_valsC = newDiag->imagValues;
 
@@ -1385,7 +1399,7 @@ diaQMatrix *multiply_by_scalar(diaQMatrix *A, valType scalar_real, valType scala
     return result;
 }
 
-diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
+std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
 
     #ifdef DEEP_DEBUG
         printf("\tdiaq::kron_product\n");
@@ -1404,21 +1418,22 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     long int *shape_b = B->matrix_shape;
 
     // map of unique A elements and their corresponding kron blocks
-    std::map<std::pair<valType, valType>, diaQMatrix *> unique_kron_blocks;
+    std::map<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> > unique_kron_blocks;
 
     // Calculate dimensions for the resulting matrix
     long int *result_shape = new long int[2];
     result_shape[0] = shape_a[0] * shape_b[0];
     result_shape[1] = shape_a[1] * shape_b[1];
-    diaQMatrix *result = new diaQMatrix(&result_shape);
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
 
-    std::unordered_map<long int, diagonal*>::iterator itA;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
 
     #pragma omp parallel for
     for (long int a = 0; a < A->diagonalMap.size(); a++) {
         auto itA = std::next(A->diagonalMap.begin(), a);
         long int diagonal_index = itA->first;
-        diagonal *diag = itA->second;
+        std::shared_ptr<diagonal> diag = itA->second;
         long int diagonal_length = diag->dLength;
 
         #pragma omp parallel for
@@ -1427,45 +1442,46 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
             if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
                 continue;
             }
-            diaQMatrix *kron_block;
+            std::shared_ptr<diaQMatrix> kron_block;
             // dynamic programming for unique kron blocks
             #pragma omp critical
             {
                 if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
                     kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
-                    unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
+                    unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> >(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
                 } else {
                     kron_block = unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]))->second;
                 }
             }
 
-            long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
-            std::unordered_map<long int, diagonal*>::iterator itK;
+            std::shared_ptr<long int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
+            std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itK;
 
             #pragma omp parallel for
             for (long int b = 0; b < kron_block->diagonalMap.size(); b++) {
                 auto itK = std::next(kron_block->diagonalMap.begin(), b);
                 long int kron_block_diag_index = itK->first;
-                diagonal *kron_block_diag = itK->second;
+                std::shared_ptr<diagonal> kron_block_diag = itK->second;
                 long int kron_block_diag_length = kron_block_diag->dLength;
 
                 #pragma omp parallel for
                 for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
-                    long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
-                    long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
-                    long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                    std::shared_ptr<long int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                    // long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    // std::shared_ptr<long int[]> res_mat_pos = std::make_shared<long int[]>(2){A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    std::shared_ptr<long int[]> res_mat_pos = std::shared_ptr<long int[]>(new long int[2]);
+                    res_mat_pos[0] = A_pos[0] * shape_b[0] + B_mat_pos[0];
+                    res_mat_pos[1] = A_pos[1] * shape_b[1] + B_mat_pos[1];
+                    std::shared_ptr<long int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
                     #pragma omp critical
                     {
                         result->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], result->getDiagonalLength(res_diag_pos[0]), kron_block_diag->realValues[kron_block_diag_position], kron_block_diag->imagValues[kron_block_diag_position]);
                     }
 
-                    delete[] B_mat_pos;
-                    delete[] res_diag_pos;
                 }
             }
-            delete[] A_pos;
         }
     }
 
@@ -1494,7 +1510,7 @@ diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B) {
     return result;
 }
 
-diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
+std::shared_ptr<diaQMatrix> identity_kron_matrix(long int n, std::shared_ptr<diaQMatrix> A) {
 
     #ifdef DEEP_DEBUG
         printf("\tdiaq::identity_kron_matrix\n");
@@ -1512,15 +1528,16 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     // assume a nxn identity matrix, which has one diagonal of length N, in index 0.
     // we just repeat A, N times in the result matrix
     long int *result_shape = new long int[2] {N * A->matrix_shape[0], N * A->matrix_shape[1]};
-    diaQMatrix *result = new diaQMatrix(&result_shape);
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (long int i = 0; i < diagMap.size(); i++) {
         auto it = std::next(diagMap.begin(), i);
         long int dIndex = it->first;
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         // printf("A's diagonal\n");
         // diag->print();
         long int dLength = diag->dLength;
@@ -1530,7 +1547,8 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
 
         // result diag
         long int new_dLength = result->getDiagonalLength(dIndex); // TODO: there should be a better way to get this using n and dLength.
-        diagonal *newDiag = new diagonal(dIndex, new_dLength);
+        // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, new_dLength);
+        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, new_dLength);
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
@@ -1561,7 +1579,7 @@ diaQMatrix *identity_kron_matrix(long int n, diaQMatrix *A) {
     return result;
 }
 
-void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y) {
+void identity_kron_matrix_times_vector(long int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
 
     #ifdef DEBUG
         // start timer
@@ -1576,8 +1594,8 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     long long int y_len = y->numRows; // same as x->numRows;
     long int A_size = A->matrix_shape[0];
@@ -1596,7 +1614,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
             auto it = std::next(diagMap.begin(), di);
             // now we can do element wise!
             long int dIndex = it->first;
-            diagonal *diag = it->second;
+            std::shared_ptr<diagonal> diag = it->second;
             long int dLength = diag->dLength;
             valType *real_vals = diag->realValues;
             valType *imag_vals = diag->imagValues;
@@ -1630,7 +1648,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 }
 
 
-void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+void identity_kron_matrix_times_vector(long int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger) {
 
     #ifdef DEBUG
         // start timer
@@ -1640,20 +1658,24 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
     n = 1L << n;
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // std::shared_ptr<long int> new_gate_shape = std::make_shared<long int>(2) {q_diff_exp, q_diff_exp};
+    std::shared_ptr<long int[]> new_gate_shape = std::shared_ptr<long int[]>(new long int[2]);
+    new_gate_shape[0] = q_diff_exp;
+    new_gate_shape[1] = q_diff_exp;
 
-    // vector *y = new vector(n * A->matrix_shape[0]);
+    // std::shared_ptr<vector> y = new vector(n * A->matrix_shape[0]);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
@@ -1731,8 +1753,6 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
         }
     }
 
-    free(new_gate_shape);
-
     #ifdef DEBUG
         // measure end time
         auto end = std::chrono::high_resolution_clock::now();
@@ -1744,7 +1764,7 @@ void identity_kron_matrix_times_vector(long int n, diaQMatrix *A, vector *x, vec
 
 }
 
-void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix *gate, long int after, vector *x, vector *y) {
+void identity_kron_matrix_kron_identity_times_vector(long int before, std::shared_ptr<diaQMatrix> gate, long int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
     #ifdef DEBUG
@@ -1767,7 +1787,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
-    // vector *y = new vector(after * before * gate->matrix_shape[0]);
+    // std::shared_ptr<vector> y = new vector(after * before * gate->matrix_shape[0]);
     // y->print();
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
@@ -1776,8 +1796,8 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for collapse(2)
     for (long int rep = 0; rep < before_N; rep++) {
@@ -1785,7 +1805,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
             for (long int a = 0; a < diagMap.size(); a++) {
                 auto it = std::next(diagMap.begin(), a);
                 long int dIndex = it->first;
-                diagonal *diag = it->second;
+                std::shared_ptr<diagonal> diag = it->second;
                 long int dLength = diag->dLength;
                 valType *real_vals = diag->realValues;
                 valType *imag_vals = diag->imagValues;
@@ -1816,7 +1836,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
 
 }
 
-void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix *gate, long int after, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+void identity_kron_matrix_kron_identity_times_vector(long int before, std::shared_ptr<diaQMatrix> gate, long int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger) {
 
     #ifdef DEBUG
         // start timer
@@ -1827,27 +1847,31 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
     before = 1L << before;
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // std::shared_ptr<long int> new_gate_shape = std::make_shared<long int>(2) {q_diff_exp, q_diff_exp};
+    std::shared_ptr<long int[]> new_gate_shape = std::shared_ptr<long int[]>(new long int[2]);
+    new_gate_shape[0] = q_diff_exp;
+    new_gate_shape[1] = q_diff_exp;
 
     long int x_length = x->numRows;
 
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
-    // vector *y = new vector(after * before * gate->matrix_shape[0]);
+    // std::shared_ptr<vector> y = new vector(after * before * gate->matrix_shape[0]);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (long int a = 0; a < diagMap.size(); a++) {
         auto it = std::next(diagMap.begin(), a);
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
@@ -2198,7 +2222,7 @@ void identity_kron_matrix_kron_identity_times_vector(long int before, diaQMatrix
 
 }
 
-void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector *y) {
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, long n, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
@@ -2220,22 +2244,22 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
     // if(before * A->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
-    // vector *y = new vector(before * A->matrix_shape[0], 0.0, 0.0);
+    // std::shared_ptr<vector> y = new vector(before * A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     // (A kron I) times x = y
     #pragma omp parallel for collapse(2)
     for (long int j = 0; j < N; j++) {
         for (long int a = 0; a < diagMap.size(); a++) {
             auto it = std::next(diagMap.begin(), a);
-            diagonal *diag = it->second;
+            std::shared_ptr<diagonal> diag = it->second;
             valType *real_vals = diag->realValues;
             valType *imag_vals = diag->imagValues;
             long int dIndex = it->first;
@@ -2282,7 +2306,7 @@ void matrix_kron_identity_times_vector(diaQMatrix *A, long n, vector *x, vector 
 
 }
 
-void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, vector *y, long int qubit_smaller, long int qubit_larger) {
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, long after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, long int qubit_smaller, long int qubit_larger) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
@@ -2293,27 +2317,31 @@ void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, 
     after = 1L << after;
 
     long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
+    // std::shared_ptr<long int[]> new_gate_shape = std::make_shared<long int[]>(2) {q_diff_exp, q_diff_exp};
+    std::shared_ptr<long int[]> new_gate_shape = std::shared_ptr<long int[]>(new long int[2]);
+    new_gate_shape[0] = q_diff_exp;
+    new_gate_shape[1] = q_diff_exp;
 
     long int x_length = x->numRows;
 
     // if(before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
-    // vector *y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
+    // std::shared_ptr<vector> y = new vector(before * gate->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, diagonal*> diagMap = gate->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (long int a = 0; a < diagMap.size(); a++) {
         auto it = std::next(diagMap.begin(), a);
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
@@ -2869,7 +2897,7 @@ void matrix_kron_identity_times_vector(diaQMatrix *gate, long after, vector *x, 
 
 }
 
-diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine this with operations that happen later.
+std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, long int n) { // we can combine this with operations that happen later.
 
     #ifdef DEBUG
         // start timer
@@ -2881,22 +2909,24 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
     long int *result_shape = new long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
-    diaQMatrix *result = new diaQMatrix(&result_shape);
-    std::unordered_map<long int, diagonal*> diagMap = A->diagonalMap;
-    std::unordered_map<long int, diagonal*>::iterator it;
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
+    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for(long int di = 0; di < diagMap.size(); di++) {
         auto it = std::next(diagMap.begin(), di);
         long int dIndex = it->first;
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         long int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
 
         // result diag
-        diagonal *newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
+        // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex * n, result->getDiagonalLength(dIndex * n));
+        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex * n, result->getDiagonalLength(dIndex * n));
 
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
@@ -2927,7 +2957,7 @@ diaQMatrix *matrix_kron_identity(diaQMatrix *A, long int n) { // we can combine 
     return result;
 }
 
-diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, long int after) {
+std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(long int before, std::shared_ptr<diaQMatrix> A, long int after) {
     #ifdef DEBUG
         auto start = std::chrono::high_resolution_clock::now();
     #endif
@@ -2947,21 +2977,22 @@ diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, l
     long int after_N = 1L << after;
 
     long int *result_shape = new long int[2] {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
-    diaQMatrix *result = new diaQMatrix(&result_shape);
-    std::unordered_map<long int, diagonal*>::iterator it;
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
 
     // // #pragma omp parallel for
     // for(long int di = 0; di < diagMap.size(); di++) {
     //     auto it = std::next(diagMap.begin(), di);
     //     long int dIndex = it->first;
-    //     diagonal *diag = it->second;
+    //     std::shared_ptr<diagonal> diag = it->second;
     //     long int dLength = diag->dLength;
     //     valType *real_vals = diag->realValues;
     //     valType *imag_vals = diag->imagValues;
 
     //     long int new_diag_index = dIndex * after_N;
     //     long int new_diag_length = result->getDiagonalLength(new_diag_index);
-    //     diagonal *newDiag = new diagonal(new_diag_index, new_diag_length);
+    //     std::shared_ptr<diagonal> newDiag = new diagonal(new_diag_index, new_diag_length);
     //     valType *newDiag_real_vals = newDiag->realValues;
     //     valType *newDiag_imag_vals = newDiag->imagValues;
 
@@ -2983,14 +3014,15 @@ diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, l
     for(long int di = 0; di < A->diagonalMap.size(); di++) {
         auto it = std::next(A->diagonalMap.begin(), di);
         long int dIndex = it->first;
-        diagonal *diag = it->second;
+        std::shared_ptr<diagonal> diag = it->second;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
         long int dLength = diag->dLength;
 
         long int new_diag_index = dIndex * after_N;
         long int new_diag_length = result->getDiagonalLength(new_diag_index);
-        diagonal *newDiag = new diagonal(new_diag_index, new_diag_length);
+        // std::shared_ptr<diagonal> newDiag = new diagonal(new_diag_index, new_diag_length);
+        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(new_diag_index, new_diag_length);
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
@@ -3026,7 +3058,7 @@ diaQMatrix *identity_kron_matrix_kron_identity(long int before, diaQMatrix *A, l
     return result;
 }
 
-diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
+std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
     // A: m x n
     // B: p x q
     // C: mp x nq
@@ -3052,24 +3084,24 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     std::map<std::pair<long int, long int>, std::pair<valType, valType>> kron_map;
 
     // map of unique A elements and their corresponding kron blocks
-    std::map<std::pair<valType, valType>, diaQMatrix *> unique_kron_blocks;
+    std::map<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> > unique_kron_blocks;
 
     // Calculate dimensions for the resulting matrix
     long int *result_shape = new long int[2];
     result_shape[0] = shape_a[0] * shape_b[0];
     result_shape[1] = shape_a[1] * shape_b[1];
-    diaQMatrix *result = new diaQMatrix(&result_shape);
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
 
-    std::unordered_map<long int, diagonal*> A_diagonalMap = A->getDiagonalMap();
-    std::unordered_map<long int, diagonal*>::iterator itA;
+    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
 
     // printf("kron here 0\n");
 
     // for each element in A, do multiply_by_scalar with B and add to kron_list.
     // paralleize this later. TODO
-    for (itA = A_diagonalMap.begin(); itA != A_diagonalMap.end(); itA++) {
+    for (itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
         long int diagonal_index = itA->first;
-        diagonal *diag = itA->second;
+        std::shared_ptr<diagonal> diag = itA->second;
         long int diagonal_length = diag->dLength;
 
         #pragma omp parallel for
@@ -3081,19 +3113,19 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
 
             // printf("kron here 1\n");
 
-            diaQMatrix *kron_block;
+            std::shared_ptr<diaQMatrix> kron_block;
             // dynamic programming for unique kron blocks
             if(unique_kron_blocks.find(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position])) == unique_kron_blocks.end()) {
                 kron_block = multiply_by_scalar(B, diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
                 // printf("printing kron_block\n");
                 // kron_block->print();
                 // store in unique_kron_blocks
-                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, diaQMatrix *>(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
+                unique_kron_blocks.insert(std::pair<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> >(std::pair<valType, valType>(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]), kron_block));
             }
 
             // printf("kron here 2\n");
 
-            long int *A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
+            std::shared_ptr<long int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
             std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
             std::pair<valType, valType> val = std::make_pair(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
             kron_map.insert(std::pair<std::pair<long int, long int>, std::pair<valType, valType>>(key, val));
@@ -3120,11 +3152,11 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
                 A_mat_pos[0] = it->first.first;
                 A_mat_pos[1] = it->first.second;
                 // get kron_block from unique_kron_blocks
-                diaQMatrix *kron_block = unique_kron_blocks.find(it->second)->second;
+                std::shared_ptr<diaQMatrix> kron_block = unique_kron_blocks.find(it->second)->second;
 
                 // we now have to add to result's res_diag_index at res_diag_pos
-                std::unordered_map<long int, diagonal*> kron_block_diagMap = kron_block->getDiagonalMap();
-                std::unordered_map<long int, diagonal*>::iterator itK;
+                std::unordered_map<long int, std::shared_ptr<diagonal> > kron_block_diagMap = kron_block->getDiagonalMap();
+                std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itK;
 
                 #pragma omp parallel
                 {
@@ -3133,15 +3165,15 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
                         #pragma omp task
                         {
                             long int kron_block_diag_index = itK->first;
-                            diagonal *kron_block_diag = itK->second;
+                            std::shared_ptr<diagonal> kron_block_diag = itK->second;
                             long int kron_block_diag_length = kron_block_diag->dLength;
 
                             #pragma omp parallel for
                             for(long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
-                                long int *B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
-                                long int res_mat_pos[2] = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
-                                long int *res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                                std::shared_ptr<long int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                                std::shared_ptr<long int[]> res_mat_pos = result->getMatrixPosition(A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]);
+                                std::shared_ptr<long int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
                                 #ifdef DEEP_DEBUG
                                     std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
@@ -3187,23 +3219,23 @@ diaQMatrix *kron_product_old(diaQMatrix *A, diaQMatrix *B) {
     return result;
 }
 
-diaQMatrix *kron_product(diaQMatrix *A, diaQMatrix *B, valType c) {
+std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, valType c) {
     return multiply_by_scalar(kron_product(A, B), c, 1.0);
 }
 
-diaQMatrix* dagger(diaq::diaQMatrix *A) {
+std::shared_ptr<diaQMatrix> dagger(std::shared_ptr<diaQMatrix> A) {
     // dagger is conjugate transpose
     // conjugate first
-    diaQMatrix *res = multiply_by_scalar(A, 1.0, -1.0);
+    std::shared_ptr<diaQMatrix> res = multiply_by_scalar(A, 1.0, -1.0);
     // then transpose
     return transpose(res);
 }
 
-diaQMatrix *conjbar(diaQMatrix *A) {
+std::shared_ptr<diaQMatrix> conjbar(std::shared_ptr<diaQMatrix> A) {
     return multiply_by_scalar(A, 1.0, -1.0);
 }
 
-diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
+std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType t) {
     // Computes e^(-i * A * t) using the Taylor series expansion
     // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
     // Stops when terms become negligibly small or reach a max iteration count.
@@ -3213,15 +3245,16 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     #endif
 
     // Initialize result as the identity matrix
-    diaQMatrix *result = new identityMatrix(A->matrix_shape[0]);
+    // std::shared_ptr<diaQMatrix> result = new identityMatrix(A->matrix_shape[0]);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
-        diagonal *d = A->getDiagonal(0);
+        std::shared_ptr<diagonal> d = A->getDiagonal(0);
         long int dLength = d->dLength;
         valType *real_vals = d->realValues;
         valType *imag_vals = d->imagValues;
 
-        diagonal *res_diag = result->getDiagonal(0);
+        std::shared_ptr<diagonal> res_diag = result->getDiagonal(0);
         valType *res_real_vals = res_diag->realValues;
         valType *res_imag_vals = res_diag->imagValues;
 
@@ -3263,11 +3296,12 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     int max_iterations = 100; // Limit to avoid infinite loops
     valType tolerance = 1e-14; // Tolerance for convergence, I tweaked this myself, is there a better way?
 
-    diaQMatrix *X = A->copy_and_scale_by_imag(-1.0 * t);
+    std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
     // printf("X\n");
     // X->print_meta();
 
-    diaQMatrix *X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
+    // std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
+    std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
     // printf("X_power_i_whole_divided_by_i\n");
     // X_power_i_whole_divided_by_i->print_meta();
 
@@ -3296,27 +3330,26 @@ diaQMatrix* expm_negative(diaQMatrix *A, valType t) {
     return result;
 }
 
-diaQMatrix *diaQMatrix::multiplyMatrix(diaQMatrix *B) {
-    std::unordered_map<long int, diagonal*> BDiagMap = B->diagonalMap;
-    std::unordered_map<long int, diagonal*> newDiagMap;
+std::shared_ptr<diaQMatrix> diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatrix> B) {
+    std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
     #pragma omp parallel for
     for (long int i = 0; i < diagonalMap.size(); i++) {
         auto itA = std::next(diagonalMap.begin(), i);
         long int dIndexA = itA->first;
-        diagonal *dA = itA->second;
+        std::shared_ptr<diagonal> dA = itA->second;
         #pragma omp parallel for
-        for (long int j = 0; j < BDiagMap.size(); j++) {
-            auto itB = std::next(BDiagMap.begin(), j);
+        for (long int j = 0; j < B->diagonalMap.size(); j++) {
+            auto itB = std::next(B->diagonalMap.begin(), j);
             long int dIndexB = itB->first;
-            diagonal *dB = itB->second;
-            diagonal *dNew = multiplyDiagonals(matrix_shape, matrix_shape, dIndexA, dIndexB, dA, dB);
+            std::shared_ptr<diagonal> dB = itB->second;
+            std::shared_ptr<diagonal> dNew = multiplyDiagonals(matrix_shape, matrix_shape, dIndexA, dIndexB, dA, dB);
             if (dNew != nullptr) {
                 newDiagMap.insert({dNew->dIndex, dNew});
             }
         }
     }
     this->diagonalMap = newDiagMap;
-    return this;
+    return std::shared_ptr<diaQMatrix>(this);
 }
 
 } // namespace diaq

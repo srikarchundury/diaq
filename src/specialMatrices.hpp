@@ -21,7 +21,7 @@ class identityMatrix : public diaQMatrix {
 					imag[i] = (valType)0.0;
 				}
 			#endif
-			diagonal *d = new diagonal(0, s, real, imag);
+			std::shared_ptr<diagonal> d = std::make_shared<diagonal>(0, s, real, imag);
 			this->setDiagonal(0, d);
 		}
 };
@@ -43,9 +43,9 @@ class permutationMatrix : public diaQMatrix {
 					}
 				}
 			}
-			denseMatrix *d = new denseMatrix(s, real);
-			diaQMatrix *qs = d->convertToQuantumSparse(this->matrix_shape);
-			this->setDiagonalMap(qs->getDiagonalMap());
+			std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(s, real);
+			std::shared_ptr<diaQMatrix> qs = d->convertToQuantumSparse(this->matrix_shape);
+			this->diagonalMap = qs->diagonalMap;
 			this->matrix_shape = qs->matrix_shape;
 			this->shape = qs->shape;
 			this->size = qs->size;

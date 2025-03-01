@@ -14,8 +14,8 @@
 namespace diaq {
 
 // declarations
-diaQMatrix *product_cuda(diaQMatrix *A, diaQMatrix *B);
-vector *spmv_cuda(diaQMatrix *A, vector *x);
+std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
+std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x);
 
 } // namespace diaq
 
