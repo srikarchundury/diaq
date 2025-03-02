@@ -3,6 +3,7 @@
 
 #include "diagonal.hpp"
 #include "config.hpp"
+#include "vector.hpp"
 
 namespace diaq {
 
@@ -357,6 +358,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         
         std::shared_ptr<diaQMatrix> multiplyMatrix(std::shared_ptr<diaQMatrix> B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
+        std::shared_ptr<vector> multiplyVector(std::shared_ptr<vector> v); // this requires spMV kernel and hence in matrixKernels.cpp
         
         std::shared_ptr<diaQMatrix> inverse() {
             throw std::logic_error("Function not yet implemented.");
@@ -854,11 +856,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         unsigned long int num_diags() {
             return diagonalMap.size();
         }
-        
-        std::vector<unsigned long int> get_diagonals() {
-            std::vector<unsigned long int> res;
+        std::vector<std::shared_ptr<diagonal>> getDiagonals() {
+            std::vector<std::shared_ptr<diagonal>> res;
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                res.push_back(it->first);
+                res.push_back(it->second);
             }
             return res;
         }

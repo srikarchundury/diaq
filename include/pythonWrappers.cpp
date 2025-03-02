@@ -68,6 +68,8 @@ PYBIND11_MODULE(diaq, m) {
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::reference)
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::reference)
+        .def("multiplyMatrix", &diaq::diaQMatrix::multiplyMatrix, py::return_value_policy::reference)
+        .def("multiplyVector", &diaq::diaQMatrix::multiplyVector, py::return_value_policy::reference)
         // operator bindings
         .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::product(a, b);
@@ -79,6 +81,11 @@ PYBIND11_MODULE(diaq, m) {
 			return (*self)[dIndex];
 		}, py::return_value_policy::reference)
 
+        .def(
+            "get_diagonals",
+            [](std::shared_ptr<diaq::diaQMatrix> self) { return self->getDiagonals(); },
+            py::return_value_policy::reference
+        )
 		// .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::reference)
         .def(
             "convertToDenseMatrix",
@@ -402,8 +409,7 @@ PYBIND11_MODULE(diaq, m) {
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x) {
-            auto y = std::make_shared<diaq::vector>(x->numRows);
-            return diaq::spMV(A, x, y);
+			return diaq::spMV(A, x);
         },
         py::arg(),
         py::arg(),
@@ -413,7 +419,8 @@ PYBIND11_MODULE(diaq, m) {
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, std::shared_ptr<diaq::vector> y) {
-            return diaq::spMV(A, x, y);
+            diaq::spMV(A, x, y);
+			return y;
         },
         py::arg(),
         py::arg(),

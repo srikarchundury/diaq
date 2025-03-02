@@ -178,7 +178,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 
     #ifdef DEBUG
         // start timer
-        std::cout << "starting product -- " << std::endl;
+        std::cout << "starting product -- ";
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -1033,7 +1033,14 @@ void diaQMatrix::transpose() {
     *this = *temp;
 }
 
-std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x) {
+    std::shared_ptr<vector> y = std::make_shared<vector>(A->matrix_shape[0], 0.0, 0.0);
+    spMV(A, x, y);
+    // x goes out of scope here and would be deleted by shared_ptr!
+    return y;
+}
+
+void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     #ifdef CUDA_ENABLED
         return spmv_cuda(A, x);
     #else
@@ -1167,8 +1174,6 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
         // log duration
         printf("\t\t spMV took %f milliseconds\n", duration.count()/1000.0);
     #endif
-
-    return y;
 
     #endif
 }
@@ -3322,25 +3327,61 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
 }
 
 std::shared_ptr<diaQMatrix> diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatrix> B) {
-    std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
-    #pragma omp parallel for
-    for (unsigned long int i = 0; i < diagonalMap.size(); i++) {
-        auto itA = std::next(diagonalMap.begin(), i);
-        long int dIndexA = itA->first;
-        std::shared_ptr<diagonal> dA = itA->second;
-        #pragma omp parallel for
-        for (unsigned long int j = 0; j < B->diagonalMap.size(); j++) {
-            auto itB = std::next(B->diagonalMap.begin(), j);
-            long int dIndexB = itB->first;
-            std::shared_ptr<diagonal> dB = itB->second;
-            std::shared_ptr<diagonal> dNew = multiplyDiagonals(matrix_shape, matrix_shape, dIndexA, dIndexB, dA, dB);
-            if (dNew != nullptr) {
-                newDiagMap.insert({dNew->dIndex, dNew});
+
+    #ifdef DEBUG
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = diagonalMap;
+    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+
+    std::vector<std::unordered_map<long int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
+
+    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
+    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
+
+    #pragma omp parallel
+    {
+        int thread_id = omp_get_thread_num();
+        auto &local_map = thread_local_maps[thread_id];
+
+        #pragma omp for
+        for (size_t a = 0; a < vecA.size(); ++a) {
+            for (size_t b = 0; b < vecB.size(); ++b) {
+                std::shared_ptr<diagonal> diagNew = multiplyDiagonals(shared_from_this()->matrix_shape, B->matrix_shape, 
+                                                    vecA[a].first, vecB[b].first, 
+                                                    vecA[a].second, vecB[b].second);
+                if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
+                    local_map[diagNew->dIndex] = diagNew;
+                }
+                // else if (diagNew != NULL) {
+                //     diagNew->free();
+                // } // this is not needed anymore since we moved to smart pointers!
             }
         }
     }
-    this->diagonalMap = newDiagMap;
+
+    // clear old diagonalMap
+    diagonalMap.clear();
+
+    #pragma omp parallel for
+    for (size_t t = 0; t < thread_local_maps.size(); ++t) {
+        for (auto &entry : thread_local_maps[t]) {
+            #pragma omp critical
+            shared_from_this()->addDiagonal(entry.first, entry.second);
+        }
+    }
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t multiplyMatrix took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
+
     return shared_from_this();
+}
+
+std::shared_ptr<vector> diaQMatrix::multiplyVector(std::shared_ptr<vector> V) {
+    return spMV(shared_from_this(), V);
 }
 
 } // namespace diaq

@@ -1749,7 +1749,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(A25->matrix_shape[0], 0.0);
-        y = diaq::spMV(q_A25, x, y);
+        diaq::spMV(q_A25, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -1807,7 +1807,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat_dq->shape[0], 0.0);
-        y = diaq::spMV(mat_dq, x, y);
+        diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -1869,7 +1869,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat_dq->shape[0], 0.0);
-        y = diaq::spMV(mat_dq, x, y);
+        diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -1922,7 +1922,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat_dq->shape[0], 0.0);
-        y = diaq::spMV(mat_dq, x, y);
+        diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -1966,7 +1966,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat_dq->shape[0], 0.0);
-        y = diaq::spMV(mat_dq, x, y);
+        diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -2027,7 +2027,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat_dq->shape[0], 0.0);
-        y = diaq::spMV(mat_dq, x, y);
+        diaq::spMV(mat_dq, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -2091,7 +2091,7 @@ int main(int argc, char **argv) {
         dense_y->print();
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(dense_y->numRows);
-        y = diaq::spMV(q_mat, x, y);
+        diaq::spMV(q_mat, x, y);
         y->print();
         std::cout << " -- " << std::endl;
         std::cout << "Checking correctness: ";
@@ -2144,7 +2144,7 @@ int main(int argc, char **argv) {
 
         std::cout << " --spMV-- " << std::endl;
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(dense_y->numRows);
-        y = diaq::spMV(q_mat, x, y);
+        diaq::spMV(q_mat, x, y);
         y->print();
         
         std::cout << " -- " << std::endl;
@@ -2174,7 +2174,7 @@ int main(int argc, char **argv) {
 
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(16, 1.0);
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
-        correct_y = diaq::spMV(mat, x, correct_y);
+        diaq::spMV(mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
 
@@ -2200,7 +2200,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(mat->shape[0], 1.0, 0.0);
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
-        correct_y = diaq::spMV(mat, x, correct_y);
+        diaq::spMV(mat, x, correct_y);
 
         printf(" -- correct answer -- \n");
         correct_y->print();
@@ -2241,7 +2241,7 @@ int main(int argc, char **argv) {
 
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
-        correct_y = diaq::spMV(mat, x, correct_y);
+        diaq::spMV(mat, x, correct_y);
 
         printf(" -- correct answer -- \n");
         correct_y->print();
@@ -2306,7 +2306,7 @@ int main(int argc, char **argv) {
 
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(vec_length, 0.0);
 
-        correct_y = diaq::spMV(u_mat, x, correct_y);
+        diaq::spMV(u_mat, x, correct_y);
         std::cout << " -- correct answer -- " << std::endl;
         correct_y->print();
 
@@ -2680,7 +2680,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat = diaq::kron_product(id4, gate_matrix);
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(16, 1.0);
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
-        correct_y = diaq::spMV(mat, x, correct_y);
+        diaq::spMV(mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
         printf(" -- new way to do it -- \n");
@@ -2725,7 +2725,7 @@ int main(int argc, char **argv) {
         x->print();
         printf(" -- gives -- \n");
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(kp_2->shape[0], 0.0);
-        y = diaq::spMV(kp_2, x, y);
+        diaq::spMV(kp_2, x, y);
         y->print();
         printf(" -- Now doing identity_kron_matrix_times_vector -- \n");
         std::shared_ptr<diaq::vector> res_v = std::make_shared<diaq::vector>(y->numRows, 0.0);
@@ -2746,7 +2746,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat = diaq::kron_product(id4, qspa);
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(32, 1.0);
         std::shared_ptr<diaq::vector> correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
-        correct_y = diaq::spMV(mat, x, correct_y);
+        diaq::spMV(mat, x, correct_y);
         printf(" -- correct answer -- \n");
         correct_y->print();
         printf(" -- new way to do it -- \n");
@@ -2785,6 +2785,29 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::vector> y = std::make_shared<diaq::vector>(8, 2.0, 1.0);
         std::complex<diaq::valType> res = x->multiply(y);
         std::cout << res << std::endl;
+        std::cout << " -- " << std::endl;
+    }
+    else if (strcmp(argv[1], "multiplyMatrix_1") == 0) {
+        std::cout << " -- testing multiplyMatrix -- " << std::endl;
+        std::shared_ptr<diaq::diaQMatrix> A = A23->convertToQuantumSparse();
+        std::cout << " -- Mat A -- " << std::endl;
+        A->print();
+        std::shared_ptr<diaq::diaQMatrix> B = B23->convertToQuantumSparse();
+        std::cout << " -- Mat B -- " << std::endl;
+        B->print();
+
+        std::shared_ptr<diaq::diaQMatrix> correct_ans = diaq::product(A, B);
+        std::cout << " -- correct answer -- " << std::endl;
+        correct_ans->print();
+        std::cout << " -- " << std::endl;
+
+        std::shared_ptr<diaq::diaQMatrix> C = A->multiplyMatrix(B);
+        std::cout << " -- Mat C = A->multiplyMatrix(B) -- " << std::endl;
+        C->print();
+        std::cout << " -- " << std::endl;
+
+        std::cout << " -- checking correctness -- " << std::endl;
+        std::cout << checkResult(correct_ans, C) << std::endl;
         std::cout << " -- " << std::endl;
     }
     else if (strcmp(argv[1], "expm_negative") == 0 ) {
