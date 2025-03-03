@@ -1,15 +1,11 @@
 #ifndef DIAQ_VECTOR_HPP
 #define DIAQ_VECTOR_HPP
 
-#include <iostream>
-#include <vector>
-#include <complex>
-
 #include "config.hpp"
 
 namespace diaq {
 
-class vector {
+class vector : public std::enable_shared_from_this<vector> {
     public:
         size_t numRows;
         valType* realValues;
@@ -38,11 +34,13 @@ class vector {
                 }
             #endif
         }
+
         vector(size_t M, valType *realVals, valType *imagVals) {
             numRows = M;
             realValues = realVals;
             imagValues = imagVals;
         }
+
         vector(size_t M, valType *realVals) {
             numRows = M;
             realValues = realVals;
@@ -52,6 +50,7 @@ class vector {
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
         }
+
         vector(size_t M, valType init_real, valType init_imag) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
@@ -71,6 +70,7 @@ class vector {
                 }
             #endif
         }
+
         vector(size_t M, valType init_real) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
@@ -80,14 +80,18 @@ class vector {
                 realValues = aligned_alloc_helper(M * sizeof(valType));
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
+            #pragma omp parallel for
             for (size_t i = 0; i < M; ++i) {
                 realValues[i] = init_real;
                 imagValues[i] = 0.0;
             }
         }
-
         ~vector() {
-            this->free();
+            #ifdef DEEP_DEBUG
+                std::cout << "vector destructor called" << std::endl;
+            #endif
+            std::free(realValues);
+            std::free(imagValues); // needed because we allocate memory ourserlves unlike shared_ptr! This place and under diagonal.hpp & denseMatrix.hpp are the only places where we need to free memory manually!!!
         }
 
         void zeroify() {
@@ -123,10 +127,10 @@ class vector {
             return v;
         }
 
-        vector *dagger() {
-            vector *v = new vector(numRows);
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+        std::shared_ptr<vector> dagger() {
+            std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for
             for (size_t i = 0; i < numRows; ++i) {
@@ -136,11 +140,11 @@ class vector {
             return v;
         }
 
-        std::complex<valType> multiply(vector *v) {
+        std::complex<valType> multiply(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
             valType imag_res = 0.0;
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res,imag_res)
             for (size_t i = 0; i < numRows; ++i) {
@@ -150,10 +154,10 @@ class vector {
             return std::complex<valType>(real_res, imag_res);
         }
 
-        valType daggerMultiplyReal(vector *v) {
+        valType daggerMultiplyReal(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
-            valType *realValues = v->realValues;
-            valType *imagValues = v->imagValues;
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res)
             for (size_t i = 0; i < numRows; ++i) {
@@ -182,7 +186,7 @@ class vector {
         }
 
         valType sparsity() {
-            long int num_nonzeros = 0;
+            unsigned int num_nonzeros = 0;
             for (size_t i = 0; i < numRows; ++i) {
                 if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     num_nonzeros++;
@@ -198,12 +202,9 @@ class vector {
         valType **getRealValuePtr() {
             return &realValues;
         }
+
         valType **getImagValuePtr() {
             return &imagValues;
-        }
-        void free() {
-            std::free(realValues);
-            std::free(imagValues);
         }
 };
 

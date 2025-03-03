@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include <memory>
 
 namespace diaq {
 
@@ -185,7 +186,7 @@ namespace diaq {
     // Stop PAPI counters
     void stopPAPI(std::string message) {
         // Stop counting
-        long int num_events = papi_event_names.size();
+        int num_events = papi_event_names.size();
         long long values[num_events];
         if (PAPI_stop(EventSet, values) != PAPI_OK) {
             std::cerr << "PAPI stop counters error!" << std::endl;

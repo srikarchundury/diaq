@@ -1,12 +1,25 @@
 #ifndef DIAQ_CONFIG_HPP
 #define DIAQ_CONFIG_HPP
 
-#include <thread>
 #include <iostream>
+#include <thread>
 #include <omp.h>
 #include <cstring>
-#include <algorithm> // For std::min
-#include <cstdlib>  // For aligned_alloc
+#include <algorithm>
+#include <cstdlib>
+#include <memory>
+#include <map>
+#include <numeric>
+#include <cstddef>
+#include <unordered_map>
+#include <vector>
+#include <complex>
+#include <string>
+#include <type_traits>
+#include <limits>
+#include <cassert>
+#include <functional>
+#include <random>
 
 #ifdef PAPI_ON
 	#include <papi.h>

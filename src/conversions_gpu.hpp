@@ -1,21 +1,13 @@
 #ifndef DIAQ_CONVERSIONS_GPU_HPP
 #define DIAQ_CONVERSIONS_GPU_HPP
 
-#include <iostream>
-#include <vector>
-#include <map>
-#include <complex>
-#include <cmath>
-#include <omp.h>
-
-
 // CUDA libraries
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"
 #include "cuda_profiler_api.h"
 #include "device_launch_parameters.h"
 
-// DIAQ imports
+// DiaQ imports
 #include "config.hpp"
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
@@ -23,8 +15,8 @@
 namespace diaq {
 
 // declarations
-diaQMatrix *from_numpy_cuda(std::complex<valType> *values, std::vector<long int> shape);
-diaQMatrix *convertToQuantumSparse_cuda(denseMatrix *d, long int *new_shape);
+std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::vector<unsigned int> shape);
+std::shared_ptr<diaQMatrix> convertToQuantumSparse_cuda(std::shared_ptr<denseMatrix> d, unsigned int *new_shape);
 
 } // namespace diaq
 

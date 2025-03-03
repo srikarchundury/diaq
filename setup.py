@@ -6,10 +6,22 @@ import os
 __version__ = "0.0.1"
 cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED environment variable is set to '1'
 
-
 sources = ["include/pythonWrappers.cpp"]
 d_macros = [('VERSION_INFO', __version__)]
-compile_args = ["-std=c++11", "-Wall", "-Wextra", "-O3", "-lstdc++", "-fopenmp", "-mavx2", "-msse2", "-fPIC"]
+compile_args = [
+    # "-std=c++17", # C++17 standard, change to C++11 if needed, the code is compatible with C++11
+    "-std=c++11",
+    "-Wall",
+    "-Wextra",
+    "-funroll-loops",
+    "-O3",
+    "-lstdc++",
+    "-fopenmp",
+    "-mavx2",
+    "-msse2",
+    "-mavx512f", 
+    "-fPIC"
+]
 link_args = ['-lgomp', '-lpthread']
 cpu_lib_dirs = [os.path.abspath("./cpu_build/lib")]
 libs = ["diaq"]

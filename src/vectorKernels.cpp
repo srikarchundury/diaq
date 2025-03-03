@@ -12,9 +12,9 @@ namespace diaq {
  * 
  * @param x the vector to be set to zero
  */
-void zeroize(vector &x) {
-    for (size_t i = 0; i < x.num_rows(); ++i) {
-        x[i] = 0.0;
+void zeroize(std::shared_ptr<vector> x) {
+    for (size_t i = 0; i < x->numRows; ++i) {
+        (*x)[i] = 0.0;
     }
 }
 
@@ -23,9 +23,9 @@ void zeroize(vector &x) {
  *
  * @param x
  */
-void unitize(vector &x) {
-    for (size_t i = 0; i < x.num_rows(); ++i) {
-        x[i] = 1.0;
+void unitize(std::shared_ptr<vector> x) {
+    for (size_t i = 0; i < x->numRows; ++i) {
+        (*x)[i] = 1.0;
     }
 }
 
@@ -36,12 +36,12 @@ void unitize(vector &x) {
  * @param scale     spread of uniform distribution to randomize over
  * @param mean      mean of the uniform distribution to randomize over
  */
-void randomize(vector &x, valType scale, valType mean) {
+void randomize(std::shared_ptr<vector> x, valType scale, valType mean) {
     std::default_random_engine generator;
     std::uniform_real_distribution<valType> distribution(mean - scale, mean + scale);
     static auto dice = std::bind(distribution, generator);
-    for (size_t i = 0; i < x.num_rows(); ++i) {
-        x[i] = std::complex(dice(),dice());
+    for (size_t i = 0; i < x->numRows; ++i) {
+        (*x)[i] = std::complex(dice(),dice());
     }
 }
 
@@ -51,13 +51,13 @@ void randomize(vector &x, valType scale, valType mean) {
  * @param x  the vector
  * @return valType the 1 norm
  */
-valType one_norm(const vector &x) {
+valType one_norm(const std::shared_ptr<vector> x) {
     valType sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (size_t i = 0; i < x.num_rows(); ++i)
+    for (size_t i = 0; i < x->numRows; ++i)
     {
-        sum += std::abs(x[i]);
+        sum += std::abs((*x)[i]);
     }
     return sum;
 }
@@ -68,13 +68,13 @@ valType one_norm(const vector &x) {
  * @param x         The vector
  * @return valType   The norm
  */
-valType two_norm(const vector &x) {
+valType two_norm(const std::shared_ptr<vector> x) {
     valType sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (size_t i = 0; i < x.num_rows(); ++i)
+    for (size_t i = 0; i < x->numRows; ++i)
     {
-        sum += std::norm(x[i]);
+        sum += std::norm((*x)[i]);
     }
     return std::sqrt(sum);
 }
@@ -85,60 +85,61 @@ valType two_norm(const vector &x) {
  * @param x         vector
  * @return valType   Result
  */
-valType inf_norm(const vector &x) {
-        valType result = std::abs(x[0]);
-        for (size_t i = 1; i < x.num_rows(); ++i)
+valType inf_norm(const std::shared_ptr<vector> x) {
+        valType result = std::abs((*x)[0]);
+        for (size_t i = 1; i < x->numRows; ++i)
         {
-            if (std::abs(x[i]) > result)
+            if (std::abs((*x)[i]) > result)
             {
-                result = std::abs(x[i]);
+                result = std::abs((*x)[i]);
             }
         }
         return result;
 }
 
-valType p_norm(const vector &x);
+valType p_norm(const std::shared_ptr<vector> x);
 
-vector operator+(const vector &x, const vector &y);
+std::shared_ptr<vector> operator+(const std::shared_ptr<vector> x, const std::shared_ptr<vector> y);
 
-vector operator-(const vector &x, const vector &y)
+std::shared_ptr<vector> operator-(const std::shared_ptr<vector> &x, const std::shared_ptr<vector> &y)
 {
-    vector z(x.num_rows());
+    assert(x->numRows == y->numRows);
+    auto z = std::make_shared<vector>(x->numRows);
     #pragma omp parallel for
-    for (size_t i = 0; i < z.num_rows(); ++i)
+    for (size_t i = 0; i < z->numRows; ++i)
     {
-        z[i] = x[i] - y[i];
+        (*z)[i] = (*x)[i] - (*y)[i];
     }
     return z;
 }
 
-vector &operator*=(vector &x, valType alpha) {
+std::shared_ptr<vector> &operator*=(std::shared_ptr<vector> &x, valType alpha) {
     #pragma omp parallel for
-    for (size_t i = 0; i < x.num_rows(); ++i)
+    for (size_t i = 0; i < x->numRows; ++i)
     {
-        x[i] *= alpha;
+        (*x)[i] *= alpha;
     }
     return x;
 }
 
-vector &operator+=(vector &x, std::complex<valType> alpha) {
+std::shared_ptr<vector> &operator+=(std::shared_ptr<vector> &x, std::complex<valType> alpha) {
     #pragma omp parallel for
-    for (size_t i = 0; i < x.num_rows(); ++i)
+    for (size_t i = 0; i < x->numRows; ++i)
     {
-        x[i] += alpha;
+        (*x)[i] += alpha;
     }
     return x;
 }
 
-vector &operator+=(vector &x, const vector &y) {
-    assert(x.num_rows() == y.num_rows());
+std::shared_ptr<vector> &operator+=(std::shared_ptr<vector> &x, const std::shared_ptr<vector> y) {
+    assert(x->numRows == y->numRows);
     #pragma omp parallel for
-    for (size_t i = 0; i < x.num_rows(); ++i)
+    for (size_t i = 0; i < x->numRows; ++i)
     {
-        x[i] += y[i];
+        (*x)[i] += (*y)[i];
     }
     return x;
 }
-vector &operator-=(const vector &x, const vector &y);
+std::shared_ptr<vector> &operator-=(const std::shared_ptr<vector> x, const std::shared_ptr<vector> y);
 
 } // namespace diaq
