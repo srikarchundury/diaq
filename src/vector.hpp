@@ -186,7 +186,7 @@ class vector : public std::enable_shared_from_this<vector> {
         }
 
         valType sparsity() {
-            unsigned long int num_nonzeros = 0;
+            unsigned int num_nonzeros = 0;
             for (size_t i = 0; i < numRows; ++i) {
                 if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     num_nonzeros++;

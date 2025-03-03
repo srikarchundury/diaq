@@ -9,7 +9,7 @@
 namespace diaq {
 
 std::complex<valType> *to_numpy(std::shared_ptr<diaQMatrix> A);
-std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned long int> shape);
+std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned int> shape);
 
 std::complex<valType> *to_numpy_vector(std::shared_ptr<vector> v);
 std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, size_t M);

@@ -22,7 +22,7 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::diagonal class and its routines
     py::class_<diaq::diagonal, std::shared_ptr<diaq::diagonal>>(m, "diagonal")
-        .def(py::init<unsigned long int>())
+        .def(py::init<unsigned int>())
         .def_readwrite("dIndex", &diaq::diagonal::dIndex)
         .def_readwrite("dLength", &diaq::diagonal::dLength)
         .def("setValue", &diaq::diagonal::setValue, py::return_value_policy::reference)
@@ -31,7 +31,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("getCoords", &diaq::diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diaq::diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::reference)
-		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned long int d_pos) -> std::complex<diaq::valType> & {
+		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos) -> std::complex<diaq::valType> & {
 			return (*self)[d_pos];
 		}, py::return_value_policy::reference)
 		.def("scale_by_imag", &diaq::diagonal::scale_by_imag, py::return_value_policy::reference)
@@ -40,20 +40,20 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::diaQMatrix class
     py::class_<diaq::diaQMatrix, std::shared_ptr<diaq::diaQMatrix>>(m, "diaQMatrix")
-        .def(py::init<std::unordered_map<long int, std::shared_ptr<diaq::diagonal>>, unsigned long int>())
+        .def(py::init<std::unordered_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
         // -- //
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getItem))
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned long int>)>(&diaq::diaQMatrix::getItem))
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int[]>)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getItem))
+        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getItem))
         // -- //
-		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int[]> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))
-		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned long int[]> (diaq::diaQMatrix::*)(long int, unsigned long int)>(&diaq::diaQMatrix::getMatrixPosition))
+		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned int[]> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getMatrixPosition))
+		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned int[]> (diaq::diaQMatrix::*)(int, unsigned int)>(&diaq::diaQMatrix::getMatrixPosition))
 		// -- //
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(unsigned long int)>(&diaq::diaQMatrix::getDiagonalPosition))
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(std::vector<unsigned long int>)>(&diaq::diaQMatrix::getDiagonalPosition))
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<long int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned long int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getDiagonalPosition))
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getDiagonalPosition))
+		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
         // --- //
         .def("getSize", &diaq::diaQMatrix::getSize, py::return_value_policy::reference)
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
@@ -77,7 +77,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("__add__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::add(a, b);
 		}, py::is_operator())
-		.def("__getitem__", [](std::shared_ptr<diaq::diaQMatrix> self, long int dIndex) -> std::shared_ptr<diaq::diagonal> {
+		.def("__getitem__", [](std::shared_ptr<diaq::diaQMatrix> self, int dIndex) -> std::shared_ptr<diaq::diagonal> {
 			return (*self)[dIndex];
 		}, py::return_value_policy::reference)
 
@@ -94,16 +94,16 @@ PYBIND11_MODULE(diaq, m) {
         )
         .def( // overload
             "convertToDenseMatrix",
-            [](std::shared_ptr<diaq::diaQMatrix> self, unsigned long int *matrix_shape) { return self->convertToDenseMatrix(matrix_shape); },
+            [](std::shared_ptr<diaq::diaQMatrix> self, unsigned int *matrix_shape) { return self->convertToDenseMatrix(matrix_shape); },
             py::arg(),
             py::return_value_policy::reference
         )
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
         .def(
             "matrix_reshape",
-            [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned long int> shape) {
+            [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
                 auto shape_info = shape.request();
-                unsigned long int *shape_ptr = static_cast<unsigned long int *>(shape_info.ptr);
+                unsigned int *shape_ptr = static_cast<unsigned int *>(shape_info.ptr);
                 return self->matrix_reshape(shape_ptr);
             },
             py::arg(),
@@ -111,7 +111,7 @@ PYBIND11_MODULE(diaq, m) {
         )
         .def(
             "transpose",
-            [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned long int> new_order) { return self->transpose(new_order); },
+            [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); },
             py::arg(),
             py::return_value_policy::reference
         )
@@ -119,11 +119,11 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::identityMatrix class
 	py::class_<diaq::identityMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::identityMatrix>>(m, "identityMatrix")
-		.def(py::init<unsigned long int>());
+		.def(py::init<unsigned int>());
 
 	// diaq::permutationMatrix class
 	py::class_<diaq::permutationMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::permutationMatrix>>(m, "permutationMatrix")
-		.def(py::init<unsigned long int, std::vector<unsigned long int>>());
+		.def(py::init<unsigned int, std::vector<unsigned int>>());
 
     // diaq::vector class
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
@@ -139,10 +139,10 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::denseMatrix class
     py::class_<diaq::denseMatrix, std::shared_ptr<diaq::denseMatrix>>(m, "denseMatrix")
-        .def(py::init<unsigned long int, diaq::valType *>())
-        .def(py::init<unsigned long int, diaq::valType *, diaq::valType *>())
-        // .def(py::init<unsigned long int **, diaq::valType *>())
-        // .def(py::init<unsigned long int **, diaq::valType *, diaq::valType *>())
+        .def(py::init<unsigned int, diaq::valType *>())
+        .def(py::init<unsigned int, diaq::valType *, diaq::valType *>())
+        // .def(py::init<unsigned int **, diaq::valType *>())
+        // .def(py::init<unsigned int **, diaq::valType *, diaq::valType *>())
         .def_readwrite("size", &diaq::denseMatrix::size)
         .def_readwrite("matrix_shape", &diaq::denseMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::denseMatrix::shape)
@@ -157,13 +157,13 @@ PYBIND11_MODULE(diaq, m) {
         .def("getTargetDiagIndex_onlydiags", &diaq::denseMatrix::getTargetDiagIndex_onlydiags, py::return_value_policy::reference)
         .def(
             "convertToQuantumSparse",
-            [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned long int> shape) { return self->convertToQuantumSparse(shape); },
+            [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned int> shape) { return self->convertToQuantumSparse(shape); },
             py::arg(),
             py::return_value_policy::reference
         )
         .def(
             "convertToQuantumSparse",
-            [](std::shared_ptr<diaq::denseMatrix> self, unsigned long int *matrix_shape) { return self->convertToQuantumSparse(matrix_shape); },
+            [](std::shared_ptr<diaq::denseMatrix> self, unsigned int *matrix_shape) { return self->convertToQuantumSparse(matrix_shape); },
             py::arg(),
             py::return_value_policy::reference
         )
@@ -179,7 +179,7 @@ PYBIND11_MODULE(diaq, m) {
         // m.def("from_numpy", &diaq::from_numpy, py::return_value_policy::reference);
         m.def(
         "from_numpy",
-        [](py::array_t<std::complex<diaq::valType>> vals, std::vector<unsigned long int> shape) {
+        [](py::array_t<std::complex<diaq::valType>> vals, std::vector<unsigned int> shape) {
             // Access the buffer_info of the NumPy arrays
             auto vals_info = vals.request();
             // Check if the input arrays have the correct dimensions
@@ -202,7 +202,7 @@ PYBIND11_MODULE(diaq, m) {
             // Access the buffer_info of the NumPy arrays
             auto vals_info = vals.request();
             // make shape
-            std::vector<unsigned long int> shape;
+            std::vector<unsigned int> shape;
             for (int i = 0; i < vals_info.ndim; i++) {
             shape.push_back(vals_info.shape[i]);
             }
@@ -257,9 +257,9 @@ PYBIND11_MODULE(diaq, m) {
         m.def("reshape", &diaq::reshape, py::return_value_policy::reference);
         m.def(
         "matrix_reshape",
-        [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned long int> shape) {
+        [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned int> shape) {
             auto shape_info = shape.request();
-            unsigned long int *shape_ptr = static_cast<unsigned long int *>(shape_info.ptr);
+            unsigned int *shape_ptr = static_cast<unsigned int *>(shape_info.ptr);
             return diaq::matrix_reshape(A, shape_ptr);
         },
         py::arg(),
@@ -269,26 +269,26 @@ PYBIND11_MODULE(diaq, m) {
         m.def("array", &diaq::array, py::return_value_policy::reference);
         m.def(
         "tensordot",
-        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B, std::vector<std::vector<unsigned long int> > axes) { return diaq::tensordot(A, B, axes); },
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) { return diaq::tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
-        py::arg("axes") = std::vector<unsigned long int>{},
+        py::arg("axes") = std::vector<unsigned int>{},
         py::return_value_policy::reference
         );
 
     // overloading tensordot for quimb to work with contegra (seems like opt_einsum is not called now, with latest quimb)
     m.def(
         "tensordot",
-        [](py::array_t<std::complex<diaq::valType>> arr1, py::array_t<std::complex<diaq::valType>> arr2, std::vector<std::vector<unsigned long int>> axes) {
+        [](py::array_t<std::complex<diaq::valType>> arr1, py::array_t<std::complex<diaq::valType>> arr2, std::vector<std::vector<unsigned int>> axes) {
             // Convert arr1 to diaq::diaQMatrix
             auto arr1_info = arr1.request();
-            std::vector<unsigned long int> shape1(arr1_info.shape.begin(), arr1_info.shape.end());
+            std::vector<unsigned int> shape1(arr1_info.shape.begin(), arr1_info.shape.end());
             std::complex<diaq::valType>* arr1_ptr = static_cast<std::complex<diaq::valType>*>(arr1_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat1 = diaq::from_numpy(arr1_ptr, shape1);
 
             // Convert arr2 to diaq::diaQMatrix
             auto arr2_info = arr2.request();
-            std::vector<unsigned long int> shape2(arr2_info.shape.begin(), arr2_info.shape.end());
+            std::vector<unsigned int> shape2(arr2_info.shape.begin(), arr2_info.shape.end());
             std::complex<diaq::valType>* arr2_ptr = static_cast<std::complex<diaq::valType>*>(arr2_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat2 = diaq::from_numpy(arr2_ptr, shape2);
 
@@ -299,17 +299,17 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg("arr1"),
         py::arg("arr2"),
-        py::arg("axes") = std::vector<std::vector<unsigned long int>>{},
+        py::arg("axes") = std::vector<std::vector<unsigned int>>{},
         py::return_value_policy::reference
     );
 
     // Overload for tensordot where first argument is diaQMatrix and second is NumPy array
     m.def(
         "tensordot",
-        [](std::shared_ptr<diaq::diaQMatrix> mat, py::array_t<std::complex<diaq::valType>> arr, std::vector<std::vector<unsigned long int>> axes) {
+        [](std::shared_ptr<diaq::diaQMatrix> mat, py::array_t<std::complex<diaq::valType>> arr, std::vector<std::vector<unsigned int>> axes) {
             // Convert the NumPy array to diaQMatrix
             auto arr_info = arr.request();
-            std::vector<unsigned long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat_arr = diaq::from_numpy(arr_ptr, shape);
 
@@ -320,17 +320,17 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg("mat"),
         py::arg("arr"),
-        py::arg("axes") = std::vector<std::vector<unsigned long int>>{},
+        py::arg("axes") = std::vector<std::vector<unsigned int>>{},
         py::return_value_policy::reference
     );
 
     // Overload for tensordot where first argument is NumPy array and second is diaQMatrix
     m.def(
         "tensordot",
-        [](py::array_t<std::complex<diaq::valType>> arr, std::shared_ptr<diaq::diaQMatrix> mat, std::vector<std::vector<unsigned long int>> axes) {
+        [](py::array_t<std::complex<diaq::valType>> arr, std::shared_ptr<diaq::diaQMatrix> mat, std::vector<std::vector<unsigned int>> axes) {
             // Convert the NumPy array to diaQMatrix
             auto arr_info = arr.request();
-            std::vector<unsigned long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat_arr = diaq::from_numpy(arr_ptr, shape);
 
@@ -341,25 +341,25 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg("arr"),
         py::arg("mat"),
-        py::arg("axes") = std::vector<std::vector<unsigned long int>>{},
+        py::arg("axes") = std::vector<std::vector<unsigned int>>{},
         py::return_value_policy::reference
     );
 
     m.def(
         "transpose",
-        [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned long int> new_order) { return diaq::transpose(A, new_order); },
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned int> new_order) { return diaq::transpose(A, new_order); },
         py::arg(),
-        py::arg("axes") = std::vector<unsigned long int>{},
+        py::arg("axes") = std::vector<unsigned int>{},
         py::return_value_policy::reference
     );
 
     // New overload for transpose with NumPy array as input
     m.def(
         "transpose",
-        [](py::array_t<std::complex<diaq::valType>> arr, std::vector<unsigned long int> new_order) {
+        [](py::array_t<std::complex<diaq::valType>> arr, std::vector<unsigned int> new_order) {
             // Convert the NumPy array to diaQMatrix
             auto arr_info = arr.request();
-            std::vector<unsigned long int> shape(arr_info.shape.begin(), arr_info.shape.end());
+            std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat = diaq::from_numpy(arr_ptr, shape);
 
@@ -369,7 +369,7 @@ PYBIND11_MODULE(diaq, m) {
             return result;
         },
         py::arg("arr"),
-        py::arg("axes") = std::vector<unsigned long int>{},
+        py::arg("axes") = std::vector<unsigned int>{},
         py::return_value_policy::reference
     );
 
@@ -383,7 +383,7 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "matrix_kron_identity",
-        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned long int size) { return diaq::matrix_kron_identity(A, size); },
+        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int size) { return diaq::matrix_kron_identity(A, size); },
         py::arg(),
         py::arg(),
         py::return_value_policy::reference
@@ -391,7 +391,7 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "identity_kron_matrix",
-        [](unsigned long int size, std::shared_ptr<diaq::diaQMatrix> A) { return diaq::identity_kron_matrix(size, A); },
+        [](unsigned int size, std::shared_ptr<diaq::diaQMatrix> A) { return diaq::identity_kron_matrix(size, A); },
         py::arg(),
         py::arg(),
         py::return_value_policy::reference
@@ -399,7 +399,7 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "identity_kron_matrix_kron_identity",
-        [](unsigned long int size1, std::shared_ptr<diaq::diaQMatrix> A, unsigned long int size2) { return diaq::identity_kron_matrix_kron_identity(size1, A, size2); },
+        [](unsigned int size1, std::shared_ptr<diaq::diaQMatrix> A, unsigned int size2) { return diaq::identity_kron_matrix_kron_identity(size1, A, size2); },
         py::arg(),
         py::arg(),
         py::arg(),
@@ -430,7 +430,7 @@ PYBIND11_MODULE(diaq, m) {
     
     // m.def(
     //     "einsum",
-    //     [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned long int> axes) { return diaq::einsum(A, axes); },
+    //     [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned int> axes) { return diaq::einsum(A, axes); },
     //     py::arg(),
     //     py::arg("axes"),
     //     py::return_value_policy::reference

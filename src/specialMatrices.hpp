@@ -8,7 +8,7 @@ namespace diaq {
 
 class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<identityMatrix> {
 	public:
-		identityMatrix(unsigned long int s) : diaQMatrix(s) {
+		identityMatrix(unsigned int s) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1
 				valType *real = (valType *)calloc(s, sizeof(valType));
 				valType *imag = (valType *)calloc(s, sizeof(valType));
@@ -17,7 +17,7 @@ class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<id
 				valType *imag = aligned_alloc_helper(s * sizeof(valType));
 			#endif
 			#pragma omp parallel for
-			for(unsigned long int i = 0; i < s; i++) {
+			for(unsigned int i = 0; i < s; i++) {
 				real[i] = (valType)1.0;
 				imag[i] = (valType)0.0;
 			}
@@ -28,14 +28,14 @@ class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<id
 
 class permutationMatrix : public diaQMatrix, public std::enable_shared_from_this<permutationMatrix> {
 	public:
-		permutationMatrix(unsigned long int s, std::vector<unsigned long int> row_order) : diaQMatrix(s) {
+		permutationMatrix(unsigned int s, std::vector<unsigned int> row_order) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1
 				valType *real = (valType *)calloc(s * s, sizeof(valType));
 			#else
 				valType *real = aligned_alloc_helper(s * s * sizeof(valType));
 			#endif
-			for(unsigned long int i = 0 ; i < s; i++) {
-				for(unsigned long int j = 0; j < s; j++) {
+			for(unsigned int i = 0 ; i < s; i++) {
+				for(unsigned int j = 0; j < s; j++) {
 					if(j == row_order[i]) {
 						real[i * s + j] = 1;
 					} else {

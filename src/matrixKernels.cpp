@@ -23,9 +23,9 @@ namespace diaq {
  * 
  * @return NULL if zero, else diagonal C
  */
-unsigned long int getDiagonalLength(long int dIndex, unsigned long int *shape) {
+unsigned int getDiagonalLength(int dIndex, unsigned int *shape) {
     // std::cout << "diag_Index = " << dIndex << " ";
-    unsigned long int lenRes;
+    unsigned int lenRes;
     if(dIndex < 0) {
         lenRes = shape[0] + dIndex;
     } else if(dIndex > 0) {
@@ -42,28 +42,28 @@ unsigned long int getDiagonalLength(long int dIndex, unsigned long int *shape) {
     // std::cout << "lenRes = " << lenRes << std::endl;
     return lenRes;
 }
-unsigned long int getDiagonalLength(long int dIndex, std::shared_ptr<unsigned long int[]> matrix_shape) {
+unsigned int getDiagonalLength(int dIndex, std::shared_ptr<unsigned int[]> matrix_shape) {
     return getDiagonalLength(dIndex, matrix_shape.get());
 }
-std::shared_ptr<diagonal> multiplyDiagonals(unsigned long int *shapeA, unsigned long int *shapeB, long int indexA, long int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB) {
-    long int res_index = indexA + indexB;
-    if (res_index <= 0 && static_cast<long int>(shapeA[0]) <= abs(res_index)) {
+std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB) {
+    int res_index = indexA + indexB;
+    if (res_index <= 0 && static_cast<int>(shapeA[0]) <= abs(res_index)) {
         return NULL;
-    } else if (res_index > 0 && static_cast<long int>(shapeB[1]) <= res_index) {
+    } else if (res_index > 0 && static_cast<int>(shapeB[1]) <= res_index) {
         return NULL;
     }
-    unsigned long int lenDiagA = diagA->dLength;
-    unsigned long int lenDiagB = diagB->dLength;
+    unsigned int lenDiagA = diagA->dLength;
+    unsigned int lenDiagB = diagB->dLength;
     // result matrix has dimensions {shapeA[0], shapeB[1]}
-    std::shared_ptr<unsigned long int[]> res_dims(new unsigned long int[2]{shapeA[0], shapeB[1]});
-    unsigned long int lenRes = getDiagonalLength(res_index, res_dims);
+    std::shared_ptr<unsigned int[]> res_dims(new unsigned int[2]{shapeA[0], shapeB[1]});
+    unsigned int lenRes = getDiagonalLength(res_index, res_dims);
     // std::shared_ptr<diagonal> res = new diagonal(res_index, lenRes);
     std::shared_ptr<diagonal> res = std::make_shared<diagonal>(res_index, lenRes);
 
     // std::cout << "diagonal length = " << lenRes << std::endl;
-    long int offsetA = abs(indexA);  // Absolute value of indexA
-    long int offsetB = abs(indexB);  // Absolute value of indexB
-    long int jump = 0;  // Initialize jump
+    int offsetA = abs(indexA);  // Absolute value of indexA
+    int offsetB = abs(indexB);  // Absolute value of indexB
+    int jump = 0;  // Initialize jump
 
     // Case 1: indexA is above the main diagonal (indexA > 0)
     if (indexA > 0) { 
@@ -132,7 +132,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(unsigned long int *shapeA, unsigned 
     }
 
     // Apply the jump if necessary
-    long int k = (jump != 0) ? jump : 0;  // Set k to jump if jump > 0
+    int k = (jump != 0) ? jump : 0;  // Set k to jump if jump > 0
 
 	valType *real_vals_a = diagA->realValues;
     valType *imag_vals_a = diagA->imagValues;
@@ -259,16 +259,16 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     //     } // ends omp single
     // } // ends omp parallel
 
-    unsigned long int *d = new unsigned long int[2];
+    unsigned int *d = new unsigned int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
     // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(&d);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&d);
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
-    std::vector<std::unordered_map<long int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
-    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
-    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    std::vector<std::unordered_map<int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
+    std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
+    std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
     #pragma omp parallel
     {
         int thread_id = omp_get_thread_num();
@@ -300,44 +300,44 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
 		// --- First matrix ---
-		std::unordered_map<long int, std::shared_ptr<diagonal> > A_diagonalMap = A->diagonalMap;
+		std::unordered_map<int, std::shared_ptr<diagonal> > A_diagonalMap = A->diagonalMap;
         // get keys of A_diagonalMap
-        std::vector<long int> A_keys;
-        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator A_it;
+        std::vector<int> A_keys;
+        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator A_it;
         for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
             A_keys.push_back(A_it->first);
         }
         // print keys
         std::cout << "keys of A_diagonalMap: ";
-        for(long int i = 0; i < A_keys.size(); i++) {
+        for(int i = 0; i < A_keys.size(); i++) {
             std::cout << A_keys[i] << " ";
         }
         std::cout << std::endl;
 		// --- Second matrix ---
-        std::unordered_map<long int, std::shared_ptr<diagonal> > B_diagonalMap = B->diagonalMap;
+        std::unordered_map<int, std::shared_ptr<diagonal> > B_diagonalMap = B->diagonalMap;
         // get keys of B_diagonalMap
-        std::vector<long int> B_keys;
-        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator B_it;
+        std::vector<int> B_keys;
+        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator B_it;
         for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
             B_keys.push_back(B_it->first);
         }
         // print keys
         std::cout << "keys of B_diagonalMap: ";
-        for(long int i = 0; i < B_keys.size(); i++) {
+        for(int i = 0; i < B_keys.size(); i++) {
             std::cout << B_keys[i] << " ";
         }
         std::cout << std::endl;
 		// --- Result matrix ---
-        std::unordered_map<long int, std::shared_ptr<diagonal> > result_diagonalMap = result->diagonalMap;
+        std::unordered_map<int, std::shared_ptr<diagonal> > result_diagonalMap = result->diagonalMap;
         // get keys of result_diagonalMap
-        std::vector<long int> result_keys;
-        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator result_it;
+        std::vector<int> result_keys;
+        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator result_it;
         for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
             result_keys.push_back(result_it->first);
         }
         // print keys
         std::cout << "keys of result_diagonalMap: ";
-        for(long int i = 0; i < result_keys.size(); i++) {
+        for(int i = 0; i < result_keys.size(); i++) {
             std::cout << result_keys[i] << " ";
         }
         std::cout << std::endl;
@@ -368,8 +368,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
  * @return denseMatrix  C
  */
 std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B) {
-    unsigned long int *shape_a = A->matrix_shape;
-    unsigned long int *shape_b = B->matrix_shape;
+    unsigned int *shape_a = A->matrix_shape;
+    unsigned int *shape_b = B->matrix_shape;
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
@@ -380,20 +380,20 @@ std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::s
         valType *real_res = aligned_alloc_helper(shape_a[0] * shape_b[1] * sizeof(valType));
         valType *imag_res = aligned_alloc_helper(shape_a[0] * shape_b[1] * sizeof(valType));
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < shape_a[0] * shape_b[1]; i++) {
+        for(unsigned int i = 0; i < shape_a[0] * shape_b[1]; i++) {
             real_res[i] = 0.0;
             imag_res[i] = 0.0;
         }
     #endif
-    unsigned long int *d = new unsigned long int[2];
+    unsigned int *d = new unsigned int[2];
     d[0] = A->matrix_shape[0];
     d[1] = B->matrix_shape[1];
     // std::shared_ptr<denseMatrix> result = new denseMatrix(&d, real_res, imag_res);
     std::shared_ptr<denseMatrix> result = std::make_shared<denseMatrix>(&d, real_res, imag_res);
-    for(unsigned long int i = 0; i < shape_a[0]; i++) {
-        for(unsigned long int k = 0; k < shape_b[1]; k++) {
+    for(unsigned int i = 0; i < shape_a[0]; i++) {
+        for(unsigned int k = 0; k < shape_b[1]; k++) {
             std::complex<valType> res = 0.0;
-            for(unsigned long int j = 0; j < shape_b[0]; j++) {
+            for(unsigned int j = 0; j < shape_b[0]; j++) {
                 res += A->get(i, j) * B->get(j, k);
             }
             result->set(i, k, res);
@@ -421,7 +421,7 @@ std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_p
     valType *real_valsC = res->realValues;
     valType *imag_valsC = res->imagValues;
     #pragma omp parallel for
-    for(unsigned long int i=0; i < A->dLength; i++) {
+    for(unsigned int i=0; i < A->dLength; i++) {
         real_valsC[i] = real_valsA[i] + real_valsB[i];
         imag_valsC[i] = imag_valsA[i] + imag_valsB[i];
     }
@@ -434,10 +434,10 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
     }
     // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(A->getSize());
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->getSize());
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->getDiagonalMap();
     #pragma omp parallel for
-    for(unsigned long int a = 0; a < mapA.size(); a++) {
+    for(unsigned int a = 0; a < mapA.size(); a++) {
         auto itA = std::next(mapA.begin(), a);
         auto itB = mapB.find(itA->first);
         if (itB == mapB.end()) {
@@ -452,19 +452,19 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
 
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
     itA = mapA.find(0);
     if(itA == mapA.end()) {
         return t;
     }
-    for(unsigned long int i=0; i < itA->second->dLength; i++) {
+    for(unsigned int i=0; i < itA->second->dLength; i++) {
         t += itA->second->getValue(i);
     }
     return t;
 }
 
-std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, unsigned long int *matrix_shape) {
+std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, unsigned int *matrix_shape) {
     // start time
     #ifdef DEBUG
         auto start = std::chrono::high_resolution_clock::now();
@@ -474,15 +474,15 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, unsign
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&matrix_shape, A->shape);
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(&matrix_shape, A->shape);
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
     for (it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < it->second->dLength; i++) {
+        for(unsigned int i = 0; i < it->second->dLength; i++) {
             // old_d_pos has (it->first, i) for A->matrix_shape
-            std::shared_ptr<long int[]> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
-            long int d_len = getDiagonalLength(d_pos[0], matrix_shape);
+            std::shared_ptr<int[]> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
+            int d_len = getDiagonalLength(d_pos[0], matrix_shape);
             if(real_vals[i] != 0 || imag_vals[i] != 0) { // doing this here to avoid pruning later below.
                 res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
             }
@@ -498,27 +498,27 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, unsign
     return res;
 }
 
-std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<unsigned long int> new_tensor_shape) {
-    unsigned long int old_product = 1;
+std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_tensor_shape) {
+    unsigned int old_product = 1;
     #pragma unroll
-    for(unsigned long int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
-    unsigned long int new_product = 1;
+    for(unsigned int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
+    unsigned int new_product = 1;
     #pragma unroll
-    for(unsigned long int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
+    for(unsigned int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
         std::cout << old_product << "!=" << new_product << std::endl;
-        throw std::invalid_argument("cannot reshape long into given shape");
+        throw std::invalid_argument("cannot reshape into given shape");
     }
     // this is tensor reshape, we can just replace shape and we're good.
     A->shape = new_tensor_shape;
     return A;
 }
 
-std::vector<unsigned long int> newTensorShape(std::vector<unsigned long int> tensor_shape_A, std::vector<unsigned long int> tensor_shape_B, std::vector<unsigned long int> axis_A, std::vector<unsigned long int> axis_B) {
-    std::vector<unsigned long int> res;
-    for(unsigned long int i = 0; i < tensor_shape_A.size(); i++) {
-        unsigned long int notin = 1;
-        for(unsigned long int p = 0; p < axis_A.size(); p++) {
+std::vector<unsigned int> newTensorShape(std::vector<unsigned int> tensor_shape_A, std::vector<unsigned int> tensor_shape_B, std::vector<unsigned int> axis_A, std::vector<unsigned int> axis_B) {
+    std::vector<unsigned int> res;
+    for(unsigned int i = 0; i < tensor_shape_A.size(); i++) {
+        unsigned int notin = 1;
+        for(unsigned int p = 0; p < axis_A.size(); p++) {
             if(i == axis_A[p]) {
                 notin = 0; break;
             }
@@ -528,9 +528,9 @@ std::vector<unsigned long int> newTensorShape(std::vector<unsigned long int> ten
         }
     }
     // std::cout << "axis_B " << axis_B << std::endl;
-    for(unsigned long int i = 0; i < tensor_shape_B.size(); i++) {
-        unsigned long int notin = 1;
-        for(unsigned long int p = 0; p < axis_B.size(); p++) {
+    for(unsigned int i = 0; i < tensor_shape_B.size(); i++) {
+        unsigned int notin = 1;
+        for(unsigned int p = 0; p < axis_B.size(); p++) {
             if(i == axis_B[p]) {
                 notin = 0; break;
             }
@@ -542,70 +542,70 @@ std::vector<unsigned long int> newTensorShape(std::vector<unsigned long int> ten
     return res;
 }
 
-unsigned long int *newMatrixShape(std::vector<unsigned long int> tensorShape) {
-    unsigned long int product = 1;
-    for (unsigned long int i = 0; i < tensorShape.size(); i++) {
+unsigned int *newMatrixShape(std::vector<unsigned int> tensorShape) {
+    unsigned int product = 1;
+    for (unsigned int i = 0; i < tensorShape.size(); i++) {
         product *= tensorShape[i];
     }
-    unsigned long int sqrtProduct = static_cast<unsigned long int>(std::sqrt(product));
+    unsigned int sqrtProduct = static_cast<unsigned int>(std::sqrt(product));
     // Find the closest factors of the product
-    unsigned long int x = 1;
-    unsigned long int y = product;
-    for (unsigned long int i = sqrtProduct; i > 0; --i) {
+    unsigned int x = 1;
+    unsigned int y = product;
+    for (unsigned int i = sqrtProduct; i > 0; --i) {
         if (product % i == 0) {
             x = i;
             y = product / i;
             break;
         }
     }
-    unsigned long int *new_shape = new unsigned long int[2];
+    unsigned int *new_shape = new unsigned int[2];
     new_shape[0] = x;
     new_shape[1] = y;
     return new_shape;
 }
 
-std::vector<unsigned long int> modifyTensorShape(std::vector<unsigned long int> tShape, std::vector<unsigned long int> axes) {
-    std::vector<unsigned long int> nShape;
+std::vector<unsigned int> modifyTensorShape(std::vector<unsigned int> tShape, std::vector<unsigned int> axes) {
+    std::vector<unsigned int> nShape;
     int tShapeSize = tShape.size();
     if(axes.size() == 0) {
         nShape.resize(tShape.size(), 1);
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < tShape.size(); i++) {
+        for(unsigned int i = 0; i < tShape.size(); i++) {
             nShape[i] = tShape[tShapeSize - i - 1];
         }
     }
     else {
         nShape.resize(axes.size(), 1);
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < axes.size(); i++) {
+        for(unsigned int i = 0; i < axes.size(); i++) {
             nShape[i] = tShape[axes[i]];
         }
     }
     return nShape;
 }
 
-std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<unsigned long int> new_order) {
+std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_order) {
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < A->shape.size(); i++) {
+        for(unsigned int i = 0; i < A->shape.size(); i++) {
             new_order[i] = A->shape.size() - i - 1;
         }
     }
     // std::cout << "diaq/transpose called with axes (";
-    // for(unsigned long int i = 0; i < new_order.size()-1; i++) {
+    // for(unsigned int i = 0; i < new_order.size()-1; i++) {
     //     std::cout << new_order[i] << ",";
     // }
     // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
 
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
-        std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->getDiagonalMap();
-        std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
-        std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
+        std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->getDiagonalMap();
+        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+        std::unordered_map<int, std::shared_ptr<diagonal> > newDiagMap;
         #pragma omp parallel
         {
             #pragma omp single
@@ -613,13 +613,13 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
                 #pragma omp task
                 {
                     it->second->setIndex(-1 * it->first);
-                    newDiagMap.insert(std::pair<long int, std::shared_ptr<diagonal> >(-1 * it->first, it->second));
+                    newDiagMap.insert(std::pair<int, std::shared_ptr<diagonal> >(-1 * it->first, it->second));
                 }
             }
         }
         A->setDiagonalMap(newDiagMap);
         // swap A->shape[0] and A->shape[1] and similarly for matrix_shape.
-        unsigned long int temp = A->shape[0];
+        unsigned int temp = A->shape[0];
         A->shape[0] = A->shape[1];
         A->shape[1] = temp;
         temp = A->matrix_shape[0];
@@ -629,39 +629,39 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     }
     // otherwise, we have to do a lot of work
     // shape of result
-    std::vector<unsigned long int> new_tensor_shape = modifyTensorShape(A->shape, new_order);
+    std::vector<unsigned int> new_tensor_shape = modifyTensorShape(A->shape, new_order);
     // std::cout << "gives new_tensor_shape (";
-    // for(unsigned long int i = 0; i < new_tensor_shape.size()-1; i++) {
+    // for(unsigned int i = 0; i < new_tensor_shape.size()-1; i++) {
     //     std::cout << new_tensor_shape[i] << ",";
     // }
     // std::cout << new_tensor_shape[new_tensor_shape.size()-1] << ")" << std::endl;
     // now, let's perform the transpose element by element
-    unsigned long int l = new_tensor_shape.size();
+    unsigned int l = new_tensor_shape.size();
     // this shape is important! decides the length of diagonals! Hence, we have to re-write it to maximize length of diagonals, so that number of diagonls are minimized.
-    unsigned long int *new_shape = new unsigned long int[2];
+    unsigned int *new_shape = new unsigned int[2];
     new_shape[0] = 1;
     new_shape[1] = 1;
-    unsigned long int i = l / 2;
+    unsigned int i = l / 2;
     #pragma unroll
-    for(unsigned long int r = 0; r<i ; r++) {
+    for(unsigned int r = 0; r<i ; r++) {
         new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
     #pragma unroll
-    for(unsigned long int r = i; r<l ; r++) {
+    for(unsigned int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::unordered_map<long int, std::shared_ptr<diagonal> > newDiagMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     // std::shared_ptr<diaQMatrix> res = new diaQMatrix(newDiagMap, &new_shape, new_tensor_shape);
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(newDiagMap, &new_shape, new_tensor_shape);
     // iterate over all diagonals
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagonalMap = A->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap = A->getDiagonalMap();
 
     // #pragma omp parallel for
-    // for(long int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
+    // for(int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
     //     res->createDiagonal(i);
     // }
 
@@ -676,26 +676,26 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
                 valType *imag_vals = it->second->imagValues;
 
                 #pragma omp parallel for
-                for(unsigned long int i = 0; i < it->second->dLength; i++) {
+                for(unsigned int i = 0; i < it->second->dLength; i++) {
                     // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
                     // std::cout << "element = " << vals[i] << std::endl;
-                    std::vector<unsigned long int> ten_pos = A->getTensorPosition(it->first, i);
+                    std::vector<unsigned int> ten_pos = A->getTensorPosition(it->first, i);
                     // std::cout << "tensor index = (";
-                    // for(unsigned long int i = 0; i < ten_pos.size()-1; i++) {
+                    // for(unsigned int i = 0; i < ten_pos.size()-1; i++) {
                     //     std::cout << ten_pos[i] << ",";
                     // }
                     // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
 
                     // modify ten_pos to perform the transposition using the new_order
-                    std::vector<unsigned long int> new_ten_pos(new_order.size(), 1);
+                    std::vector<unsigned int> new_ten_pos(new_order.size(), 1);
                     #pragma omp parallel for
-                    for(unsigned long int i=0; i < new_order.size(); i++) {
+                    for(unsigned int i=0; i < new_order.size(); i++) {
                         new_ten_pos[i] = ten_pos[new_order[i]];
                     }
 
-                    std::shared_ptr<long int[]> d_pos = res->getDiagonalPosition(new_ten_pos);
+                    std::shared_ptr<int[]> d_pos = res->getDiagonalPosition(new_ten_pos);
                     // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-                    unsigned long int d_len = getDiagonalLength(d_pos[0], new_shape);
+                    unsigned int d_len = getDiagonalLength(d_pos[0], new_shape);
                     if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) { // to avoid pruning later.
                         res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
                     }
@@ -708,10 +708,10 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
 }
 
 std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A) {
-    return transpose(A, std::vector<unsigned long int>());
+    return transpose(A, std::vector<unsigned int>());
 }
 
-std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned long int> > axes) {
+std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) {
     // // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -724,7 +724,7 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     std::cout << "and B - " << std::endl;
     B->print_meta();
     std::cout << "with axes - " << " (";
-    unsigned long int i=0;
+    unsigned int i=0;
     for(i=0; i<axes[0].size()-1; i++)
         std::cout << axes[0][i] << ",";
     std::cout << axes[0][i] << ") and (";
@@ -735,14 +735,14 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
 
     std::shared_ptr<diaQMatrix> res;
     // move axes
-    std::vector<unsigned long int> order_A;
-    std::vector<unsigned long int> order_B;
+    std::vector<unsigned int> order_A;
+    std::vector<unsigned int> order_B;
     #pragma unroll
-    for(unsigned long int i = 0; i < axes[1].size(); i++)
+    for(unsigned int i = 0; i < axes[1].size(); i++)
         order_B.push_back(axes[1][i]);
-    for(unsigned long int i = 0; i < A->shape.size(); i++) {
-        unsigned long int notin = 1;
-        for(unsigned long int p = 0; p < axes[0].size(); p++) {
+    for(unsigned int i = 0; i < A->shape.size(); i++) {
+        unsigned int notin = 1;
+        for(unsigned int p = 0; p < axes[0].size(); p++) {
             if(i == axes[0][p]) {
                 notin = 0; break;
             }
@@ -751,9 +751,9 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
             order_A.push_back(i);
         }
     }
-    for(unsigned long int i = 0; i < B->shape.size(); i++) {
-        unsigned long int notin = 1;
-        for(unsigned long int p = 0; p < axes[1].size(); p++) {
+    for(unsigned int i = 0; i < B->shape.size(); i++) {
+        unsigned int notin = 1;
+        for(unsigned int p = 0; p < axes[1].size(); p++) {
             if(i == axes[1][p]) {
                 notin = 0; break;
             }
@@ -763,23 +763,23 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
         }
     }
     #pragma unroll
-    for(unsigned long int i = 0; i < axes[0].size(); i++)
+    for(unsigned int i = 0; i < axes[0].size(); i++)
         order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
-    // for(unsigned long int i = 0; i < order_A.size()-1; i++)
+    // for(unsigned int i = 0; i < order_A.size()-1; i++)
     //     std::cout << order_A[i] << ",";
     // std::cout << order_A[order_A.size()-1] << ")" << std::endl;
     // std::cout << "with order_B (";
-    // for(unsigned long int i = 0; i < order_B.size()-1; i++)
+    // for(unsigned int i = 0; i < order_B.size()-1; i++)
     //     std::cout << order_B[i] << ",";
     // std::cout << order_B[order_B.size()-1] << ")" << std::endl;
 
-    unsigned long int axes_0_product = 1;
+    unsigned int axes_0_product = 1;
     #pragma unroll
-    for(unsigned long int i=0;i<axes[0].size();i++) axes_0_product *= A->shape[axes[0][i]];
-    unsigned long int axes_1_product = 1;
+    for(unsigned int i=0;i<axes[0].size();i++) axes_0_product *= A->shape[axes[0][i]];
+    unsigned int axes_1_product = 1;
     #pragma unroll
-    for(unsigned long int i=0;i<axes[1].size();i++) axes_1_product *= B->shape[axes[1][i]];
+    for(unsigned int i=0;i<axes[1].size();i++) axes_1_product *= B->shape[axes[1][i]];
 
     A = transpose(A, order_A);
     // printf("A after transpose\n");
@@ -788,8 +788,8 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // printf("B after transpose\n");
     // B->print();
 
-    unsigned long int totalA = A->matrix_shape[0] * A->matrix_shape[1];
-    unsigned long int totalB = B->matrix_shape[0] * B->matrix_shape[1];
+    unsigned int totalA = A->matrix_shape[0] * A->matrix_shape[1];
+    unsigned int totalB = B->matrix_shape[0] * B->matrix_shape[1];
 
     // std::cout << "axes_0_product = " << axes_0_product << " axes_1_product = " << axes_1_product << std::endl;
     // These have to be equal right? Let's add a check
@@ -798,11 +798,11 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
         throw std::invalid_argument("invalid axes, can't perform tensordot");
     }
 
-    unsigned long int *new_shape_a = new unsigned long int[2] {totalA / axes_0_product, axes_0_product};
-    unsigned long int *new_shape_b = new unsigned long int[2] {axes_1_product, totalB / axes_1_product};
+    unsigned int *new_shape_a = new unsigned int[2] {totalA / axes_0_product, axes_0_product};
+    unsigned int *new_shape_b = new unsigned int[2] {axes_1_product, totalB / axes_1_product};
 
-    // std::vector<unsigned long int> new_shape_a{totalA / axes_0_product, axes_0_product};
-    // std::vector<unsigned long int> new_shape_b{axes_1_product, totalB / axes_1_product};
+    // std::vector<unsigned int> new_shape_a{totalA / axes_0_product, axes_0_product};
+    // std::vector<unsigned int> new_shape_b{axes_1_product, totalB / axes_1_product};
 
     std::shared_ptr<diaQMatrix> reshaped_A = matrix_reshape(A, new_shape_a);
     std::shared_ptr<diaQMatrix> reshaped_B = matrix_reshape(B, new_shape_b);
@@ -827,48 +827,48 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     return res;
 }
 
-// long int *getMatrixShape(std::vector<long int> tensor_shape) {
-std::shared_ptr<unsigned long int[]> getMatrixShape(std::vector<unsigned long int> tensor_shape) {
+// int *getMatrixShape(std::vector<int> tensor_shape) {
+std::shared_ptr<unsigned int[]> getMatrixShape(std::vector<unsigned int> tensor_shape) {
     // print tensor_shape
     // printf("tensor_shape = (");
-    // for (unsigned long int i = 0; i < tensor_shape.size() - 1; i++) {
+    // for (unsigned int i = 0; i < tensor_shape.size() - 1; i++) {
     //     printf("%ld, ", tensor_shape[i]);
     // }
     // printf("%ld)\n", tensor_shape[tensor_shape.size() - 1]);
     // Calculate the product of the tensor shape
-    unsigned long int product = 1;
-    for (unsigned long int i = 0; i < tensor_shape.size(); i++) {
+    unsigned int product = 1;
+    for (unsigned int i = 0; i < tensor_shape.size(); i++) {
         product *= tensor_shape[i];
     }
-    unsigned long int sqrtProduct = static_cast<unsigned long int>(std::sqrt(product));
+    unsigned int sqrtProduct = static_cast<unsigned int>(std::sqrt(product));
     // Find the closest factors of the product
-    unsigned long int x = 1;
-    unsigned long int y = product;
-    for (unsigned long int i = sqrtProduct; i > 0; --i) {
+    unsigned int x = 1;
+    unsigned int y = product;
+    for (unsigned int i = sqrtProduct; i > 0; --i) {
         if (product % i == 0) {
             x = i;
             y = product / i;
             break;
         }
     }
-    // unsigned long int *new_shape = new unsigned long int[2];
-    std::shared_ptr<unsigned long int[]> new_shape = std::shared_ptr<unsigned long int[]>(new unsigned long int[2]);
+    // unsigned int *new_shape = new unsigned int[2];
+    std::shared_ptr<unsigned int[]> new_shape = std::shared_ptr<unsigned int[]>(new unsigned int[2]);
     new_shape[0] = y;
     new_shape[1] = x;
     // printf("new_shape = (%ld, %ld)\n", new_shape[0], new_shape[1]);
     return new_shape;
 }
 
-std::vector<unsigned long int> getTenPos(const std::vector<unsigned long int>& ten_pos_A,
-                                     const std::vector<unsigned long int>& ten_pos_B,
-                                     const std::vector<unsigned long int>& axes_A,
-                                     const std::vector<unsigned long int>& axes_B,
-                                     const std::vector<unsigned long int>& shape_A,
-                                     const std::vector<unsigned long int>& shape_B) {
-    std::vector<unsigned long int> res;
-    for (unsigned long int i = 0; i < ten_pos_A.size(); i++) {
-        unsigned long int notin = 1;
-        for (unsigned long int p = 0; p < axes_A.size(); p++) {
+std::vector<unsigned int> getTenPos(const std::vector<unsigned int>& ten_pos_A,
+                                     const std::vector<unsigned int>& ten_pos_B,
+                                     const std::vector<unsigned int>& axes_A,
+                                     const std::vector<unsigned int>& axes_B,
+                                     const std::vector<unsigned int>& shape_A,
+                                     const std::vector<unsigned int>& shape_B) {
+    std::vector<unsigned int> res;
+    for (unsigned int i = 0; i < ten_pos_A.size(); i++) {
+        unsigned int notin = 1;
+        for (unsigned int p = 0; p < axes_A.size(); p++) {
             if (i == axes_A[p]) {
                 notin = 0;
                 break;
@@ -878,9 +878,9 @@ std::vector<unsigned long int> getTenPos(const std::vector<unsigned long int>& t
             res.push_back(ten_pos_A[i]);
         }
     }
-    for (unsigned long int i = 0; i < ten_pos_B.size(); i++) {
-        unsigned long int notin = 1;
-        for (unsigned long int p = 0; p < axes_B.size(); p++) {
+    for (unsigned int i = 0; i < ten_pos_B.size(); i++) {
+        unsigned int notin = 1;
+        for (unsigned int p = 0; p < axes_B.size(); p++) {
             if (i == axes_B[p]) {
                 notin = 0;
                 break;
@@ -893,7 +893,7 @@ std::vector<unsigned long int> getTenPos(const std::vector<unsigned long int>& t
     return res;
 }
 
-std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned long int> > axes) {
+std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) {
     // start timer
     // auto start = std::chrono::high_resolution_clock::now();
 
@@ -903,7 +903,7 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
     // std::cout << "and B - " << std::endl;
     // B->print_meta();
     // std::cout << "with axes - " << " (";
-    // unsigned long int i=0;
+    // unsigned int i=0;
     // for(i=0; i<axes[0].size()-1; i++)
     //     std::cout << axes[0][i] << ",";
     // std::cout << axes[0][i] << ") and (";
@@ -913,10 +913,10 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
     // std::cout << "--" << std::endl;
 
     // let's try element by element like we do with tensor transpose!
-    std::vector<unsigned long int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
-    std::shared_ptr<unsigned long int[]> new_matrix_shape = getMatrixShape(new_tensor_shape);
+    std::vector<unsigned int> new_tensor_shape = newTensorShape(A->shape, B->shape, axes[0], axes[1]);
+    std::shared_ptr<unsigned int[]> new_matrix_shape = getMatrixShape(new_tensor_shape);
     // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&new_matrix_shape, new_tensor_shape);
-    unsigned long int *make_new_shape = new unsigned long int[2];
+    unsigned int *make_new_shape = new unsigned int[2];
     make_new_shape[0] = new_matrix_shape[0];
     make_new_shape[1] = new_matrix_shape[1];
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(&make_new_shape, new_tensor_shape);
@@ -924,9 +924,9 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
     // res->print_shape();
 
     // element by element tensordot multiplication, inspired from COO format
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA, itB;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA, itB;
     #pragma omp parallel
     {
         #pragma omp single
@@ -938,8 +938,8 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
                     valType *real_vals_A = diagA->realValues;
                     valType *imag_vals_A = diagA->imagValues;
                     // #pragma omp parallel for
-                    for(unsigned long int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
-                        std::vector<unsigned long int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
+                    for(unsigned int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
+                        std::vector<unsigned int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
                         // #pragma omp single
                         // {
                             for (itB = mapB.begin(); itB != mapB.end(); itB++) {
@@ -949,33 +949,33 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
                                     valType *real_vals_B = diagB->realValues;
                                     valType *imag_vals_B = diagB->imagValues;
                                     #pragma omp parallel for
-                                    for(unsigned long int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
-                                        std::vector<unsigned long int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
+                                    for(unsigned int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
+                                        std::vector<unsigned int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
                                         // if the common axes
                                         if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
                                             // print ten_pos_A and ten_pos_B
                                             // printf("ten_pos_A = (");
-                                            // for (long int i = 0; i < ten_pos_A.size() - 1; i++) {
+                                            // for (int i = 0; i < ten_pos_A.size() - 1; i++) {
                                             //     printf("%ld, ", ten_pos_A[i]);
                                             // }
                                             // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
                                             // printf("ten_pos_B = (");
-                                            // for (long int i = 0; i < ten_pos_B.size() - 1; i++) {
+                                            // for (int i = 0; i < ten_pos_B.size() - 1; i++) {
                                             //     printf("%ld, ", ten_pos_B[i]);
                                             // }
                                             // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
                                             // Calculate resulting coordinates after contraction
-                                            std::vector<unsigned long int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
+                                            std::vector<unsigned int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
                                             // printing result_coords
                                             // printf("result_coords = (");
-                                            // for (unsigned long int i = 0; i < result_coords.size() - 1; i++) {
+                                            // for (unsigned int i = 0; i < result_coords.size() - 1; i++) {
                                             //     printf("%ld, ", result_coords[i]);
                                             // }
                                             // printf("%ld)\n", result_coords[result_coords.size() - 1]);
 
                                             // get the diagonal position and length
-                                            std::shared_ptr<long int[]> res_diag_pos = res->getDiagonalPosition(result_coords);
-                                            unsigned long int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
+                                            std::shared_ptr<int[]> res_diag_pos = res->getDiagonalPosition(result_coords);
+                                            unsigned int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
                                             valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
                                             valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
                                             if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
@@ -1004,7 +1004,7 @@ std::shared_ptr<diaQMatrix> array(std::shared_ptr<diaQMatrix> A) {
     return A;
 }
 
-std::shared_ptr<diaQMatrix> einsum(std::shared_ptr<diaQMatrix> A, std::vector<unsigned long int> axes) {
+std::shared_ptr<diaQMatrix> einsum(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> axes) {
     std::cout << axes[0] << std::endl;
     return A;
 }
@@ -1016,15 +1016,15 @@ std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::share
 std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B) {
     return add(A, B);
 }
-void diaQMatrix::matrix_reshape(unsigned long int *matrix_shape) {
+void diaQMatrix::matrix_reshape(unsigned int *matrix_shape) {
     // printf("self reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     std::shared_ptr<diaQMatrix> temp = diaq::matrix_reshape(shared_from_this(), matrix_shape);
     *this = *temp;
 }
-std::shared_ptr<diaQMatrix> diaQMatrix::reshape(std::vector<unsigned long int> new_tensor_shape) {
+std::shared_ptr<diaQMatrix> diaQMatrix::reshape(std::vector<unsigned int> new_tensor_shape) {
     return diaq::reshape(shared_from_this(), new_tensor_shape);
 }
-void diaQMatrix::transpose(std::vector<unsigned long int> new_order) {
+void diaQMatrix::transpose(std::vector<unsigned int> new_order) {
     std::shared_ptr<diaQMatrix> temp = diaq::transpose(shared_from_this(), new_order);
     *this = *temp;
 }
@@ -1075,14 +1075,14 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < diagMap.size(); ++a) {
         auto it = std::next(diagMap.begin(), a);
-        long int dIndex = it->first;
-        unsigned long int dLength = it->second->dLength;
+        int dIndex = it->first;
+        unsigned int dLength = it->second->dLength;
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
 
@@ -1100,9 +1100,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
                     #pragma omp simd
-                    for (unsigned long int i = 0; i < dLength; i++) {
-                        unsigned long int x_idx = i;
-                        unsigned long int y_idx = i - dIndex;
+                    for (unsigned int i = 0; i < dLength; i++) {
+                        unsigned int x_idx = i;
+                        unsigned int y_idx = i - dIndex;
                         y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                         y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                     }
@@ -1124,9 +1124,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
                     #pragma omp simd
-                    for (unsigned long int i = 0; i < dLength; i++) {
-                        unsigned long int x_idx = dIndex + i;
-                        unsigned long int y_idx = i;
+                    for (unsigned int i = 0; i < dLength; i++) {
+                        unsigned int x_idx = dIndex + i;
+                        unsigned int y_idx = i;
                         y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                         y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                     }
@@ -1149,7 +1149,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
                     #pragma omp simd
-                    for (unsigned long int i = 0; i < dLength; i++) {
+                    for (unsigned int i = 0; i < dLength; i++) {
                         y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                         y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
                     }
@@ -1178,7 +1178,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     #endif
 }
 
-std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned long int qubit_smaller, unsigned long int qubit_larger) {
+std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
 
     // DID NOT IMPLEMENT YET!
     // TODO: PLS IMPLEMENT!!
@@ -1188,8 +1188,8 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    std::shared_ptr<unsigned long int[]> new_gate_shape(new unsigned long int[2] {q_diff_exp, q_diff_exp});
+    unsigned int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
+    std::shared_ptr<unsigned int[]> new_gate_shape(new unsigned int[2] {q_diff_exp, q_diff_exp});
 
     // if(A->matrix_shape[1] != x->numRows) {
     //     throw std::invalid_argument("Not multiplyable");
@@ -1199,8 +1199,8 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
     // valType *y_imag_values = y->imagValues;
     // valType *x_real_values = x->realValues;
     // valType *x_imag_values = x->imagValues;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel
     {
@@ -1214,44 +1214,44 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
                     // valType *imag_vals = diag->imagValues;
                     switch(diag->dIndex) {
                         case -3: {
-                            // long int dIndex = -1 * q_diff_exp - 1;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = -1 * q_diff_exp - 1;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case -2: {
-                            // long int dIndex = -1 * q_diff_exp;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = -1 * q_diff_exp;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case -1: {
-                            // long int dIndex = -1;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = -1;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             // // something
                             // dIndex = -1 * q_diff_exp + 1;
                             // dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case 0: {
-                            // long int dIndex = 0;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = 0;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case 1: {
-                            // long int dIndex = 1;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = 1;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             // // do something
                             // dIndex = q_diff_exp - 1;
                             // dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case 2: {
-                            // long int dIndex = q_diff_exp;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = q_diff_exp;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                         case 3: {
-                            // long int dIndex = q_diff_exp + 1;
-                            // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                            // int dIndex = q_diff_exp + 1;
+                            // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                             break;
                         }
                     }
@@ -1281,10 +1281,10 @@ std::shared_ptr<vector> MV(std::shared_ptr<denseMatrix> A, std::shared_ptr<vecto
     // std::shared_ptr<vector> y = new vector(A->matrix_shape[0], 0.0, 0.0);
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
-    for(unsigned long int i = 0; i < A->matrix_shape[0]; i++) {
+    for(unsigned int i = 0; i < A->matrix_shape[0]; i++) {
         valType res_real = 0.0;
         valType res_imag = 0.0;
-        for(unsigned long int j = 0; j < A->matrix_shape[1]; j++) {
+        for(unsigned int j = 0; j < A->matrix_shape[1]; j++) {
             std::complex<valType> elem = A->get(i, j);
             res_real += elem.real() * x_real_values[j] - elem.imag() * x_imag_values[j];
             res_imag += elem.real() * x_imag_values[j] + elem.imag() * x_real_values[j];
@@ -1300,11 +1300,11 @@ std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, 
     // B: p x q
     // C: mp x nq
 
-    unsigned long int *shape_a = A->matrix_shape;
-    unsigned long int *shape_b = B->matrix_shape;
+    unsigned int *shape_a = A->matrix_shape;
+    unsigned int *shape_b = B->matrix_shape;
 
     // Calculate dimensions for the resulting matrix
-    unsigned long int *d = (unsigned long int *)calloc(2, sizeof(unsigned long int));
+    unsigned int *d = (unsigned int *)calloc(2, sizeof(unsigned int));
     d[0] = shape_a[0] * shape_b[0];
     d[1] = shape_a[1] * shape_b[1];
     #if NUM_BYTES_ALIGNED == -1
@@ -1314,7 +1314,7 @@ std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, 
         valType *real_res = aligned_alloc_helper(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
         valType *imag_res = aligned_alloc_helper(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1] * sizeof(valType));
         #pragma omp parallel for
-        for(unsigned long int i = 0; i < shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1]; i++) {
+        for(unsigned int i = 0; i < shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1]; i++) {
             real_res[i] = 0.0;
             imag_res[i] = 0.0;
         }
@@ -1323,20 +1323,20 @@ std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, 
     std::shared_ptr<denseMatrix> result = std::make_shared<denseMatrix>(&d, real_res, imag_res);
 
     // Iterate through the rows of matrix A
-    for (unsigned long int i = 0; i < A->matrix_shape[0]; i++) {
+    for (unsigned int i = 0; i < A->matrix_shape[0]; i++) {
 
         // Iterate through the columns of matrix A
-        for (unsigned long int j = 0; j < A->matrix_shape[1]; j++) {
+        for (unsigned int j = 0; j < A->matrix_shape[1]; j++) {
 
             // Iterate through the rows of matrix B
-            for (unsigned long int k = 0; k < B->matrix_shape[0]; k++) {
+            for (unsigned int k = 0; k < B->matrix_shape[0]; k++) {
 
                 // Iterate through the columns of matrix B
-                for (unsigned long int l = 0; l < B->matrix_shape[1]; l++) {
+                for (unsigned int l = 0; l < B->matrix_shape[1]; l++) {
 
                     // Calculate the resulting indices in the new matrix
-                    unsigned long int newIndexI = i * B->matrix_shape[0] + k;
-                    unsigned long int newIndexJ = j * B->matrix_shape[1] + l;
+                    unsigned int newIndexI = i * B->matrix_shape[0] + k;
+                    unsigned int newIndexJ = j * B->matrix_shape[1] + l;
 
                     // Multiply the element of A by the element of B
                     std::complex<valType> newElement = A->get(i, j) * B->get(k, l);
@@ -1365,8 +1365,8 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
         return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
     }
 
-    // std::shared_ptr<diaQMatrix> result = new diaQMatrix((unsigned long int)0);
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>((unsigned long int)0);
+    // std::shared_ptr<diaQMatrix> result = new diaQMatrix((unsigned int)0);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>((unsigned int)0);
 
     if (scalar_real == 0.0 && scalar_imag == 0.0) {
         return result;
@@ -1375,13 +1375,13 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
         auto it = std::next(A->diagonalMap.begin(), a);
-        long int dIndex = it->first;
-        unsigned long int dLength = it->second->dLength;
+        int dIndex = it->first;
+        unsigned int dLength = it->second->dLength;
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
         // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, dLength);
@@ -1390,7 +1390,7 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
         valType *imag_valsC = newDiag->imagValues;
 
         #pragma omp simd
-        for (unsigned long int i = 0; i < dLength; i++) {
+        for (unsigned int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
         }
@@ -1424,30 +1424,30 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned long int *shape_a = A->matrix_shape;
-    unsigned long int *shape_b = B->matrix_shape;
+    unsigned int *shape_a = A->matrix_shape;
+    unsigned int *shape_b = B->matrix_shape;
 
     // map of unique A elements and their corresponding kron blocks
     std::map<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> > unique_kron_blocks;
 
     // Calculate dimensions for the resulting matrix
-    unsigned long int *result_shape = new unsigned long int[2];
+    unsigned int *result_shape = new unsigned int[2];
     result_shape[0] = shape_a[0] * shape_b[0];
     result_shape[1] = shape_a[1] * shape_b[1];
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
 
     #pragma omp parallel for
-    for (unsigned long int a = 0; a < A->diagonalMap.size(); a++) {
+    for (unsigned int a = 0; a < A->diagonalMap.size(); a++) {
         auto itA = std::next(A->diagonalMap.begin(), a);
-        long int diagonal_index = itA->first;
+        int diagonal_index = itA->first;
         std::shared_ptr<diagonal> diag = itA->second;
-        unsigned long int diagonal_length = diag->dLength;
+        unsigned int diagonal_length = diag->dLength;
 
         #pragma omp parallel for
-        for(unsigned long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
+        for(unsigned int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
                 continue;
@@ -1464,26 +1464,26 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
                 }
             }
 
-            std::shared_ptr<unsigned long int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
-            std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itK;
+            std::shared_ptr<unsigned int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
+            std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itK;
 
             #pragma omp parallel for
-            for (unsigned long int b = 0; b < kron_block->diagonalMap.size(); b++) {
+            for (unsigned int b = 0; b < kron_block->diagonalMap.size(); b++) {
                 auto itK = std::next(kron_block->diagonalMap.begin(), b);
-                long int kron_block_diag_index = itK->first;
+                int kron_block_diag_index = itK->first;
                 std::shared_ptr<diagonal> kron_block_diag = itK->second;
-                unsigned long int kron_block_diag_length = kron_block_diag->dLength;
+                unsigned int kron_block_diag_length = kron_block_diag->dLength;
 
                 #pragma omp parallel for
-                for(unsigned long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+                for(unsigned int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
-                    std::shared_ptr<unsigned long int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
-                    // long int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
-                    // std::shared_ptr<unsigned long int[]> res_mat_pos = std::make_shared<long int[]>(2){A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
-                    std::shared_ptr<unsigned long int[]> res_mat_pos = std::shared_ptr<unsigned long int[]>(new unsigned long int[2]);
+                    std::shared_ptr<unsigned int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                    // int res_mat_pos[2] = {A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    // std::shared_ptr<unsigned int[]> res_mat_pos = std::make_shared<int[]>(2){A_pos[0] * shape_b[0] + B_mat_pos[0], A_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    std::shared_ptr<unsigned int[]> res_mat_pos = std::shared_ptr<unsigned int[]>(new unsigned int[2]);
                     res_mat_pos[0] = A_pos[0] * shape_b[0] + B_mat_pos[0];
                     res_mat_pos[1] = A_pos[1] * shape_b[1] + B_mat_pos[1];
-                    std::shared_ptr<long int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                    std::shared_ptr<int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
                     #pragma omp critical
                     {
@@ -1497,7 +1497,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
 
     // // free unique_kron_blocks
     // #pragma omp parallel for
-    // for (long int a = 0; a < unique_kron_blocks.size(); a++) {
+    // for (int a = 0; a < unique_kron_blocks.size(); a++) {
     //     auto it = std::next(unique_kron_blocks.begin(), a);
     //     it->second->free();
     // }
@@ -1521,7 +1521,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
     return result;
 }
 
-std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned long int n, std::shared_ptr<diaQMatrix> A) {
+std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr<diaQMatrix> A) {
 
     #ifdef DEEP_DEBUG
         printf("\tdiaq::identity_kron_matrix\n");
@@ -1534,40 +1534,40 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned long int n, std::share
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned long int N = 1L << n;
+    unsigned int N = 1L << n;
 
     // assume a nxn identity matrix, which has one diagonal of length N, in index 0.
     // we just repeat A, N times in the result matrix
-    unsigned long int *result_shape = new unsigned long int[2] {N * A->matrix_shape[0], N * A->matrix_shape[1]};
+    unsigned int *result_shape = new unsigned int[2] {N * A->matrix_shape[0], N * A->matrix_shape[1]};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
-    for (unsigned long int i = 0; i < diagMap.size(); i++) {
+    for (unsigned int i = 0; i < diagMap.size(); i++) {
         auto it = std::next(diagMap.begin(), i);
-        long int dIndex = it->first;
+        int dIndex = it->first;
         std::shared_ptr<diagonal> diag = it->second;
         // printf("A's diagonal\n");
         // diag->print();
-        unsigned long int dLength = diag->dLength;
+        unsigned int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
 
         // result diag
-        unsigned long int new_dLength = result->getDiagonalLength(dIndex); // TODO: there should be a better way to get this using n and dLength.
+        unsigned int new_dLength = result->getDiagonalLength(dIndex); // TODO: there should be a better way to get this using n and dLength.
         // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, new_dLength);
         std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, new_dLength);
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for
-        for(unsigned long int rep = 0; rep < N; rep++) {
-            unsigned long int skip_places = (rep) * (dLength + abs(dIndex));
+        for(unsigned int rep = 0; rep < N; rep++) {
+            unsigned int skip_places = (rep) * (dLength + abs(dIndex));
             #pragma omp parallel for
-            for(unsigned long int i = 0; i < dLength; i++) {
+            for(unsigned int i = 0; i < dLength; i++) {
                 newDiag_real_vals[i + skip_places] = real_vals[i];
                 newDiag_imag_vals[i + skip_places] = imag_vals[i];
             }
@@ -1590,14 +1590,14 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned long int n, std::share
     return result;
 }
 
-void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
 
     #ifdef DEBUG
         // start timer
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned long int N = 1L << n;
+    unsigned int N = 1L << n;
 
     valType *y_real_values = y->realValues;
     valType *y_imag_values = y->imagValues;
@@ -1605,40 +1605,40 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
-    // unsigned long int y_len = y->numRows; // same as x->numRows;
-    unsigned long int A_size = A->matrix_shape[0];
+    // unsigned int y_len = y->numRows; // same as x->numRows;
+    unsigned int A_size = A->matrix_shape[0];
     // I kron A has the same number of diagonals as A, but each diagonal has N times more G elements and more 0s that we don't need to care about.
     // So, we can just iterate through the diagonals of A and repeat each diagonal N times in the result vector. But offsets are important and different for each iteration, since each is essentially a block!
     // now for each diagonal in A
     // index in y and x goes from (0, block_idx * diag_length)
 
-    unsigned long int last_y_offset = (N-1) * A_size;
+    unsigned int last_y_offset = (N-1) * A_size;
 
     #pragma omp parallel for
-    for(unsigned long int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
+    for(unsigned int y_offset = 0; y_offset <= last_y_offset; y_offset += A_size) { // this is like traversing blocks in I kron A
 
-        for (unsigned long int di = 0; di < diagMap.size(); di++) {
+        for (unsigned int di = 0; di < diagMap.size(); di++) {
             auto it = std::next(diagMap.begin(), di);
             // now we can do element wise!
-            long int dIndex = it->first;
+            int dIndex = it->first;
             std::shared_ptr<diagonal> diag = it->second;
-            unsigned long int dLength = diag->dLength;
+            unsigned int dLength = diag->dLength;
             valType *real_vals = diag->realValues;
             valType *imag_vals = diag->imagValues;
 
-            unsigned long int x_inner_offset = (dIndex > 0) ? dIndex : 0;
-            unsigned long int y_inner_offset = (dIndex < 0) ? -dIndex : 0;
+            unsigned int x_inner_offset = (dIndex > 0) ? dIndex : 0;
+            unsigned int y_inner_offset = (dIndex < 0) ? -dIndex : 0;
 
-            unsigned long int x_offset = y_offset + x_inner_offset;
-            unsigned long int new_y_offset = y_offset + y_inner_offset;
+            unsigned int x_offset = y_offset + x_inner_offset;
+            unsigned int new_y_offset = y_offset + y_inner_offset;
 
             #pragma omp parallel for
-            for (unsigned long int y_idx = new_y_offset; y_idx < dLength + new_y_offset; y_idx++) {
-                unsigned long int x_idx = x_offset + (y_idx - new_y_offset); // adjust x_idx for each iteration
-                unsigned long int i = y_idx - new_y_offset; // if you want to match your original i loop
+            for (unsigned int y_idx = new_y_offset; y_idx < dLength + new_y_offset; y_idx++) {
+                unsigned int x_idx = x_offset + (y_idx - new_y_offset); // adjust x_idx for each iteration
+                unsigned int i = y_idx - new_y_offset; // if you want to match your original i loop
                 #pragma omp atomic
                 y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                 #pragma omp atomic
@@ -1658,7 +1658,7 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
 }
 
 
-void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned long int qubit_smaller, unsigned long int qubit_larger) {
+void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
 
     #ifdef DEBUG
         // start timer
@@ -1667,8 +1667,8 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
 
     n = 1L << n;
 
-    unsigned long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    std::shared_ptr<unsigned long int[]> new_gate_shape(new unsigned long int[2] {q_diff_exp, q_diff_exp});
+    unsigned int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
+    std::shared_ptr<unsigned int[]> new_gate_shape(new unsigned int[2] {q_diff_exp, q_diff_exp});
 
     // std::shared_ptr<vector> y = new vector(n * A->matrix_shape[0]);
     valType *y_real_values = y->realValues;
@@ -1677,8 +1677,8 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         std::shared_ptr<diagonal> diag = it->second;
@@ -1686,16 +1686,16 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
         valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
             case -3: {
-                long int dIndex = -1 * q_diff_exp - 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp - 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < n; rep++) {
-                    unsigned long int skip_places = rep * (dLength - dIndex);
+                for(unsigned int rep = 0; rep < n; rep++) {
+                    unsigned int skip_places = rep * (dLength - dIndex);
                     #pragma omp simd
-                    for(unsigned long int i = 0; i < dLength; i++) {
+                    for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 == 0) {
-                            unsigned long int x_idx = i + skip_places;
-                            unsigned long int y_idx = i + skip_places - dIndex;
+                            unsigned int x_idx = i + skip_places;
+                            unsigned int y_idx = i + skip_places - dIndex;
                             y_real_values[y_idx] += real_vals[0] * x_real_values[x_idx] - imag_vals[0] * x_imag_values[x_idx];
                             y_imag_values[y_idx] += real_vals[0] * x_imag_values[x_idx] + imag_vals[0] * x_real_values[x_idx];
                         }
@@ -1704,15 +1704,15 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
                 break;
             }
             case -2: {
-                long int dIndex = -1 * q_diff_exp;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < n; rep++) {
-                    unsigned long int skip_places = rep * (dLength - dIndex);
+                for(unsigned int rep = 0; rep < n; rep++) {
+                    unsigned int skip_places = rep * (dLength - dIndex);
                     #pragma omp simd
-                    for(unsigned long int i = 0; i < dLength/2; i++) {
-                        unsigned long int x_idx = i + skip_places;
-                        unsigned long int y_idx = i + skip_places - dIndex;
+                    for(unsigned int i = 0; i < dLength/2; i++) {
+                        unsigned int x_idx = i + skip_places;
+                        unsigned int y_idx = i + skip_places - dIndex;
                         y_real_values[y_idx] += real_vals[0] * x_real_values[x_idx] - imag_vals[0] * x_imag_values[x_idx];
                         y_imag_values[y_idx] += real_vals[0] * x_imag_values[x_idx] + imag_vals[0] * x_real_values[x_idx];
 
@@ -1726,34 +1726,34 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
                 break;
             }
             case -1: {
-                // long int dIndex = -1;
-                // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // int dIndex = -1;
+                // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // // something
                 // dIndex = -1 * q_diff_exp + 1;
                 // dLength = getDiagonalLength(dIndex, new_gate_shape);
                 break;
             }
             case 0: {
-                // long int dIndex = 0;
-                // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // int dIndex = 0;
+                // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 break;
             }
             case 1: {
-                // long int dIndex = 1;
-                // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // int dIndex = 1;
+                // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // // do something
                 // dIndex = q_diff_exp - 1;
                 // dLength = getDiagonalLength(dIndex, new_gate_shape);
                 break;
             }
             case 2: {
-                // long int dIndex = q_diff_exp;
-                // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // int dIndex = q_diff_exp;
+                // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 break;
             }
             case 3: {
-                // long int dIndex = q_diff_exp + 1;
-                // unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                // int dIndex = q_diff_exp + 1;
+                // unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 break;
             }
         }
@@ -1770,7 +1770,7 @@ void identity_kron_matrix_times_vector(unsigned long int n, std::shared_ptr<diaQ
 
 }
 
-void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, std::shared_ptr<diaQMatrix> gate, unsigned long int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::shared_ptr<diaQMatrix> gate, unsigned int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
     #ifdef DEBUG
@@ -1785,10 +1785,10 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
         printf("\t\tbefore = %ld; after = %ld\n", before, after);
     #endif
 
-    unsigned long int before_N = 1L << before;
-    unsigned long int after_N = 1L << after;
+    unsigned int before_N = 1L << before;
+    unsigned int after_N = 1L << after;
 
-    // unsigned long int x_length = x->numRows;
+    // unsigned int x_length = x->numRows;
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
@@ -1801,28 +1801,28 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for collapse(2)
-    for (unsigned long int rep = 0; rep < before_N; rep++) {
-        for (unsigned long int j = 0; j < after_N; j++) {
-            for (unsigned long int a = 0; a < diagMap.size(); a++) {
+    for (unsigned int rep = 0; rep < before_N; rep++) {
+        for (unsigned int j = 0; j < after_N; j++) {
+            for (unsigned int a = 0; a < diagMap.size(); a++) {
                 auto it = std::next(diagMap.begin(), a);
-                long int dIndex = it->first;
+                int dIndex = it->first;
                 std::shared_ptr<diagonal> diag = it->second;
-                unsigned long int dLength = diag->dLength;
+                unsigned int dLength = diag->dLength;
                 valType *real_vals = diag->realValues;
                 valType *imag_vals = diag->imagValues;
 
-                unsigned long int skip_places = rep * (after_N * (dLength + (dIndex < 0 ? -dIndex : dIndex)));
-                unsigned long int x_offset = (dIndex < 0 ? skip_places : after_N * dIndex + skip_places);
-                unsigned long int y_offset = (dIndex < 0 ? skip_places - after_N * dIndex : skip_places);
+                unsigned int skip_places = rep * (after_N * (dLength + (dIndex < 0 ? -dIndex : dIndex)));
+                unsigned int x_offset = (dIndex < 0 ? skip_places : after_N * dIndex + skip_places);
+                unsigned int y_offset = (dIndex < 0 ? skip_places - after_N * dIndex : skip_places);
 
                 #pragma omp simd
-                for (unsigned long int i = 0; i < dLength; i++) {
-                    unsigned long int x_idx = x_offset + i * after_N + j;
-                    unsigned long int y_idx = y_offset + i * after_N + j;
+                for (unsigned int i = 0; i < dLength; i++) {
+                    unsigned int x_idx = x_offset + i * after_N + j;
+                    unsigned int y_idx = y_offset + i * after_N + j;
                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
                 }
@@ -1841,7 +1841,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
 
 }
 
-void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, std::shared_ptr<diaQMatrix> gate, unsigned long int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned long int qubit_smaller, unsigned long int qubit_larger) {
+void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::shared_ptr<diaQMatrix> gate, unsigned int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
 
     #ifdef DEBUG
         // start timer
@@ -1851,12 +1851,12 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
     after = 1L << after;
     before = 1L << before;
 
-    unsigned long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    // long int *new_gate_shape = new long int[2] {q_diff_exp, q_diff_exp};
-    // std::shared_ptr<long int> new_gate_shape = std::make_shared<long int>(2) {q_diff_exp, q_diff_exp};
-    std::shared_ptr<unsigned long int[]> new_gate_shape(new unsigned long int[2] {q_diff_exp, q_diff_exp});
+    unsigned int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
+    // int *new_gate_shape = new int[2] {q_diff_exp, q_diff_exp};
+    // std::shared_ptr<int> new_gate_shape = std::make_shared<int>(2) {q_diff_exp, q_diff_exp};
+    std::shared_ptr<unsigned int[]> new_gate_shape(new unsigned int[2] {q_diff_exp, q_diff_exp});
 
-    // unsigned long int x_length = x->numRows;
+    // unsigned int x_length = x->numRows;
     // if(after * before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
@@ -1867,31 +1867,31 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
-    for (unsigned long int a = 0; a < diagMap.size(); a++) {
+    for (unsigned int a = 0; a < diagMap.size(); a++) {
         auto it = std::next(diagMap.begin(), a);
         std::shared_ptr<diagonal> diag = it->second;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
         switch(diag->dIndex) {
             case -3: {
-                long int dIndex = -1 * q_diff_exp - 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp - 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -1904,19 +1904,19 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case -2: {
-                long int dIndex = -1 * q_diff_exp;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i += 2) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i += 2) {
                         valType real_val = real_vals[0];
                         valType imag_val = imag_vals[0];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -1927,9 +1927,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                         imag_val = imag_vals[1];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -1941,20 +1941,20 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case -1: {
-                long int dIndex = -1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength/2; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength/2; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -1963,15 +1963,15 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                             }
                         }
                     }
-                    for(unsigned long int i = dLength/2; i < dLength; i++) {
+                    for(unsigned int i = dLength/2; i < dLength; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[2];
                             valType imag_val = imag_vals[2];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -1984,17 +1984,17 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 dIndex = -1 * q_diff_exp + 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 != 0) {
                             valType real_val = real_vals[1];
                             valType imag_val = imag_vals[1];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2007,19 +2007,19 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case 0: {
-                long int dIndex = 0;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = 0;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength/2; i+=2) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength/2; i+=2) {
                         valType real_val = real_vals[0];
                         valType imag_val = imag_vals[0];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2030,9 +2030,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                         imag_val = imag_vals[1];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2040,14 +2040,14 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                             }
                         }
                     }
-                    for(unsigned long int i = dLength/2; i < dLength; i+=2) {
+                    for(unsigned int i = dLength/2; i < dLength; i+=2) {
                         valType real_val = real_vals[2];
                         valType imag_val = imag_vals[2];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2058,9 +2058,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                         imag_val = imag_vals[3];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2072,20 +2072,20 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case 1: {
-                long int dIndex = 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength/2; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength/2; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         // printf("y_real_values[%ld] = %f\n", y_idx, y_real_values[y_idx]);
@@ -2100,15 +2100,15 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                             }
                         }
                     }
-                    for(unsigned long int i = dLength/2; i < dLength; i++) {
+                    for(unsigned int i = dLength/2; i < dLength; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[2];
                             valType imag_val = imag_vals[2];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2121,17 +2121,17 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 dIndex = q_diff_exp - 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 != 0) {
                             valType real_val = real_vals[1];
                             valType imag_val = imag_vals[1];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2144,19 +2144,19 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case 2: {
-                long int dIndex = q_diff_exp;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = q_diff_exp;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i += 2) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i += 2) {
                         valType real_val = real_vals[0];
                         valType imag_val = imag_vals[0];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2167,9 +2167,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                         imag_val = imag_vals[1];
                         if(real_val != 0 || imag_val != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < before; j++) {
-                                unsigned long int x_idx = j + i * after + skip_places;
-                                unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                            for(unsigned int j = 0; j < before; j++) {
+                                unsigned int x_idx = j + i * after + skip_places;
+                                unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                 // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                     y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                     y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2181,20 +2181,20 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
                 break;
             }
             case 3: {
-                long int dIndex = q_diff_exp + 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = q_diff_exp + 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 #pragma omp parallel for
-                for(unsigned long int rep = 0; rep < before; rep++) {
-                    unsigned long int skip_places = rep * (after * (dLength - dIndex));
-                    for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int rep = 0; rep < before; rep++) {
+                    unsigned int skip_places = rep * (after * (dLength - dIndex));
+                    for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 == 0) {
                             valType real_val = real_vals[0];
                             valType imag_val = imag_vals[0];
                             if(real_val != 0 || imag_val != 0) {
                                 #pragma omp parallel for
-                                for(unsigned long int j = 0; j < before; j++) {
-                                    unsigned long int x_idx = j + i * after + skip_places;
-                                    unsigned long int y_idx = j + i * after + skip_places - after * dIndex;
+                                for(unsigned int j = 0; j < before; j++) {
+                                    unsigned int x_idx = j + i * after + skip_places;
+                                    unsigned int y_idx = j + i * after + skip_places - after * dIndex;
                                     // if(x_idx >= 0 && x_idx < x_length && y_idx < x_length && y_idx >=0) {
                                         y_real_values[y_idx] = real_val * x_real_values[x_idx] - imag_val * x_imag_values[x_idx];
                                         y_imag_values[y_idx] = real_val * x_imag_values[x_idx] + imag_val * x_real_values[x_idx];
@@ -2224,7 +2224,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned long int before, s
 
 }
 
-void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned long int n, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned int n, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
@@ -2236,12 +2236,12 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned l
         printf("matrix_kron_identity_times_vector called\n");
         printf("A matrix below\n");
         A->print();
-        printf("\t\n = %ld\n", n);
+        printf("\t\n = %u\n", n);
     #endif
 
-    unsigned long int N = 1L << n;
+    unsigned int N = 1L << n;
 
-    // unsigned long int x_length = x->numRows;
+    // unsigned int x_length = x->numRows;
     // if(before * A->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
@@ -2252,20 +2252,20 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned l
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     // (A kron I) times x = y
     #pragma omp parallel for collapse(2)
-    for (unsigned long int j = 0; j < N; j++) {
-        for (unsigned long int a = 0; a < diagMap.size(); a++) {
+    for (unsigned int j = 0; j < N; j++) {
+        for (unsigned int a = 0; a < diagMap.size(); a++) {
             auto it = std::next(diagMap.begin(), a);
             std::shared_ptr<diagonal> diag = it->second;
             valType *real_vals = diag->realValues;
             valType *imag_vals = diag->imagValues;
-            long int dIndex = it->first;
-            unsigned long int dLength = diag->dLength;
-            for (unsigned long int i = 0; i < dLength; i++) {
+            int dIndex = it->first;
+            unsigned int dLength = diag->dLength;
+            for (unsigned int i = 0; i < dLength; i++) {
                 valType real_i = real_vals[i];
                 valType imag_i = imag_vals[i];
                 // we can skip 0s
@@ -2273,9 +2273,9 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned l
                     continue;
                 }
                 // each element kinda becomes an I block (scalar val at i times I block), we don't need a multiplication op here at all, instead we can cover over values of A, N times as 1 times something is just something.
-                unsigned long int y_offset = i * N;
-                unsigned long int x_offset = i * N;
-                long int new_dIndex = dIndex * N;
+                unsigned int y_offset = i * N;
+                unsigned int x_offset = i * N;
+                int new_dIndex = dIndex * N;
                 if(dIndex > 0) {
                     x_offset += new_dIndex;
                 }
@@ -2307,7 +2307,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned l
 
 }
 
-void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigned long int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned long int qubit_smaller, unsigned long int qubit_larger) {
+void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigned int after, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
@@ -2317,10 +2317,10 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
 
     after = 1L << after;
 
-    unsigned long int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
-    std::shared_ptr<unsigned long int[]> new_gate_shape(new unsigned long int[2] {q_diff_exp, q_diff_exp});
+    unsigned int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
+    std::shared_ptr<unsigned int[]> new_gate_shape(new unsigned int[2] {q_diff_exp, q_diff_exp});
 
-    // unsigned long int x_length = x->numRows;
+    // unsigned int x_length = x->numRows;
     // if(before * gate->matrix_shape[1] != x_length) {
     //     throw std::invalid_argument("Not multiplyable");
     // }
@@ -2331,11 +2331,11 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
-    for (unsigned long int a = 0; a < diagMap.size(); a++) {
+    for (unsigned int a = 0; a < diagMap.size(); a++) {
         auto it = std::next(diagMap.begin(), a);
         std::shared_ptr<diagonal> diag = it->second;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
@@ -2344,20 +2344,20 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
 
         switch(diag->dIndex) {
             case -3: {
-                long int dIndex = -1 * q_diff_exp - 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp - 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int i = 0; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2382,19 +2382,19 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case -2: {
-                long int dIndex = -1 * q_diff_exp;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1 * q_diff_exp;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i+=2) {
+                for(unsigned int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2418,11 +2418,11 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                     each_imag = imag_vals[1];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2446,20 +2446,20 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case -1: {
-                long int dIndex = -1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = -1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength/2; i++) {
+                for(unsigned int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2481,17 +2481,17 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                         }
                     }
                 }
-                for(unsigned long int i = dLength/2; i < dLength; i++) {
+                for(unsigned int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
                         valType each_imag = imag_vals[2];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2516,17 +2516,17 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 dIndex = -1 * q_diff_exp + 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
                         valType each_imag = imag_vals[1];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2551,19 +2551,19 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case 0: {
-                long int dIndex = 0;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = 0;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength/2; i+=2) {
+                for(unsigned int i = 0; i < dLength/2; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2587,11 +2587,11 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                     each_imag = imag_vals[1];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2612,16 +2612,16 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                         }
                     }
                 }
-                for(unsigned long int i = dLength/2; i < dLength; i+=2) {
+                for(unsigned int i = dLength/2; i < dLength; i+=2) {
                     valType each_real = real_vals[2];
                     valType each_imag = imag_vals[2];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2645,11 +2645,11 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                     each_imag = imag_vals[3];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2673,20 +2673,20 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case 1: {
-                long int dIndex = 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength/2; i++) {
+                for(unsigned int i = 0; i < dLength/2; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2708,17 +2708,17 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                         }
                     }
                 }
-                for(unsigned long int i = dLength/2; i < dLength; i++) {
+                for(unsigned int i = dLength/2; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[2];
                         valType each_imag = imag_vals[2];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2743,17 +2743,17 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 dIndex = q_diff_exp - 1;
                 dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int i = 0; i < dLength; i++) {
                     if( i% 2 != 0) {
                         valType each_real = real_vals[1];
                         valType each_imag = imag_vals[1];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2778,19 +2778,19 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case 2: {
-                long int dIndex = q_diff_exp;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = q_diff_exp;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i+=2) {
+                for(unsigned int i = 0; i < dLength; i+=2) {
                     valType each_real = real_vals[0];
                     valType each_imag = imag_vals[0];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2814,11 +2814,11 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                     each_imag = imag_vals[1];
                     if(each_real != 0 || each_imag != 0) {
                         #pragma omp parallel for
-                        for(unsigned long int j = 0; j < after; j++) {
+                        for(unsigned int j = 0; j < after; j++) {
                             // newDiag_real_vals[j + i * n] = each_real;
                             // newDiag_imag_vals[j + i * n] = each_imag;
                             // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                            unsigned long int x_idx, y_idx;
+                            unsigned int x_idx, y_idx;
                             if(dIndex < 0) { // negative diagonals
                                 x_idx = j + i * after;
                                 y_idx = j + i * after - after * dIndex;
@@ -2842,20 +2842,20 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
                 break;
             }
             case 3: {
-                long int dIndex = q_diff_exp + 1;
-                unsigned long int dLength = getDiagonalLength(dIndex, new_gate_shape);
+                int dIndex = q_diff_exp + 1;
+                unsigned int dLength = getDiagonalLength(dIndex, new_gate_shape);
                 // do something
-                for(unsigned long int i = 0; i < dLength; i++) {
+                for(unsigned int i = 0; i < dLength; i++) {
                     if(i % 2 == 0) {
                         valType each_real = real_vals[0];
                         valType each_imag = imag_vals[0];
                         if(each_real != 0 || each_imag != 0) {
                             #pragma omp parallel for
-                            for(unsigned long int j = 0; j < after; j++) {
+                            for(unsigned int j = 0; j < after; j++) {
                                 // newDiag_real_vals[j + i * n] = each_real;
                                 // newDiag_imag_vals[j + i * n] = each_imag;
                                 // do SPMV for these newDiag_real_vals and newDiag_imag_vals
-                                unsigned long int x_idx, y_idx;
+                                unsigned int x_idx, y_idx;
                                 if(dIndex < 0) { // negative diagonals
                                     x_idx = j + i * after;
                                     y_idx = j + i * after - after * dIndex;
@@ -2893,7 +2893,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
 
 }
 
-std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, unsigned long int n) { // we can combine this with operations that happen later.
+std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, unsigned int n) { // we can combine this with operations that happen later.
 
     #ifdef DEBUG
         // start timer
@@ -2904,18 +2904,18 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
 
     // assume a nxn identity matrix, which has one diagonal of length n, in index 0.
     // we just repeat A, n times in the result matrix
-    unsigned long int *result_shape = new unsigned long int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
+    unsigned int *result_shape = new unsigned int[2] {n * A->matrix_shape[0], n * A->matrix_shape[1]};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
-    std::unordered_map<long int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
-    for(unsigned long int di = 0; di < diagMap.size(); di++) {
+    for(unsigned int di = 0; di < diagMap.size(); di++) {
         auto it = std::next(diagMap.begin(), di);
-        long int dIndex = it->first;
+        int dIndex = it->first;
         std::shared_ptr<diagonal> diag = it->second;
-        unsigned long int dLength = diag->dLength;
+        unsigned int dLength = diag->dLength;
         // printf("dIndex = %ld; dLength = %ld\n", dIndex, dLength);
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
@@ -2928,8 +2928,8 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
         valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for collapse(2)
-        for(unsigned long int j = 0; j < n; j++) {
-            for(unsigned long int i = 0; i < dLength; i++) {
+        for(unsigned int j = 0; j < n; j++) {
+            for(unsigned int i = 0; i < dLength; i++) {
                 newDiag_real_vals[j + i * n] = real_vals[i];
                 newDiag_imag_vals[j + i * n] = imag_vals[i];
             }
@@ -2953,7 +2953,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
     return result;
 }
 
-std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned long int before, std::shared_ptr<diaQMatrix> A, unsigned long int after) {
+std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int before, std::shared_ptr<diaQMatrix> A, unsigned int after) {
     #ifdef DEBUG
         auto start = std::chrono::high_resolution_clock::now();
     #endif
@@ -2969,34 +2969,34 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned long int
         std::cout << " --- " << std::endl;
     #endif
 
-    unsigned long int before_N = 1L << before;
-    unsigned long int after_N = 1L << after;
+    unsigned int before_N = 1L << before;
+    unsigned int after_N = 1L << after;
 
-    unsigned long int *result_shape = new unsigned long int[2] {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
+    unsigned int *result_shape = new unsigned int[2] {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator it;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     // // #pragma omp parallel for
-    // for(long int di = 0; di < diagMap.size(); di++) {
+    // for(int di = 0; di < diagMap.size(); di++) {
     //     auto it = std::next(diagMap.begin(), di);
-    //     long int dIndex = it->first;
+    //     int dIndex = it->first;
     //     std::shared_ptr<diagonal> diag = it->second;
-    //     long int dLength = diag->dLength;
+    //     int dLength = diag->dLength;
     //     valType *real_vals = diag->realValues;
     //     valType *imag_vals = diag->imagValues;
 
-    //     long int new_diag_index = dIndex * after_N;
-    //     long int new_diag_length = result->getDiagonalLength(new_diag_index);
+    //     int new_diag_index = dIndex * after_N;
+    //     int new_diag_length = result->getDiagonalLength(new_diag_index);
     //     std::shared_ptr<diagonal> newDiag = new diagonal(new_diag_index, new_diag_length);
     //     valType *newDiag_real_vals = newDiag->realValues;
     //     valType *newDiag_imag_vals = newDiag->imagValues;
 
     //     // #pragma omp parallel for
-    //     for(long int rep = 0; rep < before_N; rep++) {
-    //         long int skip_places = (rep) * (dLength + abs(new_diag_index));
+    //     for(int rep = 0; rep < before_N; rep++) {
+    //         int skip_places = (rep) * (dLength + abs(new_diag_index));
     //         // #pragma omp parallel for
-    //         for(unsigned long int i = 0; i < dLength; i++) {
+    //         for(unsigned int i = 0; i < dLength; i++) {
     //             newDiag_real_vals[i + skip_places] = real_vals[i];
     //             newDiag_imag_vals[i + skip_places] = imag_vals[i];
     //         }
@@ -3007,32 +3007,32 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned long int
     // }
 
     #pragma omp parallel for
-    for(unsigned long int di = 0; di < A->diagonalMap.size(); di++) {
+    for(unsigned int di = 0; di < A->diagonalMap.size(); di++) {
         auto it = std::next(A->diagonalMap.begin(), di);
-        long int dIndex = it->first;
+        int dIndex = it->first;
         std::shared_ptr<diagonal> diag = it->second;
         valType *real_vals = diag->realValues;
         valType *imag_vals = diag->imagValues;
-        unsigned long int dLength = diag->dLength;
+        unsigned int dLength = diag->dLength;
 
-        long int new_diag_index = dIndex * after_N;
-        unsigned long int new_diag_length = result->getDiagonalLength(new_diag_index);
+        int new_diag_index = dIndex * after_N;
+        unsigned int new_diag_length = result->getDiagonalLength(new_diag_index);
         // std::shared_ptr<diagonal> newDiag = new diagonal(new_diag_index, new_diag_length);
         std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(new_diag_index, new_diag_length);
         valType *newDiag_real_vals = newDiag->realValues;
         valType *newDiag_imag_vals = newDiag->imagValues;
 
         #pragma omp parallel for
-        for(unsigned long int rep = 0; rep < before_N; rep++) {
-            unsigned long int skip_places = rep * (after_N * (dLength + abs(dIndex)));
+        for(unsigned int rep = 0; rep < before_N; rep++) {
+            unsigned int skip_places = rep * (after_N * (dLength + abs(dIndex)));
             #pragma omp parallel for
-            for(unsigned long int i = 0; i < dLength; i++) {
+            for(unsigned int i = 0; i < dLength; i++) {
                 valType each_real = real_vals[i];
                 valType each_imag = imag_vals[i];
                 if(each_real != 0 || each_imag != 0) {
                     #pragma omp parallel for
-                    for(unsigned long int j = 0; j < after_N; j++) {
-                        unsigned long int new_idx = skip_places + i * after_N + j;
+                    for(unsigned int j = 0; j < after_N; j++) {
+                        unsigned int new_idx = skip_places + i * after_N + j;
                         newDiag_real_vals[new_idx] = each_real;
                         newDiag_imag_vals[new_idx] = each_imag;
                     }
@@ -3073,35 +3073,35 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned long int *shape_a = A->matrix_shape;
-    unsigned long int *shape_b = B->matrix_shape;
+    unsigned int *shape_a = A->matrix_shape;
+    unsigned int *shape_b = B->matrix_shape;
 
     // map of combination of A diagonal index, A diagonal position to multiply_by_scalar matrix. The individual blocks of matrices: A11 * B, A12 * B, A21 * B, A22 * B, ...
-    std::map<std::pair<long int, long int>, std::pair<valType, valType>> kron_map;
+    std::map<std::pair<int, int>, std::pair<valType, valType>> kron_map;
 
     // map of unique A elements and their corresponding kron blocks
     std::map<std::pair<valType, valType>, std::shared_ptr<diaQMatrix> > unique_kron_blocks;
 
     // Calculate dimensions for the resulting matrix
-    unsigned long int *result_shape = new unsigned long int[2];
+    unsigned int *result_shape = new unsigned int[2];
     result_shape[0] = shape_a[0] * shape_b[0];
     result_shape[1] = shape_a[1] * shape_b[1];
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(&result_shape);
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itA;
+    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
 
     // printf("kron here 0\n");
 
     // for each element in A, do multiply_by_scalar with B and add to kron_list.
     // paralleize this later. TODO
     for (itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
-        long int diagonal_index = itA->first;
+        int diagonal_index = itA->first;
         std::shared_ptr<diagonal> diag = itA->second;
-        unsigned long int diagonal_length = diag->dLength;
+        unsigned int diagonal_length = diag->dLength;
 
         #pragma omp parallel for
-        for(unsigned long int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
+        for(unsigned int diagonal_position = 0; diagonal_position < diagonal_length; diagonal_position++) {
             // skippihg zero elements
             if(diag->realValues[diagonal_position] == 0.0 && diag->imagValues[diagonal_position] == 0.0) {
                 continue;
@@ -3121,10 +3121,10 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
 
             // printf("kron here 2\n");
 
-            std::shared_ptr<unsigned long int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
-            std::pair<long int, long int> key = std::make_pair(A_pos[0], A_pos[1]);
+            std::shared_ptr<unsigned int[]> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
+            std::pair<int, int> key = std::make_pair(A_pos[0], A_pos[1]);
             std::pair<valType, valType> val = std::make_pair(diag->realValues[diagonal_position], diag->imagValues[diagonal_position]);
-            kron_map.insert(std::pair<std::pair<long int, long int>, std::pair<valType, valType>>(key, val));
+            kron_map.insert(std::pair<std::pair<int, int>, std::pair<valType, valType>>(key, val));
         }
     }
     #ifdef DEEP_DEBUG
@@ -3136,7 +3136,7 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
     // pre-allocate resutl's diagonals and paralleize this below later,! TODO
 
     // traverse kron_map and add to result.
-    std::map<std::pair<long int, long int>, std::pair<valType, valType>>::iterator it;
+    std::map<std::pair<int, int>, std::pair<valType, valType>>::iterator it;
     #pragma omp parallel
     {
         #pragma omp single
@@ -3144,15 +3144,15 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
             #pragma omp task
             {
                 // for each element in A
-                long int A_mat_pos[2];
+                int A_mat_pos[2];
                 A_mat_pos[0] = it->first.first;
                 A_mat_pos[1] = it->first.second;
                 // get kron_block from unique_kron_blocks
                 std::shared_ptr<diaQMatrix> kron_block = unique_kron_blocks.find(it->second)->second;
 
                 // we now have to add to result's res_diag_index at res_diag_pos
-                std::unordered_map<long int, std::shared_ptr<diagonal> > kron_block_diagMap = kron_block->diagonalMap;
-                std::unordered_map<long int, std::shared_ptr<diagonal> >::iterator itK;
+                std::unordered_map<int, std::shared_ptr<diagonal> > kron_block_diagMap = kron_block->diagonalMap;
+                std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itK;
 
                 #pragma omp parallel
                 {
@@ -3160,16 +3160,16 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
                     for (itK = kron_block_diagMap.begin(); itK != kron_block_diagMap.end(); itK++) {
                         #pragma omp task
                         {
-                            long int kron_block_diag_index = itK->first;
+                            int kron_block_diag_index = itK->first;
                             std::shared_ptr<diagonal> kron_block_diag = itK->second;
-                            unsigned long int kron_block_diag_length = kron_block_diag->dLength;
+                            unsigned int kron_block_diag_length = kron_block_diag->dLength;
 
                             #pragma omp parallel for
-                            for(unsigned long int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
+                            for(unsigned int kron_block_diag_position = 0; kron_block_diag_position < kron_block_diag_length; kron_block_diag_position++) {
 
-                                std::shared_ptr<unsigned long int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
-                                std::shared_ptr<unsigned long int[]> res_mat_pos = result->getMatrixPosition(A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]);
-                                std::shared_ptr<long int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                                std::shared_ptr<unsigned int[]> B_mat_pos = kron_block->getMatrixPosition(kron_block_diag_index, kron_block_diag_position);
+                                std::shared_ptr<unsigned int[]> res_mat_pos = result->getMatrixPosition(A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]);
+                                std::shared_ptr<int[]> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
 
                                 #ifdef DEEP_DEBUG
                                     std::cout << "A_mat_pos = (" << A_mat_pos[0] << ", " << A_mat_pos[1] << ")" << std::endl;
@@ -3246,7 +3246,7 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
 
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
         std::shared_ptr<diagonal> d = A->getDiagonal(0);
-        unsigned long int dLength = d->dLength;
+        unsigned int dLength = d->dLength;
         valType *real_vals = d->realValues;
         valType *imag_vals = d->imagValues;
 
@@ -3260,7 +3260,7 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
 
         // Compute exact exp(-i A t) for diagonal elements
         #pragma omp parallel for
-        for (unsigned long int i = 0; i < dLength; i++) {
+        for (unsigned int i = 0; i < dLength; i++) {
             valType a_i = real_vals[i];
             valType b_i = imag_vals[i];
 
@@ -3332,13 +3332,13 @@ std::shared_ptr<diaQMatrix> diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatri
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapA = diagonalMap;
-    std::unordered_map<long int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
 
-    std::vector<std::unordered_map<long int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
+    std::vector<std::unordered_map<int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
 
-    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
-    std::vector<std::pair<long int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
+    std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
+    std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
 
     #pragma omp parallel
     {
