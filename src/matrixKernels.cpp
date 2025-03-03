@@ -429,11 +429,11 @@ std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_p
 }
 
 std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
-    if(A->getSize() != B->getSize()) {
-        throw std::invalid_argument("input matrices are of different dimensions, not compatible");
+    // check for out of bounds
+    if(A->matrix_shape[0] != B->matrix_shape[0] || A->matrix_shape[1] != B->matrix_shape[1]) {
+        throw std::invalid_argument("input matrices are not addable");
     }
-    // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(A->getSize());
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->getSize());
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0] * A->matrix_shape[1]);
     std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
     std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->getDiagonalMap();
     #pragma omp parallel for

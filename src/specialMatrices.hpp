@@ -48,7 +48,6 @@ class permutationMatrix : public diaQMatrix, public std::enable_shared_from_this
 			this->diagonalMap = qs->diagonalMap;
 			this->matrix_shape = qs->matrix_shape;
 			this->shape = qs->shape;
-			this->size = qs->size;
 		}
 };;
 

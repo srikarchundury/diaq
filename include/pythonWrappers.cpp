@@ -55,7 +55,6 @@ PYBIND11_MODULE(diaq, m) {
 		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getDiagonalPosition))
 		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
         // --- //
-        .def("getSize", &diaq::diaQMatrix::getSize, py::return_value_policy::reference)
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
@@ -143,7 +142,6 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<unsigned int, diaq::valType *, diaq::valType *>())
         // .def(py::init<unsigned int **, diaq::valType *>())
         // .def(py::init<unsigned int **, diaq::valType *, diaq::valType *>())
-        .def_readwrite("size", &diaq::denseMatrix::size)
         .def_readwrite("matrix_shape", &diaq::denseMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::denseMatrix::shape)
         .def("getItem", &diaq::denseMatrix::getItem, py::return_value_policy::reference)

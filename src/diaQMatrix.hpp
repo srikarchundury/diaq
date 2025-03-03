@@ -11,7 +11,6 @@ class denseMatrix; // telling this class exists w/o defining it here
 
 class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
-        unsigned int size;
         unsigned int *matrix_shape; // as of now, this is always a 2 element array
         std::vector<unsigned int> shape;
         std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap; // map <dIndex, diagonal object>
@@ -19,7 +18,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         diaQMatrix(unsigned int s) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
-            size = s * s;
             matrix_shape = new unsigned int[2];
             matrix_shape[0] = s;
             matrix_shape[1] = s;
@@ -30,7 +28,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
             matrix_shape = *dimens;
-            size = matrix_shape[0] * matrix_shape[1];
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -39,11 +36,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             diagonalMap = d;
             matrix_shape = *dimens;
             shape = ts;
-            size = matrix_shape[0] * matrix_shape[1];
         }
         diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
             diagonalMap = dm;
-            size = s * s;
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
@@ -52,7 +47,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d) {
             diagonalMap = dm;
             matrix_shape = *d;
-            size = matrix_shape[0] * matrix_shape[1];
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -60,17 +54,12 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             diagonalMap = dm;
             matrix_shape = *d;
             shape = ts;
-            size = matrix_shape[0] * matrix_shape[1];
         }
 
         ~diaQMatrix() {
             #ifdef DEEP_DEBUG
                 std::cout << "diaQMatrix destructor called" << std::endl;
             #endif
-        }
-
-        unsigned int getSize() {
-            return size;
         }
         valType getItem_real(unsigned int flat_index) {
             std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(flat_index);
@@ -885,8 +874,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
                 z += it->second->numNonZeros();
             }
-            valType z_val = static_cast<valType>(z);
-            valType size_val = static_cast<valType>(size);
+            valType z_val = (valType) z;
+            valType size_val = (valType) matrix_shape[0] * matrix_shape[1];
+            printf("z_val = %f, size_val = %f\n", z_val, size_val);
             return 1.0 - z_val / size_val;
         }
         void pruneMatrix() {

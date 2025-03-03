@@ -9,12 +9,11 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
     public:
         unsigned int *matrix_shape;
         std::vector<unsigned int> shape;
-        unsigned int size;
         valType *realData;
         valType *imagData;
 
         denseMatrix(const unsigned int s) {
-            size = s*s;
+            unsigned int size = s*s;
             #if NUM_BYTES_ALIGNED == -1
                 realData = (valType *)calloc(size, sizeof(valType));
                 imagData = (valType *)calloc(size, sizeof(valType));
@@ -29,7 +28,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             shape.push_back(s);
         } 
         denseMatrix(const unsigned int s, valType *real_data) {
-            size = s*s;
+            unsigned int size = s*s;
             realData = real_data;
             #if NUM_BYTES_ALIGNED == -1
                 imagData = (valType *)calloc(size, sizeof(valType));
@@ -47,7 +46,6 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             shape.push_back(s);
         }
         denseMatrix(const unsigned int s, valType *real_data, valType *imag_data) {
-            size = s*s;
             realData = real_data;
             imagData = imag_data;
             matrix_shape = new unsigned int[2];
@@ -58,8 +56,8 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         }
         denseMatrix(unsigned int **d, valType *real_data) {
             matrix_shape = *d;
-            size = matrix_shape[0] * matrix_shape[1];
             realData = real_data;
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             #if NUM_BYTES_ALIGNED == -1
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
@@ -76,7 +74,6 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             realData = real_data;
             imagData = imag_data;
             matrix_shape = *d;
-            size = matrix_shape[0] * matrix_shape[1];
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
@@ -84,7 +81,6 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             realData = real_data;
             imagData = imag_data;
             matrix_shape = *d;
-            size = matrix_shape[0] * matrix_shape[1];
             shape = ts;
         }
         ~denseMatrix() {
@@ -97,6 +93,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             // somehow tests fail if I free it here, invesigating!!
         }
         std::complex<valType> *getData_forPy() {
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             std::complex<valType> *res = new std::complex<valType>[size]();
             #pragma omp parallel for
             for(unsigned int i = 0; i < size; i++) {
@@ -105,6 +102,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             return res;
         }
         std::complex<valType> *getData() {
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             std::complex<valType> *res = (std::complex<valType> *)malloc(size * sizeof(std::complex<valType>));
             #pragma omp parallel for
             for(unsigned int i = 0; i < size; i++) {
@@ -121,9 +119,10 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         unsigned int getFlatIndex(std::vector<unsigned int> ten_pos) {
             unsigned int flat_index = 0;
             unsigned int prod = 1;
+            #pragma omp simd
             for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
-                flat_index = flat_index + (size / prod) * ten_pos[i];
+                flat_index = flat_index + (matrix_shape[0] * matrix_shape[1] / prod) * ten_pos[i];
             }
             return flat_index;
         }
@@ -147,6 +146,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             for (unsigned int i = 0; i < size; i++) {
                 if((i+1)%matrix_shape[1] == 0) {
                     std::cout << "(" << realData[i] << "," << imagData[i] << ")" << std::endl;
@@ -158,12 +158,14 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         }
         bool isPartOf(int dIndex, int a, int b, int x, int y) {
             int p = x - y + b - a;
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             if(dIndex >= (int) size) {
                 p = x + y - a - b;
             }
             return (p == 0);
         }
         valType sparsity() {
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             unsigned int z = 0;
             for(unsigned int i = 0; i < size; i++) {
                 if(realData[i] == 0.0 && imagData[i] == 0.0) {
@@ -175,6 +177,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         // currently un-used!
         // given a point in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
         int getTargetDiagIndex(std::shared_ptr<diaQMatrix> qm, unsigned int i, unsigned int j) {
+            unsigned int size = matrix_shape[0] * matrix_shape[1];
             // every element will be part of 2 diagonals?? We choose one of them based on sparsity in each.
             // get diagonal index, based on distance or number of elements.
             int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
