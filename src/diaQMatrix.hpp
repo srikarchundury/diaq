@@ -876,7 +876,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             valType z_val = (valType) z;
             valType size_val = (valType) matrix_shape[0] * matrix_shape[1];
-            printf("z_val = %f, size_val = %f\n", z_val, size_val);
             return 1.0 - z_val / size_val;
         }
         void pruneMatrix() {
