@@ -321,7 +321,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 #pragma omp parallel for
-                for(size_t j = 0; j < d->dLength; j++) {
+                for(unsigned int j = 0; j < d->dLength; j++) {
                     valType r = real_vals[j];
                     real_vals[j] = -1.0 * imag_vals[j] * imag;
                     imag_vals[j] = r * imag;
@@ -338,7 +338,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 #pragma omp parallel for
-                for(size_t j = 0; j < d->dLength; j++) {
+                for(unsigned int j = 0; j < d->dLength; j++) {
                     real_vals[j] = real_vals[j] * real;
                     imag_vals[j] = imag_vals[j] * real;
                 }

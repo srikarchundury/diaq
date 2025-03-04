@@ -126,7 +126,7 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::vector class
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
-        .def(py::init<size_t>())
+        .def(py::init<unsigned int>())
         .def("setValue", &diaq::vector::setValue, py::return_value_policy::reference)
         .def("print", &diaq::vector::print, py::return_value_policy::reference)
         .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
@@ -220,7 +220,7 @@ PYBIND11_MODULE(diaq, m) {
             auto vals_info = vals.request();
             // Get pointers to the data
             std::complex<diaq::valType> *vals_ptr = static_cast<std::complex<diaq::valType> *>(vals_info.ptr);
-            std::shared_ptr<diaq::vector> res = diaq::from_numpy_vector(vals_ptr, (size_t) vals.size());
+            std::shared_ptr<diaq::vector> res = diaq::from_numpy_vector(vals_ptr, (unsigned int) vals.size());
             return res;
         },
         py::arg(),

@@ -82,7 +82,7 @@ using valType = double;
 // #else
 // 	#define NUM_BYTES_ALIGNED -1
 
-valType* aligned_alloc_helper(size_t size); // see config.cpp
+valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 // ------------------------------- //
 
 
