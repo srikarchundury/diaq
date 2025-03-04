@@ -46,7 +46,7 @@ using valType = double;
 
 // ------- Vectorization related ------- //
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, set -1 to run without vectorization
-#define NUM_BYTES_ALIGNED 128
+#define NUM_BYTES_ALIGNED 64
 // //case 0: double, SSE
 // #if valType == double && VECTORIZATION_TYPE == 0
 // 	// #define SIMD_WIDTH 2
