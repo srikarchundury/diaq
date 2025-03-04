@@ -7,11 +7,11 @@ namespace diaq {
 
 class vector : public std::enable_shared_from_this<vector> {
     public:
-        size_t numRows;
+        unsigned int numRows;
         valType* realValues;
         valType* imagValues;
 
-        vector(size_t M) {
+        vector(unsigned int M) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(M, sizeof(valType));
@@ -19,7 +19,7 @@ class vector : public std::enable_shared_from_this<vector> {
                 // realValues = (valType *)malloc(M * sizeof(valType));
                 // imagValues = (valType *)malloc(M * sizeof(valType));
                 // #pragma omp parallel for
-                // for(size_t i = 0; i < M; i++) {
+                // for(unsigned int i = 0; i < M; i++) {
                 //     realValues[i] = 0.0;
                 //     imagValues[i] = 0.0;
                 // }
@@ -28,20 +28,20 @@ class vector : public std::enable_shared_from_this<vector> {
                 realValues = aligned_alloc_helper(M * sizeof(valType));
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
-                for(size_t i = 0; i < M; i++) {
+                for(unsigned int i = 0; i < M; i++) {
                     realValues[i] = 0.0;
                     imagValues[i] = 0.0;
                 }
             #endif
         }
 
-        vector(size_t M, valType *realVals, valType *imagVals) {
+        vector(unsigned int M, valType *realVals, valType *imagVals) {
             numRows = M;
             realValues = realVals;
             imagValues = imagVals;
         }
 
-        vector(size_t M, valType *realVals) {
+        vector(unsigned int M, valType *realVals) {
             numRows = M;
             realValues = realVals;
             #if NUM_BYTES_ALIGNED == -1
@@ -51,12 +51,12 @@ class vector : public std::enable_shared_from_this<vector> {
             #endif
         }
 
-        vector(size_t M, valType init_real, valType init_imag) {
+        vector(unsigned int M, valType init_real, valType init_imag) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(M, sizeof(valType));
                 imagValues = (valType *)calloc(M, sizeof(valType));
-                for (size_t i = 0; i < M; ++i) {
+                for (unsigned int i = 0; i < M; ++i) {
                     realValues[i] = init_real;
                     imagValues[i] = init_imag;
                 }
@@ -64,14 +64,14 @@ class vector : public std::enable_shared_from_this<vector> {
                 realValues = aligned_alloc_helper(M * sizeof(valType));
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
                 #pragma omp parallel for
-                for(size_t i = 0; i < M; i++) {
+                for(unsigned int i = 0; i < M; i++) {
                     realValues[i] = init_real;
                     imagValues[i] = init_imag;
                 }
             #endif
         }
 
-        vector(size_t M, valType init_real) {
+        vector(unsigned int M, valType init_real) {
             numRows = M;
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(M, sizeof(valType));
@@ -81,7 +81,7 @@ class vector : public std::enable_shared_from_this<vector> {
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
             #endif
             #pragma omp parallel for
-            for (size_t i = 0; i < M; ++i) {
+            for (unsigned int i = 0; i < M; ++i) {
                 realValues[i] = init_real;
                 imagValues[i] = 0.0;
             }
@@ -96,32 +96,32 @@ class vector : public std::enable_shared_from_this<vector> {
 
         void zeroify() {
             #pragma omp parallel for
-            for(size_t i = 0; i < numRows; i++) {
+            for(unsigned int i = 0; i < numRows; i++) {
                 realValues[i] = 0.0;
                 imagValues[i] = 0.0;
             }
         }
 
-        std::complex<valType> operator[](size_t i) {
+        std::complex<valType> operator[](unsigned int i) {
             return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
-        const std::complex<valType> operator[](size_t i) const {
+        const std::complex<valType> operator[](unsigned int i) const {
             return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
-        size_t num_rows() const {
+        unsigned int num_rows() const {
             return numRows;
         }
 
-        void setValue(size_t i, valType real, valType imag) {
+        void setValue(unsigned int i, valType real, valType imag) {
             realValues[i] = real;
             imagValues[i] = imag;
         }
 
         std::vector<std::complex<valType> > getArray() {
             std::vector<std::complex<valType> > v;
-            for (size_t i = 0; i < numRows; ++i) {
+            for (unsigned int i = 0; i < numRows; ++i) {
                 v.push_back(std::complex<valType>(realValues[i], imagValues[i]));
             }
             return v;
@@ -133,7 +133,7 @@ class vector : public std::enable_shared_from_this<vector> {
             auto imagValues = v->imagValues;
 
             #pragma omp parallel for
-            for (size_t i = 0; i < numRows; ++i) {
+            for (unsigned int i = 0; i < numRows; ++i) {
                 realValues[i] = realValues[i];
                 imagValues[i] = -1 * imagValues[i];
             }
@@ -147,7 +147,7 @@ class vector : public std::enable_shared_from_this<vector> {
             auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res,imag_res)
-            for (size_t i = 0; i < numRows; ++i) {
+            for (unsigned int i = 0; i < numRows; ++i) {
                 real_res += realValues[i] * realValues[i] - imagValues[i] * imagValues[i];
                 imag_res += realValues[i] * imagValues[i] + imagValues[i] * realValues[i];
             }
@@ -160,7 +160,7 @@ class vector : public std::enable_shared_from_this<vector> {
             auto imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res)
-            for (size_t i = 0; i < numRows; ++i) {
+            for (unsigned int i = 0; i < numRows; ++i) {
                 // Take the conjugate of this vector in place
                 valType real_conj = realValues[i];
                 valType imag_conj = -imagValues[i];
@@ -174,7 +174,7 @@ class vector : public std::enable_shared_from_this<vector> {
 
         void print() {
             std::cout << "length (" << numRows << ") [";
-            for (size_t i = 0; i < numRows - 1; ++i) {
+            for (unsigned int i = 0; i < numRows - 1; ++i) {
                 printf("(%lf,%lf), ", realValues[i], imagValues[i]);
             }
             printf("(%lf,%lf)]\n", realValues[numRows - 1], imagValues[numRows - 1]);
@@ -187,7 +187,7 @@ class vector : public std::enable_shared_from_this<vector> {
 
         valType sparsity() {
             unsigned int num_nonzeros = 0;
-            for (size_t i = 0; i < numRows; ++i) {
+            for (unsigned int i = 0; i < numRows; ++i) {
                 if(realValues[i] != 0.0 || imagValues[i] != 0.0) {
                     num_nonzeros++;
                 }

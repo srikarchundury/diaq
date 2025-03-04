@@ -92,7 +92,7 @@ std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr
 		throw std::invalid_argument("Not multiplyable");
 	}
 
-	std::shared_ptr<vector> y = std::make_shared<vector>((size_t)A->matrix_shape[0], (valType)0);
+	std::shared_ptr<vector> y = std::make_shared<vector>((unsigned int)A->matrix_shape[0], (valType)0);
 	valType *y_real_values = y->realValues;
 	valType *y_imag_values = y->imagValues;
 

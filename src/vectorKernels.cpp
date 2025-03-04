@@ -13,7 +13,7 @@ namespace diaq {
  * @param x the vector to be set to zero
  */
 void zeroize(std::shared_ptr<vector> x) {
-    for (size_t i = 0; i < x->numRows; ++i) {
+    for (unsigned int i = 0; i < x->numRows; ++i) {
         (*x)[i] = 0.0;
     }
 }
@@ -24,7 +24,7 @@ void zeroize(std::shared_ptr<vector> x) {
  * @param x
  */
 void unitize(std::shared_ptr<vector> x) {
-    for (size_t i = 0; i < x->numRows; ++i) {
+    for (unsigned int i = 0; i < x->numRows; ++i) {
         (*x)[i] = 1.0;
     }
 }
@@ -40,7 +40,7 @@ void randomize(std::shared_ptr<vector> x, valType scale, valType mean) {
     std::default_random_engine generator;
     std::uniform_real_distribution<valType> distribution(mean - scale, mean + scale);
     static auto dice = std::bind(distribution, generator);
-    for (size_t i = 0; i < x->numRows; ++i) {
+    for (unsigned int i = 0; i < x->numRows; ++i) {
         (*x)[i] = std::complex(dice(),dice());
     }
 }
@@ -55,7 +55,7 @@ valType one_norm(const std::shared_ptr<vector> x) {
     valType sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (size_t i = 0; i < x->numRows; ++i)
+    for (unsigned int i = 0; i < x->numRows; ++i)
     {
         sum += std::abs((*x)[i]);
     }
@@ -72,7 +72,7 @@ valType two_norm(const std::shared_ptr<vector> x) {
     valType sum = 0.0;
     #pragma omp parallel for reduction(+ \
                                    : sum)
-    for (size_t i = 0; i < x->numRows; ++i)
+    for (unsigned int i = 0; i < x->numRows; ++i)
     {
         sum += std::norm((*x)[i]);
     }
@@ -87,7 +87,7 @@ valType two_norm(const std::shared_ptr<vector> x) {
  */
 valType inf_norm(const std::shared_ptr<vector> x) {
         valType result = std::abs((*x)[0]);
-        for (size_t i = 1; i < x->numRows; ++i)
+        for (unsigned int i = 1; i < x->numRows; ++i)
         {
             if (std::abs((*x)[i]) > result)
             {
@@ -106,7 +106,7 @@ std::shared_ptr<vector> operator-(const std::shared_ptr<vector> &x, const std::s
     assert(x->numRows == y->numRows);
     auto z = std::make_shared<vector>(x->numRows);
     #pragma omp parallel for
-    for (size_t i = 0; i < z->numRows; ++i)
+    for (unsigned int i = 0; i < z->numRows; ++i)
     {
         (*z)[i] = (*x)[i] - (*y)[i];
     }
@@ -115,7 +115,7 @@ std::shared_ptr<vector> operator-(const std::shared_ptr<vector> &x, const std::s
 
 std::shared_ptr<vector> &operator*=(std::shared_ptr<vector> &x, valType alpha) {
     #pragma omp parallel for
-    for (size_t i = 0; i < x->numRows; ++i)
+    for (unsigned int i = 0; i < x->numRows; ++i)
     {
         (*x)[i] *= alpha;
     }
@@ -124,7 +124,7 @@ std::shared_ptr<vector> &operator*=(std::shared_ptr<vector> &x, valType alpha) {
 
 std::shared_ptr<vector> &operator+=(std::shared_ptr<vector> &x, std::complex<valType> alpha) {
     #pragma omp parallel for
-    for (size_t i = 0; i < x->numRows; ++i)
+    for (unsigned int i = 0; i < x->numRows; ++i)
     {
         (*x)[i] += alpha;
     }
@@ -134,7 +134,7 @@ std::shared_ptr<vector> &operator+=(std::shared_ptr<vector> &x, std::complex<val
 std::shared_ptr<vector> &operator+=(std::shared_ptr<vector> &x, const std::shared_ptr<vector> y) {
     assert(x->numRows == y->numRows);
     #pragma omp parallel for
-    for (size_t i = 0; i < x->numRows; ++i)
+    for (unsigned int i = 0; i < x->numRows; ++i)
     {
         (*x)[i] += (*y)[i];
     }

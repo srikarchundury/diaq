@@ -1075,12 +1075,12 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+
     std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
-    for (size_t a = 0; a < diagMap.size(); ++a) {
-        auto it = std::next(diagMap.begin(), a);
+    for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
+        auto it = std::next(A->diagonalMap.begin(), a);
         int dIndex = it->first;
         unsigned int dLength = it->second->dLength;
         valType *real_vals = it->second->realValues;

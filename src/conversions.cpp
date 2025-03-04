@@ -234,7 +234,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
     #endif
 }
 
-std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, size_t M) {
+std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, unsigned int M) {
     valType *real_vals = (valType *)malloc(M * sizeof(valType));
     valType *imag_vals = (valType *)malloc(M * sizeof(valType));
     
@@ -249,7 +249,7 @@ std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, size_t M)
 }
 
 std::complex<valType> *to_numpy_vector(std::shared_ptr<vector> v) {
-    size_t M = v->numRows;
+    unsigned int M = v->numRows;
     std::complex<valType> *vals = (std::complex<valType> *)malloc(M * sizeof(std::complex<valType>));
     valType *real_vals = v->realValues;
     valType *imag_vals = v->imagValues;
