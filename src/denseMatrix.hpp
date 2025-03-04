@@ -88,8 +88,12 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                 std::cout << "denseMatrix destructor called" << std::endl;
             #endif
             // we have to free because we allocate manually, other places are vector.hpp, diagonal.hpp!!!
-            std::free(realData);
-            std::free(imagData);
+            if (realData) {
+                std::free(realData);
+            }
+            if (imagData) {
+                std::free(imagData);
+            }
             // somehow tests fail if I free it here, invesigating!!
         }
         std::complex<valType> *getData_forPy() {
