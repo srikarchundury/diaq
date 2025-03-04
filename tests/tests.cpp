@@ -2538,6 +2538,30 @@ int main(int argc, char **argv) {
         std::cout << checkResult(sparse_k_p, dense_k_p->convertToQuantumSparse()) << std::endl;
         std::cout << " -- " << std::endl;
     }
+    else if (strcmp(argv[1], "kron_6") == 0) {
+        diaq::valType H_vals[4] = {
+            0.707107, 0.707107,
+            0.707107, -0.707107
+        };
+        unsigned int *H_shape = new unsigned int[2]{2,2};
+        std::shared_ptr<diaq::denseMatrix> H = std::make_shared<diaq::denseMatrix>(&H_shape, H_vals);
+        std::shared_ptr<diaq::diaQMatrix> dq_H = H->convertToQuantumSparse();
+        std::cout << "-- Hadamard gate: --" << std::endl;
+        dq_H->print();
+        std::shared_ptr<diaq::diaQMatrix> dq_H_H = diaq::kron_product(dq_H, dq_H);
+        std::cout << "-- Hadamard gate kron Hadamard gate: --" << std::endl;
+        dq_H_H->print();
+        std::cout << " -- " << std::endl;
+        std::cout << "H kron H kron H: " << std::endl;
+        std::shared_ptr<diaq::diaQMatrix> dq_H_H_H = diaq::kron_product(dq_H_H, dq_H);
+        dq_H_H_H->print();
+        std::cout << " -- " << std::endl;
+        std::cout << " -- " << std::endl;
+        std::cout << "H kron H kron H kron H: " << std::endl;
+        std::shared_ptr<diaq::diaQMatrix> dq_H_H_H_H = diaq::kron_product(dq_H_H_H, dq_H);
+        dq_H_H_H_H->print();
+        std::cout << " -- " << std::endl;
+    }
     else if(strcmp(argv[1], "identity_kron_matrix_1") == 0 ) {
         // testing identity_kron_matrix
         std::cout << " -- testing identity_kron_matrix -- " << std::endl;
