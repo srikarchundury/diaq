@@ -1,13 +1,6 @@
 #ifndef DIAQ_VECTORKERNELS_HPP
 #define DIAQ_VECTORKERNELS_HPP
 
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <functional>
-#include <random>
-#include <omp.h>
-
 #include "config.hpp"
 #include "vector.hpp"
 #include "diaQMatrix.hpp"
