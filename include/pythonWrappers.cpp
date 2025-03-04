@@ -154,20 +154,20 @@ PYBIND11_MODULE(diaq, m) {
         .def("getTargetDiagIndex", &diaq::denseMatrix::getTargetDiagIndex, py::return_value_policy::reference)
         .def("getTargetDiagIndex_onlydiags", &diaq::denseMatrix::getTargetDiagIndex_onlydiags, py::return_value_policy::reference)
         .def(
-            "convertToQuantumSparse",
-            [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned int> shape) { return self->convertToQuantumSparse(shape); },
+            "convertToDiaQ",
+            [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned int> shape) { return self->convertToDiaQ(shape); },
             py::arg(),
             py::return_value_policy::reference
         )
         .def(
-            "convertToQuantumSparse",
-            [](std::shared_ptr<diaq::denseMatrix> self, unsigned int *matrix_shape) { return self->convertToQuantumSparse(matrix_shape); },
+            "convertToDiaQ",
+            [](std::shared_ptr<diaq::denseMatrix> self, unsigned int *matrix_shape) { return self->convertToDiaQ(matrix_shape); },
             py::arg(),
             py::return_value_policy::reference
         )
         .def( // overload
-            "convertToQuantumSparse",
-            [](std::shared_ptr<diaq::denseMatrix> self) { return self->convertToQuantumSparse(); },
+            "convertToDiaQ",
+            [](std::shared_ptr<diaq::denseMatrix> self) { return self->convertToDiaQ(); },
             py::return_value_policy::reference
         )
         ;

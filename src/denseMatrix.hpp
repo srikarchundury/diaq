@@ -207,9 +207,9 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         int getTargetDiagIndex_onlydiags(int i, int j) {
             return j-i;
         }
-        std::shared_ptr<diaQMatrix> convertToQuantumSparse(std::vector<unsigned int> new_shape);
-        std::shared_ptr<diaQMatrix> convertToQuantumSparse(unsigned int *new_matrix_shape);
-        std::shared_ptr<diaQMatrix> convertToQuantumSparse();
+        std::shared_ptr<diaQMatrix> convertToDiaQ(std::vector<unsigned int> new_shape);
+        std::shared_ptr<diaQMatrix> convertToDiaQ(unsigned int *new_matrix_shape);
+        std::shared_ptr<diaQMatrix> convertToDiaQ();
 };
 
 } // namespace diaq

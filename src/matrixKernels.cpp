@@ -3193,7 +3193,7 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
     // denseMatrix denseA = A.convertToDenseMatrix(A->shape);
     // denseMatrix denseB = B.convertToDenseMatrix(B->shape);
     // denseMatrix denseC = dense_kron_product(denseA, denseB);
-    // diaQMatrix result = denseC.convertToQuantumSparse(denseC->shape);
+    // diaQMatrix result = denseC.convertToDiaQ(denseC->shape);
 
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
