@@ -454,6 +454,10 @@ PYBIND11_MODULE(diaq, m) {
     m.def(
         "dq_times_np",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<std::complex<diaq::valType>> arr) {
+
+            #ifdef DEBUG
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
             // Get NumPy array buffer info
             auto arr_info = arr.request();
             // if (arr_info.ndim != 2) {
@@ -506,7 +510,7 @@ PYBIND11_MODULE(diaq, m) {
             {
                 std::vector<std::complex<diaq::valType>> local_result(rows_B * cols_B, {0, 0});
 
-                #pragma omp for schedule(dynamic)
+                #pragma omp for
                 for (size_t i = 0; i < A->diagonalMap.size(); i++) {
                     auto it = std::next(A->diagonalMap.begin(), i);
                     int diag_index = it->first; // Diagonal shift
@@ -540,6 +544,12 @@ PYBIND11_MODULE(diaq, m) {
                     }
                 }
             }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+                printf("\t\t dq_times_np took %f milliseconds\n", duration.count()/1000.0);
+            #endif
 
             return result;
         },
