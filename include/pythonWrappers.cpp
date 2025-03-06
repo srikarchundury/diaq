@@ -451,4 +451,101 @@ PYBIND11_MODULE(diaq, m) {
         py::return_value_policy::reference
     );
 
+    m.def(
+        "dq_times_np",
+        [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<std::complex<diaq::valType>> arr) {
+            // Get NumPy array buffer info
+            auto arr_info = arr.request();
+            // if (arr_info.ndim != 2) {
+            //     throw std::runtime_error("Input array must be two-dimensional.");
+            // }    
+            size_t rows_B = arr_info.shape[0]; // Number of rows in B
+            size_t cols_B = arr_info.shape[1]; // Number of columns in B (K)
+            auto arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+
+            // Output matrix C(i, k) -> same shape as input
+            py::array_t<std::complex<diaq::valType>> result({rows_B, cols_B});
+            auto result_ptr = static_cast<std::complex<diaq::valType>*>(result.request().ptr);
+
+            // Initialize result with zeros
+            #pragma omp parallel for collapse(2)
+            for (size_t i = 0; i < rows_B; i++) {
+                for (size_t k = 0; k < cols_B; k++) {
+                    result_ptr[i * cols_B + k] = {0, 0};
+                }
+            }
+
+            // Perform sparse diagonal matrix-matrix multiplication
+            // #pragma omp parallel for
+            // for (size_t i = 0; i < A->diagonalMap.size(); i++) {
+            //     auto it = std::next(A->diagonalMap.begin(), i);
+            //     int diag_index = it->first; // Diagonal shift
+            //     auto diag = it->second;     // Diagonal object
+
+            //     diaq::valType *diag_real_vals = diag->realValues;
+            //     diaq::valType *diag_imag_vals = diag->imagValues;
+
+            //     for (unsigned int j = 0; j < diag->dLength; j++) {
+            //         std::shared_ptr<unsigned int[]> mat_coords = A->getMatrixPosition(diag_index, j);
+            //         unsigned int row = mat_coords[0];
+            //         unsigned int col = mat_coords[1];
+            //         // Multiply each column in B
+            //         #pragma omp simd
+            //         for (size_t k = 0; k < cols_B; k++) {
+            //             result_ptr[row * cols_B + k].real(
+            //                 result_ptr[row * cols_B + k].real() + diag_real_vals[j] * arr_ptr[col * cols_B + k].real() - diag_imag_vals[j] * arr_ptr[col * cols_B + k].imag()
+            //             );
+            //             result_ptr[row * cols_B + k].imag(
+            //                 result_ptr[row * cols_B + k].imag() + diag_real_vals[j] * arr_ptr[col * cols_B + k].imag() + diag_imag_vals[j] * arr_ptr[col * cols_B + k].real()
+            //             );
+            //         }
+            //     }
+            // }
+
+            #pragma omp parallel
+            {
+                std::vector<std::complex<diaq::valType>> local_result(rows_B * cols_B, {0, 0});
+
+                #pragma omp for schedule(dynamic)
+                for (size_t i = 0; i < A->diagonalMap.size(); i++) {
+                    auto it = std::next(A->diagonalMap.begin(), i);
+                    int diag_index = it->first; // Diagonal shift
+                    auto diag = it->second;     // Diagonal object
+
+                    diaq::valType *diag_real_vals = diag->realValues;
+                    diaq::valType *diag_imag_vals = diag->imagValues;
+
+                    for (unsigned int j = 0; j < diag->dLength; j++) {
+                        std::shared_ptr<unsigned int[]> mat_coords = A->getMatrixPosition(diag_index, j);
+                        unsigned int row = mat_coords[0];
+                        unsigned int col = mat_coords[1];
+
+                        #pragma omp simd
+                        for (size_t k = 0; k < cols_B; k++) {
+                            local_result[row * cols_B + k].real(
+                                local_result[row * cols_B + k].real() + diag_real_vals[j] * arr_ptr[col * cols_B + k].real() - diag_imag_vals[j] * arr_ptr[col * cols_B + k].imag()
+                            );
+                            local_result[row * cols_B + k].imag(
+                                local_result[row * cols_B + k].imag() + diag_real_vals[j] * arr_ptr[col * cols_B + k].imag() + diag_imag_vals[j] * arr_ptr[col * cols_B + k].real()
+                            );
+                        }
+                    }
+                }
+
+                // Reduce local results to the global result array
+                #pragma omp critical
+                {
+                    for (size_t i = 0; i < rows_B * cols_B; i++) {
+                        result_ptr[i] += local_result[i];
+                    }
+                }
+            }
+
+            return result;
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::reference
+    );
+
 } // end of PYBIND11_MODULE
