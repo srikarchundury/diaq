@@ -782,43 +782,44 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
 
         while (vec_loop--) {
+            // Prefetch the next set of values for better cache utilization
+            _mm_prefetch((const char*)&real_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
+
             real_a = _mm512_loadu_pd(&real_vals_a[k + offsetA - jump]);
             imag_a = _mm512_loadu_pd(&imag_vals_a[k + offsetA - jump]);
             real_b = _mm512_loadu_pd(&real_vals_b[k + offsetB - jump]);
             imag_b = _mm512_loadu_pd(&imag_vals_b[k + offsetB - jump]);
 
-            real_reala_realb = _mm512_mul_pd(real_a, real_b);
-            real_imaga_imagb = _mm512_mul_pd(imag_a, imag_b);
-            real_res = _mm512_sub_pd(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm512_mul_pd(real_a, imag_b);
-            imag_imaga_realb = _mm512_mul_pd(imag_a, real_b);
-            imag_res = _mm512_add_pd(imag_reala_imagb, imag_imaga_realb);
+            real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
             _mm512_storeu_pd(&real_vals_final[k], real_res);
             _mm512_storeu_pd(&imag_vals_final[k], imag_res);
-
+        
             k += 8;
         }
+
         if (left_overs != 0) {
+            _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
+        
             real_a = avx512_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
             imag_a = avx512_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
             real_b = avx512_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
             imag_b = avx512_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
-
-            real_reala_realb = _mm512_mul_pd(real_a, real_b);
-            real_imaga_imagb = _mm512_mul_pd(imag_a, imag_b);
-            real_res = _mm512_sub_pd(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm512_mul_pd(real_a, imag_b);
-            imag_imaga_realb = _mm512_mul_pd(imag_a, real_b);
-            imag_res = _mm512_add_pd(imag_reala_imagb, imag_imaga_realb);
-
+        
+            real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+        
             avx512_store_partial_double(left_overs, &real_vals_final[k], real_res);
             avx512_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
-
-            // k += left_overs;
-        }
+        }        
+        
     }
     // ------------------------AVX512 FLOAT----------------------------------------
     __m512 avx512_load_partial_float(int n, const float* p) {
@@ -865,30 +866,22 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         // printf("k = %ld, lenRes = %ld, offsetA = %ld, offsetB = %ld, jump = %ld, lenDiagA = %ld, lenDiagB = %ld, loop_count = %ld, left_overs = %ld, vec_loop = %ld, left_overs_start_at_A = %ld, left_overs_start_at_B = %ld\n", k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, loop_count, left_overs, vec_loop, left_overs_start_at_A, left_overs_start_at_B);
 
         while (vec_loop--) {
-            // printf("test here 1\n");
+
             real_a = _mm512_loadu_ps(&real_vals_a[k + offsetA - jump]);
             imag_a = _mm512_loadu_ps(&imag_vals_a[k + offsetA - jump]);
             real_b = _mm512_loadu_ps(&real_vals_b[k + offsetB - jump]);
             imag_b = _mm512_loadu_ps(&imag_vals_b[k + offsetB - jump]);
 
-            // printf("test here 2\n");
-
             real_reala_realb = _mm512_mul_ps(real_a, real_b);
             real_imaga_imagb = _mm512_mul_ps(imag_a, imag_b);
             real_res = _mm512_sub_ps(real_reala_realb, real_imaga_imagb);
-
-            // printf("test here 3\n");
 
             imag_reala_imagb = _mm512_mul_ps(real_a, imag_b);
             imag_imaga_realb = _mm512_mul_ps(imag_a, real_b);
             imag_res = _mm512_add_ps(imag_reala_imagb, imag_imaga_realb);
 
-            // printf("test here 4\n");
-
             avx512_store_partial_float(8, &real_vals_final[k], real_res);
             avx512_store_partial_float(8, &imag_vals_final[k], imag_res);
-
-            // printf("test here 5\n");
 
             // printing real_res, imag_res
             // float *real_res_ptr = (float *)&real_res;
@@ -944,36 +937,68 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
-
-            y_real_vals_vec = _mm512_loadu_pd(&y_real_values[i - dIndex]);
-            y_imag_vals_vec = _mm512_loadu_pd(&y_imag_values[i - dIndex]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+            // Prefetch future data to optimize cache usage
+            _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_real_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_imag_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_real_values[i - dIndex + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_imag_values[i - dIndex + 16], _MM_HINT_T0);
+        
+            // Load data into AVX-512 registers
+            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
+            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
+            __m512d x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
+        
+            __m512d y_real_vals_vec = _mm512_loadu_pd(&y_real_values[i - dIndex]);
+            __m512d y_imag_vals_vec = _mm512_loadu_pd(&y_imag_values[i - dIndex]);
+        
+            // Optimized FMA operations
+            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, 
+                                _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec));
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
+                                _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
+        
+            // Store results back
             _mm512_storeu_pd(&y_real_values[i - dIndex], y_real_vals_vec);
             _mm512_storeu_pd(&y_imag_values[i - dIndex], y_imag_vals_vec);
         }
-
-        if(left_overs != 0) {
+        
+        // Handle leftover elements
+        if (left_overs != 0) {
             unsigned int left_overs_start_at = vec_loop * 8;
-            real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
-            x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
-            y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex]);
-            y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+        
+            // Prefetch leftover elements
+            _mm_prefetch((const char*)&real_vals[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_real_values[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_imag_values[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_real_values[left_overs_start_at - dIndex], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_imag_values[left_overs_start_at - dIndex], _MM_HINT_T0);
+        
+            // Load leftover elements
+            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
+            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
+        
+            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex]);
+            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex]);
+        
+            // Optimized FMA operations for leftovers
+            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, 
+                                _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec));
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
+                                _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
+        
+            // Store leftover results
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex], y_imag_vals_vec);
-        }
+        }        
+        
     }
     template<>
     void run_spmv_avx512_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
@@ -1000,37 +1025,65 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-
-            x_real_vals_vec = _mm512_loadu_pd(&x_real_values[dIndex + i]);
-            x_imag_vals_vec = _mm512_loadu_pd(&x_imag_values[dIndex + i]);
-
-            y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+            // Prefetch future data to improve cache efficiency
+            _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_real_values[dIndex + i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_imag_values[dIndex + i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_real_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_imag_values[i + 16], _MM_HINT_T0);
+        
+            // Load data into AVX-512 registers
+            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
+            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_real_vals_vec = _mm512_loadu_pd(&x_real_values[dIndex + i]);
+            __m512d x_imag_vals_vec = _mm512_loadu_pd(&x_imag_values[dIndex + i]);
+            __m512d y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
+            __m512d y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
+        
+            // Optimized FMA operations for high precision and performance
+            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, 
+                             _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec));
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
+                             _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
+        
+            // Store results back to memory
             _mm512_store_pd(&y_real_values[i], y_real_vals_vec);
             _mm512_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
-
-        if(left_overs != 0) {
+        
+        // Handle remaining elements
+        if (left_overs != 0) {
             unsigned int left_overs_start_at = vec_loop * 8;
-            real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[dIndex + left_overs_start_at]);
-            x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[dIndex + left_overs_start_at]);
-            y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
-            y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+        
+            // Prefetch leftover elements
+            _mm_prefetch((const char*)&real_vals[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_real_values[dIndex + left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&x_imag_values[dIndex + left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_real_values[left_overs_start_at], _MM_HINT_T0);
+            _mm_prefetch((const char*)&y_imag_values[left_overs_start_at], _MM_HINT_T0);
+        
+            // Load partial leftover elements
+            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[dIndex + left_overs_start_at]);
+            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[dIndex + left_overs_start_at]);
+            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
+            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
+        
+            // Optimized FMA operations for leftovers
+            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, 
+                             _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec));
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
+                             _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
+        
+            // Store leftover results
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
-        }
+        }        
         // // printing y_real_values, y_imag_values in single line
         // printf("y_real_values = [");
         // for(unsigned int i = 0; i < dLength; i++) {
@@ -1085,35 +1138,54 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-            x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
-            x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
-            y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
-            y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+            // Prefetch next iterations' data to reduce cache latency
+            _mm_prefetch((char*)&real_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((char*)&imag_vals[i + 16], _MM_HINT_T0);
+            _mm_prefetch((char*)&x_real_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((char*)&x_imag_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((char*)&y_real_values[i + 16], _MM_HINT_T0);
+            _mm_prefetch((char*)&y_imag_values[i + 16], _MM_HINT_T0);
+        
+            // Load data
+            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
+            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
+            __m512d x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
+            __m512d y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
+            __m512d y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
+        
+            // Compute using FMA
+            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec);
+            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec);
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, y_imag_vals_vec);
+            y_imag_vals_vec = _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec);
+        
+            // Store results
             _mm512_store_pd(&y_real_values[i], y_real_vals_vec);
             _mm512_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
-
-        if(left_overs != 0) {
+        
+        // Handle leftovers efficiently
+        if (left_overs != 0) {
             unsigned int left_overs_start_at = vec_loop * 8;
-            real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
-            x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
-            y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
-            y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
-
-            y_real_vals_vec = _mm512_add_pd(y_real_vals_vec, _mm512_sub_pd(_mm512_mul_pd(real_vals_vec, x_real_vals_vec), _mm512_mul_pd(imag_vals_vec, x_imag_vals_vec)));
-            y_imag_vals_vec = _mm512_add_pd(y_imag_vals_vec, _mm512_add_pd(_mm512_mul_pd(real_vals_vec, x_imag_vals_vec), _mm512_mul_pd(imag_vals_vec, x_real_vals_vec)));
-
+        
+            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
+            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
+            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
+            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
+            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
+            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
+        
+            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec);
+            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec);
+        
+            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, y_imag_vals_vec);
+            y_imag_vals_vec = _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec);
+        
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
-        }
+        }        
     }
 
 

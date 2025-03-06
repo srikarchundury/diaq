@@ -47,21 +47,21 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(unsigned int *new_
     return d;
 }
 
-std::shared_ptr<diaQMatrix> denseMatrix::convertToQuantumSparse() {
-    return this->convertToQuantumSparse(this->shape);
+std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ() {
+    return this->convertToDiaQ(this->shape);
 }
 
-std::shared_ptr<diaQMatrix> denseMatrix::convertToQuantumSparse(std::vector<unsigned int> new_shape) {
+std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::vector<unsigned int> new_shape) {
     unsigned int *new_shape_arr = new unsigned int[new_shape.size()];
     for (unsigned int i = 0; i < new_shape.size(); i++) {
         new_shape_arr[i] = new_shape[i];
     }
-    return this->convertToQuantumSparse(new_shape_arr);
+    return this->convertToDiaQ(new_shape_arr);
 }
 
-std::shared_ptr<diaQMatrix> denseMatrix::convertToQuantumSparse(unsigned int *new_shape) {
+std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) {
     #ifdef CUDA_ENABLED
-        return convertToQuantumSparse_cuda(this, new_shape);
+        return convertToDiaQ_cuda(this, new_shape);
     #else
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // int s = 0;
@@ -193,7 +193,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
             new_shape[1] = x;
 
             std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(&new_shape, real_vals, imag_vals, shape);
-            return d->convertToQuantumSparse(new_shape);
+            return d->convertToDiaQ(new_shape);
 
         }  else { // matrix!
 
