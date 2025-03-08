@@ -235,9 +235,14 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 }
 
 std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, unsigned int M) {
-    valType *real_vals = (valType *)malloc(M * sizeof(valType));
-    valType *imag_vals = (valType *)malloc(M * sizeof(valType));
-    
+    #if NUM_BYTES_ALIGNED == -1
+        valType *real_vals = (valType *)calloc(M, sizeof(valType));
+        valType *imag_vals = (valType *)calloc(M, sizeof(valType));
+    #else
+        valType *real_vals = aligned_alloc_helper(M * sizeof(valType));
+        valType *imag_vals = aligned_alloc_helper(M * sizeof(valType));
+    #endif
+
     #pragma omp parallel for
     for(unsigned int i = 0; i < M; i++) {
         real_vals[i] = vals[i].real();

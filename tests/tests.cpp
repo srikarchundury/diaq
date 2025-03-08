@@ -2100,9 +2100,19 @@ int main(int argc, char **argv) {
         q_mat->print();
 
         std::cout << " --x-- " << std::endl;
-        diaq::valType x_real_vals[16] = {0};
-        diaq::valType x_imag_vals[16] = {0};
-        x_imag_vals[2] = 1.0;
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *x_real_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+            diaq::valType *x_imag_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+        #else
+            diaq::valType *x_real_vals = diaq::aligned_alloc_helper(16 * sizeof(diaq::valType));
+            diaq::valType *x_imag_vals = diaq::aligned_alloc_helper(16 * sizeof(diaq::valType));
+            #pragma omp parallel for
+            for(size_t i = 0; i < 16; i++) {
+                x_real_vals[i] = 0;
+                x_imag_vals[i] = 0;
+            }
+        #endif
+            x_imag_vals[2] = 1.0;
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(16, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
