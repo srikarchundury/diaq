@@ -89,8 +89,12 @@ def run_qiskit(sp_op, initial_state, final_time):
 
 
 import sys
-HDF5_FILE = sys.argv[1]
-HDF5_KEY = sys.argv[2]
+if len(sys.argv) > 2:
+	HDF5_FILE = sys.argv[1]
+	HDF5_KEY = sys.argv[2]
+else:
+	HDF5_FILE = '/mnt/beegfs/schundu3/thesis/ham_benchmarks/hamlib_zip_files/condensedmatter/heisenberg/heis.hdf5'
+	HDF5_KEY = 'graph-2D-grid-pbc-qubitnodes_Lx-4_Ly-4_h-3'
 
 ITRS = 1
 
@@ -110,11 +114,18 @@ print("Chosen key: ", HDF5_KEY, flush=True)
 # print("Hamiltonian: ", sp_op, flush=True)
 
 H_array = sp_op.to_matrix()
-print(H_array, flush=True)
+print("*" * 100, flush=True)
 print(type(H_array), flush=True)
-
+print(H_array.shape)
+# print(H_array, flush=True)
+print("*" * 100, flush=True)
 
 dq_H = dq.from_numpy(H_array)
+
+print("*" * 100, flush=True)
+# print("DiaQ Matrix: ", flush=True)
+# dq_H.print()
+print("*" * 100, flush=True)
+print("DiaQ Matrix Meta: ", flush=True)
 dq_H.print_meta()
-
-
+print("*" * 100, flush=True)

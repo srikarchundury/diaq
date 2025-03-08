@@ -141,7 +141,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
-        unsigned int vals_len = 1;
+        long unsigned int vals_len = 1;
         for (unsigned int val : shape) {
             vals_len *= val;
         }
@@ -155,8 +155,8 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 std::cout << shape[i] << " ";
             }
             std::cout << std::endl;
-            std::cout << "Vals: ";
-            for (unsigned int i = 0; i < vals_len; i++) {
+            std::cout << "Vals (atlaeat one?): ";
+            for (unsigned int i = 0; i < vals_len/1000 + 1 ; i++) {
                 std::cout << vals[i] << " ";
             }
             std::cout << std::endl;
@@ -208,7 +208,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 std::vector<std::tuple<int, unsigned int, valType, valType>> local_updates;
 
                 #pragma omp for nowait
-                for (unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
+                for (long unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
                     valType r = vals[flatIndex].real();
                     valType i = vals[flatIndex].imag();
                     if (r != 0.0 || i != 0.0) {
@@ -226,7 +226,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 }
             }
             #ifdef DEEP_DEBUG
-                std::cout << "from_numpy: " << std::endl;
+                std::cout << "from_numpy result below: " << std::endl;
                 qm->print();
             #endif
             return qm;
