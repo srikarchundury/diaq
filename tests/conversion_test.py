@@ -1,6 +1,7 @@
 import numpy as np
 
 a = np.arange(0, 2**8)
+print(type(a))
 a = a.reshape(2**4, 2**4)
 
 import diaq as dq
