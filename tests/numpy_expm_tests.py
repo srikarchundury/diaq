@@ -28,7 +28,7 @@ def matrix_exponential(A, t, tol=1e-14, max_iter=100):
 def matrix_exponential_2(A, t, tol=1e-14, max_iter=100):
     # Scaling factor to prevent overflow
     norm_A = np.linalg.norm(A, ord=np.inf) * abs(t)
-    s = max(1, int(np.ceil(np.log2(norm_A))))  # Choose s such that A/s has a small norm
+    s = max(1, int(np.ceil(np.log2(norm_A))))  # Choose s to make A/s small
 
     # Compute e^(-i A t / s)
     result = np.eye(A.shape[0], dtype=complex)
@@ -43,7 +43,29 @@ def matrix_exponential_2(A, t, tol=1e-14, max_iter=100):
         if np.linalg.norm(X_power_i_whole_divided_by_i, ord=np.inf) < tol:
             break
 
-    # Squaring step to recover original scale
+    # Correct squaring step to recover original scale
+    result = np.linalg.matrix_power(result, s)
+
+    return result
+
+def matrix_exponential_pade(A, t):
+    """Compute e^(-i A t) using Padé approximation with scaling and squaring."""
+    # Convert to complex type (if not already)
+    A = np.array(A, dtype=complex)
+
+    # Compute norm for scaling
+    norm_A = np.linalg.norm(A, ord=np.inf) * abs(t)
+    
+    # Choose scaling factor s (like SciPy does)
+    s = max(0, int(np.ceil(np.log2(norm_A / 5.4))))  # Threshold 5.4 comes from SciPy's algorithm
+
+    # Scale down A
+    A_scaled = (-1.0j * t * A) / (2 ** s)
+
+    # Compute Pade approximation (degree 13)
+    result = sc.linalg.expm(A_scaled)  # Compute expm(A / 2^s)
+
+    # Scale back up via squaring
     for _ in range(s):
         result = np.dot(result, result)
 
@@ -90,7 +112,9 @@ import scipy.linalg as sc_linalg
 def test_matrix_exponential(matrix):
 	A = np.array(matrix, dtype=complex)
 	t = 1.6
-	exp_A = matrix_exponential(A, t)
+	# exp_A = matrix_exponential(A, t)
+	# exp_A = matrix_exponential_2(A, t)
+	exp_A = matrix_exponential_pade(A, t)
 	scipy_exp_A = sc_linalg.expm(-1j * t * A)
 	return np.testing.assert_allclose(exp_A, scipy_exp_A, rtol=1e-5, atol=1e-8) == None
 

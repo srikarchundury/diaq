@@ -24,6 +24,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             shape.push_back(s);
             shape.push_back(s);
         }
+        diaQMatrix(unsigned int x, unsigned int y) {
+            std::unordered_map<int, std::shared_ptr<diagonal>> d;
+            diagonalMap = d;
+            matrix_shape = new unsigned int[2];
+            matrix_shape[0] = x;
+            matrix_shape[1] = y;
+            shape.push_back(x);
+            shape.push_back(y);
+        }
         diaQMatrix(unsigned int **dimens) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
@@ -139,6 +148,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             else {
                 return it->second->getValue(d_pos[1]);
             }
+        }
+        void set(unsigned int flatindex, valType real_val, valType imag_val) {
+            std::shared_ptr<int[]> d_pos = getDiagonalPositionByFlatIndex(flatindex);
+            auto it = diagonalMap.find(d_pos[0]);
+            if(it == diagonalMap.end()) {
+                createDiagonal(d_pos[0]);
+                it = diagonalMap.find(d_pos[0]);
+            }
+            it->second->setValue(d_pos[1], real_val, imag_val);
         }
         void setItem(std::vector<unsigned int> ten_pos, valType real_val, valType imag_val) {
             // printf("setItem called\n");
@@ -274,43 +292,50 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         
         std::shared_ptr<diaQMatrix> addMatrix(std::shared_ptr<diaQMatrix> B) {
-            std::vector<std::pair<int, std::shared_ptr<diagonal>>> BDiagVec(B->diagonalMap.begin(), B->diagonalMap.end());
+            #ifdef DEBUG
+                printf("starting addMatrix -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
-            #pragma omp parallel
-            {
-                std::unordered_map<int, std::shared_ptr<diagonal>> localUpdates;
-        
-                #pragma omp for nowait
-                for (size_t i = 0; i < BDiagVec.size(); i++) {
-                    int dIndex = BDiagVec[i].first;
-                    std::shared_ptr<diagonal> dB = BDiagVec[i].second;
-        
-                    auto itA = diagonalMap.find(dIndex);
-                    if (itA == diagonalMap.end()) {
-                        // If the diagonal does not exist in A, store it for later insertion
-                        localUpdates[dIndex] = dB;
-                    } else {
-                        // If the diagonal exists, add the elements
-                        std::shared_ptr<diagonal> dA = itA->second;
-                        valType *dA_real_vals = dA->realValues;
-                        valType *dA_imag_vals = dA->imagValues;
-                        valType *dB_real_vals = dB->realValues;
-                        valType *dB_imag_vals = dB->imagValues;
-        
-                        #pragma omp simd
-                        for (unsigned int j = 0; j < dA->dLength; j++) {
-                            dA_real_vals[j] += dB_real_vals[j];
-                            dA_imag_vals[j] += dB_imag_vals[j];
-                        }
+            #pragma omp parallel for
+            for (size_t i = 0; i < B->diagonalMap.size(); i++) {
+                auto it = std::next(B->diagonalMap.begin(), i);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> dB = it->second;
+                auto itA = diagonalMap.find(dIndex);
+
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    C->diagonalMap.insert({dIndex, dB->copy()});
+                } else {
+                    // If the diagonal exists, subtract the elements
+                    std::shared_ptr<diagonal> dA = itA->second;
+                    valType *dA_real_vals = dA->realValues;
+                    valType *dA_imag_vals = dA->imagValues;
+                    valType *dB_real_vals = dB->realValues;
+                    valType *dB_imag_vals = dB->imagValues;
+
+                    std::shared_ptr<diagonal> dC = std::make_shared<diagonal>(dIndex, dA->dLength);
+                    C->diagonalMap.insert({dIndex, dC});
+
+                    valType *dC_real_vals = dC->realValues;
+                    valType *dC_imag_vals = dC->imagValues;
+                    #pragma omp simd
+                    for (unsigned int j = 0; j < dA->dLength; j++) {
+                        dC_real_vals[j] = dA_real_vals[j] + dB_real_vals[j];
+                        dC_imag_vals[j] = dA_imag_vals[j] + dB_imag_vals[j];
                     }
                 }
-        
-                // Merge local updates into the global diagonalMap
-                #pragma omp critical
-                diagonalMap.insert(localUpdates.begin(), localUpdates.end());
             }
-        
-            return shared_from_this();
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "addMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return C;
         }
 
         std::shared_ptr<diaQMatrix> scale_by_imag(valType imag) {
@@ -350,19 +375,324 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         std::shared_ptr<vector> multiplyVector(std::shared_ptr<vector> v); // this requires spMV kernel and hence in matrixKernels.cpp
         
         std::shared_ptr<diaQMatrix> inverse() {
-            throw std::logic_error("Function not yet implemented.");
+            // matrix inverse!
+            // has to be square!!
+
+            #ifdef DEBUG
+                printf("starting inverse -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            // Efficient case: If A is purely diagonal, principal
+            if (num_diags() == 1 && getDiagonal(0) != nullptr) {
+                std::shared_ptr<diagonal> diag = this->getDiagonal(0);
+                unsigned int dLength = diag->dLength;
+                valType *real_vals = diag->realValues;
+                valType *imag_vals = diag->imagValues;
+
+                // Create the inverse matrix
+                std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
+                inv_matrix->createDiagonal(0);
+                std::shared_ptr<diagonal> inv_diag = inv_matrix->getDiagonal(0);
+
+                valType *inv_real_vals = inv_diag->realValues;
+                valType *inv_imag_vals = inv_diag->imagValues;
+
+                #pragma omp parallel for
+                for (unsigned int i = 0; i < dLength; i++) {
+                    valType a_i = real_vals[i];
+                    valType b_i = imag_vals[i];
+
+                    // Compute the complex reciprocal (1 / (a + ib))
+                    valType denom = a_i * a_i + b_i * b_i;
+                    if (denom == 0.0) {
+                        throw std::runtime_error("Matrix is singular, cannot compute inverse.");
+                    }
+
+                    inv_real_vals[i] = a_i / denom;
+                    inv_imag_vals[i] = -b_i / denom;
+                }
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
+
+                return inv_matrix;
+            }
+
+            // General case: How to perform matrix inversion?
+            // 1. Compute the determinant of the matrix
+            // 2. Compute the adjugate of the matrix
+            // 3. Multiply the adjugate by the reciprocal of the determinant
+            // 4. Return the result
+
+            // Step 1: Compute the determinant of the matrix
+            valType det = this->determinant();
+            if (det == 0.0) {
+                throw std::runtime_error("Matrix is singular, cannot compute inverse.");
+            }
+
+            // Step 2: Compute the adjugate of the matrix
+            std::shared_ptr<diaQMatrix> adjugate = this->adjugate();
+
+            // Step 3: Multiply the adjugate by the reciprocal of the determinant
+            std::shared_ptr<diaQMatrix> inv_matrix = adjugate->divide_by_scalar(det);
+
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return inv_matrix;
+
+        }
+
+        valType determinant() {
+            #ifdef DEBUG
+                printf("starting determinant -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            // Compute the determinant of the matrix
+            // The determinant of a matrix can be computed by summing the product of the elements of any row or column with their cofactors
+            // The cofactor of an element is the determinant of the submatrix obtained by removing the i-th row and j-th column of the original matrix
+
+            // Efficient case: If A is purely diagonal, principal
+            if (num_diags() == 1 && getDiagonal(0) != nullptr) {
+                std::shared_ptr<diagonal> diag = this->getDiagonal(0);
+                unsigned int dLength = diag->dLength;
+                valType* real_vals = diag->realValues;
+                valType* imag_vals = diag->imagValues;
+
+                // Compute the product of the diagonal elements
+                valType det = 1.0;
+                #pragma omp parallel for reduction(*:det)
+                for (unsigned int i = 0; i < dLength; i++) {
+                    det *= real_vals[i];
+                }
+
+                #ifdef DEEP_DEBUG
+                    printf("det = %f\n", det);
+                #endif
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
+
+                return det;
+            }
+
+            // General case: How to compute the determinant of a matrix?
+            // 1. If the matrix is 1x1, return the single element
+            // 2. If the matrix is 2x2, return the determinant using the formula ad - bc
+            // 3. If the matrix is larger, use the Laplace expansion to compute the determinant
+
+            // 1. If the matrix is 1x1, return the single element
+            if (this->matrix_shape[0] == 1 && this->matrix_shape[1] == 1) {
+                valType det = getDiagonal(0)->realValues[0];
+                #ifdef DEEP_DEBUG
+                    printf("det = %f\n", det);
+                #endif
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
+                return det;
+            }
+
+            // 2. If the matrix is 2x2, return the determinant using the formula ad - bc
+            if (this->matrix_shape[0] == 2 && this->matrix_shape[1] == 2) {
+                valType a = getDiagonal(0)->realValues[0];
+                valType b = getDiagonal(1)->realValues[0];
+                valType c = getDiagonal(-1)->realValues[0];
+                valType d = getDiagonal(0)->realValues[1];
+                valType det = a * d - b * c;
+                #ifdef DEEP_DEBUG
+                    printf("det = %f\n", det);
+                #endif
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
+                return det;
+            }
+
+            // 3. If the matrix is larger, use the Laplace expansion to compute the determinant
+            // The Laplace expansion is a recursive formula that computes the determinant of a matrix by summing the product of the elements of any row or column with their cofactors
+            // The cofactor of an element is the determinant of the submatrix obtained by removing the i-th row and j-th column of the original matrix
+            valType det = 0.0;
+            std::shared_ptr<diagonal> d0 = this->getDiagonal(0);
+            for (unsigned int j = 0; j < this->matrix_shape[1]; j++) {
+                // Compute the determinant of the submatrix obtained by removing the 0-th row and j-th column
+                std::shared_ptr<diaQMatrix> submatrix = this->minor(0, j);
+                valType submatrix_det = submatrix->determinant();
+
+                // Compute the cofactor
+                valType cofactor = (j % 2 == 0) ? submatrix_det : -submatrix_det;
+
+                // Compute the product of the element and the cofactor
+                valType element = d0->realValues[j];
+                det += element * cofactor;
+            }
+
+            #ifdef DEEP_DEBUG
+                printf("det = %f\n", det);
+            #endif
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return det;
+        }
+
+        std::shared_ptr<diaQMatrix> minor(unsigned int row, unsigned int col) {
+            // Compute the minor of the matrix obtained by removing the i-th row and j-th column
+            // The minor of a matrix is the determinant of the submatrix obtained by removing the i-th row and j-th column of the original matrix
+
+            #ifdef DEBUG
+                printf("starting minor -- row = %d, col = %d\n", row, col);
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            // Create the minor matrix
+            std::shared_ptr<diaQMatrix> minor = std::make_shared<diaQMatrix>(this->matrix_shape[0] - 1, this->matrix_shape[1] - 1);
+
+            // Compute the minor matrix
+            unsigned int minor_row = 0;
+            for (unsigned int i = 0; i < this->matrix_shape[0]; i++) {
+                if (i == row) {
+                    continue;
+                }
+
+                unsigned int minor_col = 0;
+                for (unsigned int j = 0; j < this->matrix_shape[1]; j++) {
+                    if (j == col) {
+                        continue;
+                    }
+
+                    valType real_element = this->getDiagonal(i)->realValues[j];
+                    valType imag_element = this->getDiagonal(i)->imagValues[j];
+                    minor->set(minor_row * this->shape[0] + minor_col, real_element, imag_element);
+                    minor_col++;
+                }
+
+                minor_row++;
+            }
+
+            #ifdef DEEP_DEBUG
+                printf("minor matrix\n");
+                minor->print();
+            #endif
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "minor took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return minor;
+        }
+
+        void addMatrixScaled(std::shared_ptr<diaQMatrix> B, valType real_scale_factor) {
+            // this = this + B * scale_factor
+            #ifdef DEBUG
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            for(size_t i = 0; i < B->diagonalMap.size(); i++) {
+                auto it = std::next(B->diagonalMap.begin(), i);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> dB = it->second;
+                auto itA = diagonalMap.find(dIndex);
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    diagonalMap.insert({dIndex, dB->scale_by_real(real_scale_factor)});
+                } else {
+                    // If the diagonal exists, add the elements
+                    std::shared_ptr<diagonal> dA = itA->second;
+                    valType *dA_real_vals = dA->realValues;
+                    valType *dA_imag_vals = dA->imagValues;
+                    valType *dB_real_vals = dB->realValues;
+                    valType *dB_imag_vals = dB->imagValues;
+                    #pragma omp simd
+                    for(unsigned int i = 0; i < dA->dLength; i++) {
+                        dA_real_vals[i] += real_scale_factor * dB_real_vals[i];
+                        dA_imag_vals[i] += real_scale_factor * dB_imag_vals[i];
+                    }
+                }
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+        }
+
+        std::shared_ptr<diaQMatrix> adjugate() {
+            // Compute the adjugate of the matrix
+            // The adjugate of a matrix is the transpose of the cofactor matrix
+            // The cofactor matrix is the matrix of determinants of the minors of the original matrix
+            // The minor of a matrix is the determinant of the submatrix obtained by removing the i-th row and j-th column of the original matrix
+
+            #ifdef DEBUG
+                printf("starting adjugate --");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            // Create the adjugate matrix
+            std::shared_ptr<diaQMatrix> adjugate = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
+
+            // Compute the cofactor matrix
+            for (unsigned int i = 0; i < this->matrix_shape[0]; i++) {
+                for (unsigned int j = 0; j < this->matrix_shape[1]; j++) {
+                    // Compute the determinant of the minor
+                    std::shared_ptr<diaQMatrix> minor = this->minor(i, j);
+                    valType minor_det = minor->determinant();
+
+                    // Compute the cofactor
+                    valType cofactor = (i + j) % 2 == 0 ? minor_det : -minor_det;
+                    
+                    #ifdef DEEP_DEBUG
+                        printf("cofactor = %f\n", cofactor);
+                    #endif
+
+                    // Set the cofactor in the adjugate matrix
+                    adjugate->set(i * adjugate->shape[0] + j, cofactor, 0.0);
+                }
+            }
+
+            #ifdef DEEP_DEBUG
+                printf("cofactor matrix\n");
+                adjugate->print();
+            #endif
+
+            // Transpose the adjugate matrix
+            std::shared_ptr<diaQMatrix> adjugate_transpose = adjugate->transpose();
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "adjugate took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return adjugate_transpose;
         }
         
-        std::shared_ptr<diaQMatrix> divide_by_int(int int_value) {
-            if (int_value == 0) {
+        std::shared_ptr<diaQMatrix> divide_by_scalar(valType val) {
+            if (val == 0) {
                 throw std::runtime_error("Division by zero error.");
             }
             
-            if (int_value == 1) {
+            if (val == 1) {
                 return shared_from_this();
             }
         
-            valType reciprocal = 1.0 / valType(int_value);
+            valType reciprocal = 1.0 / valType(val);
             valType min_threshold = std::numeric_limits<valType>::min();
         
             #pragma omp parallel for
@@ -373,8 +703,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *imag_vals = d->imagValues;
                 #pragma omp simd
                 for (unsigned int j = 0; j < d->dLength; j++) {
-                    real_vals[j] = (std::abs(real_vals[j]) > min_threshold * int_value) ? real_vals[j] * reciprocal : 0.0;
-                    imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * int_value) ? imag_vals[j] * reciprocal : 0.0;
+                    real_vals[j] = (std::abs(real_vals[j]) > min_threshold * val) ? real_vals[j] * reciprocal : 0.0;
+                    imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * val) ? imag_vals[j] * reciprocal : 0.0;
                 }
             }
             return shared_from_this();
@@ -397,11 +727,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     #else
                         valType *real_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
                         valType *imag_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
-                        #pragma omp parallel for
-                        for (unsigned int j = 0; j < d->dLength; j++) {
-                            real_vals[j] = 0.0;
-                            imag_vals[j] = 0.0;
-                        }
                     #endif
         
                     #pragma omp simd
@@ -412,7 +737,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(d->dIndex, d->dLength, real_vals, imag_vals);
                     localMap[d->dIndex] = newDiag;
                 }
-        
+
                 // Merge local maps into the global map
                 #pragma omp critical
                 newDiagonalMap.insert(localMap.begin(), localMap.end());
@@ -421,40 +746,53 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             unsigned int *newMatrixShape = new unsigned int[2]{matrix_shape[0], matrix_shape[1]};
             std::shared_ptr<diaQMatrix> newMatrix =std::make_shared<diaQMatrix>(newDiagonalMap, &newMatrixShape);
             return newMatrix;
-        }        
+        }
         
         std::shared_ptr<diaQMatrix> subtractMatrix(std::shared_ptr<diaQMatrix> B) {
+
+            #ifdef DEBUG
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
             #pragma omp parallel for
             for (size_t i = 0; i < B->diagonalMap.size(); i++) {
                 auto it = std::next(B->diagonalMap.begin(), i);
                 int dIndex = it->first;
                 std::shared_ptr<diagonal> dB = it->second;
-                auto itA = B->diagonalMap.find(dIndex);
+                auto itA = this->diagonalMap.find(dIndex);
 
-                if(itA == B->diagonalMap.end()) {
+                if(itA == this->diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
-                    B->diagonalMap.insert({dIndex, dB->scale_by_real(-1.0)});
+                    C->diagonalMap.insert({dIndex, dB->scale_by_real(-1.0)});
                 } else {
-                    // If the diagonal exists, add the elements
+                    // If the diagonal exists, subtract the elements
                     std::shared_ptr<diagonal> dA = itA->second;
                     valType *dA_real_vals = dA->realValues;
                     valType *dA_imag_vals = dA->imagValues;
                     valType *dB_real_vals = dB->realValues;
                     valType *dB_imag_vals = dB->imagValues;
+
+                    std::shared_ptr<diagonal> dC = std::make_shared<diagonal>(dIndex, dA->dLength);
+                    C->diagonalMap.insert({dIndex, dC});
+
+                    valType *dC_real_vals = dC->realValues;
+                    valType *dC_imag_vals = dC->imagValues;
                     #pragma omp simd
-                    for (unsigned int i = 0; i < dA->dLength; i++) {
-                        dA_real_vals[i] -= dB_real_vals[i];
-                        dA_imag_vals[i] -= dB_imag_vals[i];
+                    for (unsigned int j = 0; j < dA->dLength; j++) {
+                        dC_real_vals[j] = dA_real_vals[j] - dB_real_vals[j];
+                        dC_imag_vals[j] = dA_imag_vals[j] - dB_imag_vals[j];
                     }
                 }
-                #ifdef DEEP_DEBUG
-                    std::cout << "Subtracted diagonal " << dIndex << std::endl;
-                    std::cout << "Matrix A:" << std::endl;
-                    this->print();
-                #endif
             }
-            return shared_from_this();
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "subtractMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return C;
         }
 
         std::shared_ptr<diaQMatrix> copy() {
@@ -471,11 +809,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 #else
                     valType *real_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
                     valType *imag_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
-                    #pragma omp parallel for
-                    for (unsigned int i = 0; i < d->dLength; i++) {
-                        real_vals[i] = d->realValues[i];
-                        imag_vals[i] = d->imagValues[i];
-                    }
                 #endif
         
                 #pragma omp parallel for
@@ -907,8 +1240,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         std::shared_ptr<diaQMatrix> reshape(std::vector<unsigned int> new_tensor_shape);
         void matrix_reshape(unsigned int *new_matrix_shape);
-        void transpose(std::vector<unsigned int> new_order);
-        void transpose();
+        std::shared_ptr<diaQMatrix> transpose(std::vector<unsigned int> new_order);
+        std::shared_ptr<diaQMatrix> transpose();
         std::shared_ptr<denseMatrix> convertToDenseMatrix(unsigned int *new_shape);
         std::shared_ptr<denseMatrix> convertToDenseMatrix();
 };

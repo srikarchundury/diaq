@@ -2890,7 +2890,8 @@ int main(int argc, char **argv) {
         diaq::valType time = 1.0; // Example time value for exp(-i * H * t)
 
         // Calculate the matrix exponentiation e^(-i * H * t) using expm_negative
-        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative(gate, time);
+        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_pade(gate, time);
+        // std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_taylor(gate, time);
 
         std::cout << "--------------------------------" << std::endl;
         // Print the result
