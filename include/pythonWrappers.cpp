@@ -445,7 +445,8 @@ PYBIND11_MODULE(diaq, m) {
     
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t) { return diaq::expm_negative(A, t); },
+        // [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t) { return diaq::expm_negative_taylor(A, t); },
+        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t) { return diaq::expm_negative_pade(A, t); },
         py::arg(),
         py::arg(),
         py::return_value_policy::take_ownership

@@ -606,29 +606,19 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
 
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
-        std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->getDiagonalMap();
+        std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
         std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
-        std::unordered_map<int, std::shared_ptr<diagonal> > newDiagMap;
-        #pragma omp parallel
-        {
-            #pragma omp single
-            for (it = diagMap.begin(); it != diagMap.end(); it++) {
-                #pragma omp task
-                {
-                    it->second->setIndex(-1 * it->first);
-                    newDiagMap.insert(std::pair<int, std::shared_ptr<diagonal> >(-1 * it->first, it->second));
-                }
-            }
+
+        std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(A->matrix_shape[1], A->matrix_shape[0]);
+
+        #pragma omp parallel for
+        for(unsigned int i = 0; i < diagMap.size(); i++) {
+            auto it = std::next(diagMap.begin(), i);
+            std::shared_ptr<diagonal> newDiag = it->second->copy();
+            res->addDiagonal(-1 * it->second->dIndex, newDiag);
         }
-        A->setDiagonalMap(newDiagMap);
-        // swap A->shape[0] and A->shape[1] and similarly for matrix_shape.
-        unsigned int temp = A->shape[0];
-        A->shape[0] = A->shape[1];
-        A->shape[1] = temp;
-        temp = A->matrix_shape[0];
-        A->matrix_shape[0] = A->matrix_shape[1];
-        A->matrix_shape[1] = temp;
-        return A;
+
+        return res;
     }
     // otherwise, we have to do a lot of work
     // shape of result
@@ -1027,13 +1017,13 @@ void diaQMatrix::matrix_reshape(unsigned int *matrix_shape) {
 std::shared_ptr<diaQMatrix> diaQMatrix::reshape(std::vector<unsigned int> new_tensor_shape) {
     return diaq::reshape(shared_from_this(), new_tensor_shape);
 }
-void diaQMatrix::transpose(std::vector<unsigned int> new_order) {
+std::shared_ptr<diaQMatrix> diaQMatrix::transpose(std::vector<unsigned int> new_order) {
     std::shared_ptr<diaQMatrix> temp = diaq::transpose(shared_from_this(), new_order);
-    *this = *temp;
+    return temp;
 }
-void diaQMatrix::transpose() {
+std::shared_ptr<diaQMatrix> diaQMatrix::transpose() {
     std::shared_ptr<diaQMatrix> temp = diaq::transpose(shared_from_this());
-    *this = *temp;
+    return temp;
 }
 
 std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x) {
@@ -3234,7 +3224,7 @@ std::shared_ptr<diaQMatrix> conjbar(std::shared_ptr<diaQMatrix> A) {
     return multiply_by_scalar(A, 1.0, -1.0);
 }
 
-std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType t) {
+std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t) {
     // Computes e^(-i * A * t) using the Taylor series expansion
     // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
     // Stops when terms become negligibly small or reach a max iteration count.
@@ -3308,7 +3298,7 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
         X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
         // printf("X_power_i_whole_divided_by_i 0 \n");
         // X_power_i_whole_divided_by_i->print_meta();
-        X_power_i_whole_divided_by_i->divide_by_int(i);
+        X_power_i_whole_divided_by_i->divide_by_scalar(i);
         // printf("X_power_i_whole_divided_by_i 1\n");
         // X_power_i_whole_divided_by_i->print_meta();
         result->addMatrix(X_power_i_whole_divided_by_i);
@@ -3327,6 +3317,120 @@ std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType
             printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
     #endif
     return result;
+}
+
+std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t) {
+    #ifdef DEBUG
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+
+    // Efficient case: If A is purely diagonal, compute exact exponential
+    if (A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
+        std::shared_ptr<diagonal> d = A->getDiagonal(0);
+        unsigned int dLength = d->dLength;
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+
+        std::shared_ptr<diagonal> res_diag = result->getDiagonal(0);
+        valType *res_real_vals = res_diag->realValues;
+        valType *res_imag_vals = res_diag->imagValues;
+
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < dLength; i++) {
+            valType t_a = t * real_vals[i];
+            valType t_b = t * imag_vals[i];
+
+            valType exp_b = std::exp(t_b);
+            valType cos_ta = std::cos(t_a);
+            valType sin_ta = std::sin(t_a);
+
+            res_real_vals[i] = exp_b * cos_ta;
+            res_imag_vals[i] = -exp_b * sin_ta;
+        }
+
+        #ifdef DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            printf("expm_negative_pade took %f milliseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
+        #endif
+
+        return result;
+    }
+
+    valType pade_numer[7] = {1.0, 1.0, 1.0 / 2.0, 1.0 / 6.0, 1.0 / 24.0, 1.0 / 120.0, 1.0 / 720.0};
+    valType pade_denom[7] = {1.0, 1.0 / 2.0, 1.0 / 6.0, 1.0 / 24.0, 1.0 / 120.0, 1.0 / 720.0, 1.0 / 5040.0};
+
+    // Compute norm of A
+    valType norm_A = A->norm() * std::abs(t);
+    int s = std::max(0, static_cast<int>(std::ceil(std::log2(norm_A / 5.4)))); // Scaling heuristic
+
+    // Scale down A: A_s = (-i * t * A) / 2^s
+    std::shared_ptr<diaQMatrix> A_s = A->copy_and_scale_by_imag(-1.0 * t / std::pow(2, s));
+
+    #ifdef DEEP_DEBUG
+        printf("A_s\n");
+        A_s->print();
+    #endif
+
+    // Compute Padé approximation of e^X
+    std::shared_ptr<diaQMatrix> U = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    std::shared_ptr<diaQMatrix> V = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    std::shared_ptr<diaQMatrix> X_power = A_s->copy(); // X^1
+
+    for (int k = 1; k <= 6; k++) { // Degree-13 approximation (only need terms up to 6)
+        X_power = product(X_power, A_s); // Compute X^(2k+1)
+        U->addMatrixScaled(X_power, pade_numer[k]); // Add to U numerator
+        V->addMatrixScaled(X_power, pade_denom[k]); // Add to V denominator
+    }
+
+    #ifdef DEEP_DEBUG
+        printf("U: \n");
+        U->print();
+        printf("V: \n");
+        V->print();
+    #endif
+
+    // Solve (V - U)X = V + U
+    std::shared_ptr<diaQMatrix> V_minus_U = V->subtractMatrix(U);
+
+    #ifdef DEEP_DEBUG
+        printf("V_minus_U\n");
+        V_minus_U->print();
+    #endif
+
+    std::shared_ptr<diaQMatrix> V_plus_U = V->addMatrix(U);
+
+    #ifdef DEEP_DEBUG
+        printf("V_plus_U\n");
+        V_plus_U->print();
+    #endif
+
+    std::shared_ptr<diaQMatrix> inv_VmU = V_minus_U->inverse();
+
+    #ifdef DEEP_DEBUG
+        printf("inv_VmU\n");
+        inv_VmU->print();
+    #endif
+
+    std::shared_ptr<diaQMatrix> expA_s = product(inv_VmU, V_plus_U);
+
+    #ifdef DEEP_DEBUG
+        printf("expA_s\n");
+        expA_s->print();
+    #endif
+
+    // Scale back using squaring
+    for (int i = 0; i < s; i++) {
+        expA_s = product(expA_s, expA_s);
+    }
+
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        printf("expm_negative_pade took %f milliseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
+    #endif
+
+    return expA_s;
 }
 
 std::shared_ptr<diaQMatrix> diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatrix> B) {
