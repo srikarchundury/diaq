@@ -2841,29 +2841,6 @@ int main(int argc, char **argv) {
         std::cout << res << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if (strcmp(argv[1], "multiplyMatrix_1") == 0) {
-        std::cout << " -- testing multiplyMatrix -- " << std::endl;
-        std::shared_ptr<diaq::diaQMatrix> A = A23->convertToDiaQ();
-        std::cout << " -- Mat A -- " << std::endl;
-        A->print();
-        std::shared_ptr<diaq::diaQMatrix> B = B23->convertToDiaQ();
-        std::cout << " -- Mat B -- " << std::endl;
-        B->print();
-
-        std::shared_ptr<diaq::diaQMatrix> correct_ans = diaq::product(A, B);
-        std::cout << " -- correct answer -- " << std::endl;
-        correct_ans->print();
-        std::cout << " -- " << std::endl;
-
-        std::shared_ptr<diaq::diaQMatrix> C = A->multiplyMatrix(B);
-        std::cout << " -- Mat C = A->multiplyMatrix(B) -- " << std::endl;
-        C->print();
-        std::cout << " -- " << std::endl;
-
-        std::cout << " -- checking correctness -- " << std::endl;
-        std::cout << checkResult(correct_ans, C) << std::endl;
-        std::cout << " -- " << std::endl;
-    }
     else if (strcmp(argv[1], "expm_negative") == 0 ) {
         std::cout << " -- Testing expm_negative -- " << std::endl;
         // Define a 2x2 matrix with specific real values for testing

@@ -379,8 +379,66 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             return shared_from_this();
         }
-        
-        std::shared_ptr<diaQMatrix> multiplyMatrix(std::shared_ptr<diaQMatrix> B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
+
+        void add(std::shared_ptr<diaQMatrix> B) {
+            #ifdef DEBUG
+                printf("starting add -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            // Add the elements of the matrix B to the current matrix
+            // If a diagonal exists in both matrices, add the elements
+            // If a diagonal exists in B but not in the current matrix, add the diagonal to the current matrix
+            // If a diagonal exists in the current matrix but not in B, do nothing
+
+            #pragma omp parallel for
+            for (size_t i = 0; i < B->diagonalMap.size(); i++) {
+                auto it = std::next(B->diagonalMap.begin(), i);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> dB = it->second;
+                auto itA = diagonalMap.find(dIndex);
+
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    diagonalMap.insert({dIndex, dB->copy()});
+                } else {
+                    // If the diagonal exists, add the elements
+                    std::shared_ptr<diagonal> dA = itA->second;
+                    valType *dA_real_vals = dA->realValues;
+                    valType *dA_imag_vals = dA->imagValues;
+                    valType *dB_real_vals = dB->realValues;
+                    valType *dB_imag_vals = dB->imagValues;
+
+                    #pragma omp simd
+                    for (unsigned int j = 0; j < dA->dLength; j++) {
+                        dA_real_vals[j] += dB_real_vals[j];
+                        dA_imag_vals[j] += dB_imag_vals[j];
+                    }
+                }
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+        }
+
+        void divide_by_int(int x) {
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                std::shared_ptr<diagonal> d = it->second;
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                #pragma omp parallel for
+                for(unsigned int j = 0; j < d->dLength; j++) {
+                    real_vals[j] = real_vals[j] / x;
+                    imag_vals[j] = imag_vals[j] / x;
+                }
+            }
+        }
+
+        void multiplyMatrix(std::shared_ptr<diaQMatrix> B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
         std::shared_ptr<vector> multiplyVector(std::shared_ptr<vector> v); // this requires spMV kernel and hence in matrixKernels.cpp
 
         valType determinant() {
@@ -617,13 +675,18 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return adjugate_transpose;
         }
         
-        std::shared_ptr<diaQMatrix> divide_by_scalar(valType val) {
+        void divide_by_scalar(valType val) {
+            #ifdef DEBUG
+                printf("starting divide_by_scalar -- val = %f\n", val);
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
             if (val == 0) {
                 throw std::runtime_error("Division by zero error.");
             }
-            
+
             if (val == 1) {
-                return shared_from_this();
+                return ;
             }
         
             valType reciprocal = 1.0 / valType(val);
@@ -641,7 +704,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * val) ? imag_vals[j] * reciprocal : 0.0;
                 }
             }
-            return shared_from_this();
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "divide_by_scalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
         }
         
         std::shared_ptr<diaQMatrix> copy_and_scale_by_imag(valType imag) {
@@ -759,6 +826,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         valType norm() {
+            #ifdef DEBUG
+                printf("starting norm -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
             valType norm = 0.0;
             #pragma omp parallel for reduction(+:norm)
             for (size_t i = 0; i < diagonalMap.size(); i++) {
@@ -773,6 +844,12 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 }
                 norm += local_norm; // Accumulate local_norm to norm in the parallel region
             }
+            
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
             return std::sqrt(norm);
         }
 
