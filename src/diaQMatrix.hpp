@@ -712,41 +712,41 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         
         std::shared_ptr<diaQMatrix> copy_and_scale_by_imag(valType imag) {
-            std::vector<std::pair<int, std::shared_ptr<diagonal>>> diagVector(diagonalMap.begin(), diagonalMap.end());
-            std::unordered_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
+            #ifdef DEBUG
+                printf("starting copy_and_scale_by_imag -- imag = %f\n", imag);
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
-            #pragma omp parallel
-            {
-                std::unordered_map<int, std::shared_ptr<diagonal>> localMap;
-        
-                #pragma omp for nowait
-                for (size_t i = 0; i < diagVector.size(); i++) {
-                    std::shared_ptr<diagonal> d = diagVector[i].second;
-                    #if NUM_BYTES_ALIGNED == -1
-                        valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
-                        valType *imag_vals = (valType *)calloc(d->dLength, sizeof(valType));
-                    #else
-                        valType *real_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
-                        valType *imag_vals = aligned_alloc_helper(d->dLength * sizeof(valType));
-                    #endif
-        
-                    #pragma omp simd
-                    for (unsigned int j = 0; j < d->dLength; j++) {
-                        real_vals[j] = -1.0 * d->imagValues[j] * imag;
-                        imag_vals[j] = d->realValues[j] * imag;
-                    }
-                    std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(d->dIndex, d->dLength, real_vals, imag_vals);
-                    localMap[d->dIndex] = newDiag;
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> d = it->second;
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                
+                std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, d->dLength);
+                C->diagonalMap.insert({dIndex, newDiag});
+
+                valType *new_real_vals = newDiag->realValues;
+                valType *new_imag_vals = newDiag->imagValues;
+
+                #pragma omp simd
+                for (unsigned int j = 0; j < d->dLength; j++) {
+                    new_real_vals[j] = -1.0 * imag_vals[j] * imag;
+                    new_imag_vals[j] = real_vals[j] * imag;
                 }
 
-                // Merge local maps into the global map
-                #pragma omp critical
-                newDiagonalMap.insert(localMap.begin(), localMap.end());
             }
-        
-            unsigned int *newMatrixShape = new unsigned int[2]{matrix_shape[0], matrix_shape[1]};
-            std::shared_ptr<diaQMatrix> newMatrix =std::make_shared<diaQMatrix>(newDiagonalMap, &newMatrixShape);
-            return newMatrix;
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "copy_and_scale_by_imag took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return C;
         }
         
         std::shared_ptr<diaQMatrix> subtractMatrix(std::shared_ptr<diaQMatrix> B) {

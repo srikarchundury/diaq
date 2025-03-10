@@ -3280,6 +3280,9 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 
     // Initialize result and create 0th diagonal
     std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    // std::cout << std::string(100, '#') << std::endl;
+    // result->print_meta();
+    // std::cout << std::string(100, '#') << std::endl;
 
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
 
@@ -3328,11 +3331,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 
     // Parameters
     int max_iterations = 100; // Limit to avoid infinite loops
-    valType tolerance = 1e-14; // Tolerance for convergence
+    valType tolerance = 1e-11; // Tolerance for convergence
 
     std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
-    // printf("X\n");
-    // X->print_meta();
+    std::cout << std::string(100, '#') << std::endl;
+    X->print();
+    std::cout << std::string(100, '#') << std::endl;
 
     // std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
     std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
@@ -3501,7 +3505,7 @@ std::shared_ptr<vector> bicgstab_solve(std::shared_ptr<diaQMatrix> A, std::share
         rho = rho_new;
 
         #pragma omp parallel for
-        for (int i = 0; i < n; i++) {
+        for (unsigned int i = 0; i < n; i++) {
             // p[i] = r[i] + beta * (p_old[i] - omega * v[i]);
             p->realValues[i] = r->realValues[i] + beta * (p_old->realValues[i] - omega * v->realValues[i]);
             p->imagValues[i] = r->imagValues[i] + beta * (p_old->imagValues[i] - omega * v->imagValues[i]);
@@ -3511,7 +3515,7 @@ std::shared_ptr<vector> bicgstab_solve(std::shared_ptr<diaQMatrix> A, std::share
         alpha = rho / r_tilde->dot(v);
 
         #pragma omp parallel for
-        for (int i = 0; i < n; i++) {
+        for (unsigned int i = 0; i < n; i++) {
             s->realValues[i] = r->realValues[i] - alpha * v->realValues[i];
             s->imagValues[i] = r->imagValues[i] - alpha * v->imagValues[i];
         }
@@ -3519,7 +3523,7 @@ std::shared_ptr<vector> bicgstab_solve(std::shared_ptr<diaQMatrix> A, std::share
         if (s->norm() < tol) {
 
             #pragma omp parallel for
-            for (int i = 0; i < n; i++) {
+            for (unsigned int i = 0; i < n; i++) {
                 // x[i] += alpha * p[i];
                 x->realValues[i] += alpha * p->realValues[i];
                 x->imagValues[i] += alpha * p->imagValues[i];
@@ -3531,7 +3535,7 @@ std::shared_ptr<vector> bicgstab_solve(std::shared_ptr<diaQMatrix> A, std::share
         omega = t->dot(s) / t->dot(t);
         
         #pragma omp parallel for
-        for (int i = 0; i < n; i++) {
+        for (unsigned int i = 0; i < n; i++) {
             // x[i] += alpha * p[i] + omega * s[i];
             // r[i] = s[i] - omega * t[i];
             x->realValues[i] += alpha * p->realValues[i] + omega * s->realValues[i];

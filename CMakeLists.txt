@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
 # for warnings!
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wunused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable")
 
 # Look for OpenMP package and set OpenMP flags
 find_package(OpenMP REQUIRED)

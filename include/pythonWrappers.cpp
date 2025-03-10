@@ -117,12 +117,12 @@ PYBIND11_MODULE(diaq, m) {
         ;
 
     // diaq::identityMatrix class
-	py::class_<diaq::identityMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::identityMatrix>>(m, "identityMatrix")
-		.def(py::init<unsigned int>());
+    py::class_<diaq::identityMatrix, std::shared_ptr<diaq::identityMatrix>>(m, "identityMatrix")
+        .def(py::init<unsigned int>());
 
-	// diaq::permutationMatrix class
-	py::class_<diaq::permutationMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::permutationMatrix>>(m, "permutationMatrix")
-		.def(py::init<unsigned int, std::vector<unsigned int>>());
+    // diaq::permutationMatrix class
+    py::class_<diaq::permutationMatrix, std::shared_ptr<diaq::permutationMatrix>>(m, "permutationMatrix")
+        .def(py::init<unsigned int, const std::vector<unsigned int>&>());
 
     // diaq::vector class
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
