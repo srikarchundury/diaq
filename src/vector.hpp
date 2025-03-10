@@ -110,8 +110,43 @@ class vector : public std::enable_shared_from_this<vector> {
             return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
+        std::shared_ptr<vector> subtract(std::shared_ptr<vector> v) {
+            assert(numRows == v->numRows);
+            std::shared_ptr<vector> result = std::make_shared<vector>(numRows);
+            auto realValues = result->realValues;
+            auto imagValues = result->imagValues;
+
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                realValues[i] = realValues[i] - v->realValues[i];
+                imagValues[i] = imagValues[i] - v->imagValues[i];
+            }
+            return result;
+        }
+
         unsigned int num_rows() const {
             return numRows;
+        }
+
+        valType dot(const std::shared_ptr<vector> v) {
+            valType result = 0.0;
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
+
+            #pragma omp parallel for reduction(+:result)
+            for (unsigned int i = 0; i < numRows; ++i) {
+                result += realValues[i] * realValues[i] + imagValues[i] * imagValues[i];
+            }
+            return result;
+        }
+
+        valType norm() {
+            valType result = 0.0;
+            #pragma omp parallel for reduction(+:result)
+            for (unsigned int i = 0; i < numRows; ++i) {
+                result += realValues[i] * realValues[i] + imagValues[i] * imagValues[i];
+            }
+            return std::sqrt(result);
         }
 
         void setValue(unsigned int i, valType real, valType imag) {
@@ -170,6 +205,19 @@ class vector : public std::enable_shared_from_this<vector> {
             }
 
             return real_res;
+        }
+
+        std::shared_ptr<vector> copy() {
+            std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
+            auto realValues = v->realValues;
+            auto imagValues = v->imagValues;
+
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                realValues[i] = realValues[i];
+                imagValues[i] = imagValues[i];
+            }
+            return v;
         }
 
         void print() {

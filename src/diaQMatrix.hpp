@@ -158,6 +158,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             it->second->setValue(d_pos[1], real_val, imag_val);
         }
+        void set(unsigned int x, unsigned int y, valType real_val, valType imag_val) {
+            std::shared_ptr<int[]> d_pos = getDiagonalPosition(x, y);
+            auto it = diagonalMap.find(d_pos[0]);
+            if(it == diagonalMap.end()) {
+                createDiagonal(d_pos[0]);
+                it = diagonalMap.find(d_pos[0]);
+            }
+            it->second->setValue(d_pos[1], real_val, imag_val);
+        }
         void setItem(std::vector<unsigned int> ten_pos, valType real_val, valType imag_val) {
             // printf("setItem called\n");
             std::shared_ptr<int[]> d_pos = getDiagonalPosition(ten_pos);
@@ -373,81 +382,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         
         std::shared_ptr<diaQMatrix> multiplyMatrix(std::shared_ptr<diaQMatrix> B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
         std::shared_ptr<vector> multiplyVector(std::shared_ptr<vector> v); // this requires spMV kernel and hence in matrixKernels.cpp
-        
-        std::shared_ptr<diaQMatrix> inverse() {
-            // matrix inverse!
-            // has to be square!!
-
-            #ifdef DEBUG
-                printf("starting inverse -- ");
-                auto start = std::chrono::high_resolution_clock::now();
-            #endif
-
-            // Efficient case: If A is purely diagonal, principal
-            if (num_diags() == 1 && getDiagonal(0) != nullptr) {
-                std::shared_ptr<diagonal> diag = this->getDiagonal(0);
-                unsigned int dLength = diag->dLength;
-                valType *real_vals = diag->realValues;
-                valType *imag_vals = diag->imagValues;
-
-                // Create the inverse matrix
-                std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
-                inv_matrix->createDiagonal(0);
-                std::shared_ptr<diagonal> inv_diag = inv_matrix->getDiagonal(0);
-
-                valType *inv_real_vals = inv_diag->realValues;
-                valType *inv_imag_vals = inv_diag->imagValues;
-
-                #pragma omp parallel for
-                for (unsigned int i = 0; i < dLength; i++) {
-                    valType a_i = real_vals[i];
-                    valType b_i = imag_vals[i];
-
-                    // Compute the complex reciprocal (1 / (a + ib))
-                    valType denom = a_i * a_i + b_i * b_i;
-                    if (denom == 0.0) {
-                        throw std::runtime_error("Matrix is singular, cannot compute inverse.");
-                    }
-
-                    inv_real_vals[i] = a_i / denom;
-                    inv_imag_vals[i] = -b_i / denom;
-                }
-
-                #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
-                    std::cout << "inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
-                #endif
-
-                return inv_matrix;
-            }
-
-            // General case: How to perform matrix inversion?
-            // 1. Compute the determinant of the matrix
-            // 2. Compute the adjugate of the matrix
-            // 3. Multiply the adjugate by the reciprocal of the determinant
-            // 4. Return the result
-
-            // Step 1: Compute the determinant of the matrix
-            valType det = this->determinant();
-            if (det == 0.0) {
-                throw std::runtime_error("Matrix is singular, cannot compute inverse.");
-            }
-
-            // Step 2: Compute the adjugate of the matrix
-            std::shared_ptr<diaQMatrix> adjugate = this->adjugate();
-
-            // Step 3: Multiply the adjugate by the reciprocal of the determinant
-            std::shared_ptr<diaQMatrix> inv_matrix = adjugate->divide_by_scalar(det);
-
-
-            #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
-            #endif
-
-            return inv_matrix;
-
-        }
 
         valType determinant() {
             #ifdef DEBUG
@@ -1116,6 +1050,18 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return res;
         }
 
+        std::shared_ptr<int[]> getDiagonalPosition(unsigned int x, unsigned int y) {
+            std::shared_ptr<int[]> res(new int[2]);
+            int d_idx = y - x;
+            res[0] = d_idx;
+            if(d_idx <= 0) {
+                res[1] = y;
+            } else {
+                res[1] = y - d_idx;
+            }
+            return res;
+        }
+
         std::shared_ptr<int[]> getDiagonalPosition(unsigned int flatIndex) {
             int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
@@ -1242,6 +1188,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void matrix_reshape(unsigned int *new_matrix_shape);
         std::shared_ptr<diaQMatrix> transpose(std::vector<unsigned int> new_order);
         std::shared_ptr<diaQMatrix> transpose();
+        std::shared_ptr<diaQMatrix> inverse();
         std::shared_ptr<denseMatrix> convertToDenseMatrix(unsigned int *new_shape);
         std::shared_ptr<denseMatrix> convertToDenseMatrix();
 };

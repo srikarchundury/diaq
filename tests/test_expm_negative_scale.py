@@ -39,6 +39,6 @@ print("--")
 
 # Verify the results are close
 if np.allclose(dq_result, expected_result, atol=1e-5):
-	print("\nThe results are close! dq's expm_negative function is working as expected.")
+	print("\033[92m\033[1m\nThe results are close! dq's expm_negative function is working as expected.\033[0m")
 else:
-	print("\nThere is a discrepancy between the results. Further investigation may be needed.")
+	print("\033[91m\033[1m\nThere is a discrepancy between the results. Further investigation may be needed.\033[0m")

@@ -1,43 +1,76 @@
-import numpy as np
-import scipy.linalg
 import diaq as dq
+import numpy as np
+from scipy.linalg import expm
 
-# Define a small 2x2 Hermitian matrix
-H = np.array([[0.707107, 0.707107],
-				[0.707107, -0.707107]], dtype=np.complex128)
+matrices_test_cases = [
+	[
+		[1, 0, 0, 0],
+		[0, 2, 0, 0],
+		[0, 0, 3, 0],
+		[0, 0, 0, 4]
+	],
+	[
+		[1, 5, 0, 0],
+		[0, 2, 6, 0],
+		[0, 0, 3, 7],
+		[0, 0, 0, 4]
+	],
+	[
+		[1, 5, 0, 0],
+		[8, 2, 6, 0],
+		[0, 9, 3, 7],
+		[0, 0, 10, 4]
+	],
+	[
+		[1, 0, 5, 0],
+		[0, 2, 0, 6],
+		[7, 0, 3, 0],
+		[0, 8, 0, 4]
+	],
+	[
+		[0.707107, 0.707107],
+		[0.707107, -0.707107] # this is Hadamard gate
+	],
+	[
+		[10, 11, 12, 13, 14, 15],
+		[16, 17, 18, 19, 20, 21],
+		[22, 23, 24, 25, 26, 27],
+		[28, 29, 30, 31, 32, 33],
+		[34, 35, 36, 37, 38, 39],
+		[40, 41, 42, 43, 44, 45]
+	],
+	[
+		np.random.rand(64, 64).tolist()
+	]
+]
 
-# Define time for exponentiation
-t = 1.0
+t = 1.6
 
-# Compute exp(-i * H * t) using scipy for comparison
-expected_result = scipy.linalg.expm(-1j * H * t)
-print("--")
-print("Expected Result (Scipy):")
-print(expected_result)
-print("--")
+for mat in matrices_test_cases:
+	H = np.array(mat)
+	print("====================================")
+	print("H:")
+	print(H)
+	dq_H = dq.from_numpy(H)
+	dq_H.print()
+	print("--")
 
-# Convert matrix to dq's format
-gate = dq.from_numpy(H)
-print("--")
-print("Gate:")
-gate.print()
-print("--")
+	print("Correct expm:")
+	correct_U = expm(-1j * H * t)
+	print("Correct expm:")
+	print(correct_U)
+	dq_correct_U = dq.from_numpy(correct_U)
+	dq_correct_U.print()
+	print("--")
 
-# Compute exp(-i * H * t) using dq's library function
-result = dq.expm_negative(gate, t)
-print("--")
-print("\nResult from dq library:")
-result.print()
-print("--")
-
-dq_result = dq.to_numpy(result).reshape(2, 2)
-print("--")
-print("\nResult converted to numpy:")
-print(dq_result)
-print("--")
-
-# Verify the results are close
-if np.allclose(dq_result, expected_result, atol=1e-5):
-	print("\nThe results are close! dq's expm_negative function is working as expected.")
-else:
-	print("\nThere is a discrepancy between the results. Further investigation may be needed.")
+	print("DIAQ expm:")
+	dq_U = dq.expm_negative(dq_H, t)
+	dq_U.print()
+	print("--")
+	print("Testing correctness:")
+	c1 = dq.to_numpy(dq_correct_U)
+	c2 = dq.to_numpy(dq_U)
+	assert np.testing.assert_allclose(c1, c2, rtol=1e-5, atol=1e-8) == None
+	print("\033[92m\033[1mPassed.\033[0m")
+	print("--")
+	print("====================================")

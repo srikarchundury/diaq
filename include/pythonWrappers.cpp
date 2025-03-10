@@ -134,6 +134,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::take_ownership)
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::take_ownership)
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::take_ownership)
+        .def("copy", &diaq::vector::copy, py::return_value_policy::take_ownership)
         ;
 
     // diaq::denseMatrix class
