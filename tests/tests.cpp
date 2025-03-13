@@ -2841,7 +2841,7 @@ int main(int argc, char **argv) {
         std::cout << res << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if (strcmp(argv[1], "expm_negative") == 0 ) {
+    else if (strcmp(argv[1], "expm_negative_1") == 0 ) {
         std::cout << " -- Testing expm_negative -- " << std::endl;
         // Define a 2x2 matrix with specific real values for testing
         diaq::valType reals[4] = {
@@ -2867,7 +2867,7 @@ int main(int argc, char **argv) {
         diaq::valType time = 1.0; // Example time value for exp(-i * H * t)
 
         // Calculate the matrix exponentiation e^(-i * H * t) using expm_negative
-        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_pade(gate, time);
+        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_taylor(gate, time);
         // std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_taylor(gate, time);
 
         std::cout << "--------------------------------" << std::endl;

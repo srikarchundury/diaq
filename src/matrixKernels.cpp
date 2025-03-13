@@ -3279,10 +3279,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     #endif
 
     // Initialize result and create 0th diagonal
-    std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
-    // std::cout << std::string(100, '#') << std::endl;
-    // result->print_meta();
-    // std::cout << std::string(100, '#') << std::endl;
+    std::shared_ptr<identityMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
 
@@ -3331,15 +3328,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 
     // Parameters
     int max_iterations = 100; // Limit to avoid infinite loops
-    valType tolerance = 1e-11; // Tolerance for convergence
+    valType tolerance = 1e-14; // Tolerance for convergence
 
     std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
-    std::cout << std::string(100, '#') << std::endl;
-    X->print();
-    std::cout << std::string(100, '#') << std::endl;
 
     // std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
-    std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    std::shared_ptr<identityMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
     // printf("X_power_i_whole_divided_by_i\n");
     // X_power_i_whole_divided_by_i->print_meta();
 
@@ -3353,9 +3347,9 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         result->add(X_power_i_whole_divided_by_i);
         // printf("result\n");
         // result->print();
-        if(X_power_i_whole_divided_by_i->norm() < tolerance) {
-            break;
-        }
+        // if(X_power_i_whole_divided_by_i->norm() < tolerance) {
+        //     break;
+        // }
     }
     #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();

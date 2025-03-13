@@ -105,19 +105,18 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
     #endif
 }
 
-std::complex<valType> *to_numpy(std::shared_ptr<diaQMatrix> A) {
-    // // This is bad, but I don't have a better way to do this right now.
-    // std::shared_ptr<denseMatrix> d = A->convertToDenseMatrix(A->matrix_shape);
-    // // comment below line for tests.cpp
-    // // A->free();
-    // return d->getData_forPy();
+std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 
-    // directly from diaQMatrix object, let's create a std::complex<valType> array
-    // TODO: This still needs a reshape to the original shape of the tensor. Can we avoid that too? I have to look at pybind11 stuff!!
+    #ifdef DEBUG
+        std::cout << "to_numpy called on" << std::endl;
+        A->print();
+        printf(" -- \n");
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
     unsigned int *matrix_shape = A->matrix_shape;
-    unsigned int total_elements = matrix_shape[0] * matrix_shape[1];
-    std::complex<valType> *vals = (std::complex<valType> *)malloc(total_elements * sizeof(std::complex<valType>));
-    std::fill(vals, vals + total_elements, std::complex<valType>(0.0, 0.0));
+    unsigned long int total_elements = matrix_shape[0] * matrix_shape[1];
+    std::vector<std::complex<valType>> vals(total_elements, std::complex<valType>(0.0, 0.0));
 
     #pragma omp parallel for
     for (unsigned int i = 0; i < A->diagonalMap.size(); i++) {
@@ -128,16 +127,29 @@ std::complex<valType> *to_numpy(std::shared_ptr<diaQMatrix> A) {
         valType *imag_vals = it->second->imagValues;
 
         #pragma omp parallel for
-        for (unsigned int i = 0; i < dLength; i++) {
-            std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, i);
+        for (unsigned int j = 0; j < dLength; j++) {
+            std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            vals[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
+            vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
         }
     }
+
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t to_numpy took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
+
     return vals;
 }
 
 std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned int> shape) {
+
+    #ifdef DEBUG
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+
+
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
@@ -229,6 +241,13 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 std::cout << "from_numpy result below: " << std::endl;
                 qm->print();
             #endif
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+                printf("\t\t from_numpy took %f milliseconds\n", duration.count() / 1000.0);
+            #endif
+
             return qm;
         }
     #endif
@@ -253,9 +272,9 @@ std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, unsigned 
     return v;
 }
 
-std::complex<valType> *to_numpy_vector(std::shared_ptr<vector> v) {
+std::vector<std::complex<valType>> to_numpy_vector(std::shared_ptr<vector> v) {
     unsigned int M = v->numRows;
-    std::complex<valType> *vals = (std::complex<valType> *)malloc(M * sizeof(std::complex<valType>));
+    std::vector<std::complex<valType>> vals(M);
     valType *real_vals = v->realValues;
     valType *imag_vals = v->imagValues;
     #pragma omp parallel for

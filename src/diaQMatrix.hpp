@@ -65,10 +65,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             shape = ts;
         }
 
-        ~diaQMatrix() {
+        virtual ~diaQMatrix() {
             #ifdef DEEP_DEBUG
                 std::cout << "diaQMatrix destructor called" << std::endl;
             #endif
+            std::free(matrix_shape);
         }
         valType getItem_real(unsigned int flat_index) {
             std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(flat_index);

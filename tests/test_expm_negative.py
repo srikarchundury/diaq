@@ -55,22 +55,23 @@ for mat in matrices_test_cases:
 	dq_H.print()
 	print("--")
 
-	print("Correct expm:")
+	print("DIAQ expm below:")
+	dq_U = dq.expm_negative(dq_H, t)
+	dq_U.print()
+	print("--")
+
+	print("Correct expm below:")
 	correct_U = expm(-1j * H * t)
-	print("Correct expm:")
 	print(correct_U)
 	dq_correct_U = dq.from_numpy(correct_U)
 	dq_correct_U.print()
 	print("--")
 
-	print("DIAQ expm:")
-	dq_U = dq.expm_negative(dq_H, t)
-	dq_U.print()
-	print("--")
 	print("Testing correctness:")
 	c1 = dq.to_numpy(dq_correct_U)
 	c2 = dq.to_numpy(dq_U)
-	assert np.testing.assert_allclose(c1, c2, rtol=1e-5, atol=1e-8) == None
+
+	assert np.testing.assert_allclose(c1, c2, rtol=1e-8, atol=1e-8) == None
 	print("\033[92m\033[1mPassed.\033[0m")
 	print("--")
 	print("====================================")
