@@ -3229,46 +3229,6 @@ std::shared_ptr<vector> diaQMatrix::multiplyVector(std::shared_ptr<vector> V) {
     return spMV(shared_from_this(), V);
 }
 
-void diaQMatrix::multiplyMatrix(std::shared_ptr<diaQMatrix> B) {
-
-    #ifdef DEBUG
-        printf("starting multiplyMatrix -- ");
-        auto start = std::chrono::high_resolution_clock::now();
-    #endif
-
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            for (auto itA = diagonalMap.begin(); itA != diagonalMap.end(); itA++) {
-                for (auto itB = B->diagonalMap.begin(); itB != B->diagonalMap.end(); itB++) {
-                    #pragma omp taskgroup
-                    {
-                        #pragma omp task
-                        {
-                            std::shared_ptr<diagonal> diagNew = multiplyDiagonals(matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
-
-                            if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-
-                                #pragma omp critical
-                                {
-                                    addDiagonal(diagNew->dIndex, diagNew);
-                                }
-
-                            }
-                        } // ends omp task
-                    } // ends omp taskgroup
-                } // ends for-inner
-            } // ends for-outer
-        } // ends omp single
-    } // ends omp parallel
-    #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\t multiplyMatrix took %f milliseconds\n", duration.count() / 1000.0);
-    #endif
-}
-
 std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t) {
     // Computes e^(-i * A * t) using the Taylor series expansion
     // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
@@ -3327,29 +3287,34 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     }
 
     // Parameters
-    int max_iterations = 100; // Limit to avoid infinite loops
+    int max_iterations = 1000; // Limit to avoid infinite loops
     valType tolerance = 1e-14; // Tolerance for convergence
 
     std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
+    // printf("X\n");
+    // X->print();
 
     // std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
-    std::shared_ptr<identityMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
     // printf("X_power_i_whole_divided_by_i\n");
     // X_power_i_whole_divided_by_i->print_meta();
 
     for(int i = 1; i <= max_iterations; i++) {
-        X_power_i_whole_divided_by_i->multiplyMatrix(X);
+        X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
         // printf("X_power_i_whole_divided_by_i 0 \n");
-        // X_power_i_whole_divided_by_i->print_meta();
+        // X_power_i_whole_divided_by_i->print();
         X_power_i_whole_divided_by_i->divide_by_int(i);
         // printf("X_power_i_whole_divided_by_i 1\n");
-        // X_power_i_whole_divided_by_i->print_meta();
+        // X_power_i_whole_divided_by_i->print();
         result->add(X_power_i_whole_divided_by_i);
         // printf("result\n");
         // result->print();
-        // if(X_power_i_whole_divided_by_i->norm() < tolerance) {
-        //     break;
-        // }
+        if(X_power_i_whole_divided_by_i->norm() < tolerance) {
+            #ifdef DEBUG
+                printf("breaking taylors at i = %d\n", i);
+            #endif
+            break;
+        }
     }
     #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();

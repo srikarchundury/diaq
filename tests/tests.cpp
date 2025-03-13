@@ -1524,6 +1524,34 @@ int main(int argc, char **argv) {
     testCase48.push_back(B48);
     testCases.push_back(testCase48);
 
+    // -----------------------------------------
+    unsigned int *shapeA49 = new unsigned int[2]{4, 4};
+    diaq::valType a49[16] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    };
+    std::shared_ptr<diaq::denseMatrix> A49 = std::make_shared<diaq::denseMatrix>(&shapeA49, a49);
+    unsigned int *shapeB49 = new unsigned int[2]{4, 4};
+    diaq::valType b49_imag[16] = {
+        -1.6, -8, 0, 0,
+        0, -3.2, -9.6, 0,
+        0, 0, -4.8, -11.2,
+        0, 0, 0, -6.4,
+    };
+    diaq::valType b49_real[16] = {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    };
+    std::shared_ptr<diaq::denseMatrix> B49 = std::make_shared<diaq::denseMatrix>(&shapeB49, b49_real, b49_imag);
+    std::vector<std::shared_ptr<diaq::denseMatrix> > testCase49;
+    testCase49.push_back(A49);
+    testCase49.push_back(B49);
+    testCases.push_back(testCase49);
+
     if(argc == 1) {
         for(unsigned int i = 0; i < testCases.size(); i++) {
             std::cout << "test case - " << i;

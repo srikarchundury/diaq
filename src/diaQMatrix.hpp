@@ -425,12 +425,14 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         void divide_by_int(int x) {
+
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); i++) {
                 auto it = std::next(diagonalMap.begin(), i);
                 std::shared_ptr<diagonal> d = it->second;
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
+
                 #pragma omp parallel for
                 for(unsigned int j = 0; j < d->dLength; j++) {
                     real_vals[j] = real_vals[j] / x;
@@ -439,7 +441,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
 
-        void multiplyMatrix(std::shared_ptr<diaQMatrix> B); // this requires multiplyDiagonals kernel and hence in matrixKernels.cpp
         std::shared_ptr<vector> multiplyVector(std::shared_ptr<vector> v); // this requires spMV kernel and hence in matrixKernels.cpp
 
         valType determinant() {
@@ -729,6 +730,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *imag_vals = d->imagValues;
                 
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, d->dLength);
+
+                #pragma omp critical
                 C->diagonalMap.insert({dIndex, newDiag});
 
                 valType *new_real_vals = newDiag->realValues;

@@ -108,9 +108,7 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
 std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 
     #ifdef DEBUG
-        std::cout << "to_numpy called on" << std::endl;
-        A->print();
-        printf(" -- \n");
+        std::cout << "to_numpy called -- ";
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
