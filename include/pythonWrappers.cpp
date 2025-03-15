@@ -40,7 +40,7 @@ PYBIND11_MODULE(diaq, m) {
 
     // diaq::diaQMatrix class
     py::class_<diaq::diaQMatrix, std::shared_ptr<diaq::diaQMatrix>>(m, "diaQMatrix")
-        .def(py::init<std::unordered_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
+        .def(py::init<phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
         // -- //

@@ -18,7 +18,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(unsigned int *new_
         valType *real_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
         valType *imag_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
     #endif
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
     unsigned int x, y;
     for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
         valType *real_vals = it->second->realValues;
@@ -230,12 +230,12 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 }
 
                 // Merge results into the matrix in parallel
-                #pragma omp critical
-                {
+                // #pragma omp critical
+                // {
                     for (const auto& update : local_updates) {
                         qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
                     }
-                }
+                // }
             }
             #ifdef DEEP_DEBUG
                 std::cout << "from_numpy result below: " << std::endl;
