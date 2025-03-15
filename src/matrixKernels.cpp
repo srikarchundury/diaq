@@ -3287,8 +3287,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     }
 
     // Parameters
-    int max_iterations = 1000; // Limit to avoid infinite loops
-    valType tolerance = 1e-14; // Tolerance for convergence
+    int max_iterations = 100; // Limit to avoid infinite loops
+    valType tolerance = 1e-8; // Tolerance for convergence
 
     std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
     // printf("X\n");

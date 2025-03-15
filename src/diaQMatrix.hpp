@@ -835,20 +835,24 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
             valType norm = 0.0;
-            #pragma omp parallel for reduction(+:norm)
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
-                valType *real_vals = d->realValues;
-                valType *imag_vals = d->imagValues;
-                valType local_norm = 0.0; // Use a local variable to accumulate within the SIMD loop
-                #pragma omp simd reduction(+:local_norm)
-                for (unsigned int i = 0; i < d->dLength; i++) {
-                    local_norm += real_vals[i] * real_vals[i] + imag_vals[i] * imag_vals[i];
+            #pragma omp parallel reduction(+:norm)
+            {
+                valType local_norm = 0.0; // Use a local variable to accumulate within the parallel region
+                #pragma omp for
+                for (size_t i = 0; i < diagonalMap.size(); i++) {
+                    auto it = std::next(diagonalMap.begin(), i);
+                    std::shared_ptr<diagonal> d = it->second;
+                    valType *real_vals = d->realValues;
+                    valType *imag_vals = d->imagValues;
+                    #pragma omp simd reduction(+:local_norm)
+                    for (unsigned int j = 0; j < d->dLength; j++) {
+                        local_norm += real_vals[j] * real_vals[j] + imag_vals[j] * imag_vals[j];
+                    }
                 }
+                #pragma omp atomic
                 norm += local_norm; // Accumulate local_norm to norm in the parallel region
             }
-            
+
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
                 std::cout << "norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;

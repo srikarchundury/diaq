@@ -124,11 +124,13 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
 
-        #pragma omp parallel for
         for (unsigned int j = 0; j < dLength; j++) {
             std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
+            #pragma omp critical
+            {
+                vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
+            }
         }
     }
 
