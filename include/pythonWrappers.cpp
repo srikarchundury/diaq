@@ -145,7 +145,6 @@ PYBIND11_MODULE(diaq, m) {
         .def_readwrite("matrix_shape", &diaq::denseMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::denseMatrix::shape)
         .def("getItem", &diaq::denseMatrix::getItem, py::return_value_policy::automatic)
-        .def("getData", &diaq::denseMatrix::getData, py::return_value_policy::automatic)
         .def("set", &diaq::denseMatrix::set, py::return_value_policy::automatic)
         .def("get", &diaq::denseMatrix::get, py::return_value_policy::automatic)
         .def("print", &diaq::denseMatrix::print, py::return_value_policy::automatic)

@@ -16,13 +16,6 @@ class vector : public std::enable_shared_from_this<vector> {
             #if NUM_BYTES_ALIGNED == -1
                 realValues = (valType *)calloc(M, sizeof(valType));
                 imagValues = (valType *)calloc(M, sizeof(valType));
-                // realValues = (valType *)malloc(M * sizeof(valType));
-                // imagValues = (valType *)malloc(M * sizeof(valType));
-                // #pragma omp parallel for
-                // for(unsigned int i = 0; i < M; i++) {
-                //     realValues[i] = 0.0;
-                //     imagValues[i] = 0.0;
-                // }
             #else
                 // printf("comes here only?\n");
                 realValues = aligned_alloc_helper(M * sizeof(valType));

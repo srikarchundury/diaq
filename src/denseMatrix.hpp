@@ -96,24 +96,6 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             }
             // somehow tests fail if I free it here, invesigating!!
         }
-        std::complex<valType> *getData_forPy() {
-            unsigned int size = matrix_shape[0] * matrix_shape[1];
-            std::complex<valType> *res = new std::complex<valType>[size]();
-            #pragma omp parallel for
-            for(unsigned int i = 0; i < size; i++) {
-                res[i] = std::complex<valType>{realData[i], imagData[i]};
-            }
-            return res;
-        }
-        std::complex<valType> *getData() {
-            unsigned int size = matrix_shape[0] * matrix_shape[1];
-            std::complex<valType> *res = (std::complex<valType> *)malloc(size * sizeof(std::complex<valType>));
-            #pragma omp parallel for
-            for(unsigned int i = 0; i < size; i++) {
-                res[i] = std::complex<valType>{realData[i], imagData[i]};
-            }
-            return res;
-        }
         valType *getRealData() {
             return realData;
         }

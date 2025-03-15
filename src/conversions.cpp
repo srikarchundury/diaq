@@ -90,10 +90,10 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
             if(realData[i * new_shape[1] + j] != 0.0 || imagData[i * new_shape[1] + j] != 0.0) {
                 // printf("realData[%ld] = %f, imagData[%ld] = %f\n", i * new_shape[1] + j, realData[i * new_shape[1] + j], i * new_shape[1] + j, imagData[i * new_shape[1] + j]);
-                #pragma omp critical
-                {
+                // #pragma omp critical
+                // {
                     qm->setDiagonalElement(d_pos[0], d_pos[1], d_len, realData[i * new_shape[1] + j], imagData[i * new_shape[1] + j]);
-                }
+                // }
             }
         }
     }
@@ -127,10 +127,10 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
         for (unsigned int j = 0; j < dLength; j++) {
             std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            #pragma omp critical
-            {
+            // #pragma omp critical
+            // {
                 vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
-            }
+            // }
         }
     }
 
@@ -146,6 +146,7 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned int> shape) {
 
     #ifdef DEBUG
+        printf(" starting from_numpy -- ");
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -230,12 +231,12 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 }
 
                 // Merge results into the matrix in parallel
-                // #pragma omp critical
-                // {
+                #pragma omp critical
+                {
                     for (const auto& update : local_updates) {
                         qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
                     }
-                // }
+                }
             }
             #ifdef DEEP_DEBUG
                 std::cout << "from_numpy result below: " << std::endl;

@@ -1566,7 +1566,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
                 newDiag_imag_vals[i + skip_places] = imag_vals[i];
             }
         }
-        #pragma omp critical
+        // #pragma omp critical
         result->setDiagonal(dIndex, newDiag);
     }
 
