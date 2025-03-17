@@ -108,7 +108,7 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
 std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 
     #ifdef DEBUG
-        std::cout << "to_numpy called -- ";
+        std::cout << "starting to_numpy -- ";
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -127,10 +127,10 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
         for (unsigned int j = 0; j < dLength; j++) {
             std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            // #pragma omp critical
-            // {
+            #pragma omp critical
+            {
                 vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
-            // }
+            }
         }
     }
 
