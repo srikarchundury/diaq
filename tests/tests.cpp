@@ -4,7 +4,7 @@
 
 #include "../include/diaq.hpp"
 
-std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix(std::unordered_map<int, std::shared_ptr<diaq::diagonal> > dm) {
+std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal> > dm) {
     std::shared_ptr<diaq::diaQMatrix> m = std::make_shared<diaq::diaQMatrix>(dm, 6);
     m->print();
     return m;
@@ -16,7 +16,7 @@ std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<dia
         return "false - size mis-match";
     }
     const diaq::valType epsilon = 0.00002;
-    std::unordered_map<int, std::shared_ptr<diaq::diagonal> >::iterator itA, itB;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal> >::iterator itA, itB;
     for(itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
         diaq::valType *a_real_values = itA->second->realValues;
         diaq::valType *a_imag_values = itA->second->imagValues;

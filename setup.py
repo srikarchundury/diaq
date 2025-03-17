@@ -20,7 +20,8 @@ compile_args = [
     "-mavx2",
     "-msse2",
     "-mavx512f", 
-    "-fPIC"
+    "-fPIC",
+    "-I/mnt/beegfs/schundu3/thesis/parallel-hashmap"  # Add the include path for parallel_hashmap
 ]
 link_args = ['-lgomp', '-lpthread']
 cpu_lib_dirs = [os.path.abspath("./cpu_build/lib")]
