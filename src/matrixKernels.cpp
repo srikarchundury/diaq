@@ -237,10 +237,10 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
                                     std::cout << " ------ new diag ------ " << std::endl;
                                 #endif
 
-                                // #pragma omp critical
-                                // {
+                                #pragma omp critical
+                                {
                                     result->addDiagonal(diagNew->dIndex, diagNew);
-                                // }
+                                }
 
                                 #ifdef DEEP_DEBUG
                                     std::cout << " ------ result ------ " << std::endl;
