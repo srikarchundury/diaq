@@ -1569,7 +1569,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
                 newDiag_imag_vals[i + skip_places] = imag_vals[i];
             }
         }
-        // #pragma omp critical
+        #pragma omp critical
         result->setDiagonal(dIndex, newDiag);
     }
 
@@ -2938,7 +2938,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
                 newDiag_imag_vals[j + i * n] = imag_vals[i];
             }
         }
-        // #pragma omp critical
+        #pragma omp critical
         result->setDiagonal(dIndex * n, newDiag);
     }
     // result->pruneMatrix();
@@ -3044,7 +3044,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
                 }
             }
         }
-        // #pragma omp critical
+        #pragma omp critical
         result->setDiagonal(new_diag_index, newDiag);
     }
 

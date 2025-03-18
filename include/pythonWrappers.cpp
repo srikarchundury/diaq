@@ -536,7 +536,7 @@ PYBIND11_MODULE(diaq, m) {
                             unsigned int sparse_j = mat_coords[0], sparse_k = mat_coords[1];
     
                             if (j == sparse_j) {
-                                // #pragma omp critical
+                                #pragma omp critical
                                 result_ptr[i * B->matrix_shape[1] + sparse_k] += std::complex<diaq::valType>(
                                     A_val.real() * diag->realValues[m] - A_val.imag() * diag->imagValues[m],
                                     A_val.real() * diag->imagValues[m] + A_val.imag() * diag->realValues[m]

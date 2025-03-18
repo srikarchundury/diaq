@@ -730,7 +730,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, d->dLength);
 
-                // #pragma omp critical
+                #pragma omp critical
                 C->diagonalMap.insert({dIndex, newDiag});
 
                 valType *new_real_vals = newDiag->realValues;
