@@ -69,26 +69,27 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_A = k + offsetA - jump + 4 * (loop_count / 4);
         unsigned int left_overs_start_at_B = k + offsetB - jump + 4 * (loop_count / 4);
 
-        while (vec_loop--) {
+        #pragma omp parallel for schedule(static)
+        for (unsigned int i = 0; i < vec_loop; ++i) {
+            unsigned int idx = k + i * 4;
             // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[k + offsetA - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[k + offsetA - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[k + offsetB - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[k + offsetB - jump + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 8], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 8], _MM_HINT_T0);
 
-            real_a = _mm256_loadu_pd(&real_vals_a[k + offsetA - jump]);
-            imag_a = _mm256_loadu_pd(&imag_vals_a[k + offsetA - jump]);
-            real_b = _mm256_loadu_pd(&real_vals_b[k + offsetB - jump]);
-            imag_b = _mm256_loadu_pd(&imag_vals_b[k + offsetB - jump]);
+            __m256d real_a = _mm256_loadu_pd(&real_vals_a[idx + offsetA - jump]);
+            __m256d imag_a = _mm256_loadu_pd(&imag_vals_a[idx + offsetA - jump]);
+            __m256d real_b = _mm256_loadu_pd(&real_vals_b[idx + offsetB - jump]);
+            __m256d imag_b = _mm256_loadu_pd(&imag_vals_b[idx + offsetB - jump]);
 
-            real_res = _mm256_fnmadd_pd(imag_a, imag_b, _mm256_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm256_fmadd_pd(real_a, imag_b, _mm256_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+            __m256d real_res = _mm256_fnmadd_pd(imag_a, imag_b, _mm256_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            __m256d imag_res = _mm256_fmadd_pd(real_a, imag_b, _mm256_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
-            _mm256_storeu_pd(&real_vals_final[k], real_res);
-            _mm256_storeu_pd(&imag_vals_final[k], imag_res);
-
-            k += 4;
+            _mm256_storeu_pd(&real_vals_final[idx], real_res);
+            _mm256_storeu_pd(&imag_vals_final[idx], imag_res);
         }
+        k += vec_loop * 4;
         if (left_overs != 0) {
             _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 4], _MM_HINT_T0);
             _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 4], _MM_HINT_T0);
@@ -148,26 +149,27 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
         unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
 
-        while (vec_loop--) {
+        #pragma omp parallel for schedule(static)
+        for (unsigned int i = 0; i < vec_loop; ++i) {
+            unsigned int idx = k + i * 8;
             // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
 
-            real_a = _mm256_loadu_ps(&real_vals_a[k + offsetA - jump]);
-            imag_a = _mm256_loadu_ps(&imag_vals_a[k + offsetA - jump]);
-            real_b = _mm256_loadu_ps(&real_vals_b[k + offsetB - jump]);
-            imag_b = _mm256_loadu_ps(&imag_vals_b[k + offsetB - jump]);
+            __m256 real_a = _mm256_loadu_ps(&real_vals_a[idx + offsetA - jump]);
+            __m256 imag_a = _mm256_loadu_ps(&imag_vals_a[idx + offsetA - jump]);
+            __m256 real_b = _mm256_loadu_ps(&real_vals_b[idx + offsetB - jump]);
+            __m256 imag_b = _mm256_loadu_ps(&imag_vals_b[idx + offsetB - jump]);
 
-            real_res = _mm256_fnmadd_ps(imag_a, imag_b, _mm256_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm256_fmadd_ps(real_a, imag_b, _mm256_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+            __m256 real_res = _mm256_fnmadd_ps(imag_a, imag_b, _mm256_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            __m256 imag_res = _mm256_fmadd_ps(real_a, imag_b, _mm256_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
-            _mm256_storeu_ps(&real_vals_final[k], real_res);
-            _mm256_storeu_ps(&imag_vals_final[k], imag_res);
-
-            k += 8;
+            _mm256_storeu_ps(&real_vals_final[idx], real_res);
+            _mm256_storeu_ps(&imag_vals_final[idx], imag_res);
         }
+        k += vec_loop * 8;
         if (left_overs != 0) {
             _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
             _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
@@ -210,6 +212,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
             _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
@@ -262,6 +265,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
             _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
@@ -314,6 +318,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m256d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
             _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
@@ -715,26 +720,27 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
         unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
 
-        while (vec_loop--) {
+        #pragma omp parallel for schedule(static)
+        for (unsigned int i = 0; i < vec_loop; ++i) {
+            unsigned int idx = k + i * 8;
             // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[k + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[k + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
 
-            real_a = _mm512_loadu_pd(&real_vals_a[k + offsetA - jump]);
-            imag_a = _mm512_loadu_pd(&imag_vals_a[k + offsetA - jump]);
-            real_b = _mm512_loadu_pd(&real_vals_b[k + offsetB - jump]);
-            imag_b = _mm512_loadu_pd(&imag_vals_b[k + offsetB - jump]);
+            __m512d real_a = _mm512_loadu_pd(&real_vals_a[idx + offsetA - jump]);
+            __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[idx + offsetA - jump]);
+            __m512d real_b = _mm512_loadu_pd(&real_vals_b[idx + offsetB - jump]);
+            __m512d imag_b = _mm512_loadu_pd(&imag_vals_b[idx + offsetB - jump]);
 
-            real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+            __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
-            _mm512_storeu_pd(&real_vals_final[k], real_res);
-            _mm512_storeu_pd(&imag_vals_final[k], imag_res);
-        
-            k += 8;
+            _mm512_storeu_pd(&real_vals_final[idx], real_res);
+            _mm512_storeu_pd(&imag_vals_final[idx], imag_res);
         }
+        k += vec_loop * 8;
 
         if (left_overs != 0) {
             _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
@@ -776,13 +782,6 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             std::cout << "Using AVX512-Float vectorization" << std::endl;
         #endif
         
-        // unsigned int loop_count = 0;
-        // unsigned int k_cpy = k;
-        // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-        //     loop_count++;
-        //     k_cpy++;
-        // }
-
         unsigned int max_lenRes = lenRes - k;
         unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
         unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
@@ -791,58 +790,45 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m512 real_a, real_b; // a for valuesA and b for valuesB
         __m512 imag_a, imag_b; // a for valuesA and b for valuesB
-        __m512 real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-        int left_overs = loop_count - ((loop_count / 8) * 8);
-        unsigned int vec_loop = (loop_count / 8);
-        unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
-        unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+        __m512 real_res, imag_res;
+        int left_overs = loop_count - ((loop_count / 16) * 16);
+        unsigned int vec_loop = (loop_count / 16);
+        unsigned int left_overs_start_at_A = k + offsetA - jump + 16 * (loop_count / 16);
+        unsigned int left_overs_start_at_B = k + offsetB - jump + 16 * (loop_count / 16);
 
-        // printf("k = %ld, lenRes = %ld, offsetA = %ld, offsetB = %ld, jump = %ld, lenDiagA = %ld, lenDiagB = %ld, loop_count = %ld, left_overs = %ld, vec_loop = %ld, left_overs_start_at_A = %ld, left_overs_start_at_B = %ld\n", k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, loop_count, left_overs, vec_loop, left_overs_start_at_A, left_overs_start_at_B);
+        #pragma omp parallel for schedule(static)
+        for (unsigned int i = 0; i < vec_loop; ++i) {
+            unsigned int idx = k + i * 16;
 
-        while (vec_loop--) {
+            // Prefetch the next set of values for better cache utilization
+            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 32], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 32], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 32], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 32], _MM_HINT_T0);
 
-            real_a = _mm512_loadu_ps(&real_vals_a[k + offsetA - jump]);
-            imag_a = _mm512_loadu_ps(&imag_vals_a[k + offsetA - jump]);
-            real_b = _mm512_loadu_ps(&real_vals_b[k + offsetB - jump]);
-            imag_b = _mm512_loadu_ps(&imag_vals_b[k + offsetB - jump]);
+            real_a = _mm512_loadu_ps(&real_vals_a[idx + offsetA - jump]);
+            imag_a = _mm512_loadu_ps(&imag_vals_a[idx + offsetA - jump]);
+            real_b = _mm512_loadu_ps(&real_vals_b[idx + offsetB - jump]);
+            imag_b = _mm512_loadu_ps(&imag_vals_b[idx + offsetB - jump]);
 
-            real_reala_realb = _mm512_mul_ps(real_a, real_b);
-            real_imaga_imagb = _mm512_mul_ps(imag_a, imag_b);
-            real_res = _mm512_sub_ps(real_reala_realb, real_imaga_imagb);
+            real_res = _mm512_fnmadd_ps(imag_a, imag_b, _mm512_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            imag_res = _mm512_fmadd_ps(real_a, imag_b, _mm512_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
-            imag_reala_imagb = _mm512_mul_ps(real_a, imag_b);
-            imag_imaga_realb = _mm512_mul_ps(imag_a, real_b);
-            imag_res = _mm512_add_ps(imag_reala_imagb, imag_imaga_realb);
-
-            avx512_store_partial_float(8, &real_vals_final[k], real_res);
-            avx512_store_partial_float(8, &imag_vals_final[k], imag_res);
-
-            // printing real_res, imag_res
-            // float *real_res_ptr = (float *)&real_res;
-            // float *imag_res_ptr = (float *)&imag_res;
-            // printf("real_res = [%f, %f, %f, %f, %f, %f, %f, %f]\n", real_res_ptr[0], real_res_ptr[1], real_res_ptr[2], real_res_ptr[3], real_res_ptr[4], real_res_ptr[5], real_res_ptr[6], real_res_ptr[7]);
-            // printf("imag_res = [%f, %f, %f, %f, %f, %f, %f, %f]\n", imag_res_ptr[0], imag_res_ptr[1], imag_res_ptr[2], imag_res_ptr[3], imag_res_ptr[4], imag_res_ptr[5], imag_res_ptr[6], imag_res_ptr[7]);
-
-            k += 8;
+            _mm512_storeu_ps(&real_vals_final[idx], real_res);
+            _mm512_storeu_ps(&imag_vals_final[idx], imag_res);
         }
+        k += vec_loop * 16;
         if (left_overs != 0) {
             real_a = avx512_load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
             imag_a = avx512_load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
             real_b = avx512_load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
             imag_b = avx512_load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
 
-            real_reala_realb = _mm512_mul_ps(real_a, real_b);
-            real_imaga_imagb = _mm512_mul_ps(imag_a, imag_b);
-            real_res = _mm512_sub_ps(real_reala_realb, real_imaga_imagb);
-
-            imag_reala_imagb = _mm512_mul_ps(real_a, imag_b);
-            imag_imaga_realb = _mm512_mul_ps(imag_a, real_b);
-            imag_res = _mm512_add_ps(imag_reala_imagb, imag_imaga_realb);
+            real_res = _mm512_fnmadd_ps(imag_a, imag_b, _mm512_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+            imag_res = _mm512_fmadd_ps(real_a, imag_b, _mm512_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
 
             avx512_store_partial_float(left_overs, &real_vals_final[k], real_res);
             avx512_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
-
-            // k += left_overs;
         }
     }
 
@@ -870,6 +856,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
             // Prefetch future data to optimize cache usage
             _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
@@ -958,6 +945,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
             // Prefetch future data to improve cache efficiency
             _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
@@ -986,7 +974,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             _mm512_store_pd(&y_real_values[i], y_real_vals_vec);
             _mm512_store_pd(&y_imag_values[i], y_imag_vals_vec);
         }
-        
+
         // Handle remaining elements
         if (left_overs != 0) {
             unsigned int left_overs_start_at = vec_loop * 8;
@@ -1071,6 +1059,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
         __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
 
+        #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
             // Prefetch next iterations' data to reduce cache latency
             _mm_prefetch((char*)&real_vals[i + 16], _MM_HINT_T0);

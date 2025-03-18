@@ -48,7 +48,7 @@ using valType = double;
 
 // ------- Vectorization related ------- //
 #define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, 2 for AVX512, set -1 to run without vectorization
-#define NUM_BYTES_ALIGNED 64
+#define NUM_BYTES_ALIGNED 64 // choose 32 for AVX, 64 for AVX512, 16 for SSE, -1 for no vectorization
 // //case 0: double, SSE
 // #if valType == double && VECTORIZATION_TYPE == 0
 // 	// #define SIMD_WIDTH 2
@@ -96,7 +96,7 @@ valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 
 // ------- Cache related ------- //
 #define TILE_SIZE 32
-#define BLOCK_SIZE 128
+#define BLOCK_SIZE 256
 // ------------------------------- //
 
 
