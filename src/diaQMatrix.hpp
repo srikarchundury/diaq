@@ -283,7 +283,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // this->diagonalMap.erase(dIndex);
             this->diagonalMap.insert({dIndex, diagNew});
         }
-        
+
         void addDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
@@ -291,9 +291,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 diagonalMap.insert({dIndex, diagNew});
             }
             else {
-                #pragma omp simd
+                #pragma omp parallel for
                 for(unsigned int i = 0; i < it->second->dLength; i++) {
+                    #pragma omp atomic
                     it->second->realValues[i] += diagNew->realValues[i];
+                    #pragma omp atomic
                     it->second->imagValues[i] += diagNew->imagValues[i];
                 }
                 // diagNew->free();

@@ -149,11 +149,9 @@ std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *
     #if VECTORIZATION_TYPE == 0
         run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == 1
-        #ifdef __AVX512F__
-            run_avx512(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-        #elif defined(__AVX__)
-            run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-        #endif
+        run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+    #elif VECTORIZATION_TYPE == 2
+        run_avx512(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == -1
         run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #endif
@@ -206,150 +204,82 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     // if(A->matrix_shape[1] != B->matrix_shape[0]) {
     //     throw std::invalid_argument("input matrices are not multiplyable");
     // }
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            for (auto itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
-                for (auto itB = B->diagonalMap.begin(); itB != B->diagonalMap.end(); itB++) {
-                    #pragma omp taskgroup
-                    {
-                        #pragma omp task
-                        {
-                            #ifdef DEEP_DEBUG
-                                std::cout << " ------ diags ------ " << std::endl;
-                                itA->second->print();
-                                itB->second->print();
-                                std::cout << " ------ diags ------ " << std::endl;
-                                std::cout << " --- " << std::endl;
-                            #endif
-                            #ifdef DEEP_DEBUG
-                                std::cout << "Thread ID " << omp_get_thread_num() << " is working on diagonal " << itA->first << " and " << itB->first << std::endl;
-                            #endif
-
-                            std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
-
-                            if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-
-                                #ifdef DEEP_DEBUG
-                                    std::cout << " ------ new diag ------ " << std::endl;
-                                    diagNew->print();
-                                    std::cout << " ------ new diag ------ " << std::endl;
-                                #endif
-
-                                #pragma omp critical
-                                {
-                                    result->addDiagonal(diagNew->dIndex, diagNew);
-                                }
-
-                                #ifdef DEEP_DEBUG
-                                    std::cout << " ------ result ------ " << std::endl;
-                                    result->print();
-                                    std::cout << " ------ result ------ " << std::endl;
-                                #endif
-
-                            }
-                            // else if (diagNew != NULL) {
-
-                            //     #ifdef DEEP_DEBUG
-                            //         printf(" --- printing empty diagonal --- \n");
-                            //         diagNew->print();
-                            //         printf(" --- --- --- \n");
-                            //     #endif
-
-                            //     diagNew->free();
-                            // }
-                        } // ends omp task
-                    } // ends omp taskgroup
-                } // ends for-inner
-            } // ends for-outer
-        } // ends omp single
-    } // ends omp parallel
-
-
-    // std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    // std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
-    // std::vector<std::unordered_map<int, std::shared_ptr<diagonal> >> thread_local_maps(omp_get_max_threads());
-    // std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecA(mapA.begin(), mapA.end());
-    // std::vector<std::pair<int, std::shared_ptr<diagonal> >> vecB(mapB.begin(), mapB.end());
     // #pragma omp parallel
     // {
-    //     int thread_id = omp_get_thread_num();
-    //     auto &local_map = thread_local_maps[thread_id];
+    //     #pragma omp single
+    //     {
+    //         for (auto itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
+    //             for (auto itB = B->diagonalMap.begin(); itB != B->diagonalMap.end(); itB++) {
+    //                 #pragma omp taskgroup
+    //                 {
+    //                     #pragma omp task
+    //                     {
+    //                         #ifdef DEEP_DEBUG
+    //                             std::cout << " ------ diags ------ " << std::endl;
+    //                             itA->second->print();
+    //                             itB->second->print();
+    //                             std::cout << " ------ diags ------ " << std::endl;
+    //                             std::cout << " --- " << std::endl;
+    //                         #endif
+    //                         #ifdef DEEP_DEBUG
+    //                             std::cout << "Thread ID " << omp_get_thread_num() << " is working on diagonal " << itA->first << " and " << itB->first << std::endl;
+    //                         #endif
 
-    //     #pragma omp for
-    //     for (size_t a = 0; a < vecA.size(); ++a) {
-    //         for (size_t b = 0; b < vecB.size(); ++b) {
-    //             std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
-    //                                                 vecA[a].first, vecB[b].first, 
-    //                                                 vecA[a].second, vecB[b].second);
-    //             if (diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
-    //                 local_map[diagNew->dIndex] = diagNew;
-    //             }
-    //             // else if (diagNew != NULL) {
-    //             //     diagNew->free();
-    //             // } // this is not needed anymore since we moved to smart pointers!
-    //         }
-    //     }
-    // }
-    // #pragma omp parallel for
-    // for (size_t t = 0; t < thread_local_maps.size(); ++t) {
-    //     for (auto &entry : thread_local_maps[t]) {
-    //         #pragma omp critical
-    //         result->addDiagonal(entry.first, entry.second);
-    //     }
-    // }
+    //                         std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, itA->first, itB->first, itA->second, itB->second);
 
-    #ifdef DEEP_DEBUG
-        std::cout << " --- " << std::endl;
-		// --- First matrix ---
-		std::unordered_map<int, std::shared_ptr<diagonal> > A_diagonalMap = A->diagonalMap;
-        // get keys of A_diagonalMap
-        std::vector<int> A_keys;
-        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator A_it;
-        for (A_it = A_diagonalMap.begin(); A_it != A_diagonalMap.end(); A_it++) {
-            A_keys.push_back(A_it->first);
+    //                         if(diagNew != NULL && diagNew->dLength != 0 && !diagNew->isEmpty()) {
+
+    //                             #ifdef DEEP_DEBUG
+    //                                 std::cout << " ------ new diag ------ " << std::endl;
+    //                                 diagNew->print();
+    //                                 std::cout << " ------ new diag ------ " << std::endl;
+    //                             #endif
+
+    //                             #pragma omp critical
+    //                             {
+    //                                 result->addDiagonal(diagNew->dIndex, diagNew);
+    //                             }
+
+    //                             #ifdef DEEP_DEBUG
+    //                                 std::cout << " ------ result ------ " << std::endl;
+    //                                 result->print();
+    //                                 std::cout << " ------ result ------ " << std::endl;
+    //                             #endif
+
+    //                         }
+    //                         // else if (diagNew != NULL) {
+
+    //                         //     #ifdef DEEP_DEBUG
+    //                         //         printf(" --- printing empty diagonal --- \n");
+    //                         //         diagNew->print();
+    //                         //         printf(" --- --- --- \n");
+    //                         //     #endif
+
+    //                         //     diagNew->free();
+    //                         // }
+    //                     } // ends omp task
+    //                 } // ends omp taskgroup
+    //             } // ends for-inner
+    //         } // ends for-outer
+    //     } // ends omp single
+    // } // ends omp parallel
+
+    #pragma omp parallel for
+    for(size_t a = 0; a < A->diagonalMap.size(); a++) {
+        auto itA = std::next(A->diagonalMap.begin(), a);
+        for(size_t b = 0; b < B->diagonalMap.size(); b++) {
+            auto itB = std::next(B->diagonalMap.begin(), b);
+            std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+                                                                itA->first, itB->first, 
+                                                                itA->second, itB->second);
+            if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
+                #pragma omp critical
+                {
+                    result->addDiagonal(diagNew->dIndex, diagNew);
+                }
+            }
         }
-        // print keys
-        std::cout << "keys of A_diagonalMap: ";
-        for(int i = 0; i < A_keys.size(); i++) {
-            std::cout << A_keys[i] << " ";
-        }
-        std::cout << std::endl;
-		// --- Second matrix ---
-        std::unordered_map<int, std::shared_ptr<diagonal> > B_diagonalMap = B->diagonalMap;
-        // get keys of B_diagonalMap
-        std::vector<int> B_keys;
-        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator B_it;
-        for (B_it = B_diagonalMap.begin(); B_it != B_diagonalMap.end(); B_it++) {
-            B_keys.push_back(B_it->first);
-        }
-        // print keys
-        std::cout << "keys of B_diagonalMap: ";
-        for(int i = 0; i < B_keys.size(); i++) {
-            std::cout << B_keys[i] << " ";
-        }
-        std::cout << std::endl;
-		// --- Result matrix ---
-        std::unordered_map<int, std::shared_ptr<diagonal> > result_diagonalMap = result->diagonalMap;
-        // get keys of result_diagonalMap
-        std::vector<int> result_keys;
-        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator result_it;
-        for (result_it = result_diagonalMap.begin(); result_it != result_diagonalMap.end(); result_it++) {
-            result_keys.push_back(result_it->first);
-        }
-        // print keys
-        std::cout << "keys of result_diagonalMap: ";
-        for(int i = 0; i < result_keys.size(); i++) {
-            std::cout << result_keys[i] << " ";
-        }
-        std::cout << std::endl;
-        std::cout << " --- " << std::endl;
-        std::cout << " --- product result --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        result->print();
-        std::cout << " --- " << std::endl;
-    #endif
+    }
 
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
@@ -1086,11 +1016,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             {
                 // printf("Negative diagonal!!\n");
                 #if VECTORIZATION_TYPE == 1
-                    #ifdef __AVX512F__
-                        run_spmv_avx512_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
                         run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #endif
+                #elif VECTORIZATION_TYPE == 2
+                    run_spmv_avx512_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
@@ -1109,12 +1037,10 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             #pragma omp critical
             {
                 // printf("Positive diagonal!!\n");
-                #if VECTORIZATION_TYPE == 1
-                    #ifdef __AVX512F__
+                #if VECTORIZATION_TYPE == 2
                         run_spmv_avx512_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
+                #elif VECTORIZATION_TYPE == 1
                         run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #endif
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
@@ -1134,12 +1060,10 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             #pragma omp critical
             {
                 // printf("Zero diagonal!!\n");
-                #if VECTORIZATION_TYPE == 1
-                    #ifdef __AVX512F__
+                #if VECTORIZATION_TYPE == 2
                         run_spmv_avx512_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
+                #elif VECTORIZATION_TYPE == 1
                         run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #endif
                 #elif VECTORIZATION_TYPE == 0
                     run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                 #else // run without vectorization
