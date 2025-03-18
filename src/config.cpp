@@ -4,15 +4,21 @@
 namespace diaq {
 
     valType* aligned_alloc_helper(unsigned int size) {
-        // Ensure `size` is a multiple of NUM_BYTES_ALIGNED
-        unsigned int aligned_size = (size + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED * NUM_BYTES_ALIGNED;
-        valType *alloced_array = (valType *)std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+        unsigned int aligned_size = ((size * sizeof(valType) + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED) * NUM_BYTES_ALIGNED;
+        valType *alloced_array = (valType *) std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
         if (alloced_array == nullptr) {
             std::cerr << "Aligned memory allocation failed!" << std::endl;
-            std::abort(); // Terminate program if allocation fails
+            std::abort();
         }
+
+        #ifdef DEEP_DEBUG
+            std::cout << "Allocated address: " << alloced_array << std::endl;
+            assert(reinterpret_cast<uintptr_t>(alloced_array) % NUM_BYTES_ALIGNED == 0);
+        #endif
+
         return alloced_array;
-    } // 19-qubit unitary sim failed with allocation error, likely some other kernel has a memory leak!! fixing with valgrind.
+    }
+    // 19-qubit unitary sim failed with allocation error, likely some other kernel has a memory leak!! fixing with valgrind.
 
     // valType* aligned_alloc_helper(unsigned int size) {
     //     void* ptr = nullptr;

@@ -57,7 +57,8 @@ std::shared_ptr<diaQMatrix> conjbar(std::shared_ptr<diaQMatrix> A);
 
 std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, valType real, valType imag);
 
-std::shared_ptr<diaQMatrix> expm_negative(std::shared_ptr<diaQMatrix> A, valType t);
+std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t);
+std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t);
 
 } // namespace diaq
 

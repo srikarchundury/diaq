@@ -6,7 +6,7 @@
 
 namespace diaq {
 
-class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<identityMatrix> {
+class identityMatrix : public diaQMatrix {
 	public:
 		identityMatrix(unsigned int s) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1
@@ -26,7 +26,7 @@ class identityMatrix : public diaQMatrix, public std::enable_shared_from_this<id
 		}
 };;
 
-class permutationMatrix : public diaQMatrix, public std::enable_shared_from_this<permutationMatrix> {
+class permutationMatrix : public diaQMatrix {
 	public:
 		permutationMatrix(unsigned int s, std::vector<unsigned int> row_order) : diaQMatrix(s) {
 			#if NUM_BYTES_ALIGNED == -1

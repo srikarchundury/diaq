@@ -49,6 +49,16 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         void setIndex(int newIndex) {
             dIndex = newIndex;
         }
+        std::shared_ptr<diagonal> copy() {
+            valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+            valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #pragma omp parallel for
+            for(unsigned int i = 0; i < dLength; i++) {
+                real_vals[i] = realValues[i];
+                imag_vals[i] = imagValues[i];
+            }
+            return std::make_shared<diagonal>(dIndex, dLength, real_vals, imag_vals);
+        }
         void setElements(valType *new_realVals, valType *new_imagVals) {
             realValues = new_realVals;
             imagValues = new_imagVals;
@@ -144,12 +154,13 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             return shared_from_this();
         }
         std::shared_ptr<diagonal> scale_by_real(valType real) {
+            std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLength);
             #pragma omp parallel for
             for(unsigned int i = 0; i < dLength; i++) {
-                realValues[i] *= real;
-                imagValues[i] *= real;
+                newDiag->realValues[i] = real * realValues[i];
+                newDiag->imagValues[i] = real * imagValues[i];
             }
-            return shared_from_this();
+            return newDiag;
         }
         std::complex<valType>& operator[](unsigned int i) {
             if (i >= dLength) {

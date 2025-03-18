@@ -6,6 +6,14 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
+# for warnings!
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable")
+
+# # Parallel Hashmap directory
+# set(PHMAP_DIR /mnt/beegfs/schundu3/thesis/parallel-hashmap)
+# # Add include directories
+# include_directories(${INC_DIR} ${PHMAP_DIR})
+
 # Look for OpenMP package and set OpenMP flags
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
@@ -171,6 +179,3 @@ endif()
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-
-# for warnings!
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter")

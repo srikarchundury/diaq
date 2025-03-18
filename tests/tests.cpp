@@ -1524,6 +1524,34 @@ int main(int argc, char **argv) {
     testCase48.push_back(B48);
     testCases.push_back(testCase48);
 
+    // -----------------------------------------
+    unsigned int *shapeA49 = new unsigned int[2]{4, 4};
+    diaq::valType a49[16] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    };
+    std::shared_ptr<diaq::denseMatrix> A49 = std::make_shared<diaq::denseMatrix>(&shapeA49, a49);
+    unsigned int *shapeB49 = new unsigned int[2]{4, 4};
+    diaq::valType b49_imag[16] = {
+        -1.6, -8, 0, 0,
+        0, -3.2, -9.6, 0,
+        0, 0, -4.8, -11.2,
+        0, 0, 0, -6.4,
+    };
+    diaq::valType b49_real[16] = {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    };
+    std::shared_ptr<diaq::denseMatrix> B49 = std::make_shared<diaq::denseMatrix>(&shapeB49, b49_real, b49_imag);
+    std::vector<std::shared_ptr<diaq::denseMatrix> > testCase49;
+    testCase49.push_back(A49);
+    testCase49.push_back(B49);
+    testCases.push_back(testCase49);
+
     if(argc == 1) {
         for(unsigned int i = 0; i < testCases.size(); i++) {
             std::cout << "test case - " << i;
@@ -2100,9 +2128,19 @@ int main(int argc, char **argv) {
         q_mat->print();
 
         std::cout << " --x-- " << std::endl;
-        diaq::valType x_real_vals[16] = {0};
-        diaq::valType x_imag_vals[16] = {0};
-        x_imag_vals[2] = 1.0;
+        #if NUM_BYTES_ALIGNED == -1
+            diaq::valType *x_real_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+            diaq::valType *x_imag_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
+        #else
+            diaq::valType *x_real_vals = diaq::aligned_alloc_helper(16 * sizeof(diaq::valType));
+            diaq::valType *x_imag_vals = diaq::aligned_alloc_helper(16 * sizeof(diaq::valType));
+            #pragma omp parallel for
+            for(size_t i = 0; i < 16; i++) {
+                x_real_vals[i] = 0;
+                x_imag_vals[i] = 0;
+            }
+        #endif
+            x_imag_vals[2] = 1.0;
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(16, x_real_vals, x_imag_vals);
         x->print();
         std::cout << " --MV-- " << std::endl;
@@ -2831,30 +2869,7 @@ int main(int argc, char **argv) {
         std::cout << res << std::endl;
         std::cout << " -- " << std::endl;
     }
-    else if (strcmp(argv[1], "multiplyMatrix_1") == 0) {
-        std::cout << " -- testing multiplyMatrix -- " << std::endl;
-        std::shared_ptr<diaq::diaQMatrix> A = A23->convertToDiaQ();
-        std::cout << " -- Mat A -- " << std::endl;
-        A->print();
-        std::shared_ptr<diaq::diaQMatrix> B = B23->convertToDiaQ();
-        std::cout << " -- Mat B -- " << std::endl;
-        B->print();
-
-        std::shared_ptr<diaq::diaQMatrix> correct_ans = diaq::product(A, B);
-        std::cout << " -- correct answer -- " << std::endl;
-        correct_ans->print();
-        std::cout << " -- " << std::endl;
-
-        std::shared_ptr<diaq::diaQMatrix> C = A->multiplyMatrix(B);
-        std::cout << " -- Mat C = A->multiplyMatrix(B) -- " << std::endl;
-        C->print();
-        std::cout << " -- " << std::endl;
-
-        std::cout << " -- checking correctness -- " << std::endl;
-        std::cout << checkResult(correct_ans, C) << std::endl;
-        std::cout << " -- " << std::endl;
-    }
-    else if (strcmp(argv[1], "expm_negative") == 0 ) {
+    else if (strcmp(argv[1], "expm_negative_1") == 0 ) {
         std::cout << " -- Testing expm_negative -- " << std::endl;
         // Define a 2x2 matrix with specific real values for testing
         diaq::valType reals[4] = {
@@ -2880,7 +2895,8 @@ int main(int argc, char **argv) {
         diaq::valType time = 1.0; // Example time value for exp(-i * H * t)
 
         // Calculate the matrix exponentiation e^(-i * H * t) using expm_negative
-        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative(gate, time);
+        std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_taylor(gate, time);
+        // std::shared_ptr<diaq::diaQMatrix> result = diaq::expm_negative_taylor(gate, time);
 
         std::cout << "--------------------------------" << std::endl;
         // Print the result
