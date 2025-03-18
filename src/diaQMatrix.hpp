@@ -13,10 +13,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         unsigned int *matrix_shape; // as of now, this is always a 2 element array
         std::vector<unsigned int> shape;
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> diagonalMap; // map <dIndex, diagonal object>
+        std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap; // map <dIndex, diagonal object>
 
         diaQMatrix(unsigned int s) {
-            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> d;
+            std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
             matrix_shape = new unsigned int[2];
             matrix_shape[0] = s;
@@ -25,7 +25,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             shape.push_back(s);
         }
         diaQMatrix(unsigned int x, unsigned int y) {
-            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> d;
+            std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
             matrix_shape = new unsigned int[2];
             matrix_shape[0] = x;
@@ -34,32 +34,32 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             shape.push_back(y);
         }
         diaQMatrix(unsigned int **dimens) {
-            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> d;
+            std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
         diaQMatrix(unsigned int **dimens, std::vector<unsigned int> ts) {
-            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> d;
+            std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
             matrix_shape = *dimens;
             shape = ts;
         }
-        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
             diagonalMap = dm;
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d) {
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d) {
             diagonalMap = dm;
             matrix_shape = *d;
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
-        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d, std::vector<unsigned int> ts) {
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d, std::vector<unsigned int> ts) {
             diagonalMap = dm;
             matrix_shape = *d;
             shape = ts;
@@ -180,7 +180,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             it->second->setValue(d_pos[1], real_val, imag_val);
             // printf("setItem done\n");
         }
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> getDiagonalMap() {
+        std::unordered_map<int, std::shared_ptr<diagonal>> getDiagonalMap() {
             return diagonalMap;
         }
         void print() {
@@ -233,7 +233,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 return it->second;
             }
         }
-        void setDiagonalMap(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm) {
+        void setDiagonalMap(std::unordered_map<int, std::shared_ptr<diagonal>> dm) {
             diagonalMap = dm;
         }
         void setDiagonalElement(int dIndex, unsigned int dPos, unsigned int dLen, valType real_val, valType imag_val) {
@@ -802,7 +802,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         std::shared_ptr<diaQMatrix> copy() {
-            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
+            std::unordered_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
         
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); i++) {

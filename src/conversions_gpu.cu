@@ -61,7 +61,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::
 	cudaFree(device_diagonal_idx);
 	cudaFree(device_diagonal_pos);
 
-	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> diagMap;
+	std::unordered_map<int, std::shared_ptr<diagonal>> diagMap;
 	auto diaq_res = std::make_shared<diaQMatrix>(diagMap, matrix_shape.get(), shape);
 	#pragma omp parallel for
 	for (unsigned int i = 0; i < product; i++) {
@@ -98,7 +98,7 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d, s
 	cudaFree(device_diagonal_idx);
 	cudaFree(device_diagonal_pos);
 
-	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> diagMap;
+	std::unordered_map<int, std::shared_ptr<diagonal>> diagMap;
 	auto diaq_res = std::make_shared<diaQMatrix>(diagMap, new_shape.get());
 	#pragma omp parallel for
 	for (unsigned int i = 0; i < size; i++) {
