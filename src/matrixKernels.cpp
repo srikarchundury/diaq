@@ -284,7 +284,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\tUnitary multiplication took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t product took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return result;
@@ -426,7 +426,7 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, unsign
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\tMatrix reshape took %f milliseconds\n", duration.count()/1000.0);
+        printf("\t\t matrix_reshape took %f milliseconds\n", duration.count()/1000.0);
     #endif
 
     return res;
@@ -2975,7 +2975,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\tidentity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
+        printf("\t\t identity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
     #endif
 
     // A->free();
@@ -3188,10 +3188,6 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         valType *res_real_vals = res_diag->realValues;
         valType *res_imag_vals = res_diag->imagValues;
 
-        #ifdef DEBUG
-            auto before = std::chrono::high_resolution_clock::now();
-        #endif
-
         // Compute exact exp(-i A t) for diagonal elements
         #pragma omp parallel for
         for (unsigned int i = 0; i < dLength; i++) {
@@ -3211,12 +3207,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 
         #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();
-
-            auto just_loop_duration = std::chrono::duration_cast<std::chrono::microseconds>(end - before);
-            printf("\t\t expm_negative FOR LOOP took %f milliseconds\n", just_loop_duration.count() / 1000.0);
-
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
+            printf("\t\t expm_negative_taylors took %f milliseconds\n", duration.count() / 1000.0);
         #endif
 
         return result;
@@ -3246,9 +3238,6 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         // printf("result\n");
         // result->print();
         if(X_power_i_whole_divided_by_i->norm() < tolerance) {
-            #ifdef DEBUG
-                printf("breaking taylors at i = %d\n", i);
-            #endif
             break;
         }
     }

@@ -343,7 +343,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "addMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t addMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return C;
@@ -421,7 +421,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
 
@@ -474,7 +474,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                 #ifdef DEBUG
                     auto end = std::chrono::high_resolution_clock::now();
-                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                    std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
 
                 return det;
@@ -494,7 +494,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                 #ifdef DEBUG
                     auto end = std::chrono::high_resolution_clock::now();
-                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                    std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
                 return det;
             }
@@ -512,7 +512,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                 #ifdef DEBUG
                     auto end = std::chrono::high_resolution_clock::now();
-                    std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                    std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
                 return det;
             }
@@ -541,7 +541,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return det;
@@ -588,7 +588,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "minor took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t minor took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return minor;
@@ -597,6 +597,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void addMatrixScaled(std::shared_ptr<diaQMatrix> B, valType real_scale_factor) {
             // this = this + B * scale_factor
             #ifdef DEBUG
+                printf("starting addMatrixScaled -- ");
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
 
@@ -625,7 +626,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
 
@@ -672,7 +673,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "adjugate took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t adjugate took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return adjugate_transpose;
@@ -710,7 +711,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "divide_by_scalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t divide_by_scalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
         
@@ -757,6 +758,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         std::shared_ptr<diaQMatrix> subtractMatrix(std::shared_ptr<diaQMatrix> B) {
 
             #ifdef DEBUG
+                printf("starting subtractMatrix -- ");
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
 
@@ -795,7 +797,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "subtractMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t subtractMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return C;
@@ -856,7 +858,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
             return std::sqrt(norm);

@@ -6,8 +6,9 @@ namespace diaq {
 void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     // no vectorization
     // logger.log("No vectorization");
-    #ifdef DEBUG
-        std::cout << "No vectorization" << std::endl;
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_without_vectorization -- " << std::endl;
+        auto start = std::chrono::high_resolution_clock::now();
     #endif
     // #pragma omp simd; this does not work as is!
     while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
@@ -20,6 +21,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 		imag_vals_final[k] = (valType)((valType)(real_a * imag_b) + (valType)(imag_a * real_b));
         k += 1;
     }
+
+    #ifdef DEEP_DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
+    #endif
 }
 
 // ----------------------------------------------------------------
@@ -52,7 +59,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_avx<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using AVX-Double vectorization" << std::endl;
+            std::cout << "Starting run_avx - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int max_lenRes = lenRes - k;
@@ -107,6 +115,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx_store_partial_double(left_overs, &real_vals_final[k], real_res);
             avx_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_avx - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
     // ------------------------AVX FLOAT----------------------------------------
     __m256 avx_load_partial_float(int n, const float* p) {
@@ -132,7 +146,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_avx<float>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using AVX-Float vectorization" << std::endl;
+            std::cout << "Starting run_avx - Float -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int max_lenRes = lenRes - k;
@@ -187,6 +202,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx_store_partial_float(left_overs, &real_vals_final[k], real_res);
             avx_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_avx - Float took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     // SPMV for AVX
@@ -203,8 +224,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     template<>
     void run_spmv_avx_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_avx_1 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "starting run_spmv_avx_1 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 4;
@@ -252,12 +274,19 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex], y_real_vals_vec);
             avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex], y_imag_vals_vec);
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx_1 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
     template<>
     void run_spmv_avx_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_avx_2 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "starting run_spmv_avx_2 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 4;
@@ -304,13 +333,19 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
         }
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx_2 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     template<>
     void run_spmv_avx_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             std::cout << "run_spmv_avx_0 - Double" << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 4;
@@ -357,6 +392,11 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
         }
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx_0 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     // // ------------------------AVX FLOAT----------------------------------------
@@ -408,7 +448,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_sse<float>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using SSE-Float vectorization" << std::endl;
+            std::cout << "Starting run_sse float -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
         
         // unsigned int loop_count = 0;
@@ -470,6 +511,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
             // k += left_overs;
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_sse - Float took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     // ------------------------SSE Double----------------------------------------
@@ -496,7 +543,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_sse<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using SSE-Double vectorization" << std::endl;
+            std::cout << "Starting run_sse double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         // unsigned int loop_count = 0;
@@ -546,6 +594,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             imag_vals_final[k] = (valType)((valType)(real_vals_a[k + offsetA - jump] * imag_vals_b[k + offsetB - jump]) + (valType)(imag_vals_a[k + offsetA - jump] * real_vals_b[k + offsetB - jump]));
             // k += 1;
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_sse - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     // SPMV for SSE
@@ -576,8 +630,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     template<>
     void run_spmv_sse_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_sse_1 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_sse_1 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 2;
@@ -606,12 +661,19 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_sse_1 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
     template<>
     void run_spmv_sse_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_sse_2 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_sse_2 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 2;
@@ -640,12 +702,19 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_sse_2 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
     template<>
     void run_spmv_sse_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_sse_0 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_sse_0 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         unsigned int vec_loop = dLength / 2;
@@ -674,6 +743,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_sse_0 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
 #endif
@@ -697,7 +772,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using AVX512-Double vectorization" << std::endl;
+            std::cout << "Starting run_avx512 double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         // unsigned int loop_count = 0;
@@ -758,7 +834,13 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         
             avx512_store_partial_double(left_overs, &real_vals_final[k], real_res);
             avx512_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
-        }        
+        }
+        
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
         
     }
     // ------------------------AVX512 FLOAT----------------------------------------
@@ -779,7 +861,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     void run_avx512<float>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
 
         #ifdef DEEP_DEBUG
-            std::cout << "Using AVX512-Float vectorization" << std::endl;
+            std::cout << "Starting run_avx512 float -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
         
         unsigned int max_lenRes = lenRes - k;
@@ -830,6 +913,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             avx512_store_partial_float(left_overs, &real_vals_final[k], real_res);
             avx512_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
         }
+
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_avx512 - Float took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
     // SPMV for AVX
@@ -846,8 +935,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     template<>
     void run_spmv_avx512_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_avx512_1 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_avx512_1 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         // printf("run_spmv_avx512_1 - Double\n");
@@ -918,16 +1008,21 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             // Store leftover results
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex], y_imag_vals_vec);
-        }        
+        }
+        
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx512_1 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
         
     }
     template<>
     void run_spmv_avx512_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        // printf("run_spmv_avx512_2 - Double\n");'
-
-        #ifdef DEBUG
-            std::cout << "run_spmv_avx512_2 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_avx512_2 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         // // cross checking with non-simd version
@@ -1005,7 +1100,14 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             // Store leftover results
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
-        }        
+        } 
+        
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx512_2 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
+
         // // printing y_real_values, y_imag_values in single line
         // printf("y_real_values = [");
         // for(unsigned int i = 0; i < dLength; i++) {
@@ -1049,8 +1151,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     template<>
     void run_spmv_avx512_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
 
-        #ifdef DEBUG
-            std::cout << "run_spmv_avx512_0 - Double" << std::endl;
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_avx512_0 - Double -- " << std::endl;
+            auto start = std::chrono::high_resolution_clock::now();
         #endif
 
         // printf("run_spmv_avx512_0 - Double\n");
@@ -1108,7 +1211,13 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         
             avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
             avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
-        }        
+        }
+        
+        #ifdef DEEP_DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\trun_spmv_avx512_0 - Double took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
 
