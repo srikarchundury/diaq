@@ -27,7 +27,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 // SIMD - SSE for valType = float, AVX for valType = double
 //
 // ----------------------------------------------------------------
-#ifdef __AVX__
+#ifdef __AVX2__
     // ------------------------AVX DOUBLE----------------------------------------
     __m256d avx_load_partial_double(int n, const double *p) {
         // Initialize a mask with all bits set to 1
