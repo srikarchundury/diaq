@@ -57,7 +57,7 @@ using valType = double;
 // 		// #define SIMD_WIDTH 8
 // 		#define NUM_BYTES_ALIGNED 64
 // // **********************************
-// 	#elif defined(__AVX__)
+// 	#elif defined(__AVX2__)
 // 		// #define SIMD_WIDTH 4
 // 		#define NUM_BYTES_ALIGNED 32
 // 	#else
@@ -72,7 +72,7 @@ using valType = double;
 // 	#ifdef __AVX512F__
 // 		// #define SIMD_WIDTH 16
 // 		#define NUM_BYTES_ALIGNED 64
-// 	#elif defined(__AVX__)
+// 	#elif defined(__AVX2__)
 // 		// #define SIMD_WIDTH 8
 // 		#define NUM_BYTES_ALIGNED 32
 // 	#else

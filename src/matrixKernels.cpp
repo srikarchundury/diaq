@@ -151,7 +151,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *
     #elif VECTORIZATION_TYPE == 1
         #ifdef __AVX512F__
             run_avx512(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-        #elif defined(__AVX__)
+        #elif defined(__AVX2__)
             run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #endif
     #elif VECTORIZATION_TYPE == -1
@@ -1087,7 +1087,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 #if VECTORIZATION_TYPE == 1
                     #ifdef __AVX512F__
                         run_spmv_avx512_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
+                    #elif defined(__AVX2__)
                         run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #endif
                 #elif VECTORIZATION_TYPE == 0
@@ -1111,7 +1111,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 #if VECTORIZATION_TYPE == 1
                     #ifdef __AVX512F__
                         run_spmv_avx512_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
+                    #elif defined(__AVX2__)
                         run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #endif
                 #elif VECTORIZATION_TYPE == 0
@@ -1136,7 +1136,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 #if VECTORIZATION_TYPE == 1
                     #ifdef __AVX512F__
                         run_spmv_avx512_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif defined(__AVX__)
+                    #elif defined(__AVX2__)
                         run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #endif
                 #elif VECTORIZATION_TYPE == 0
