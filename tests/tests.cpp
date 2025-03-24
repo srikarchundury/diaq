@@ -12,7 +12,10 @@ std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix(std::unordered_map<int
 
 std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B) {
     if(A->diagonalMap.size() != B->diagonalMap.size()) {
-        // A->print();
+        printf("A: \n");
+        A->print();
+        printf("B: \n");
+        B->print();
         return "false - size mis-match";
     }
     const diaq::valType epsilon = 0.00002;

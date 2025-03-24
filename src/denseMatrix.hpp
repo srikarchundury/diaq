@@ -88,8 +88,8 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                 std::cout << "denseMatrix destructor called" << std::endl;
             #endif
             // we have to free because we allocate manually, other places are vector.hpp, diagonal.hpp!!!
-            if(realData != nullptr) std::free(realData);
-            if(imagData != nullptr) std::free(imagData);
+            // if(realData != nullptr) std::free(realData);
+            // if(imagData != nullptr) std::free(imagData);
             // somehow tests fail if I free it here, invesigating!!
         }
         valType *getRealData() {

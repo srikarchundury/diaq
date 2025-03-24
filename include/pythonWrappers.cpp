@@ -101,7 +101,8 @@ PYBIND11_MODULE(diaq, m) {
             "matrix_reshape",
             [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
                 auto shape_info = shape.request();
-                unsigned int *shape_ptr = static_cast<unsigned int *>(shape_info.ptr);
+                std::array<unsigned int, 2> shape_ptr;
+                std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
                 return self->matrix_reshape(shape_ptr);
             },
             py::arg(),
@@ -256,7 +257,8 @@ PYBIND11_MODULE(diaq, m) {
         "matrix_reshape",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned int> shape) {
             auto shape_info = shape.request();
-            unsigned int *shape_ptr = static_cast<unsigned int *>(shape_info.ptr);
+            std::array<unsigned int, 2> shape_ptr;
+            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
             return diaq::matrix_reshape(A, shape_ptr);
         },
         py::arg(),
