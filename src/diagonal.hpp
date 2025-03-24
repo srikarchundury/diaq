@@ -43,8 +43,8 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
                 std::cout << "diagonal destructor called" << std::endl;
             #endif
             // needed because we allocate memory ourserlves unlike shared_ptr! This place and under vector.hpp & denseMatrix.cpp are the only places where we need to free memory manually!!!
-            std::free(realValues);
-            std::free(imagValues);
+            if(realValues != nullptr) std::free(realValues);
+            if(imagValues != nullptr) std::free(imagValues);
         }
         void setIndex(int newIndex) {
             dIndex = newIndex;
@@ -107,8 +107,8 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             std::cout << "dIndex=" << dIndex << ", dLength=" << dLength << std::endl;
         }
         // returns the start (x, y) of diagonal of the matrix
-        unsigned int* getCoords(unsigned int matrixSize, int dIndex) {
-            static unsigned int c[2];
+        std::array<unsigned int, 2> getCoords(unsigned int matrixSize, int dIndex) {
+            std::array<unsigned int, 2> c;
             if(dIndex >= (int) matrixSize) {
                 c[0] = dIndex - matrixSize + 1; c[1] = matrixSize - 1;
             }

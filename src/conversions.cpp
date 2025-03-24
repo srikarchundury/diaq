@@ -10,7 +10,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix() {
     return this->convertToDenseMatrix(this->matrix_shape);
 }
 
-std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(unsigned int *new_shape) {
+std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigned int, 2> new_shape) {
     #if NUM_BYTES_ALIGNED == -1
         valType *real_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
         valType *imag_data = (valType *)calloc(matrix_shape[0] * matrix_shape[1], sizeof(valType));
@@ -42,7 +42,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(unsigned int *new_
             imag_data[ matrix_shape[1] * (x+i) + (y+i) ] = imag_vals[i];
         }
     }
-    std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(&new_shape, real_data, imag_data);
+    std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(new_shape, real_data, imag_data);
     d->shape = shape;
     return d;
 }
@@ -52,14 +52,10 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ() {
 }
 
 std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::vector<unsigned int> new_shape) {
-    unsigned int *new_shape_arr = new unsigned int[new_shape.size()];
-    for (unsigned int i = 0; i < new_shape.size(); i++) {
-        new_shape_arr[i] = new_shape[i];
-    }
-    return this->convertToDiaQ(new_shape_arr);
+    return this->convertToDiaQ(std::array<unsigned int, 2>{new_shape[0], new_shape[1]});
 }
 
-std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) {
+std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 2> new_shape) {
     #ifdef CUDA_ENABLED
         return convertToDiaQ_cuda(this, new_shape);
     #else
@@ -69,7 +65,7 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
     //     s = s + new_shape[i];
     // }
     // std::cout << "converting dense to sparse" << std::endl;
-    std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(&new_shape);
+    std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(new_shape);
     // printf("printing empty matrix");
     // qm->print();
     // #pragma omp parallel for
@@ -82,10 +78,10 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(unsigned int *new_shape) 
     for(unsigned int i = 0; i < matrix_shape[0]; i++) {
         for(unsigned int j = 0; j < matrix_shape[1]; j++) {
             // std::cout << "In thread: " << omp_get_thread_num() << std::endl;
-            std::shared_ptr<unsigned int[]> pos = std::shared_ptr<unsigned int[]>(new unsigned int[2]);
+            std::array<unsigned int, 2> pos;
             pos[0] = i;
             pos[1] = j;
-            std::shared_ptr<int[]> d_pos = qm->getDiagonalPosition(pos);
+            std::array<int, 2> d_pos = qm->getDiagonalPosition(pos);
             unsigned int d_len = qm->getDiagonalLength(d_pos[0]);
             // std::cout << "(" << i << "," << j << ")" << " " << d_pos[0] << " at pos " << d_pos[1] << std::endl;
             if(realData[i * new_shape[1] + j] != 0.0 || imagData[i * new_shape[1] + j] != 0.0) {
@@ -112,7 +108,7 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
-    unsigned int *matrix_shape = A->matrix_shape;
+    std::array<unsigned int, 2> matrix_shape = A->matrix_shape;
     unsigned long int total_elements = matrix_shape[0] * matrix_shape[1];
     std::vector<std::complex<valType>> vals(total_elements, std::complex<valType>(0.0, 0.0));
 
@@ -125,7 +121,7 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
         valType *imag_vals = it->second->imagValues;
 
         for (unsigned int j = 0; j < dLength; j++) {
-            std::shared_ptr<unsigned int[]> mat_pos = A->getMatrixPosition(dIndex, j);
+            std::array<unsigned int, 2> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
             // #pragma omp critical
             // {
@@ -201,20 +197,16 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                     break;
                 }
             }
-            unsigned int *new_shape = new unsigned int[2];
-            new_shape[0] = y;
-            new_shape[1] = x;
+            std::array<unsigned int, 2> new_shape = {x, y};
 
-            std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(&new_shape, real_vals, imag_vals, shape);
+            std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(new_shape, real_vals, imag_vals, shape);
             return d->convertToDiaQ(new_shape);
 
         }  else { // matrix!
 
-            unsigned int *mat_shape = new unsigned int[2];
-            mat_shape[0] = shape[0];
-            mat_shape[1] = shape[1];
+            std::array<unsigned int, 2> mat_shape = {shape[0], shape[1]};
 
-            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(&mat_shape);
+            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(mat_shape);
 
             #pragma omp parallel
             {
@@ -225,7 +217,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                     valType r = vals[flatIndex].real();
                     valType i = vals[flatIndex].imag();
                     if (r != 0.0 || i != 0.0) {
-                        std::shared_ptr<int[]> d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
+                        std::array<int, 2> d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
                         local_updates.emplace_back(d_pos[0], d_pos[1], r, i);
                     }
                 }

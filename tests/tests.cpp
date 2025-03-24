@@ -825,14 +825,14 @@ int main(int argc, char **argv) {
     testCases.push_back(testCase23);
 
     // -----------------------------------------
-    unsigned int *shapeA24 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA24 = {3, 6};
     diaq::valType a24[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18,
     };
-    std::shared_ptr<diaq::denseMatrix> A24 = std::make_shared<diaq::denseMatrix>(&shapeA24, a24);
-    unsigned int *shapeB24 = new unsigned int[2]{6, 2};
+    std::shared_ptr<diaq::denseMatrix> A24 = std::make_shared<diaq::denseMatrix>(shapeA24, a24);
+    std::array<unsigned int, 2> shapeB24 = {6, 2};
     diaq::valType b24[12] = {
         1,2,
         3,4,
@@ -841,21 +841,21 @@ int main(int argc, char **argv) {
         9,10,
         11,12,
     };
-    std::shared_ptr<diaq::denseMatrix> B24 = std::make_shared<diaq::denseMatrix>(&shapeB24, b24);
+    std::shared_ptr<diaq::denseMatrix> B24 = std::make_shared<diaq::denseMatrix>(shapeB24, b24);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase24;
     testCase24.push_back(A24);
     testCase24.push_back(B24);
     testCases.push_back(testCase24);
 
     // -----------------------------------------
-    unsigned int *shapeA25 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA25 = {3, 6};
     diaq::valType a25[18] = {
         1,2,3,4,5,6,
         7,8,9,10,11,12,
         13,14,15,16,17,18
     };
-    std::shared_ptr<diaq::denseMatrix> A25 = std::make_shared<diaq::denseMatrix>(&shapeA25, a25);
-    unsigned int *shapeB25 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A25 = std::make_shared<diaq::denseMatrix>(shapeA25, a25);
+    std::array<unsigned int, 2> shapeB25 = {6, 4};
     diaq::valType b25[24] = {
         20,21,22,23,
         24,25,26,27,
@@ -864,7 +864,7 @@ int main(int argc, char **argv) {
         36,37,38,39,
         40,41,42,43,
     };
-    std::shared_ptr<diaq::denseMatrix> B25 = std::make_shared<diaq::denseMatrix>(&shapeB25, b25);
+    std::shared_ptr<diaq::denseMatrix> B25 = std::make_shared<diaq::denseMatrix>(shapeB25, b25);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase25;
     testCase25.push_back(A25);
     testCase25.push_back(B25);
@@ -872,14 +872,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA26 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA26 = {3, 6};
     diaq::valType a26[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
-    std::shared_ptr<diaq::denseMatrix> A26 = std::make_shared<diaq::denseMatrix>(&shapeA26, a26);
-    unsigned int *shapeB26 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A26 = std::make_shared<diaq::denseMatrix>(shapeA26, a26);
+    std::array<unsigned int, 2> shapeB26 = {6, 4};
     diaq::valType b26[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -888,7 +888,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B26 = std::make_shared<diaq::denseMatrix>(&shapeB26, b26);
+    std::shared_ptr<diaq::denseMatrix> B26 = std::make_shared<diaq::denseMatrix>(shapeB26, b26);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase26;
     testCase26.push_back(A26);
     testCase26.push_back(B26);
@@ -896,14 +896,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA27 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA27 = {3, 6};
     diaq::valType a27[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
-    std::shared_ptr<diaq::denseMatrix> A27 = std::make_shared<diaq::denseMatrix>(&shapeA27, a27);
-    unsigned int *shapeB27 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A27 = std::make_shared<diaq::denseMatrix>(shapeA27, a27);
+    std::array<unsigned int, 2> shapeB27 = {6, 4};
     diaq::valType b27[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -912,21 +912,21 @@ int main(int argc, char **argv) {
         0,0,6,0,
         0,0,0,7,
     };
-    std::shared_ptr<diaq::denseMatrix> B27 = std::make_shared<diaq::denseMatrix>(&shapeB27, b27);
+    std::shared_ptr<diaq::denseMatrix> B27 = std::make_shared<diaq::denseMatrix>(shapeB27, b27);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase27;
     testCase27.push_back(A27);
     testCase27.push_back(B27);
     testCases.push_back(testCase27);
 
     // -----------------------------------------
-    unsigned int *shapeA28 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA28 = {3, 6};
     diaq::valType a28[18] = {
         0,0,0,1,0,0,
         0,0,0,0,2,0,
         0,0,0,0,0,3,
     };
-    std::shared_ptr<diaq::denseMatrix> A28 = std::make_shared<diaq::denseMatrix>(&shapeA28, a28);
-    unsigned int *shapeB28 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A28 = std::make_shared<diaq::denseMatrix>(shapeA28, a28);
+    std::array<unsigned int, 2> shapeB28 = {6, 4};
     diaq::valType b28[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -935,7 +935,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B28 = std::make_shared<diaq::denseMatrix>(&shapeB28, b28);
+    std::shared_ptr<diaq::denseMatrix> B28 = std::make_shared<diaq::denseMatrix>(shapeB28, b28);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase28;
     testCase28.push_back(A28);
     testCase28.push_back(B28);
@@ -943,14 +943,14 @@ int main(int argc, char **argv) {
 
 
         // -----------------------------------------
-    unsigned int *shapeA29 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA29 = {3, 6};
     diaq::valType a29[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A29 = std::make_shared<diaq::denseMatrix>(&shapeA29, a29);
-    unsigned int *shapeB29 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A29 = std::make_shared<diaq::denseMatrix>(shapeA29, a29);
+    std::array<unsigned int, 2> shapeB29 = {6, 4};
     diaq::valType b29[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -959,7 +959,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B29 = std::make_shared<diaq::denseMatrix>(&shapeB29, b29);
+    std::shared_ptr<diaq::denseMatrix> B29 = std::make_shared<diaq::denseMatrix>(shapeB29, b29);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase29;
     testCase29.push_back(A29);
     testCase29.push_back(B29);
@@ -967,14 +967,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA30 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA30 = {3, 6};
     diaq::valType a30[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A30 = std::make_shared<diaq::denseMatrix>(&shapeA30, a30);
-    unsigned int *shapeB30 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A30 = std::make_shared<diaq::denseMatrix>(shapeA30, a30);
+    std::array<unsigned int, 2> shapeB30 = {6, 4};
     diaq::valType b30[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -983,21 +983,21 @@ int main(int argc, char **argv) {
         0,0,6,0,
         0,0,0,7,
     };
-    std::shared_ptr<diaq::denseMatrix> B30 = std::make_shared<diaq::denseMatrix>(&shapeB30, b30);
+    std::shared_ptr<diaq::denseMatrix> B30 = std::make_shared<diaq::denseMatrix>(shapeB30, b30);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase30;
     testCase30.push_back(A30);
     testCase30.push_back(B30);
     testCases.push_back(testCase30);
 
     // -----------------------------------------
-    unsigned int *shapeA31 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA31 = {3, 6};
     diaq::valType a31[18] = {
         0,0,0,0,0,0,
         1,0,0,0,0,0,
         0,2,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A31 = std::make_shared<diaq::denseMatrix>(&shapeA31, a31);
-    unsigned int *shapeB31 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A31 = std::make_shared<diaq::denseMatrix>(shapeA31, a31);
+    std::array<unsigned int, 2> shapeB31 = {6, 4};
     diaq::valType b31[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -1006,7 +1006,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B31 = std::make_shared<diaq::denseMatrix>(&shapeB31, b31);
+    std::shared_ptr<diaq::denseMatrix> B31 = std::make_shared<diaq::denseMatrix>(shapeB31, b31);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase31;
     testCase31.push_back(A31);
     testCase31.push_back(B31);
@@ -1014,14 +1014,14 @@ int main(int argc, char **argv) {
     
 
     // -----------------------------------------
-    unsigned int *shapeA32 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA32 = {3, 6};
     diaq::valType a32[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A32 = std::make_shared<diaq::denseMatrix>(&shapeA32, a32);
-    unsigned int *shapeB32 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A32 = std::make_shared<diaq::denseMatrix>(shapeA32, a32);
+    std::array<unsigned int, 2> shapeB32 = {6, 4};
     diaq::valType b32[24] = {
         0,4,0,0,
         0,0,5,0,
@@ -1030,7 +1030,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B32 = std::make_shared<diaq::denseMatrix>(&shapeB32, b32);
+    std::shared_ptr<diaq::denseMatrix> B32 = std::make_shared<diaq::denseMatrix>(shapeB32, b32);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase32;
     testCase32.push_back(A32);
     testCase32.push_back(B32);
@@ -1038,14 +1038,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA33 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA33 = {3, 6};
     diaq::valType a33[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A33 = std::make_shared<diaq::denseMatrix>(&shapeA33, a33);
-    unsigned int *shapeB33 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A33 = std::make_shared<diaq::denseMatrix>(shapeA33, a33);
+    std::array<unsigned int, 2> shapeB33 = {6, 4};
     diaq::valType b33[24] = {
         0,0,0,0,
         0,0,0,0,
@@ -1054,21 +1054,21 @@ int main(int argc, char **argv) {
         0,0,6,0,
         0,0,0,7,
     };
-    std::shared_ptr<diaq::denseMatrix> B33 = std::make_shared<diaq::denseMatrix>(&shapeB33, b33);
+    std::shared_ptr<diaq::denseMatrix> B33 = std::make_shared<diaq::denseMatrix>(shapeB33, b33);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase33;
     testCase33.push_back(A33);
     testCase33.push_back(B33);
     testCases.push_back(testCase33);
 
     // -----------------------------------------
-    unsigned int *shapeA34 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA34 = {3, 6};
     diaq::valType a34[18] = {
         1,0,0,0,0,0,
         0,2,0,0,0,0,
         0,0,3,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A34 = std::make_shared<diaq::denseMatrix>(&shapeA34, a34);
-    unsigned int *shapeB34 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A34 = std::make_shared<diaq::denseMatrix>(shapeA34, a34);
+    std::array<unsigned int, 2> shapeB34 = {6, 4};
     diaq::valType b34[24] = {
         4,0,0,0,
         0,5,0,0,
@@ -1077,21 +1077,21 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B34 = std::make_shared<diaq::denseMatrix>(&shapeB34, b34);
+    std::shared_ptr<diaq::denseMatrix> B34 = std::make_shared<diaq::denseMatrix>(shapeB34, b34);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase34;
     testCase34.push_back(A34);
     testCase34.push_back(B34);
     testCases.push_back(testCase34);
 
     // -----------------------------------------
-    unsigned int *shapeA35 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA35 = {3, 6};
     diaq::valType a35[18] = {
         0,0,0,0,5,0,
         0,0,0,0,0,6,
         0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A35 = std::make_shared<diaq::denseMatrix>(&shapeA35, a35);
-    unsigned int *shapeB35 = new unsigned int[2]{6, 2};
+    std::shared_ptr<diaq::denseMatrix> A35 = std::make_shared<diaq::denseMatrix>(shapeA35, a35);
+    std::array<unsigned int, 2> shapeB35 = {6, 2};
     diaq::valType b35[12] = {
         0,0,
         0,0,
@@ -1100,7 +1100,7 @@ int main(int argc, char **argv) {
         0,0,
         4,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B35 = std::make_shared<diaq::denseMatrix>(&shapeB35, b35);
+    std::shared_ptr<diaq::denseMatrix> B35 = std::make_shared<diaq::denseMatrix>(shapeB35, b35);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase35;
     testCase35.push_back(A35);
     testCase35.push_back(B35);
@@ -1108,14 +1108,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA36 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA36 = {3, 6};
     diaq::valType a36[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         5,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A36 = std::make_shared<diaq::denseMatrix>(&shapeA36, a36);
-    unsigned int *shapeB36 = new unsigned int[2]{6, 4};
+    std::shared_ptr<diaq::denseMatrix> A36 = std::make_shared<diaq::denseMatrix>(shapeA36, a36);
+    std::array<unsigned int, 2> shapeB36 = {6, 4};
     diaq::valType b36[24] = {
         0,0,0,10,
         0,0,0,0,
@@ -1124,7 +1124,7 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B36 = std::make_shared<diaq::denseMatrix>(&shapeB36, b36);
+    std::shared_ptr<diaq::denseMatrix> B36 = std::make_shared<diaq::denseMatrix>(shapeB36, b36);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase36;
     testCase36.push_back(A36);
     testCase36.push_back(B36);
@@ -1132,14 +1132,14 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA37 = new unsigned int[2]{3, 6};
+    std::array<unsigned int, 2> shapeA37 = {3, 6};
     diaq::valType a37[18] = {
         0,0,0,0,0,0,
         0,0,0,0,0,0,
         1,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A37 = std::make_shared<diaq::denseMatrix>(&shapeA37, a37);
-    unsigned int *shapeB37 = new unsigned int[2]{6, 2};
+    std::shared_ptr<diaq::denseMatrix> A37 = std::make_shared<diaq::denseMatrix>(shapeA37, a37);
+    std::array<unsigned int, 2> shapeB37 = {6, 2};
     diaq::valType b37[12] = {
         0,2,
         0,0,
@@ -1148,14 +1148,14 @@ int main(int argc, char **argv) {
         0,0,
         0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B37 = std::make_shared<diaq::denseMatrix>(&shapeB37, b37);
+    std::shared_ptr<diaq::denseMatrix> B37 = std::make_shared<diaq::denseMatrix>(shapeB37, b37);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase37;
     testCase37.push_back(A37);
     testCase37.push_back(B37);
     testCases.push_back(testCase37);
 
     // -----------------------------------------
-    unsigned int *shapeA38 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA38 = {16, 4};
     diaq::valType a38[64] = {
         8,0,0,0,
         0,0,0,0,
@@ -1174,22 +1174,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,15,
     };
-    std::shared_ptr<diaq::denseMatrix> A38 = std::make_shared<diaq::denseMatrix>(&shapeA38, a38);
-    unsigned int *shapeB38 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A38 = std::make_shared<diaq::denseMatrix>(shapeA38, a38);
+    std::array<unsigned int, 2> shapeB38 = {4, 16};
     diaq::valType b38[64] = {
         8,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,12,0,0,0,0,0,0,0,0,13,0,0,
         0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,15,
     };
-    std::shared_ptr<diaq::denseMatrix> B38 = std::make_shared<diaq::denseMatrix>(&shapeB38, b38);
+    std::shared_ptr<diaq::denseMatrix> B38 = std::make_shared<diaq::denseMatrix>(shapeB38, b38);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase38;
     testCase38.push_back(A38);
     testCase38.push_back(B38);
     testCases.push_back(testCase38);
 
     // -----------------------------------------
-    unsigned int *shapeA39 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA39 = {16, 4};
     diaq::valType a39[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1208,15 +1208,15 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,15,
     };
-    std::shared_ptr<diaq::denseMatrix> A39 = std::make_shared<diaq::denseMatrix>(&shapeA39, a39);
-    unsigned int *shapeB39 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A39 = std::make_shared<diaq::denseMatrix>(shapeA39, a39);
+    std::array<unsigned int, 2> shapeB39 = {4, 16};
     diaq::valType b39[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B39 = std::make_shared<diaq::denseMatrix>(&shapeB39, b39);
+    std::shared_ptr<diaq::denseMatrix> B39 = std::make_shared<diaq::denseMatrix>(shapeB39, b39);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase39;
     testCase39.push_back(A39);
     testCase39.push_back(B39);
@@ -1224,7 +1224,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA40 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA40 = {16, 4};
     diaq::valType a40[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1243,15 +1243,15 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A40 = std::make_shared<diaq::denseMatrix>(&shapeA40, a40);
-    unsigned int *shapeB40 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A40 = std::make_shared<diaq::denseMatrix>(shapeA40, a40);
+    std::array<unsigned int, 2> shapeB40 = {4, 16};
     diaq::valType b40[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B40 = std::make_shared<diaq::denseMatrix>(&shapeB40, b40);
+    std::shared_ptr<diaq::denseMatrix> B40 = std::make_shared<diaq::denseMatrix>(shapeB40, b40);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase40;
     testCase40.push_back(A40);
     testCase40.push_back(B40);
@@ -1259,7 +1259,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA41 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA41 = {16, 4};
     diaq::valType a41[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1278,22 +1278,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A41 = std::make_shared<diaq::denseMatrix>(&shapeA41, a41);
-    unsigned int *shapeB41 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A41 = std::make_shared<diaq::denseMatrix>(shapeA41, a41);
+    std::array<unsigned int, 2> shapeB41 = {4, 16};
     diaq::valType b41[64] = {
         8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B41 = std::make_shared<diaq::denseMatrix>(&shapeB41, b41);
+    std::shared_ptr<diaq::denseMatrix> B41 = std::make_shared<diaq::denseMatrix>(shapeB41, b41);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase41;
     testCase41.push_back(A41);
     testCase41.push_back(B41);
     testCases.push_back(testCase41);
 
     // -----------------------------------------
-    unsigned int *shapeA42 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA42 = {16, 4};
     diaq::valType a42[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1312,22 +1312,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A42 = std::make_shared<diaq::denseMatrix>(&shapeA42, a42);
-    unsigned int *shapeB42 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A42 = std::make_shared<diaq::denseMatrix>(shapeA42, a42);
+    std::array<unsigned int, 2> shapeB42 = {4, 16};
     diaq::valType b42[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,
     };
-    std::shared_ptr<diaq::denseMatrix> B42 = std::make_shared<diaq::denseMatrix>(&shapeB42, b42);
+    std::shared_ptr<diaq::denseMatrix> B42 = std::make_shared<diaq::denseMatrix>(shapeB42, b42);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase42;
     testCase42.push_back(A42);
     testCase42.push_back(B42);
     testCases.push_back(testCase42);
 
     // -----------------------------------------
-    unsigned int *shapeA43 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA43 = {16, 4};
     diaq::valType a43[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1346,22 +1346,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A43 = std::make_shared<diaq::denseMatrix>(&shapeA43, a43);
-    unsigned int *shapeB43 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A43 = std::make_shared<diaq::denseMatrix>(shapeA43, a43);
+    std::array<unsigned int, 2> shapeB43 = {4, 16};
     diaq::valType b43[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,13,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B43 = std::make_shared<diaq::denseMatrix>(&shapeB43, b43);
+    std::shared_ptr<diaq::denseMatrix> B43 = std::make_shared<diaq::denseMatrix>(shapeB43, b43);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase43;
     testCase43.push_back(A43);
     testCase43.push_back(B43);
     testCases.push_back(testCase43);
 
     // -----------------------------------------
-    unsigned int *shapeA44 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA44 = {16, 4};
     diaq::valType a44[64] = {
         0,0,0,0,
         0,0,0,0,
@@ -1380,22 +1380,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A44 = std::make_shared<diaq::denseMatrix>(&shapeA44, a44);
-    unsigned int *shapeB44 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A44 = std::make_shared<diaq::denseMatrix>(shapeA44, a44);
+    std::array<unsigned int, 2> shapeB44 = {4, 16};
     diaq::valType b44[64] = {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,11,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B44 = std::make_shared<diaq::denseMatrix>(&shapeB44, b44);
+    std::shared_ptr<diaq::denseMatrix> B44 = std::make_shared<diaq::denseMatrix>(shapeB44, b44);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase44;
     testCase44.push_back(A44);
     testCase44.push_back(B44);
     testCases.push_back(testCase44);
 
     // -----------------------------------------
-    unsigned int *shapeA45 = new unsigned int[2]{16, 4};
+    std::array<unsigned int, 2> shapeA45 = {16, 4};
     diaq::valType a45[64] = {
         8,0,0,0,
         0,0,0,0,
@@ -1414,22 +1414,22 @@ int main(int argc, char **argv) {
         0,0,0,0,
         0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A45 = std::make_shared<diaq::denseMatrix>(&shapeA45, a45);
-    unsigned int *shapeB45 = new unsigned int[2]{4, 16};
+    std::shared_ptr<diaq::denseMatrix> A45 = std::make_shared<diaq::denseMatrix>(shapeA45, a45);
+    std::array<unsigned int, 2> shapeB45 = {4, 16};
     diaq::valType b45[64] = {
         0,0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B45 = std::make_shared<diaq::denseMatrix>(&shapeB45, b45);
+    std::shared_ptr<diaq::denseMatrix> B45 = std::make_shared<diaq::denseMatrix>(shapeB45, b45);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase45;
     testCase45.push_back(A45);
     testCase45.push_back(B45);
     testCases.push_back(testCase45);
 
     // -----------------------------------------
-    unsigned int *shapeA46 = new unsigned int[2]{32, 2};
+    std::array<unsigned int, 2> shapeA46 = {32, 2};
     diaq::valType a46[64] = {
         1,0,
         0,0,
@@ -1464,13 +1464,13 @@ int main(int argc, char **argv) {
         1,0,
         0,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A46 = std::make_shared<diaq::denseMatrix>(&shapeA46, a46);
-    unsigned int *shapeB46 = new unsigned int[2]{2, 8};
+    std::shared_ptr<diaq::denseMatrix> A46 = std::make_shared<diaq::denseMatrix>(shapeA46, a46);
+    std::array<unsigned int, 2> shapeB46 = {2, 8};
     diaq::valType b46[64] = {
         1,0,0,1,0,0,0,0,
         0,0,0,0,0,1,1,0,
     };
-    std::shared_ptr<diaq::denseMatrix> B46 = std::make_shared<diaq::denseMatrix>(&shapeB46, b46);
+    std::shared_ptr<diaq::denseMatrix> B46 = std::make_shared<diaq::denseMatrix>(shapeB46, b46);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase46;
     testCase46.push_back(A46);
     testCase46.push_back(B46);
@@ -1478,7 +1478,7 @@ int main(int argc, char **argv) {
 
 
     // -----------------------------------------
-    unsigned int *shapeA47 = new unsigned int[2]{8, 2};
+    std::array<unsigned int, 2> shapeA47 = {8, 2};
     diaq::valType a47[16] = {
         0.707107,0,
         0,0,
@@ -1489,28 +1489,28 @@ int main(int argc, char **argv) {
         0,0,
         0.707107,0,
     };
-    std::shared_ptr<diaq::denseMatrix> A47 = std::make_shared<diaq::denseMatrix>(&shapeA47, a47);
-    unsigned int *shapeB47 = new unsigned int[2]{2, 2};
+    std::shared_ptr<diaq::denseMatrix> A47 = std::make_shared<diaq::denseMatrix>(shapeA47, a47);
+    std::array<unsigned int, 2> shapeB47 = {2, 2};
     diaq::valType b47[4] = {
         0.707107,0,
         0,-0.707107,
     };
-    std::shared_ptr<diaq::denseMatrix> B47 = std::make_shared<diaq::denseMatrix>(&shapeB47, b47);
+    std::shared_ptr<diaq::denseMatrix> B47 = std::make_shared<diaq::denseMatrix>(shapeB47, b47);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase47;
     testCase47.push_back(A47);
     testCase47.push_back(B47);
     testCases.push_back(testCase47);
 
     // -----------------------------------------
-    unsigned int *shapeA48 = new unsigned int[2]{4, 5};
+    std::array<unsigned int, 2> shapeA48 = {4, 5};
     diaq::valType a48[20] = {
         1, 2, 3, 4, 5,
         6, 7, 8, 9, 10,
         11, 12, 13, 14, 15,
         16, 17, 18, 19, 20,
     };
-    std::shared_ptr<diaq::denseMatrix> A48 = std::make_shared<diaq::denseMatrix>(&shapeA48, a48);
-    unsigned int *shapeB48 = new unsigned int[2]{5, 3};
+    std::shared_ptr<diaq::denseMatrix> A48 = std::make_shared<diaq::denseMatrix>(shapeA48, a48);
+    std::array<unsigned int, 2> shapeB48 = {5, 3};
     diaq::valType b48[15] = {
         1, 6, 11,
         2, 7, 12,
@@ -1518,22 +1518,22 @@ int main(int argc, char **argv) {
         4, 9, 14,
         5, 10, 15,
     };
-    std::shared_ptr<diaq::denseMatrix> B48 = std::make_shared<diaq::denseMatrix>(&shapeB48, b48);
+    std::shared_ptr<diaq::denseMatrix> B48 = std::make_shared<diaq::denseMatrix>(shapeB48, b48);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase48;
     testCase48.push_back(A48);
     testCase48.push_back(B48);
     testCases.push_back(testCase48);
 
     // -----------------------------------------
-    unsigned int *shapeA49 = new unsigned int[2]{4, 4};
+    std::array<unsigned int, 2> shapeA49 = {4, 4};
     diaq::valType a49[16] = {
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1,
     };
-    std::shared_ptr<diaq::denseMatrix> A49 = std::make_shared<diaq::denseMatrix>(&shapeA49, a49);
-    unsigned int *shapeB49 = new unsigned int[2]{4, 4};
+    std::shared_ptr<diaq::denseMatrix> A49 = std::make_shared<diaq::denseMatrix>(shapeA49, a49);
+    std::array<unsigned int, 2> shapeB49 = {4, 4};
     diaq::valType b49_imag[16] = {
         -1.6, -8, 0, 0,
         0, -3.2, -9.6, 0,
@@ -1546,7 +1546,7 @@ int main(int argc, char **argv) {
         0, 0, 0, 0,
         0, 0, 0, 0,
     };
-    std::shared_ptr<diaq::denseMatrix> B49 = std::make_shared<diaq::denseMatrix>(&shapeB49, b49_real, b49_imag);
+    std::shared_ptr<diaq::denseMatrix> B49 = std::make_shared<diaq::denseMatrix>(shapeB49, b49_real, b49_imag);
     std::vector<std::shared_ptr<diaq::denseMatrix> > testCase49;
     testCase49.push_back(A49);
     testCase49.push_back(B49);
@@ -1595,7 +1595,7 @@ int main(int argc, char **argv) {
         // testing reshape operations
         B8->print();
         std::cout << " -- " << std::endl;
-        std::vector<unsigned int> dims{8,8};
+        std::array<unsigned int, 2> dims = {8,8};
         std::shared_ptr<diaq::diaQMatrix> q_B8 = B8->convertToDiaQ(dims);
         q_B8->print();
         std::cout << " -- " << std::endl;
@@ -1607,7 +1607,7 @@ int main(int argc, char **argv) {
         std::cout << " -- Tensor Reshape Done -- " << std::endl;
         std::cout << " -- " << std::endl;
         // testing matrix_reshape
-        unsigned int *new_mat_dims = new unsigned int[2]{4, 16};
+        std::array<unsigned int, 2> new_mat_dims = {4, 16};
         std::shared_ptr<diaq::diaQMatrix> matrix_reshaped_q_B8 = matrix_reshape(q_B8, new_mat_dims);
         matrix_reshaped_q_B8->print();
         std::cout << " -- " << std::endl;
@@ -1619,7 +1619,7 @@ int main(int argc, char **argv) {
         A24->print();
         std::cout << " -- " << std::endl;
 
-        std::vector<unsigned int> dims{3,6};
+        std::array<unsigned int, 2> dims = {3, 6};
         std::shared_ptr<diaq::diaQMatrix> q_A24 = A24->convertToDiaQ(dims);
         q_A24->print();
         std::cout << " -- " << std::endl;
@@ -1639,7 +1639,7 @@ int main(int argc, char **argv) {
         A24->shape = std::vector<unsigned int>{3,3,2};
         A24->print();
         std::cout << " -- " << std::endl;
-        std::vector<unsigned int> dims{3,6};
+        std::array<unsigned int, 2>dims = {3,6};
         std::shared_ptr<diaq::diaQMatrix> q_A24 = A24->convertToDiaQ(dims);
         q_A24->print();
         std::cout << " -- " << std::endl;
@@ -1649,7 +1649,7 @@ int main(int argc, char **argv) {
 
         std::cout << "getting element in diaq::diagonal idx = " << di << " position = " << dp << std::endl;
         // unsigned int *mat_pos = q_A24->getMatrixPosition(di, dp);
-        std::shared_ptr<unsigned int[]> mat_pos = q_A24->getMatrixPosition(di, dp);
+        std::array<unsigned int, 2> mat_pos = q_A24->getMatrixPosition(di, dp);
         std::cout << "matrix position - " << mat_pos[0] << "," << mat_pos[1] << std::endl;
 
         std::vector<unsigned int> ten_pos = q_A24->getTensorPosition(di, dp);
@@ -1666,7 +1666,7 @@ int main(int argc, char **argv) {
         A24->print();
         std::cout << " -- " << std::endl;
 
-        std::vector<unsigned int> dims{3,6};
+        std::array<unsigned int, 2> dims = {3,6};
         std::shared_ptr<diaq::diaQMatrix> q_A24 = A24->convertToDiaQ(dims);
         q_A24->shape = std::vector<unsigned int>{3,3,2};
         q_A24->print();
@@ -1800,7 +1800,7 @@ int main(int argc, char **argv) {
         // length (8) [(0.395882,0.121511), (-5.55112e-17,-2.08167e-17), (0,0), (0,0), (0,0), (0,0), (0.178448,0.892563), (-5.55112e-17,0)]
         // testing spMV here.
         diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        unsigned int *shape_mat = new unsigned int[2]{8, 8};
+        std::array<unsigned int, 2> shape_mat = {8, 8};
         diaq::valType mat_vals[64] = {
             h_val,                h_val,                0,                0,                0,                0,                0,                0,
 
@@ -1819,7 +1819,7 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                h_val,                -1 * h_val,
         };
         std::cout << " --matrix-- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(&shape_mat, mat_vals);
+        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(shape_mat, mat_vals);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
@@ -1851,7 +1851,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "spmv_3") == 0) {
         // diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        unsigned int *shape_mat = new unsigned int[2]{8, 8};
+        std::array<unsigned int, 2> shape_mat = {8, 8};
         diaq::valType mat_vals_real[64] = {
             0,                0,                0,                0,                0,                0,                0,                0,
 
@@ -1887,7 +1887,7 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(&shape_mat, mat_vals_real, mat_vals_imag);
+        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(shape_mat, mat_vals_real, mat_vals_imag);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
@@ -1925,7 +1925,7 @@ int main(int argc, char **argv) {
         // -- current vector --
         // length (8) [(0.279931,0.085921), (0.000000,0.000000), (0.126182,0.631137), (0.000000,0.000000), (0.279931,0.085921), (0.000000,0.000000), (0.126182,0.631137), (0.000000,0.000000)]
         // diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        unsigned int *shape_mat = new unsigned int[2]{8, 8};
+        std::array<unsigned int, 2> shape_mat = {8, 8};
         diaq::valType mat_vals_real[64] = {
             1,                0,                0,                0,                0,                0,                0,                0,
 
@@ -1944,7 +1944,7 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(&shape_mat, mat_vals_real);
+        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(shape_mat, mat_vals_real);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
@@ -1974,7 +1974,7 @@ int main(int argc, char **argv) {
     }
     else if(strcmp(argv[1], "spmv_5") == 0) {
         // diaq::valType h_val = (diaq::valType) ((diaq::valType)1.0 / std::sqrt((diaq::valType)2.0));
-        unsigned int *shape_mat = new unsigned int[2]{8, 8};
+        std::array<unsigned int, 2> shape_mat = {8, 8};
         diaq::valType mat_vals_real[64] = {
             0,                1,                0,                0,                0,                0,                0,                0,
 
@@ -1993,7 +1993,7 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0,                1,                0,
         };
         std::cout << " --matrix-- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(&shape_mat, mat_vals_real);
+        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(shape_mat, mat_vals_real);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
@@ -2019,7 +2019,7 @@ int main(int argc, char **argv) {
         std::cout << " -- " << std::endl;
     }
     else if(strcmp(argv[1], "spmv_6") == 0) {
-        unsigned int *shape_mat = new unsigned int[2]{8, 8};
+        std::array<unsigned int, 2> shape_mat = {8, 8};
         diaq::valType mat_vals_real[64] = {
             -0.483542,                0,                -0.152339,                0,                0,                0,                0,                0,
 
@@ -2055,7 +2055,7 @@ int main(int argc, char **argv) {
             0,                0,                0,                0,                0,                0.843343,                0,                0.0464493,
         };
         std::cout << " --matrix-- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(&shape_mat, mat_vals_real, mat_vals_imag);
+        std::shared_ptr<diaq::denseMatrix> mat = std::make_shared<diaq::denseMatrix>(shape_mat, mat_vals_real, mat_vals_imag);
         mat->print();
         std::cout << " --sparse_matrix-- " << std::endl;
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
@@ -2219,8 +2219,8 @@ int main(int argc, char **argv) {
             23, 29, 31, 37,
             41, 43, 47, 53
         };
-        unsigned int *shape = new unsigned int[2]{4, 4};
-        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(&shape, prime_vals);
+        std::array<unsigned int, 2> shape = {4, 4};
+        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(shape, prime_vals);
         std::shared_ptr<diaq::diaQMatrix> gate_matrix = dense_prime_matrix->convertToDiaQ();
         std::cout << " -- gate_matrix -- " << std::endl;
         gate_matrix->print();
@@ -2285,8 +2285,8 @@ int main(int argc, char **argv) {
         }; // Hadamard gate
         unsigned int after = 3; // qubits after gate
 
-        unsigned int *s = new unsigned int[2]{2,2};
-        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(&s, reals);
+        std::array<unsigned int, 2> s = {2,2};
+        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(s, reals);
         std::shared_ptr<diaq::diaQMatrix> gate = denseGate->convertToDiaQ();
         gate->print();
 
@@ -2343,8 +2343,8 @@ int main(int argc, char **argv) {
             1, 0, 1, 0,
             0, 0, 0, 0
         };
-        unsigned int *s = new unsigned int[2]{4,4};
-        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(&s, reals);
+        std::array<unsigned int, 2> s = {4,4};
+        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(s, reals);
         std::shared_ptr<diaq::diaQMatrix> gate = denseGate->convertToDiaQ();
         gate->print();
 
@@ -2398,8 +2398,8 @@ int main(int argc, char **argv) {
             0, 0, -0.707107, 0,
             0, 0, 0, 0.707107
         };
-        unsigned int *s = new unsigned int[2]{4,4};
-        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(&s, reals, imags);
+        std::array<unsigned int, 2> s = {4,4};
+        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(s, reals, imags);
         std::shared_ptr<diaq::diaQMatrix> gate = denseGate->convertToDiaQ();
         gate->print(); // 2 qubit gate, 4x4 unitary matrix
 
@@ -2422,12 +2422,12 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "tensordot_1") == 0) {
         // testing tensordot operation
         A24->shape = std::vector<unsigned int>{3,3,2};
-        std::vector<unsigned int> dims_A{3,6};
+        std::array<unsigned int, 2> dims_A = {3,6};
         std::shared_ptr<diaq::diaQMatrix> q_A24 = A24->convertToDiaQ(dims_A);
         q_A24->print();
         std::cout << " -- " << std::endl;
         B24->shape = std::vector<unsigned int>{2,3,2};
-        std::vector<unsigned int> dims_B{6,2};
+        std::array<unsigned int, 2> dims_B = {6,2};
         std::shared_ptr<diaq::diaQMatrix> q_B24 = B24->convertToDiaQ(dims_B);
         q_B24->print();
         std::cout << " -- " << std::endl;
@@ -2450,16 +2450,16 @@ int main(int argc, char **argv) {
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        unsigned int *shape_first_m = new unsigned int[2]{4,4};
-        std::shared_ptr<diaq::denseMatrix> dfirst = std::make_shared<diaq::denseMatrix>(&shape_first_m, first_m);
+        std::array<unsigned int, 2> shape_first_m = {4,4};
+        std::shared_ptr<diaq::denseMatrix> dfirst = std::make_shared<diaq::denseMatrix>(shape_first_m, first_m);
         std::shared_ptr<diaq::diaQMatrix> q_first = dfirst->convertToDiaQ();
         q_first->shape = std::vector<unsigned int>{2,2,2,2};
         diaq::valType second_m[4] = {
             0.707107, 0,
             0, -0.707107,
         };
-        unsigned int *shape_second_m = new unsigned int[2]{2,2};
-        std::shared_ptr<diaq::denseMatrix> dsecond = std::make_shared<diaq::denseMatrix>(&shape_second_m, second_m);
+        std::array<unsigned int, 2> shape_second_m = {2,2};
+        std::shared_ptr<diaq::denseMatrix> dsecond = std::make_shared<diaq::denseMatrix>(shape_second_m, second_m);
         std::shared_ptr<diaq::diaQMatrix> q_second = dsecond->convertToDiaQ();
         q_second->shape = std::vector<unsigned int>{2,2};
         std::vector<unsigned int> axes_A{3};
@@ -2478,8 +2478,8 @@ int main(int argc, char **argv) {
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        unsigned int *shape_first_m = new unsigned int[2]{4,4};
-        std::shared_ptr<diaq::denseMatrix> dfirst = std::make_shared<diaq::denseMatrix>(&shape_first_m, first_m);
+        std::array<unsigned int, 2> shape_first_m = {4,4};
+        std::shared_ptr<diaq::denseMatrix> dfirst = std::make_shared<diaq::denseMatrix>(shape_first_m, first_m);
         std::shared_ptr<diaq::diaQMatrix> q_first = dfirst->convertToDiaQ();
         q_first->shape = std::vector<unsigned int>{2,2,2,2};
         printf(" --- q_first matrix --- \n");
@@ -2490,8 +2490,8 @@ int main(int argc, char **argv) {
             0, 0, 0, 1,
             0, 0, 1, 0,
         };
-        unsigned int *shape_second_m = new unsigned int[2]{4,4};
-        std::shared_ptr<diaq::denseMatrix> dsecond = std::make_shared<diaq::denseMatrix>(&shape_second_m, second_m);
+        std::array<unsigned int, 2> shape_second_m = {4,4};
+        std::shared_ptr<diaq::denseMatrix> dsecond = std::make_shared<diaq::denseMatrix>(shape_second_m, second_m);
         std::shared_ptr<diaq::diaQMatrix> q_second = dsecond->convertToDiaQ();
         q_second->shape = std::vector<unsigned int>{2,2,2,2};
         printf(" --- q_second matrix --- \n");
@@ -2601,8 +2601,8 @@ int main(int argc, char **argv) {
             0.707107, 0.707107,
             0.707107, -0.707107
         };
-        unsigned int *H_shape = new unsigned int[2]{2,2};
-        std::shared_ptr<diaq::denseMatrix> H = std::make_shared<diaq::denseMatrix>(&H_shape, H_vals);
+        std::array<unsigned int, 2> H_shape = {2,2};
+        std::shared_ptr<diaq::denseMatrix> H = std::make_shared<diaq::denseMatrix>(H_shape, H_vals);
         std::shared_ptr<diaq::diaQMatrix> dq_H = H->convertToDiaQ();
         std::cout << "-- Hadamard gate: --" << std::endl;
         dq_H->print();
@@ -2659,8 +2659,8 @@ int main(int argc, char **argv) {
             0, 1,
             1, 0
         };
-        unsigned int *x_shape = new unsigned int[2]{2,2};
-        std::shared_ptr<diaq::denseMatrix> X = std::make_shared<diaq::denseMatrix>(&x_shape, x_vals);
+        std::array<unsigned int, 2> x_shape = {2,2};
+        std::shared_ptr<diaq::denseMatrix> X = std::make_shared<diaq::denseMatrix>(x_shape, x_vals);
         std::shared_ptr<diaq::diaQMatrix> dq_X = X->convertToDiaQ();
         printf(" -- X -- \n");
         dq_X->print();
@@ -2724,8 +2724,8 @@ int main(int argc, char **argv) {
             23, 29, 31, 37,
             41, 43, 47, 53
         };
-        unsigned int *shape = new unsigned int[2]{4, 4};
-        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(&shape, prime_vals);
+        std::array<unsigned int, 2> shape = {4, 4};
+        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(shape, prime_vals);
         std::shared_ptr<diaq::diaQMatrix> gate_matrix = dense_prime_matrix->convertToDiaQ();
         gate_matrix->print();
 
@@ -2754,8 +2754,8 @@ int main(int argc, char **argv) {
             23, 29, 31, 37,
             41, 43, 47, 53
         };
-        unsigned int *shape = new unsigned int[2]{4, 4};
-        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(&shape, prime_vals);
+        std::array<unsigned int, 2> shape = {4, 4};
+        std::shared_ptr<diaq::denseMatrix> dense_prime_matrix = std::make_shared<diaq::denseMatrix>(shape, prime_vals);
         std::shared_ptr<diaq::diaQMatrix> gate_matrix = dense_prime_matrix->convertToDiaQ();
         gate_matrix->print();
         std::shared_ptr<diaq::diaQMatrix> id4 = std::make_shared<diaq::identityMatrix>((unsigned int)4);
@@ -2781,8 +2781,8 @@ int main(int argc, char **argv) {
         // matrix_shape (64,64)
         // tensor_shape (64,64)
         // (dIndex=0) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
-        unsigned int *shape = new unsigned int[2] {64, 64};
-        std::shared_ptr<diaq::diaQMatrix> qspa = std::make_shared<diaq::diaQMatrix>(&shape);
+        std::array<unsigned int, 2> shape = {64, 64};
+        std::shared_ptr<diaq::diaQMatrix> qspa = std::make_shared<diaq::diaQMatrix>(shape);
         std::shared_ptr<diaq::diagonal> zero_d = std::make_shared<diaq::diagonal>(0, 64);
         diaq::valType *zero_d_real = zero_d->realValues;
         // diaq::valType *zero_d_imag = zero_d->imagValues;
@@ -2878,10 +2878,10 @@ int main(int argc, char **argv) {
         };
 
         // Set the dimensions of the matrix
-        unsigned int *s = new unsigned int[2]{2, 2};
+        std::array<unsigned int, 2> s = {2, 2};
 
         // Create a dense matrix from the values
-        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(&s, reals);
+        std::shared_ptr<diaq::denseMatrix> denseGate = std::make_shared<diaq::denseMatrix>(s, reals);
 
         // Convert the dense matrix to a diaQMatrix (sparse representation)
         std::shared_ptr<diaq::diaQMatrix> gate = denseGate->convertToDiaQ();

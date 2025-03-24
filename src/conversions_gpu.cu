@@ -73,7 +73,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::
 	return diaq_res;
 }
 
-std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d, std::shared_ptr<unsigned int[]> new_shape) {
+std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d, std::array<unsigned int, 2> new_shape) {
 	valType *realData = d->getRealData();
 	valType *ImagData = d->getImagData();
 	unsigned int size = d->size;

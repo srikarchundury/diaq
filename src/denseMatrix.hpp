@@ -7,7 +7,7 @@ namespace diaq {
 
 class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
     public:
-        unsigned int *matrix_shape;
+        std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
         valType *realData;
         valType *imagData;
@@ -21,7 +21,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                 realData = aligned_alloc_helper(size * sizeof(valType));
                 imagData = aligned_alloc_helper(size * sizeof(valType));
             #endif
-            matrix_shape = new unsigned int[2];
+
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
@@ -39,7 +39,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                     imagData[i] = 0.0;
                 }
             #endif
-            matrix_shape = new unsigned int[2];
+
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
@@ -48,14 +48,14 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         denseMatrix(const unsigned int s, valType *real_data, valType *imag_data) {
             realData = real_data;
             imagData = imag_data;
-            matrix_shape = new unsigned int[2];
+
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
             shape.push_back(s);
         }
-        denseMatrix(unsigned int **d, valType *real_data) {
-            matrix_shape = *d;
+        denseMatrix(std::array<unsigned int, 2> d, valType *real_data) {
+            matrix_shape = d;
             realData = real_data;
             unsigned int size = matrix_shape[0] * matrix_shape[1];
             #if NUM_BYTES_ALIGNED == -1
@@ -70,17 +70,17 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
-        denseMatrix(unsigned int **d, valType *real_data, valType *imag_data) {
+        denseMatrix(std::array<unsigned int, 2> d, valType *real_data, valType *imag_data) {
             realData = real_data;
             imagData = imag_data;
-            matrix_shape = *d;
+            matrix_shape = d;
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
-        denseMatrix(unsigned int **d, valType *real_data, valType *imag_data, std::vector<unsigned int> ts) {
+        denseMatrix(std::array<unsigned int, 2> d, valType *real_data, valType *imag_data, std::vector<unsigned int> ts) {
             realData = real_data;
             imagData = imag_data;
-            matrix_shape = *d;
+            matrix_shape = d;
             shape = ts;
         }
         ~denseMatrix() {
@@ -88,12 +88,8 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
                 std::cout << "denseMatrix destructor called" << std::endl;
             #endif
             // we have to free because we allocate manually, other places are vector.hpp, diagonal.hpp!!!
-            if (realData) {
-                std::free(realData);
-            }
-            if (imagData) {
-                std::free(imagData);
-            }
+            if(realData != nullptr) std::free(realData);
+            if(imagData != nullptr) std::free(imagData);
             // somehow tests fail if I free it here, invesigating!!
         }
         valType *getRealData() {
@@ -170,7 +166,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             // loop through all possible diagonals (principal and anti)
             for(int k = -1 * size + 1; k <= static_cast<int>(2 * size - 2); k++) {
                 std::shared_ptr<diagonal> kDiag = qm->getDiagonal_orCreateIt(k);
-                unsigned int *kCoords = kDiag->getCoords(size, k);
+                std::array<unsigned int, 2> kCoords = kDiag->getCoords(size, k);
                 if(isPartOf(k, kCoords[0], kCoords[1], i, j)) {
                     // std::cout << i << "," << j << "=" << k << std::endl;
                     if(targetDiagIndex_1 == static_cast<int>(2 * size)) {
@@ -190,7 +186,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             return j-i;
         }
         std::shared_ptr<diaQMatrix> convertToDiaQ(std::vector<unsigned int> new_shape);
-        std::shared_ptr<diaQMatrix> convertToDiaQ(unsigned int *new_matrix_shape);
+        std::shared_ptr<diaQMatrix> convertToDiaQ(std::array<unsigned int, 2> new_matrix_shape);
         std::shared_ptr<diaQMatrix> convertToDiaQ();
 };
 

@@ -259,8 +259,8 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A, std::sha
 	// CUDA stuff - Preparation Phase
 	// std::cout << "Preparation Phase" << std::endl;
 	// int *C_matrix_shape = {A->matrix_shape[0], B->matrix_shape[1]};
-	unsigned int *C_matrix_shape = new unsigned int[2]{A->matrix_shape[0], B->matrix_shape[1]};
-	diaQMatrix* C = new diaQMatrix(&C_matrix_shape);
+	std::array<unsigned int, 2> C_matrix_shape = {A->matrix_shape[0], B->matrix_shape[1]};
+	std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(C_matrix_shape);
 
 	// number of diagonals in C : A_matrix_shape[0] + B_matrix_shape[1] - 1
 	int *C_diagonal_indices = (int *)malloc((A->matrix_shape[0] + B->matrix_shape[1] - 1) * sizeof(int));

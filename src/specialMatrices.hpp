@@ -44,7 +44,7 @@ class permutationMatrix : public diaQMatrix {
 				}
 			}
 			std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(s, real);
-			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ(this->matrix_shape);
+			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ();
 			this->diagonalMap = qs->diagonalMap;
 			this->matrix_shape = qs->matrix_shape;
 			this->shape = qs->shape;

@@ -11,14 +11,14 @@ class denseMatrix; // telling this class exists w/o defining it here
 
 class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
-        unsigned int *matrix_shape; // as of now, this is always a 2 element array
+        std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
         std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap; // map <dIndex, diagonal object>
 
         diaQMatrix(unsigned int s) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
-            matrix_shape = new unsigned int[2];
+
             matrix_shape[0] = s;
             matrix_shape[1] = s;
             shape.push_back(s);
@@ -27,23 +27,23 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         diaQMatrix(unsigned int x, unsigned int y) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
-            matrix_shape = new unsigned int[2];
+
             matrix_shape[0] = x;
             matrix_shape[1] = y;
             shape.push_back(x);
             shape.push_back(y);
         }
-        diaQMatrix(unsigned int **dimens) {
+        diaQMatrix(std::array<unsigned int, 2> dimens) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
-            matrix_shape = *dimens;
+            matrix_shape = dimens;
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
-        diaQMatrix(unsigned int **dimens, std::vector<unsigned int> ts) {
+        diaQMatrix(std::array<unsigned int, 2> dimens, std::vector<unsigned int> ts) {
             std::unordered_map<int, std::shared_ptr<diagonal>> d;
             diagonalMap = d;
-            matrix_shape = *dimens;
+            matrix_shape = dimens;
             shape = ts;
         }
         diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
@@ -53,15 +53,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             shape.push_back(s);
             shape.push_back(s);
         }
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d) {
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
             diagonalMap = dm;
-            matrix_shape = *d;
+            matrix_shape = d;
             shape.push_back(matrix_shape[0]);
             shape.push_back(matrix_shape[1]);
         }
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int **d, std::vector<unsigned int> ts) {
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d, std::vector<unsigned int> ts) {
             diagonalMap = dm;
-            matrix_shape = *d;
+            matrix_shape = d;
             shape = ts;
         }
 
@@ -69,10 +69,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #ifdef DEEP_DEBUG
                 std::cout << "diaQMatrix destructor called" << std::endl;
             #endif
-            std::free(matrix_shape);
         }
         valType getItem_real(unsigned int flat_index) {
-            std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(flat_index);
+            std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return 0.0;
@@ -100,7 +99,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         void getTensorItem(std::vector<unsigned int> ten_pos, valType *real_val, valType *imag_val) {
-            std::shared_ptr<int[]> d_pos = getDiagonalPosition(ten_pos);
+            std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 *real_val = 0.0;
@@ -112,7 +111,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         valType getItem_imag(unsigned int flat_index) {
-            std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(flat_index);
+            std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return 0.0;
@@ -122,7 +121,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         std::complex<valType> getItem(unsigned int flat_index) {
-            std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(flat_index);
+            std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return std::complex<valType>(0.0, 0.0);
@@ -131,7 +130,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 return it->second->getValue(mat_pos[1]);
             }
         }
-        std::complex<valType> getItem(std::shared_ptr<unsigned int[]> mat_pos) {
+        std::complex<valType> getItem(std::array<unsigned int, 2> mat_pos) {
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return std::complex<valType>(0.0, 0.0);
@@ -141,7 +140,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         std::complex<valType> getItem(std::vector<unsigned int> ten_pos) {
-            std::shared_ptr<int[]> d_pos = getDiagonalPosition(ten_pos);
+            std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 throw std::length_error("out of bounds");
@@ -151,7 +150,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         void set(unsigned int flatindex, valType real_val, valType imag_val) {
-            std::shared_ptr<int[]> d_pos = getDiagonalPositionByFlatIndex(flatindex);
+            std::array<int, 2> d_pos = getDiagonalPositionByFlatIndex(flatindex);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 createDiagonal(d_pos[0]);
@@ -160,7 +159,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             it->second->setValue(d_pos[1], real_val, imag_val);
         }
         void set(unsigned int x, unsigned int y, valType real_val, valType imag_val) {
-            std::shared_ptr<int[]> d_pos = getDiagonalPosition(x, y);
+            std::array<int, 2> d_pos = getDiagonalPosition(x, y);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 createDiagonal(d_pos[0]);
@@ -170,7 +169,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         void setItem(std::vector<unsigned int> ten_pos, valType real_val, valType imag_val) {
             // printf("setItem called\n");
-            std::shared_ptr<int[]> d_pos = getDiagonalPosition(ten_pos);
+            std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
             // printf("got d_pos = (%ld,%ld)\n", d_pos[0], d_pos[1]);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
@@ -827,8 +826,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(d->dIndex, d->dLength, real_vals, imag_vals);
                 newDiagonalMap.insert({d->dIndex, newDiag});
             }
-            unsigned int *newMatrixShape = new unsigned int[2]{matrix_shape[0], matrix_shape[1]};
-            std::shared_ptr<diaQMatrix> newMatrix =std::make_shared<diaQMatrix>(newDiagonalMap, &newMatrixShape);
+
+            std::array<unsigned int, 2> newMatrixShape = {matrix_shape[0], matrix_shape[1]};
+            std::shared_ptr<diaQMatrix> newMatrix =std::make_shared<diaQMatrix>(newDiagonalMap, newMatrixShape);
             return newMatrix;
         }
 
@@ -881,20 +881,20 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     }
                 }
                 // printf("new x = %ld, y = %ld\n", x, y);
-                unsigned int *new_shape = new unsigned int[2]{x, y};
-                this->matrix_reshape(new_shape);
+                std::array<unsigned int, 2> newMatrixShape = {x, y};
+                this->matrix_reshape(newMatrixShape);
             }
         }
 
-        std::shared_ptr<unsigned int[]> getMatrixPosition(unsigned int flat_index) {
-            std::shared_ptr<unsigned int[]> mat_pos(new unsigned int[2]);  //Works in C++11 & C++17
+        std::array<unsigned int, 2> getMatrixPosition(unsigned int flat_index) {
+            std::array<unsigned int, 2> mat_pos;
             mat_pos[0] = flat_index / matrix_shape[1];
             mat_pos[1] = flat_index % matrix_shape[1];
             return mat_pos;
         }
 
-        std::shared_ptr<unsigned int[]> getMatrixPosition(int diagonal_idx, unsigned int diagonal_pos) {
-            std::shared_ptr<unsigned int[]> mat_pos(new unsigned int[2]);
+        std::array<unsigned int, 2> getMatrixPosition(int diagonal_idx, unsigned int diagonal_pos) {
+            std::array<unsigned int, 2> mat_pos;
             if(diagonal_idx == 0) {
                 mat_pos[0] = diagonal_pos;
                 mat_pos[1] = diagonal_pos;
@@ -920,7 +920,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         std::vector<unsigned int> getTensorPosition(int diagonal_idx, unsigned int diagonal_pos) {
-            std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(diagonal_idx, diagonal_pos);
+            std::array<unsigned int, 2> mat_pos = getMatrixPosition(diagonal_idx, diagonal_pos);
             unsigned int total_elements = matrix_shape[0] * matrix_shape[1];
             unsigned int ndim = shape.size();
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
@@ -1065,12 +1065,12 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // std::cout << std::endl;
             // ------------------ DEBUG ------------------
         }
-        std::shared_ptr<int[]> getDiagonalPositionByFlatIndex(unsigned int flatIndex) {
+        std::array<int, 2> getDiagonalPositionByFlatIndex(unsigned int flatIndex) {
             unsigned int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
             unsigned int mat_y = flatIndex % matrix_shape[1];
             // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
-            std::shared_ptr<int[]> res = std::shared_ptr<int[]>(new int[2]);
+            std::array<int, 2> res ;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;
             res[0] = d_idx;
@@ -1104,7 +1104,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return mat_x * matrix_shape[1] + mat_y;
         }
         
-        unsigned int getFlatIndex(std::shared_ptr<unsigned int[]> matrix_pos) {
+        unsigned int getFlatIndex(std::array<unsigned int, 2> matrix_pos) {
             return matrix_pos[0] * matrix_shape[1] + matrix_pos[1];
         }
         
@@ -1122,12 +1122,12 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return flat_index;
         }
         
-        std::shared_ptr<int[]> getDiagonalPosition(std::shared_ptr<unsigned int[]> matrix_pos) {
+        std::array<int, 2> getDiagonalPosition(std::array<unsigned int, 2> matrix_pos) {
             unsigned int flatIndex = getFlatIndex(matrix_pos);
             unsigned int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
             unsigned int mat_y = flatIndex % matrix_shape[1];
-            std::shared_ptr<int[]> res(new int[2]);
+            std::array<int, 2> res;
             int d_idx = mat_y - mat_x;
             res[0] = (d_idx);
             if(d_idx <= 0) {
@@ -1138,8 +1138,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return res;
         }
 
-        std::shared_ptr<int[]> getDiagonalPosition(unsigned int x, unsigned int y) {
-            std::shared_ptr<int[]> res(new int[2]);
+        std::array<int, 2> getDiagonalPosition(unsigned int x, unsigned int y) {
+            std::array<int, 2> res;
             int d_idx = y - x;
             res[0] = d_idx;
             if(d_idx <= 0) {
@@ -1150,12 +1150,12 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return res;
         }
 
-        std::shared_ptr<int[]> getDiagonalPosition(unsigned int flatIndex) {
+        std::array<int, 2> getDiagonalPosition(unsigned int flatIndex) {
             int mat_x = flatIndex / matrix_shape[1];
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
             int mat_y = flatIndex % matrix_shape[1];
             // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
-            std::shared_ptr<int[]> res = std::shared_ptr<int[]>(new int[2]);
+            std::array<int, 2> res ;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;
             res[0] = (d_idx);
@@ -1168,7 +1168,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return res;
         }
 
-        std::shared_ptr<int[]> getDiagonalPosition(std::vector<unsigned int> ten_pos) {
+        std::array<int, 2> getDiagonalPosition(std::vector<unsigned int> ten_pos) {
             // returns {diagonal_idx, position_in_this_idx}
             unsigned int flatIndex = getFlatIndex(ten_pos);
             // std::cout << "shape = " << shape[0] << "," << shape[1] << std::endl;
@@ -1176,7 +1176,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             flatIndex = flatIndex - matrix_shape[1] * mat_x;
             unsigned int mat_y = flatIndex % matrix_shape[1];
             // std::cout << "(x,y) = (" << mat_x << "," << mat_y << ")" << std::endl;
-            std::shared_ptr<int[]> res(new int[2]);
+            std::array<int, 2> res;
             // diagonal index is just j - i
             int d_idx = mat_y - mat_x;
             res[0] = (d_idx);
@@ -1229,7 +1229,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *imag_vals = it->second->imagValues;
                 #pragma omp parallel for
                 for (unsigned int i = 0; i < dLength; i++) {
-                    std::shared_ptr<unsigned int[]> mat_pos = getMatrixPosition(dIndex, i);
+                    std::array<unsigned int, 2> mat_pos = getMatrixPosition(dIndex, i);
                     unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
                     res[flat_index] = std::complex<valType>(real_vals[i], imag_vals[i]);
                 }
@@ -1273,11 +1273,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return it->second;
         }
         std::shared_ptr<diaQMatrix> reshape(std::vector<unsigned int> new_tensor_shape);
-        void matrix_reshape(unsigned int *new_matrix_shape);
+        void matrix_reshape(std::array<unsigned int, 2> new_matrix_shape);
         std::shared_ptr<diaQMatrix> transpose(std::vector<unsigned int> new_order);
         std::shared_ptr<diaQMatrix> transpose();
         std::shared_ptr<diaQMatrix> inverse();
-        std::shared_ptr<denseMatrix> convertToDenseMatrix(unsigned int *new_shape);
+        std::shared_ptr<denseMatrix> convertToDenseMatrix(std::array<unsigned int, 2> new_shape);
         std::shared_ptr<denseMatrix> convertToDenseMatrix();
 };
 

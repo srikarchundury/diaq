@@ -92,7 +92,7 @@ PYBIND11_MODULE(diaq, m) {
         )
         .def( // overload
             "convertToDenseMatrix",
-            [](std::shared_ptr<diaq::diaQMatrix> self, unsigned int *matrix_shape) { return self->convertToDenseMatrix(matrix_shape); },
+            [](std::shared_ptr<diaq::diaQMatrix> self, std::array<unsigned int, 2> matrix_shape) { return self->convertToDenseMatrix(matrix_shape); },
             py::arg(),
             py::return_value_policy::reference
         )
@@ -140,8 +140,6 @@ PYBIND11_MODULE(diaq, m) {
     py::class_<diaq::denseMatrix, std::shared_ptr<diaq::denseMatrix>>(m, "denseMatrix")
         .def(py::init<unsigned int, diaq::valType *>())
         .def(py::init<unsigned int, diaq::valType *, diaq::valType *>())
-        // .def(py::init<unsigned int **, diaq::valType *>())
-        // .def(py::init<unsigned int **, diaq::valType *, diaq::valType *>())
         .def_readwrite("matrix_shape", &diaq::denseMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::denseMatrix::shape)
         .def("getItem", &diaq::denseMatrix::getItem, py::return_value_policy::reference)
@@ -160,7 +158,7 @@ PYBIND11_MODULE(diaq, m) {
         )
         .def(
             "convertToDiaQ",
-            [](std::shared_ptr<diaq::denseMatrix> self, unsigned int *matrix_shape) { return self->convertToDiaQ(matrix_shape); },
+            [](std::shared_ptr<diaq::denseMatrix> self, std::array<unsigned int, 2> matrix_shape) { return self->convertToDiaQ(matrix_shape); },
             py::arg(),
             py::return_value_policy::reference
         )
