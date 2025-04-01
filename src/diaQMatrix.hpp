@@ -286,10 +286,22 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void addDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
             auto it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
-                // std::cout << "new index" << std::endl;
+                #ifdef DEBUG
+                    auto start = std::chrono::high_resolution_clock::now();
+                #endif
+
                 diagonalMap.insert({dIndex, diagNew});
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "\t\t addDiagonal insert took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
             }
             else {
+                #ifdef DEBUG
+                    auto start = std::chrono::high_resolution_clock::now();
+                #endif
+
                 #pragma omp parallel for
                 for(unsigned int i = 0; i < it->second->dLength; i++) {
                     #pragma omp atomic
@@ -297,6 +309,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     #pragma omp atomic
                     it->second->imagValues[i] += diagNew->imagValues[i];
                 }
+
+                #ifdef DEBUG
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "\t\t addDiagonal atomic took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                #endif
                 // diagNew->free();
             }
         }
@@ -1260,7 +1277,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     toDelete.push_back(it->first);
                 }
             }
-            #pragma omp parallel for
+            // #pragma omp parallel for
             for(size_t i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
             }

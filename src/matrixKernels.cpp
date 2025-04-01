@@ -44,10 +44,27 @@ unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> shape) {
 }
 
 std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, std::array<unsigned int, 2> shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB) {
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- multiplyDiagonals --- " << std::endl;
+        std::cout << " --- " << std::endl;
+        std::cout << " --- indexA = " << indexA << std::endl;
+        std::cout << " --- indexB = " << indexB << std::endl;
+        std::cout << " --- " << std::endl;
+        diagA->print_meta();
+        diagB->print_meta();
+        std::cout << " --- " << std::endl;
+    #endif
     int res_index = indexA + indexB;
     if (res_index <= 0 && static_cast<int>(shapeA[0]) <= abs(res_index)) {
+        #ifdef DEEP_DEBUG
+            std::cout << " --- returning NULL --- " << std::endl;
+        #endif
         return NULL;
     } else if (res_index > 0 && static_cast<int>(shapeB[1]) <= res_index) {
+        #ifdef DEEP_DEBUG
+            std::cout << " --- returning NULL --- " << std::endl;
+        #endif
         return NULL;
     }
     unsigned int lenDiagA = diagA->dLength;
@@ -152,6 +169,13 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
         run_avx512(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == -1
         run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+    #endif
+
+    #ifdef DEEP_DEBUG
+        std::cout << " --- " << std::endl;
+        std::cout << " --- result --- " << std::endl;
+        res->print_meta();
+        std::cout << " --- " << std::endl;
     #endif
 
     return res;
@@ -261,28 +285,157 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     //     } // ends omp single
     // } // ends omp parallel
 
-    #pragma omp parallel for
-    for(size_t a = 0; a < A->diagonalMap.size(); a++) {
-        auto itA = std::next(A->diagonalMap.begin(), a);
-        for(size_t b = 0; b < B->diagonalMap.size(); b++) {
-            auto itB = std::next(B->diagonalMap.begin(), b);
-            std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
-                                                                itA->first, itB->first, 
-                                                                itA->second, itB->second);
-            if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
-                #pragma omp critical
-                {
-                    result->addDiagonal(diagNew->dIndex, diagNew);
+    // #pragma omp parallel for
+    // for(size_t a = 0; a < A->diagonalMap.size(); a++) {
+    //     auto itA = std::next(A->diagonalMap.begin(), a);
+    //     for(size_t b = 0; b < B->diagonalMap.size(); b++) {
+    //         auto itB = std::next(B->diagonalMap.begin(), b);
+    //         std::shared_ptr<diagonal> diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+    //                                                             itA->first, itB->first, 
+    //                                                             itA->second, itB->second);
+    //         if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
+    //         // if (diagNew && diagNew->dLength > 0) {
+    //         // if (diagNew) {
+    //             #ifdef DEBUG
+    //                 auto before_critical = std::chrono::high_resolution_clock::now();
+    //             #endif
+    //             #pragma omp critical
+    //             {
+    //                 result->addDiagonal(diagNew->dIndex, diagNew);
+    //             }
+    //             #ifdef DEBUG
+    //                 auto after_critical = std::chrono::high_resolution_clock::now();
+    //                 auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_critical - before_critical);
+    //                 printf("critical section took %f milliseconds\n", duration.count()/1000.0);
+    //             #endif
+    //         }
+    //     }
+    // }
+
+    // Step 1: Parallel computation and local accumulation
+    int n_threads = omp_get_max_threads();
+    std::vector<std::unordered_map<int, std::shared_ptr<diagonal>>> localMaps(n_threads);
+
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        auto& localMap = localMaps[tid];
+
+        std::vector<decltype(A->diagonalMap.begin())> A_iters;
+        A_iters.reserve(A->diagonalMap.size());
+        for(auto it = A->diagonalMap.begin(); it != A->diagonalMap.end(); ++it)
+            A_iters.push_back(it);
+
+        std::vector<decltype(B->diagonalMap.begin())> B_iters;
+        B_iters.reserve(B->diagonalMap.size());
+        for(auto it = B->diagonalMap.begin(); it != B->diagonalMap.end(); ++it)
+            B_iters.push_back(it);
+
+        #pragma omp for schedule(dynamic)
+        for(size_t a = 0; a < A_iters.size(); a++) {
+            auto itA = A_iters[a];
+            for(size_t b = 0; b < B_iters.size(); b++) {
+                auto itB = B_iters[b];
+
+        // #pragma omp for schedule(dynamic)
+        // for(size_t a = 0; a < A->diagonalMap.size(); a++) {
+        //     auto itA = std::next(A->diagonalMap.begin(), a);
+        //     for(size_t b = 0; b < B->diagonalMap.size(); b++) {
+        //         auto itB = std::next(B->diagonalMap.begin(), b);
+
+                #ifdef DEBUG
+                    auto before_multiply = std::chrono::high_resolution_clock::now();
+                #endif
+                auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, 
+                                                itA->first, itB->first, 
+                                                itA->second, itB->second);
+                #ifdef DEBUG
+                    auto after_multiply = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_multiply - before_multiply);
+                    printf("multiplyDiagonals took %f milliseconds\n", duration.count()/1000.0);
+                #endif
+
+                if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
+                    // if (diagNew && diagNew->dLength > 0) {
+                    auto it = localMap.find(diagNew->dIndex);
+                    if (it == localMap.end()) {
+                        // Directly insert if not existing locally
+                        #ifdef DEBUG
+                            auto before_insert = std::chrono::high_resolution_clock::now();
+                        #endif
+
+                        localMap.insert({diagNew->dIndex, diagNew});
+
+                        #ifdef DEBUG
+                            auto after_insert = std::chrono::high_resolution_clock::now();
+                            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_insert - before_insert);
+                            printf("diagonal insert took %f milliseconds\n", duration.count()/1000.0);
+                        #endif
+
+                    } else {
+                        // No atomics, just direct vectorized accumulation
+                        #ifdef DEBUG
+                            auto before_accumulation = std::chrono::high_resolution_clock::now();
+                        #endif
+
+                        #pragma omp simd
+                        for (size_t i = 0; i < it->second->dLength; i++) {
+                            it->second->realValues[i] += diagNew->realValues[i];
+                            it->second->imagValues[i] += diagNew->imagValues[i];
+                        }
+
+                        #ifdef DEBUG
+                            auto after_accumulation = std::chrono::high_resolution_clock::now();
+                            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_accumulation - before_accumulation);
+                            printf("diagonal accumulation took %f milliseconds\n", duration.count()/1000.0);
+                        #endif
+                    }
                 }
             }
         }
     }
+    // Step 2: Efficient Merge into Global Map (single-threaded or minimal critical sections)
+    for (const auto& localMap : localMaps) {
+        for (const auto& [dIndex, diagLocal] : localMap) {
+            auto itGlobal = result->diagonalMap.find(dIndex);
+            if (itGlobal == result->diagonalMap.end()) {
+                // Move or copy directly if not present globally
+                #ifdef DEBUG
+                    auto before_insert = std::chrono::high_resolution_clock::now();
+                #endif
+                result->diagonalMap.insert({dIndex, diagLocal});
+                #ifdef DEBUG
+                    auto after_insert = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_insert - before_insert);
+                    printf("diagonal insert took %f milliseconds\n", duration.count()/1000.0);
+                #endif
+            } else {
+                // Accumulate sequentially without atomics (single-threaded)
+                #ifdef DEBUG
+                    auto before_accumulation = std::chrono::high_resolution_clock::now();
+                #endif
 
+                #pragma omp simd
+                for (size_t i = 0; i < itGlobal->second->dLength; i++) {
+                    itGlobal->second->realValues[i] += diagLocal->realValues[i];
+                    itGlobal->second->imagValues[i] += diagLocal->imagValues[i];
+                }
+
+                #ifdef DEBUG
+                    auto after_accumulation = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(after_accumulation - before_accumulation);
+                    printf("diagonal accumulation took %f milliseconds\n", duration.count()/1000.0);
+                #endif
+            }
+        }
+    }
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t product took %f milliseconds\n", duration.count()/1000.0);
     #endif
+
+    // result->pruneMatrix();
 
     return result;
 

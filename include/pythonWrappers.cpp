@@ -469,7 +469,7 @@ PYBIND11_MODULE(diaq, m) {
             for (size_t row = 0; row < rows_B; row++) {
                 for (size_t k = 0; k < cols_B; k++) {
                     std::complex<diaq::valType> sum(0, 0);
-    
+
                     // Prefetch the array row
                     #pragma omp parallel for
                     for (size_t j = 0; j < cols_B; j++) {

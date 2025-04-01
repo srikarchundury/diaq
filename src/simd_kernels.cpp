@@ -771,8 +771,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     template<>
     void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
 
-        #ifdef DEEP_DEBUG
-            std::cout << "Starting run_avx512 double -- " << std::endl;
+        #ifdef DEBUG
+            // std::cout << "Starting run_avx512 double -- " << std::endl;
             auto start = std::chrono::high_resolution_clock::now();
         #endif
 
@@ -796,19 +796,23 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
         unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
 
-        #pragma omp parallel for schedule(static)
+        #pragma omp parallel for
         for (unsigned int i = 0; i < vec_loop; ++i) {
             unsigned int idx = k + i * 8;
-            // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
 
-            __m512d real_a = _mm512_loadu_pd(&real_vals_a[idx + offsetA - jump]);
-            __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[idx + offsetA - jump]);
-            __m512d real_b = _mm512_loadu_pd(&real_vals_b[idx + offsetB - jump]);
-            __m512d imag_b = _mm512_loadu_pd(&imag_vals_b[idx + offsetB - jump]);
+            unsigned int offsetA_idx = idx + offsetA - jump;
+            unsigned int offsetB_idx = idx + offsetB - jump;
+
+            // Prefetch the next set of values for better cache utilization
+            _mm_prefetch((const char*)&real_vals_a[offsetA_idx + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_a[offsetA_idx + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&real_vals_b[offsetB_idx + 16], _MM_HINT_T0);
+            _mm_prefetch((const char*)&imag_vals_b[offsetB_idx + 16], _MM_HINT_T0);
+
+            __m512d real_a = _mm512_loadu_pd(&real_vals_a[offsetA_idx]);
+            __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[offsetA_idx]);
+            __m512d real_b = _mm512_loadu_pd(&real_vals_b[offsetB_idx]);
+            __m512d imag_b = _mm512_loadu_pd(&imag_vals_b[offsetB_idx]);
 
             __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
             __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
@@ -816,27 +820,27 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             _mm512_storeu_pd(&real_vals_final[idx], real_res);
             _mm512_storeu_pd(&imag_vals_final[idx], imag_res);
         }
+
         k += vec_loop * 8;
 
         if (left_overs != 0) {
-            _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
-        
-            real_a = avx512_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
-            imag_a = avx512_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
-            real_b = avx512_load_partial_double(left_overs, &real_vals_b[left_overs_start_at_B]);
-            imag_b = avx512_load_partial_double(left_overs, &imag_vals_b[left_overs_start_at_B]);
-        
-            real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
-        
-            avx512_store_partial_double(left_overs, &real_vals_final[k], real_res);
-            avx512_store_partial_double(left_overs, &imag_vals_final[k], imag_res);
+            #pragma omp parallel for
+            for (int i = 0; i < left_overs; ++i) {
+                unsigned int idx_a = left_overs_start_at_A + i;
+                unsigned int idx_b = left_overs_start_at_B + i;
+                unsigned int idx_final = k + i;
+
+                double real_a = real_vals_a[idx_a];
+                double imag_a = imag_vals_a[idx_a];
+                double real_b = real_vals_b[idx_b];
+                double imag_b = imag_vals_b[idx_b];
+
+                real_vals_final[idx_final] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx_final] = (real_a * imag_b) + (imag_a * real_b);
+            }
         }
-        
-        #ifdef DEEP_DEBUG
+
+        #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count()/1000.0);
@@ -879,7 +883,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         unsigned int left_overs_start_at_A = k + offsetA - jump + 16 * (loop_count / 16);
         unsigned int left_overs_start_at_B = k + offsetB - jump + 16 * (loop_count / 16);
 
-        #pragma omp parallel for schedule(static)
+        #pragma omp parallel for
         for (unsigned int i = 0; i < vec_loop; ++i) {
             unsigned int idx = k + i * 16;
 
