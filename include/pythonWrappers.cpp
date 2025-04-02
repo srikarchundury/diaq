@@ -55,7 +55,6 @@ PYBIND11_MODULE(diaq, m) {
 		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getDiagonalPosition))
 		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
         // --- //
-        .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)

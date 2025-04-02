@@ -517,8 +517,8 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
         throw std::invalid_argument("input matrices are not addable");
     }
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0] * A->matrix_shape[1]);
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
     #pragma omp parallel for
     for(unsigned int a = 0; a < mapA.size(); a++) {
         auto itA = std::next(mapA.begin(), a);
@@ -536,7 +536,7 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
     std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
     itA = mapA.find(0);
     if(itA == mapA.end()) {
         return t;
@@ -732,7 +732,7 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(newDiagMap, new_shape, new_tensor_shape);
     // iterate over all diagonals
     std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap = A->getDiagonalMap();
+    std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap = A->diagonalMap;
 
     // #pragma omp parallel for
     // for(int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {

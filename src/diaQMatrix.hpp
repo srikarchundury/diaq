@@ -13,56 +13,64 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
-        std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap; // map <dIndex, diagonal object>
-
+        std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap;
+    
+        // Square matrix
         diaQMatrix(unsigned int s) {
-            std::unordered_map<int, std::shared_ptr<diagonal>> d;
-            diagonalMap = d;
-
-            matrix_shape[0] = s;
-            matrix_shape[1] = s;
-            shape.push_back(s);
-            shape.push_back(s);
+            matrix_shape = {s, s};
+            shape = {s, s};
+            reserveDiagonalMap();
         }
+    
+        // Rectangular matrix
         diaQMatrix(unsigned int x, unsigned int y) {
-            std::unordered_map<int, std::shared_ptr<diagonal>> d;
-            diagonalMap = d;
-
-            matrix_shape[0] = x;
-            matrix_shape[1] = y;
-            shape.push_back(x);
-            shape.push_back(y);
+            matrix_shape = {x, y};
+            shape = {x, y};
+            reserveDiagonalMap();
         }
+    
+        // From array
         diaQMatrix(std::array<unsigned int, 2> dimens) {
-            std::unordered_map<int, std::shared_ptr<diagonal>> d;
-            diagonalMap = d;
             matrix_shape = dimens;
-            shape.push_back(matrix_shape[0]);
-            shape.push_back(matrix_shape[1]);
+            shape = {dimens[0], dimens[1]};
+            reserveDiagonalMap();
         }
+    
+        // From array and shape
         diaQMatrix(std::array<unsigned int, 2> dimens, std::vector<unsigned int> ts) {
-            std::unordered_map<int, std::shared_ptr<diagonal>> d;
-            diagonalMap = d;
             matrix_shape = dimens;
             shape = ts;
+            reserveDiagonalMap();
         }
+    
+        // From diag map and size
         diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
-            diagonalMap = dm;
-            matrix_shape[0] = s;
-            matrix_shape[1] = s;
-            shape.push_back(s);
-            shape.push_back(s);
+            diagonalMap = std::move(dm);
+            matrix_shape = {s, s};
+            shape = {s, s};
+            reserveDiagonalMap();
         }
+    
+        // From diag map and dimensions
         diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
-            diagonalMap = dm;
+            diagonalMap = std::move(dm);
             matrix_shape = d;
-            shape.push_back(matrix_shape[0]);
-            shape.push_back(matrix_shape[1]);
+            shape = {d[0], d[1]};
+            reserveDiagonalMap();
         }
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d, std::vector<unsigned int> ts) {
-            diagonalMap = dm;
+    
+        // From everything
+        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm,
+                   std::array<unsigned int, 2> d,
+                   std::vector<unsigned int> ts) {
+            diagonalMap = std::move(dm);
             matrix_shape = d;
             shape = ts;
+            reserveDiagonalMap();
+        }
+    
+        void reserveDiagonalMap() {
+            diagonalMap.reserve(matrix_shape[0] + matrix_shape[1] - 1);
         }
 
         virtual ~diaQMatrix() {
@@ -179,9 +187,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             it->second->setValue(d_pos[1], real_val, imag_val);
             // printf("setItem done\n");
         }
-        std::unordered_map<int, std::shared_ptr<diagonal>> getDiagonalMap() {
-            return diagonalMap;
-        }
         void print() {
             std::cout << "matrix_shape (";
             std::cout << matrix_shape[0] << ",";
@@ -231,9 +236,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             else {
                 return it->second;
             }
-        }
-        void setDiagonalMap(std::unordered_map<int, std::shared_ptr<diagonal>> dm) {
-            diagonalMap = dm;
         }
         void setDiagonalElement(int dIndex, unsigned int dPos, unsigned int dLen, valType real_val, valType imag_val) {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
