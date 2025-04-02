@@ -13,7 +13,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
-        std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap;
+        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagonalMap;
 
         // Square matrix
         diaQMatrix(unsigned int s) {
@@ -44,7 +44,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
     
         // From diag map and size
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
+        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
             diagonalMap = std::move(dm);
             matrix_shape = {s, s};
             shape = {s, s};
@@ -52,7 +52,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
     
         // From diag map and dimensions
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
+        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
             diagonalMap = std::move(dm);
             matrix_shape = d;
             shape = {d[0], d[1]};
@@ -60,7 +60,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
     
         // From everything
-        diaQMatrix(std::unordered_map<int, std::shared_ptr<diagonal>> dm,
+        diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm,
                    std::array<unsigned int, 2> d,
                    std::vector<unsigned int> ts) {
             diagonalMap = std::move(dm);
@@ -822,7 +822,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         std::shared_ptr<diaQMatrix> copy() {
-            std::unordered_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
         
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); i++) {

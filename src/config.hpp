@@ -21,7 +21,7 @@
 #include <functional>
 #include <random>
 
-// #include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/phmap.h>
 
 #ifdef PAPI_ON
 	#include <papi.h>

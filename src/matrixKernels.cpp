@@ -223,8 +223,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(d);
 
     // Step 0: Preprocessing - Identify unique result dIndices
-    std::unordered_map<int, int> dIndexCounts;
-    std::unordered_map<int, std::vector<std::pair<int, int>>> dIndexSources; // (dA, dB)
+    phmap::parallel_flat_hash_map<int, int> dIndexCounts;
+    phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> dIndexSources; // (dA, dB)
     for (const auto& [dA, _] : A->diagonalMap) {
         for (const auto& [dB, _] : B->diagonalMap) {
             int dNew = dA + dB;
@@ -258,7 +258,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
                 auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape,
                     itA->first, dB, itA->second, diagB);
                 if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
-                    #pragma omp critical
+                    // #pragma omp critical
                     result->diagonalMap.insert({diagNew->dIndex, diagNew});
                 }
             }
@@ -266,7 +266,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     }
 
     // step 1b: Parallel loop for non-unique dIndex insertions
-    std::vector<std::unordered_map<int, std::shared_ptr<diagonal>>> localMaps(omp_get_max_threads());
+    std::vector<phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>> localMaps(omp_get_max_threads());
     #pragma omp parallel for
     for (size_t i = 0; i < dIndexSources.size(); ++i) {
         auto it = std::next(dIndexSources.begin(), i);
@@ -392,8 +392,8 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
         throw std::invalid_argument("input matrices are not addable");
     }
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0] * A->matrix_shape[1]);
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
     #pragma omp parallel for
     for(unsigned int a = 0; a < mapA.size(); a++) {
         auto itA = std::next(mapA.begin(), a);
@@ -410,8 +410,8 @@ std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<d
 
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
     itA = mapA.find(0);
     if(itA == mapA.end()) {
         return t;
@@ -433,7 +433,7 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
     // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&matrix_shape, A->shape);
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape, A->shape);
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
     for (it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
         valType *real_vals = it->second->realValues;
         valType *imag_vals = it->second->imagValues;
@@ -562,8 +562,8 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
 
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
-        std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-        std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
         std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(A->matrix_shape[1], A->matrix_shape[0]);
 
@@ -601,13 +601,13 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::unordered_map<int, std::shared_ptr<diagonal> > newDiagMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > newDiagMap;
     // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
     // std::shared_ptr<diaQMatrix> res = new diaQMatrix(newDiagMap, &new_shape, new_tensor_shape);
     std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(newDiagMap, new_shape, new_tensor_shape);
     // iterate over all diagonals
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagonalMap = A->diagonalMap;
 
     // #pragma omp parallel for
     // for(int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
@@ -868,9 +868,9 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
     // res->print_shape();
 
     // element by element tensordot multiplication, inspired from COO format
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA, itB;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA, itB;
     #pragma omp parallel
     {
         #pragma omp single
@@ -1021,7 +1021,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
@@ -1139,8 +1139,8 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
     // valType *y_imag_values = y->imagValues;
     // valType *x_real_values = x->realValues;
     // valType *x_imag_values = x->imagValues;
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel
     {
@@ -1315,7 +1315,7 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
@@ -1378,7 +1378,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
 
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA;
 
     #pragma omp parallel for
     for (unsigned int a = 0; a < A->diagonalMap.size(); a++) {
@@ -1406,7 +1406,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
             }
 
             std::array<unsigned int, 2> A_pos = A->getMatrixPosition(diagonal_index, diagonal_position);
-            std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itK;
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itK;
 
             #pragma omp parallel for
             for (unsigned int b = 0; b < kron_block->diagonalMap.size(); b++) {
@@ -1482,8 +1482,8 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
     std::array<unsigned int, 2> result_shape = {N * A->matrix_shape[0], N * A->matrix_shape[1]};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (unsigned int i = 0; i < diagMap.size(); i++) {
@@ -1547,8 +1547,8 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     // unsigned int y_len = y->numRows; // same as x->numRows;
     unsigned int A_size = A->matrix_shape[0];
@@ -1620,8 +1620,8 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     for (it = diagMap.begin(); it != diagMap.end(); it++) {
         std::shared_ptr<diagonal> diag = it->second;
@@ -1745,8 +1745,8 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for collapse(2)
     for (unsigned int rep = 0; rep < before_N; rep++) {
@@ -1812,8 +1812,8 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (unsigned int a = 0; a < diagMap.size(); a++) {
@@ -2198,8 +2198,8 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned i
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     // (A kron I) times x = y
     #pragma omp parallel for collapse(2)
@@ -2278,8 +2278,8 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = gate->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for (unsigned int a = 0; a < diagMap.size(); a++) {
@@ -2855,8 +2855,8 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
     std::array<unsigned int, 2> result_shape = {n * A->matrix_shape[0], n * A->matrix_shape[1]};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
-    std::unordered_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     #pragma omp parallel for
     for(unsigned int di = 0; di < diagMap.size(); di++) {
@@ -2924,7 +2924,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
     std::array<unsigned int, 2> result_shape = {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
 
     // // #pragma omp parallel for
     // for(int di = 0; di < diagMap.size(); di++) {
@@ -3038,7 +3038,7 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
 
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itA;
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA;
 
     // printf("kron here 0\n");
 
@@ -3100,8 +3100,8 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
                 std::shared_ptr<diaQMatrix> kron_block = unique_kron_blocks.find(it->second)->second;
 
                 // we now have to add to result's res_diag_index at res_diag_pos
-                std::unordered_map<int, std::shared_ptr<diagonal> > kron_block_diagMap = kron_block->diagonalMap;
-                std::unordered_map<int, std::shared_ptr<diagonal> >::iterator itK;
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > kron_block_diagMap = kron_block->diagonalMap;
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itK;
 
                 #pragma omp parallel
                 {
