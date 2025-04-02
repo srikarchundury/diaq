@@ -233,6 +233,21 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         }
     }
 
+    // #ifdef DEBUG
+    //     std::cout << "dIndexCounts: " << std::endl;
+    //     for (const auto& [dNew, count] : dIndexCounts) {
+    //         std::cout << dNew << ": " << count << std::endl;
+    //     }
+    //     std::cout << "dIndexSources: " << std::endl;
+    //     for (const auto& [dNew, sources] : dIndexSources) {
+    //         std::cout << dNew << ": ";
+    //         for (const auto& [dA, dB] : sources) {
+    //             std::cout << "(" << dA << ", " << dB << ") ";
+    //         }
+    //         std::cout << std::endl;
+    //     }
+    // #endif
+
     // Step 1a: Parallel loop for unique dIndex insertions
     #pragma omp parallel for
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
@@ -243,6 +258,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
                 auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape,
                     itA->first, dB, itA->second, diagB);
                 if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
+                    #pragma omp critical
                     result->diagonalMap.insert({diagNew->dIndex, diagNew});
                 }
             }
@@ -250,11 +266,12 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     }
 
     // step 1b: Parallel loop for non-unique dIndex insertions
+    std::vector<std::unordered_map<int, std::shared_ptr<diagonal>>> localMaps(omp_get_max_threads());
     #pragma omp parallel for
     for (size_t i = 0; i < dIndexSources.size(); ++i) {
         auto it = std::next(dIndexSources.begin(), i);
         int dNew = it->first;
-        if (dIndexCounts[dNew] == 1) continue;  // skip unique (already handled in 1a)
+        if (dIndexCounts[dNew] == 1) continue;
 
         const auto& sources = it->second;
         std::shared_ptr<diagonal> merged;
@@ -262,14 +279,10 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         for (const auto& [dA, dB] : sources) {
             auto itA = A->diagonalMap.find(dA);
             auto itB = B->diagonalMap.find(dB);
+            if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
 
-            if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end())
-                continue; // skip this pair if either diagonal is missing
-
-            auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape,
-                dA, dB, itA->second, itB->second);
-
-            if (!diagNew || diagNew->isEmpty()) continue;
+            auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, itA->second, itB->second);
+            if (!diagNew || diagNew->dLength <= 0 || diagNew->isEmpty()) continue;
 
             if (!merged) {
                 merged = diagNew;
@@ -281,10 +294,15 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
                 }
             }
         }
-
-        // Safe to insert into result since each dNew is is unique!! since we precomputed the combinations!!!!!!
         if (merged && merged->dLength > 0 && !merged->isEmpty()) {
-            result->diagonalMap[dNew] = merged;
+            int tid = omp_get_thread_num();
+            localMaps[tid][dNew] = merged;
+        }
+    }
+    // Merge per-thread maps into final result (serial merge)
+    for (const auto& localMap : localMaps) {
+        for (const auto& [dNew, diag] : localMap) {
+            result->diagonalMap.insert({dNew, diag});
         }
     }
 
