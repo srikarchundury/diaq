@@ -13,8 +13,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
-        std::unordered_map<int, std::shared_ptr<diagonal>> diagonalMap;
-    
+        std::unordered_map<int, std::shared_ptr<diagonal> > diagonalMap;
+
         // Square matrix
         diaQMatrix(unsigned int s) {
             matrix_shape = {s, s};

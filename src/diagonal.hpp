@@ -50,8 +50,14 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dIndex = newIndex;
         }
         std::shared_ptr<diagonal> copy() {
-            valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-            valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #else
+                valType *real_vals = aligned_alloc_helper(dLength * sizeof(valType));
+                valType *imag_vals = aligned_alloc_helper(dLength * sizeof(valType));
+            #endif
+
             #pragma omp parallel for
             for(unsigned int i = 0; i < dLength; i++) {
                 real_vals[i] = realValues[i];

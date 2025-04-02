@@ -768,6 +768,7 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         // Store the elements of the vector 'vec' into the array 'loc' using the mask
         _mm512_mask_storeu_pd(loc, mask, vec);
     }
+
     template<>
     void run_avx512<double>(
         unsigned int k, unsigned int lenRes,
@@ -777,101 +778,180 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         double *real_vals_b, double *imag_vals_b,
         double *real_vals_final, double *imag_vals_final
     ) {
-    #ifdef DEBUG
-        auto start = std::chrono::high_resolution_clock::now();
-    #endif
-    
+        #ifdef DEBUG
+            auto start_time = std::chrono::high_resolution_clock::now();
+        #endif
         constexpr unsigned int VEC_WIDTH = 8;
-        constexpr unsigned int BYTES_PER_DOUBLE = sizeof(double);
-        constexpr unsigned int NUM_DOUBLES_ALIGNED = NUM_BYTES_ALIGNED / BYTES_PER_DOUBLE;
-    
+
         unsigned int max_lenRes   = lenRes - k;
         unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
         unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
         unsigned int loop_count   = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
-    
-        // Step 1: Find first i such that all 3 base addresses are aligned
-        unsigned int prologue_count = 0;
-        for (; prologue_count < loop_count; ++prologue_count) {
-            unsigned int idx_final = k + prologue_count;
-            unsigned int idx_a     = idx_final + offsetA - jump;
-            unsigned int idx_b     = idx_final + offsetB - jump;
-    
-            bool aligned_final = (idx_final % VEC_WIDTH == 0);
-            bool aligned_a     = (idx_a     % VEC_WIDTH == 0);
-            bool aligned_b     = (idx_b     % VEC_WIDTH == 0);
-    
-            if (aligned_final && aligned_a && aligned_b) {
+
+        unsigned int start = k;
+        unsigned int end   = k + loop_count;
+
+        // Find first aligned SIMD index
+        unsigned int simd_start = start;
+        for (; simd_start + VEC_WIDTH <= end; simd_start++) {
+            if ((simd_start % VEC_WIDTH == 0) &&
+                ((simd_start + offsetA - jump) % VEC_WIDTH == 0) &&
+                ((simd_start + offsetB - jump) % VEC_WIDTH == 0)) {
                 break;
             }
         }
-    
-        // --- Prologue ---
-        for (unsigned int i = 0; i < prologue_count; ++i) {
-            unsigned int idx     = k + i;
-            unsigned int idx_a   = idx + offsetA - jump;
-            unsigned int idx_b   = idx + offsetB - jump;
-    
+        if (simd_start + VEC_WIDTH > end)
+            simd_start = end; // no SIMD possible
+
+        unsigned int simd_end = end - ((end - simd_start) % VEC_WIDTH);
+
+        // --- Prologue (unaligned/scalar) ---
+        #pragma omp parallel for
+        for (unsigned int idx = start; idx < simd_start; ++idx) {
+            unsigned int idx_a = idx + offsetA - jump;
+            unsigned int idx_b = idx + offsetB - jump;
+
             double real_a = real_vals_a[idx_a];
             double imag_a = imag_vals_a[idx_a];
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
-    
+
             real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
             imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
         }
 
-        // SIMD main
-        unsigned int simd_start = k + prologue_count;
-        unsigned int remaining = loop_count - prologue_count;
-        unsigned int vec_blocks = remaining / VEC_WIDTH;
-        unsigned int simd_end = simd_start + vec_blocks * VEC_WIDTH;
-    
+        // --- SIMD aligned main loop ---
+        unsigned int simd_vec_blocks = (simd_end - simd_start) / VEC_WIDTH;
+
         #pragma omp parallel for
-        for (unsigned int i = 0; i < vec_blocks; ++i) {
-            unsigned int idx = simd_start + i * VEC_WIDTH;
+        for (unsigned int i = 0; i < simd_vec_blocks; ++i) {
+            unsigned int idx   = simd_start + i * VEC_WIDTH;
             unsigned int idx_a = idx + offsetA - jump;
             unsigned int idx_b = idx + offsetB - jump;
-    
+
             _mm_prefetch((const char*)&real_vals_a[idx_a + 16], _MM_HINT_T0);
             _mm_prefetch((const char*)&imag_vals_a[idx_a + 16], _MM_HINT_T0);
             _mm_prefetch((const char*)&real_vals_b[idx_b + 16], _MM_HINT_T0);
             _mm_prefetch((const char*)&imag_vals_b[idx_b + 16], _MM_HINT_T0);
-    
-            // Fully aligned loads and stores
+
             __m512d real_a = _mm512_load_pd(&real_vals_a[idx_a]);
             __m512d imag_a = _mm512_load_pd(&imag_vals_a[idx_a]);
             __m512d real_b = _mm512_load_pd(&real_vals_b[idx_b]);
             __m512d imag_b = _mm512_load_pd(&imag_vals_b[idx_b]);
-    
+
             __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));
             __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));
-    
+
             _mm512_store_pd(&real_vals_final[idx], real_res);
             _mm512_store_pd(&imag_vals_final[idx], imag_res);
         }
-    
+
         // --- Epilogue ---
-        for (unsigned int idx = simd_end; idx < k + loop_count; ++idx) {
+        #pragma omp parallel for
+        for (unsigned int idx = simd_end; idx < end; ++idx) {
             unsigned int idx_a = idx + offsetA - jump;
             unsigned int idx_b = idx + offsetB - jump;
-    
+
             double real_a = real_vals_a[idx_a];
             double imag_a = imag_vals_a[idx_a];
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
-    
+
             real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
             imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
         }
 
-    #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count() / 1000.0);
-    #endif
+        #ifdef DEBUG
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
     }
-    
+
+
+    // // old original code
+    // template<>
+    // void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
+
+    //     #ifdef DEBUG
+    //         // std::cout << "Starting run_avx512 double -- " << std::endl;
+    //         auto start = std::chrono::high_resolution_clock::now();
+    //     #endif
+
+    //     // unsigned int loop_count = 0;
+    //     // unsigned int k_cpy = k;
+    //     // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
+    //     //     loop_count++;
+    //     //     k_cpy++;
+    //     // }
+
+    //     unsigned int max_lenRes = lenRes - k;
+    //     unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+    //     unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+    //     unsigned int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+
+    //     __m512d real_a, real_b; // a for valuesA and b for valuesB
+    //     __m512d imag_a, imag_b; // a for valuesA and b for valuesB
+    //     __m512d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
+    //     int left_overs = loop_count - ((loop_count / 8) * 8);
+    //     unsigned int vec_loop = (loop_count / 8);
+    //     unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
+    //     unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+
+    //     #pragma omp parallel for
+    //     for (unsigned int i = 0; i < vec_loop; ++i) {
+    //         unsigned int idx = k + i * 8;
+
+    //         // TODO: do prologue and epilogue separately! and middle part use SIMD aligned load and store!
+
+    //         unsigned int offsetA_idx = idx + offsetA - jump;
+    //         unsigned int offsetB_idx = idx + offsetB - jump;
+
+    //         // Prefetch the next set of values for better cache utilization
+    //         _mm_prefetch((const char*)&real_vals_a[offsetA_idx + 16], _MM_HINT_T0);
+    //         _mm_prefetch((const char*)&imag_vals_a[offsetA_idx + 16], _MM_HINT_T0);
+    //         _mm_prefetch((const char*)&real_vals_b[offsetB_idx + 16], _MM_HINT_T0);
+    //         _mm_prefetch((const char*)&imag_vals_b[offsetB_idx + 16], _MM_HINT_T0);
+
+    //         __m512d real_a = _mm512_loadu_pd(&real_vals_a[offsetA_idx]);
+    //         __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[offsetA_idx]);
+    //         __m512d real_b = _mm512_loadu_pd(&real_vals_b[offsetB_idx]);
+    //         __m512d imag_b = _mm512_loadu_pd(&imag_vals_b[offsetB_idx]);
+
+    //         __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
+    //         __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+
+    //         _mm512_storeu_pd(&real_vals_final[idx], real_res);
+    //         _mm512_storeu_pd(&imag_vals_final[idx], imag_res);
+    //     }
+
+    //     k += vec_loop * 8;
+
+    //     if (left_overs != 0) {
+    //         #pragma omp parallel for
+    //         for (int i = 0; i < left_overs; ++i) {
+    //             unsigned int idx_a = left_overs_start_at_A + i;
+    //             unsigned int idx_b = left_overs_start_at_B + i;
+    //             unsigned int idx_final = k + i;
+
+    //             double real_a = real_vals_a[idx_a];
+    //             double imag_a = imag_vals_a[idx_a];
+    //             double real_b = real_vals_b[idx_b];
+    //             double imag_b = imag_vals_b[idx_b];
+
+    //             real_vals_final[idx_final] = (real_a * real_b) - (imag_a * imag_b);
+    //             imag_vals_final[idx_final] = (real_a * imag_b) + (imag_a * real_b);
+    //         }
+    //     }
+
+    //     #ifdef DEBUG
+    //         auto end = std::chrono::high_resolution_clock::now();
+    //         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    //         printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count()/1000.0);
+    //     #endif
+        
+    // }
+
     // ------------------------AVX512 FLOAT----------------------------------------
     __m512 avx512_load_partial_float(int n, const float* p) {
         // Create a mask based on the length 'n' of the array
