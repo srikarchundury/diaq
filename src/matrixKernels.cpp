@@ -217,10 +217,10 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 
     // Step 0: Preprocessing - Identify unique result dIndices
     phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
-    res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size());
+    res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10); // margin 10
     // let's preacclocate result diags also, store it in a temp map
     phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-    res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size());
+    res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10); // margin 10
     for (const auto& [dA, _] : A->diagonalMap) {
         for (const auto& [dB, _] : B->diagonalMap) {
             int res_idx = dA + dB;
@@ -238,9 +238,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
             // Allocate only once per res_idx
             res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
         }
-    }    
+    }
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (size_t i = 0; i < res_index_sources.size(); ++i) {
         auto it = std::next(res_index_sources.begin(), i);
         int res_idx = it->first;
@@ -258,7 +258,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         }
 
         if (merged && merged->dLength > 0 && !merged->isEmpty()) {
-            result->diagonalMap.insert_or_assign(res_idx, merged);
+            // result->diagonalMap.insert_or_assign(res_idx, merged);
+            result->diagonalMap.insert({res_idx, merged});
         }
 
     } // end of all res_index_sources

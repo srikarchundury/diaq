@@ -70,7 +70,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
     
         void reserveDiagonalMap() {
-            diagonalMap.reserve(matrix_shape[0] + matrix_shape[1] - 1);
+            diagonalMap.reserve(matrix_shape[0] + matrix_shape[1] - 1 + 10); // margin 10
         }
 
         virtual ~diaQMatrix() {
