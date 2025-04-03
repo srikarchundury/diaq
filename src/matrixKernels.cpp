@@ -43,7 +43,7 @@ unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> shape) {
     return lenRes;
 }
 
-std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, std::array<unsigned int, 2> shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB) {
+std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, std::array<unsigned int, 2> shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB, int res_index, std::shared_ptr<diagonal> res) {
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
         std::cout << " --- multiplyDiagonals --- " << std::endl;
@@ -55,7 +55,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
         diagB->print_meta();
         std::cout << " --- " << std::endl;
     #endif
-    int res_index = indexA + indexB;
+    unsigned int lenRes = res->dLength;
     if (res_index <= 0 && static_cast<int>(shapeA[0]) <= abs(res_index)) {
         #ifdef DEEP_DEBUG
             std::cout << " --- returning NULL --- " << std::endl;
@@ -69,11 +69,6 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     }
     unsigned int lenDiagA = diagA->dLength;
     unsigned int lenDiagB = diagB->dLength;
-    // result matrix has dimensions {shapeA[0], shapeB[1]}
-    std::array<unsigned int, 2> res_dims = {shapeA[0], shapeB[1]};
-    unsigned int lenRes = getDiagonalLength(res_index, res_dims);
-    // std::shared_ptr<diagonal> res = new diagonal(res_index, lenRes);
-    std::shared_ptr<diagonal> res = std::make_shared<diagonal>(res_index, lenRes);
 
     // std::cout << "diagonal length = " << lenRes << std::endl;
     int offsetA = abs(indexA);  // Absolute value of indexA
@@ -217,94 +212,56 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         std::cout << " --- " << std::endl;
     #endif
 
-    std::array<unsigned int, 2> d = {A->matrix_shape[0], B->matrix_shape[1]};
-
-    // std::shared_ptr<diaQMatrix>  result = new diaQMatrix(&d);
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(d);
+    std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
     // Step 0: Preprocessing - Identify unique result dIndices
-    phmap::parallel_flat_hash_map<int, int> dIndexCounts;
-    phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> dIndexSources; // (dA, dB)
+    phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
+    res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size());
+    // let's preacclocate result diags also, store it in a temp map
+    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
+    res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size());
     for (const auto& [dA, _] : A->diagonalMap) {
         for (const auto& [dB, _] : B->diagonalMap) {
             int res_idx = dA + dB;
-            dIndexCounts[res_idx]++;
-            dIndexSources[res_idx].emplace_back(dA, dB);
+    
+            if ((res_idx < -(int)res_dims[0] + 1) || (res_idx > (int)res_dims[1] - 1))
+                continue;
+    
+            unsigned int lenRes = getDiagonalLength(res_idx, res_dims);
+            if (lenRes <= 0)
+                continue;
+    
+            // Accumulate the source pair
+            res_index_sources[res_idx].emplace_back(dA, dB);
+    
+            // Allocate only once per res_idx
+            res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
         }
-    }
+    }    
 
-    // #ifdef DEBUG
-    //     std::cout << "dIndexCounts: " << std::endl;
-    //     for (const auto& [res_idx, count] : dIndexCounts) {
-    //         std::cout << res_idx << ": " << count << std::endl;
-    //     }
-    //     std::cout << "dIndexSources: " << std::endl;
-    //     for (const auto& [res_idx, sources] : dIndexSources) {
-    //         std::cout << res_idx << ": ";
-    //         for (const auto& [dA, dB] : sources) {
-    //             std::cout << "(" << dA << ", " << dB << ") ";
-    //         }
-    //         std::cout << std::endl;
-    //     }
-    // #endif
-
-    // Step 1a: Parallel loop for unique dIndex insertions
     #pragma omp parallel for
-    for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
-        auto itA = std::next(A->diagonalMap.begin(), a);
-        for (const auto& [dB, diagB] : B->diagonalMap) {
-            int res_idx = itA->first + dB;
-            if (dIndexCounts[res_idx] == 1) {
-                auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape,
-                    itA->first, dB, itA->second, diagB);
-                if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
-                    // #pragma omp critical
-                    result->diagonalMap.insert({diagNew->dIndex, diagNew});
-                }
-            }
-        }
-    }
-
-    // step 1b: Parallel loop for non-unique dIndex insertions
-    std::vector<phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>> localMaps(omp_get_max_threads());
-    #pragma omp parallel for
-    for (size_t i = 0; i < dIndexSources.size(); ++i) {
-        auto it = std::next(dIndexSources.begin(), i);
+    for (size_t i = 0; i < res_index_sources.size(); ++i) {
+        auto it = std::next(res_index_sources.begin(), i);
         int res_idx = it->first;
-        if (dIndexCounts[res_idx] == 1) continue;
+        auto& sources = it->second;
 
-        const auto& sources = it->second;
-        std::shared_ptr<diagonal> merged;
+        std::shared_ptr<diagonal> merged = res_diags[res_idx];  // preallocated
 
         for (const auto& [dA, dB] : sources) {
             auto itA = A->diagonalMap.find(dA);
             auto itB = B->diagonalMap.find(dB);
             if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
 
-            auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, itA->second, itB->second);
-            if (!diagNew || diagNew->dLength <= 0 || diagNew->isEmpty()) continue;
+            // always writes into merged
+            multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, itA->second, itB->second, res_idx, merged);
+        }
 
-            if (!merged) {
-                merged = diagNew;
-            } else {
-                #pragma omp simd
-                for (size_t i = 0; i < merged->dLength; ++i) {
-                    merged->realValues[i] += diagNew->realValues[i];
-                    merged->imagValues[i] += diagNew->imagValues[i];
-                }
-            }
-        }
         if (merged && merged->dLength > 0 && !merged->isEmpty()) {
-            int tid = omp_get_thread_num();
-            localMaps[tid][res_idx] = merged;
+            result->diagonalMap.insert_or_assign(res_idx, merged);
         }
-    }
-    // Merge per-thread maps into final result (serial merge)
-    for (const auto& localMap : localMaps) {
-        for (const auto& [res_idx, diag] : localMap) {
-            result->diagonalMap.insert({res_idx, diag});
-        }
-    }
+
+    } // end of all res_index_sources
 
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();

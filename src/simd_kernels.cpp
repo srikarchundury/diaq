@@ -816,8 +816,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
 
-            real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            // Accumulate instead of overwrite
+            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
         }
 
         // --- SIMD aligned main loop ---
@@ -842,8 +843,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));
             __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));
 
-            _mm512_store_pd(&real_vals_final[idx], real_res);
-            _mm512_store_pd(&imag_vals_final[idx], imag_res);
+            // Accumulate with existing buffer values
+            __m512d existing_real = _mm512_load_pd(&real_vals_final[idx]);
+            __m512d existing_imag = _mm512_load_pd(&imag_vals_final[idx]);
+
+            _mm512_store_pd(&real_vals_final[idx], _mm512_add_pd(existing_real, real_res));
+            _mm512_store_pd(&imag_vals_final[idx], _mm512_add_pd(existing_imag, imag_res));
         }
 
         // --- Epilogue ---
@@ -857,8 +862,9 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
 
-            real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            // Accumulate instead of overwrite
+            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
         }
 
         #ifdef DEBUG

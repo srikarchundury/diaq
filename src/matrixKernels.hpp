@@ -12,7 +12,7 @@ namespace diaq {
 
 unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
 unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
-std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB);
+std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB, int res_idx, std::shared_ptr<diagonal> res_diag);
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
 std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
 std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_ptr<diagonal> B);
