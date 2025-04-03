@@ -131,19 +131,21 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         std::complex<valType> getItem(std::array<unsigned int, 2> mat_pos) {
-            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            std::array<int, 2> d_pos = getDiagonalPosition(mat_pos);
+            auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
+                // throw std::length_error("out of bounds");
                 return std::complex<valType>(0.0, 0.0);
             }
             else {
-                return it->second->getValue(mat_pos[1]);
+                return it->second->getValue(d_pos[1]);
             }
         }
         std::complex<valType> getItem(std::vector<unsigned int> ten_pos) {
             std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
             auto it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
-                throw std::length_error("out of bounds");
+                return std::complex<valType>(0.0, 0.0);
             }
             else {
                 return it->second->getValue(d_pos[1]);

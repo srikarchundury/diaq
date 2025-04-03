@@ -43,18 +43,6 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<std::unordered_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
-        // -- //
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getItem))
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getItem))
-        // .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getItem))
-        // -- //
-		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned int[]> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getMatrixPosition))
-		// .def("getMatrixPosition", static_cast<std::shared_ptr<unsigned int[]> (diaq::diaQMatrix::*)(int, unsigned int)>(&diaq::diaQMatrix::getMatrixPosition))
-		// -- //
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getDiagonalPosition))
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getDiagonalPosition))
-		// .def("getDiagonalPosition", static_cast<std::shared_ptr<int[]> (diaq::diaQMatrix::*)(std::shared_ptr<unsigned int[]>)>(&diaq::diaQMatrix::getDiagonalPosition))
-        // --- //
         .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
@@ -112,6 +100,18 @@ PYBIND11_MODULE(diaq, m) {
             "transpose",
             [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); },
             py::arg(),
+            py::return_value_policy::reference
+        )
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::array<unsigned int, 2>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def(
+            "getMatrixPosition",
+            [](std::shared_ptr<diaq::diaQMatrix> self, int diagonal_idx, unsigned int diagonal_pos) {
+                return self->getMatrixPosition(diagonal_idx, diagonal_pos);
+            },
+            py::arg("diagonal_idx"),
+            py::arg("diagonal_pos"),
             py::return_value_policy::reference
         )
         ;
