@@ -227,20 +227,20 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> dIndexSources; // (dA, dB)
     for (const auto& [dA, _] : A->diagonalMap) {
         for (const auto& [dB, _] : B->diagonalMap) {
-            int dNew = dA + dB;
-            dIndexCounts[dNew]++;
-            dIndexSources[dNew].emplace_back(dA, dB);
+            int res_idx = dA + dB;
+            dIndexCounts[res_idx]++;
+            dIndexSources[res_idx].emplace_back(dA, dB);
         }
     }
 
     // #ifdef DEBUG
     //     std::cout << "dIndexCounts: " << std::endl;
-    //     for (const auto& [dNew, count] : dIndexCounts) {
-    //         std::cout << dNew << ": " << count << std::endl;
+    //     for (const auto& [res_idx, count] : dIndexCounts) {
+    //         std::cout << res_idx << ": " << count << std::endl;
     //     }
     //     std::cout << "dIndexSources: " << std::endl;
-    //     for (const auto& [dNew, sources] : dIndexSources) {
-    //         std::cout << dNew << ": ";
+    //     for (const auto& [res_idx, sources] : dIndexSources) {
+    //         std::cout << res_idx << ": ";
     //         for (const auto& [dA, dB] : sources) {
     //             std::cout << "(" << dA << ", " << dB << ") ";
     //         }
@@ -253,8 +253,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
         auto itA = std::next(A->diagonalMap.begin(), a);
         for (const auto& [dB, diagB] : B->diagonalMap) {
-            int dNew = itA->first + dB;
-            if (dIndexCounts[dNew] == 1) {
+            int res_idx = itA->first + dB;
+            if (dIndexCounts[res_idx] == 1) {
                 auto diagNew = multiplyDiagonals(A->matrix_shape, B->matrix_shape,
                     itA->first, dB, itA->second, diagB);
                 if (diagNew && diagNew->dLength > 0 && !diagNew->isEmpty()) {
@@ -270,8 +270,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     #pragma omp parallel for
     for (size_t i = 0; i < dIndexSources.size(); ++i) {
         auto it = std::next(dIndexSources.begin(), i);
-        int dNew = it->first;
-        if (dIndexCounts[dNew] == 1) continue;
+        int res_idx = it->first;
+        if (dIndexCounts[res_idx] == 1) continue;
 
         const auto& sources = it->second;
         std::shared_ptr<diagonal> merged;
@@ -296,13 +296,13 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         }
         if (merged && merged->dLength > 0 && !merged->isEmpty()) {
             int tid = omp_get_thread_num();
-            localMaps[tid][dNew] = merged;
+            localMaps[tid][res_idx] = merged;
         }
     }
     // Merge per-thread maps into final result (serial merge)
     for (const auto& localMap : localMaps) {
-        for (const auto& [dNew, diag] : localMap) {
-            result->diagonalMap.insert({dNew, diag});
+        for (const auto& [res_idx, diag] : localMap) {
+            result->diagonalMap.insert({res_idx, diag});
         }
     }
 
