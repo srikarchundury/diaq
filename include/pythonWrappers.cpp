@@ -113,6 +113,9 @@ PYBIND11_MODULE(diaq, m) {
             py::arg(),
             py::return_value_policy::reference
         )
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::array<unsigned int, 2>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
         ;
 
     // diaq::identityMatrix class
