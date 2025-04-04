@@ -241,21 +241,22 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 			std::shared_ptr<diagonal> diagA = itA->second;
 			std::shared_ptr<diagonal> diagB = itB->second;
 
-				multiplyDiagonals(
-					A->matrix_shape,
-					B->matrix_shape,
-					dA,
-					dB,
-					diagA,
-					diagB,
-					res_idx,
-					res_diag
-				);
+            multiplyDiagonals(
+                A->matrix_shape,
+                B->matrix_shape,
+                dA,
+                dB,
+                diagA,
+                diagB,
+                res_idx,
+                res_diag
+            );
 		}
 
 		// Final insertion into result if not empty
 		if (res_diag && res_diag->dLength > 0 && !res_diag->isEmpty()) {
-			result->diagonalMap.insert({res_idx, res_diag});
+			// result->diagonalMap.insert({res_idx, res_diag});
+            result->diagonalMap.insert_or_assign(res_idx, res_diag);
 		}
 	}
 
