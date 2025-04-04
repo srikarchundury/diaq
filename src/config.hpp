@@ -49,41 +49,7 @@ using valType = double;
 // ------- Vectorization related ------- //
 #define VECTORIZATION_TYPE 2 // 0 for SSE, 1 for AVX, 2 for AVX512, set -1 to run without vectorization
 #define NUM_BYTES_ALIGNED 64 // choose 32 for AVX, 64 for AVX512, 16 for SSE, -1 for no vectorization
-// //case 0: double, SSE
-// #if valType == double && VECTORIZATION_TYPE == 0
-// 	// #define SIMD_WIDTH 2
-// 	#define NUM_BYTES_ALIGNED 16
-// // ****** case 1: double, AVX ****** //
-// #elif valType == double && VECTORIZATION_TYPE == 1
-// 	#ifdef __AVX512F__
-// 		// #define SIMD_WIDTH 8
-// 		#define NUM_BYTES_ALIGNED 64
-// // **********************************
-// 	#elif defined(__AVX2__)
-// 		// #define SIMD_WIDTH 4
-// 		#define NUM_BYTES_ALIGNED 32
-// 	#else
-// 		#define NUM_BYTES_ALIGNED 32 // it should never come to this!
-// 	#endif
-// //case 2: float, SSE
-// #elif valType == float && VECTORIZATION_TYPE == 0
-// 	// #define SIMD_WIDTH 4
-// 	#define NUM_BYTES_ALIGNED 16
-// //case 3: float, AVX
-// #elif valType == float && VECTORIZATION_TYPE == 1
-// 	#ifdef __AVX512F__
-// 		// #define SIMD_WIDTH 16
-// 		#define NUM_BYTES_ALIGNED 64
-// 	#elif defined(__AVX2__)
-// 		// #define SIMD_WIDTH 8
-// 		#define NUM_BYTES_ALIGNED 32
-// 	#else
-// 		#define NUM_BYTES_ALIGNED 32 // it should never come to this!
-// 	#endif
-// //case 4: no vectorization
-// #else
-// 	#define NUM_BYTES_ALIGNED -1
-
+#define VEC_WIDTH 8 // since double and AVX512... Other combinations are: 
 valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 // ------------------------------- //
 

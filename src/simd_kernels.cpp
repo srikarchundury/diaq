@@ -781,7 +781,6 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         #ifdef DEBUG
             auto start_time = std::chrono::high_resolution_clock::now();
         #endif
-        constexpr unsigned int VEC_WIDTH = 8;
 
         unsigned int max_lenRes   = lenRes - k;
         unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
