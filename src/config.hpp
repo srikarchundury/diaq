@@ -50,6 +50,7 @@ using valType = double;
 #define VECTORIZATION_TYPE 2 // 0 for SSE, 1 for AVX, 2 for AVX512, set -1 to run without vectorization
 #define NUM_BYTES_ALIGNED 64 // choose 32 for AVX, 64 for AVX512, 16 for SSE, -1 for no vectorization
 #define VEC_WIDTH 8 // since double and AVX512... Other combinations are: 
+#define PREFETCH_DIST 16 // prefetch distance, double of VEC_WIDTH
 valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 // ------------------------------- //
 
