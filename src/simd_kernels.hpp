@@ -18,7 +18,8 @@
 
 namespace diaq {
 
-	void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final);
+	void run_without_vectorization(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+		valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final);
 
 #ifdef __AVX2__
 	
