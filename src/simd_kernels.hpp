@@ -118,19 +118,19 @@ namespace diaq {
 
     // Template for general implementation
     template<typename valTypeTemplate>
-    void run_avx512(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final);
+    void run_avx512(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final);
 
     // AVX-512 double
     __m512d avx512_load_partial_double(int n, const double *p);
     void avx512_store_partial_double(int n, double *loc, __m512d vec);
     template<>
-    void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final);
+    void run_avx512<double>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final);
 
     // AVX-512 float
     __m512 avx512_load_partial_float(int n, const float *p);
     void avx512_store_partial_float(int n, float *loc, __m512 vec);
     template<>
-    void run_avx512<float>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final);
+    void run_avx512<float>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final);
 
     // SPMV for AVX-512, 1 for positive diagonals, 2 for negative diagonals, 0 for main diagonal
     template<typename valTypeTemplate>

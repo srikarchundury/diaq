@@ -156,19 +156,37 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
         std::cout << "lenRes,jump,offsetA,offsetB " << lenRes << "," << jump << "," << offsetA << "," << offsetB << std::endl;
     #endif
 
-    for(unsigned int block_index_start = 0; block_index_start < lenRes; block_index_start += BLOCK_SIZE) {
-        unsigned int block_index_end = std::min(block_index_start + BLOCK_SIZE, lenRes);
+
+    // we compute this just once instead of doing it inside blocks!
+    unsigned int max_lenRes   = lenRes - k;
+    unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
+    unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
+    unsigned int loop_count   = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+    unsigned int loop_start   = k;
+    unsigned int loop_end     = k + loop_count;
+    unsigned int a_offset     = offsetA - jump;
+    unsigned int b_offset     = offsetB - jump;
+
+    // BLOCKED over result diagonal using BLOCK_SIZE
+	#pragma omp parallel for schedule(static)
+	for (unsigned int block_start = loop_start; block_start < loop_end; block_start += BLOCK_SIZE) {
+        unsigned int block_end = std::min(block_start + BLOCK_SIZE, loop_end);
 
         #if VECTORIZATION_TYPE == 0
-            run_sse(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            // TODO, change to match avx512 later
+            run_sse(block_start, block_end, offsetA, offsetB, jump, lenDiagA, lenDiagB,
+                    real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #elif VECTORIZATION_TYPE == 1
-            run_avx(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+                // TODO, change to match avx512 later
+            run_avx(block_start, block_end, offsetA, offsetB, jump, lenDiagA, lenDiagB,
+                    real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #elif VECTORIZATION_TYPE == 2
-            run_avx512(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            run_avx512(block_start, block_end, a_offset, b_offset,
+                       real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #elif VECTORIZATION_TYPE == -1
-            run_without_vectorization(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+            run_without_vectorization(block_start, block_end, a_offset, b_offset,
+                                      real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #endif
-
     }
 
     #ifdef DEEP_DEBUG
@@ -255,8 +273,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 
 		// Final insertion into result if not empty
 		if (res_diag && res_diag->dLength > 0 && !res_diag->isEmpty()) {
-			// result->diagonalMap.insert({res_idx, res_diag});
-            result->diagonalMap.insert_or_assign(res_idx, res_diag);
+			result->diagonalMap.insert({res_idx, res_diag});
+            // result->diagonalMap.insert_or_assign(res_idx, res_diag);
 		}
 	}
 
