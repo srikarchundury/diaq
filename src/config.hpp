@@ -62,7 +62,7 @@ valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 
 
 // ------- Cache related ------- //
-#define BLOCK_SIZE 4096
+#define BLOCK_SIZE 8192
 // ------------------------------- //
 
 
