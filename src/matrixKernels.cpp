@@ -221,6 +221,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     // let's preacclocate result diags also, store it in a temp map
     phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
     res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10); // margin 10
+
     for (const auto& [dA, _] : A->diagonalMap) {
         for (const auto& [dB, _] : B->diagonalMap) {
             int res_idx = dA + dB;
@@ -243,18 +244,24 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     // #pragma omp parallel for
     for (size_t i = 0; i < res_index_sources.size(); ++i) {
         auto it = std::next(res_index_sources.begin(), i);
+
         int res_idx = it->first;
         auto& sources = it->second;
 
         std::shared_ptr<diagonal> merged = res_diags[res_idx];  // preallocated
 
+        // collapse below 2 for loop.
         for (const auto& [dA, dB] : sources) {
+           // for block parallel..
+            // calculate block_dA, block_dB, block_res, sum of them = l1 cache size
+
             auto itA = A->diagonalMap.find(dA);
             auto itB = B->diagonalMap.find(dB);
             if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
 
             // always writes into merged
             multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, itA->second, itB->second, res_idx, merged);
+            // block
         }
 
         if (merged && merged->dLength > 0 && !merged->isEmpty()) {

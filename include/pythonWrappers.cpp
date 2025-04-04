@@ -43,7 +43,6 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
         .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::diaQMatrix::shape)
-        .def("getDiagonalMap", &diaq::diaQMatrix::getDiagonalMap, py::return_value_policy::reference)
         .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::reference)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)
