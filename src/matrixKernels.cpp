@@ -43,7 +43,7 @@ unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> shape) {
     return lenRes;
 }
 
-std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, std::array<unsigned int, 2> shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB, int res_index, std::shared_ptr<diagonal> res) {
+std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, std::array<unsigned int, 2> shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB, int res_index, std::shared_ptr<diagonal> res, unsigned int block_index_start, unsigned int block_index_end) {
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
         std::cout << " --- multiplyDiagonals --- " << std::endl;
@@ -157,13 +157,13 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     #endif
 
     #if VECTORIZATION_TYPE == 0
-        run_sse(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        run_sse(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == 1
-        run_avx(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        run_avx(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == 2
-        run_avx512(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        run_avx512(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #elif VECTORIZATION_TYPE == -1
-        run_without_vectorization(k, lenRes, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+        run_without_vectorization(k + block_index_start, k + block_index_end, offsetA, offsetB, jump, lenDiagA, lenDiagB, real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
     #endif
 
     #ifdef DEEP_DEBUG
@@ -185,101 +185,91 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
  * @return diaQMatrix  C
  */
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
-
-    // printf("here hey hey\n");
-    
-    // A->print_meta();
-    // B->print_meta();
-
-    #ifdef DEBUG
-        // start timer
+	#ifdef DEBUG
         std::cout << "starting product -- ";
         auto start = std::chrono::high_resolution_clock::now();
-    #endif
+	#endif
 
+	#ifdef CUDA_ENABLED
+	    return product_cuda(A, B);
+	#else
 
-    #ifdef CUDA_ENABLED
-        return product_cuda(A, B);
-    #else
+	std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
+	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
-    #ifdef DEEP_DEBUG
-        std::cout << " --- " << std::endl;
-        std::cout << " --- product --- " << std::endl;
-        std::cout << " --- " << std::endl;
-        A->print();
-        std::cout << " --- times --- " << std::endl;
-        B->print();
-        std::cout << " --- " << std::endl;
-    #endif
+	// Step 1: Precompute which diag pairs contribute to which result diag
+	phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
+	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
 
-    std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
+	res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
+	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
 
-    // Step 0: Preprocessing - Identify unique result dIndices
-    phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
-    res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10); // margin 10
-    // let's preacclocate result diags also, store it in a temp map
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-    res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10); // margin 10
+	for (const auto& [dA, _] : A->diagonalMap) {
+		for (const auto& [dB, _] : B->diagonalMap) {
+			int res_idx = dA + dB;
 
-    for (const auto& [dA, _] : A->diagonalMap) {
-        for (const auto& [dB, _] : B->diagonalMap) {
-            int res_idx = dA + dB;
-    
-            if ((res_idx < -(int)res_dims[0] + 1) || (res_idx > (int)res_dims[1] - 1))
-                continue;
-    
-            unsigned int lenRes = getDiagonalLength(res_idx, res_dims);
-            if (lenRes <= 0)
-                continue;
-    
-            // Accumulate the source pair
-            res_index_sources[res_idx].emplace_back(dA, dB);
-    
-            // Allocate only once per res_idx
-            res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
-        }
-    }
+			if ((res_idx < -(int)res_dims[0] + 1) || (res_idx > (int)res_dims[1] - 1)) continue;
 
-    // #pragma omp parallel for
-    for (size_t i = 0; i < res_index_sources.size(); ++i) {
-        auto it = std::next(res_index_sources.begin(), i);
+			unsigned int lenRes = getDiagonalLength(res_idx, res_dims);
+			if (lenRes <= 0) continue;
 
-        int res_idx = it->first;
-        auto& sources = it->second;
+			res_index_sources[res_idx].emplace_back(dA, dB);
+			res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
+		}
+	}
 
-        std::shared_ptr<diagonal> merged = res_diags[res_idx];  // preallocated
+	// Step 2: Main blocked compute loop (per result diagonal)
+	// #pragma omp parallel for
+	for (size_t i = 0; i < res_index_sources.size(); ++i) {
+		auto it = std::next(res_index_sources.begin(), i);
+		int res_idx = it->first;
+		auto& sources = it->second;
 
-        // collapse below 2 for loop.
-        for (const auto& [dA, dB] : sources) {
-           // for block parallel..
-            // calculate block_dA, block_dB, block_res, sum of them = l1 cache size
+		std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+		int lenRes = res_diag->dLength;
 
-            auto itA = A->diagonalMap.find(dA);
-            auto itB = B->diagonalMap.find(dB);
-            if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
+		for (const auto& [dA, dB] : sources) {
+			auto itA = A->diagonalMap.find(dA);
+			auto itB = B->diagonalMap.find(dB);
+			if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
 
-            // always writes into merged
-            multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, itA->second, itB->second, res_idx, merged);
-            // block
-        }
+			std::shared_ptr<diagonal> diagA = itA->second;
+			std::shared_ptr<diagonal> diagB = itB->second;
 
-        if (merged && merged->dLength > 0 && !merged->isEmpty()) {
-            // result->diagonalMap.insert_or_assign(res_idx, merged);
-            result->diagonalMap.insert({res_idx, merged});
-        }
+			// Block over the result diagonal
+			for (int t = 0; t < lenRes; t += BLOCK_SIZE) {
+				int t_end = std::min(t + BLOCK_SIZE, lenRes);
 
-    } // end of all res_index_sources
+				multiplyDiagonals(
+					A->matrix_shape,
+					B->matrix_shape,
+					dA,
+					dB,
+					diagA,
+					diagB,
+					res_idx,
+					res_diag,
+					t,
+					t_end
+				);
+			}
+		}
 
-    #ifdef DEBUG
+		// Final insertion into result if not empty
+		if (res_diag && res_diag->dLength > 0 && !res_diag->isEmpty()) {
+			result->diagonalMap.insert({res_idx, res_diag});
+		}
+	}
+
+	#ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t product took %f milliseconds\n", duration.count()/1000.0);
-    #endif
+	#endif
 
-    return result;
+	return result;
 
-    #endif
+	#endif // !CUDA_ENABLED
 }
 
 /**
