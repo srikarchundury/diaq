@@ -56,17 +56,17 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
         std::cout << " --- " << std::endl;
     #endif
     unsigned int lenRes = res->dLength;
-    if (res_index <= 0 && static_cast<int>(shapeA[0]) <= abs(res_index)) {
-        #ifdef DEEP_DEBUG
-            std::cout << " --- returning NULL --- " << std::endl;
-        #endif
-        return NULL;
-    } else if (res_index > 0 && static_cast<int>(shapeB[1]) <= res_index) {
-        #ifdef DEEP_DEBUG
-            std::cout << " --- returning NULL --- " << std::endl;
-        #endif
-        return NULL;
-    }
+    // if (res_index <= 0 && static_cast<int>(shapeA[0]) <= abs(res_index)) {
+    //     #ifdef DEEP_DEBUG
+    //         std::cout << " --- returning NULL --- " << std::endl;
+    //     #endif
+    //     return NULL;
+    // } else if (res_index > 0 && static_cast<int>(shapeB[1]) <= res_index) {
+    //     #ifdef DEEP_DEBUG
+    //         std::cout << " --- returning NULL --- " << std::endl;
+    //     #endif
+    //     return NULL;
+    // }
     unsigned int lenDiagA = diagA->dLength;
     unsigned int lenDiagB = diagB->dLength;
 
@@ -168,7 +168,6 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     unsigned int b_offset     = offsetB - jump;
 
     // BLOCKED over result diagonal using BLOCK_SIZE
-	#pragma omp parallel for schedule(static)
 	for (unsigned int block_start = loop_start; block_start < loop_end; block_start += BLOCK_SIZE) {
         unsigned int block_end = std::min(block_start + BLOCK_SIZE, loop_end);
 
@@ -242,7 +241,6 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	}
 
 	// Step 2: Main blocked compute loop (per result diagonal)
-	// #pragma omp parallel for
 	for (size_t i = 0; i < res_index_sources.size(); ++i) {
 		auto it = std::next(res_index_sources.begin(), i);
 		int res_idx = it->first;

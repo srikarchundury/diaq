@@ -860,7 +860,6 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         #endif
     }
 
-
     // // old original code
     // template<>
     // void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
