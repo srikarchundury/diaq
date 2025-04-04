@@ -31,9 +31,17 @@ PYBIND11_MODULE(diaq, m) {
         .def("getCoords", &diaq::diagonal::getCoords, py::return_value_policy::reference)
         .def("getDIndex", &diaq::diagonal::getDIndex, py::return_value_policy::reference)
         .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::reference)
-		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos) -> std::complex<diaq::valType> & {
-			return (*self)[d_pos];
-		}, py::return_value_policy::reference)
+		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos) -> std::complex<diaq::valType> {
+            if (d_pos >= self->dLength)
+                throw std::out_of_range("Index out of range");
+            return std::complex<diaq::valType>(self->realValues[d_pos], self->imagValues[d_pos]);
+        }, py::return_value_policy::copy)
+        .def("__setitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos, const std::complex<diaq::valType>& val) {
+            if (d_pos >= self->dLength)
+                throw std::out_of_range("Index out of range");
+            self->realValues[d_pos] = val.real();
+            self->imagValues[d_pos] = val.imag();
+        })        
 		.def("scale_by_imag", &diaq::diagonal::scale_by_imag, py::return_value_policy::reference)
 		.def("scale_by_real", &diaq::diagonal::scale_by_real, py::return_value_policy::reference)
 	;

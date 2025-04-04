@@ -916,29 +916,23 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
         std::array<unsigned int, 2> getMatrixPosition(int diagonal_idx, unsigned int diagonal_pos) {
             std::array<unsigned int, 2> mat_pos;
-            if(diagonal_idx == 0) {
+        
+            if (diagonal_idx >= 0) {
                 mat_pos[0] = diagonal_pos;
+                mat_pos[1] = diagonal_idx + diagonal_pos;
+            } else {
+                mat_pos[0] = -diagonal_idx + diagonal_pos;
                 mat_pos[1] = diagonal_pos;
             }
-            else {
-                if(diagonal_idx < 0) {
-                    mat_pos[0] = abs(diagonal_idx);
-                    mat_pos[1] = 0;
-                }
-                else {
-                    mat_pos[0] = 0;
-                    mat_pos[1] = abs(diagonal_idx);
-                }
-                mat_pos[0] += (diagonal_pos);
-                mat_pos[1] += (diagonal_pos);
+
+            if (mat_pos[0] >= matrix_shape[0] || mat_pos[1] >= matrix_shape[1]) {
+                std::cerr << "diagonal pos (" << diagonal_idx << "," << diagonal_pos << ") in matrix of size (" << matrix_shape[0] << "," << matrix_shape[1] << ")\n";
+                std::cerr << "got pos (" << mat_pos[0] << "," << mat_pos[1] << ")\n";
+                throw std::length_error("out of matrix bounds");
             }
-            if(mat_pos[0] >= matrix_shape[0] || mat_pos[1] >= matrix_shape[1]) {
-                std::cout << "diagonal pos (" << diagonal_idx << "," << diagonal_pos << ") in matrix of size (" << matrix_shape[0] << "," << matrix_shape[1] << ")" << std::endl;
-                std::cout << "got pos (" << mat_pos[0] << "," << mat_pos[1] << ") in matrix of size (" << matrix_shape[0] << "," << matrix_shape[1] << ")" << std::endl;
-                throw std::length_error("out of matrix");
-            }
+        
             return mat_pos;
-        }
+        }              
 
         std::vector<unsigned int> getTensorPosition(int diagonal_idx, unsigned int diagonal_pos) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(diagonal_idx, diagonal_pos);

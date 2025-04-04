@@ -168,13 +168,18 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return newDiag;
         }
-        std::complex<valType>& operator[](unsigned int i) {
+        std::complex<valType> operator[](unsigned int i) const {
             if (i >= dLength) {
                 throw std::out_of_range("Index out of range");
             }
-            // Return a reference to a std::complex, constructed on the fly
-            // This does not create a temporary because we return a reference to the real and imag parts
-            return *(reinterpret_cast<std::complex<valType>*>(&realValues[i]));
+            return std::complex<valType>(realValues[i], imagValues[i]);
+        }
+        void set(unsigned int i, const std::complex<valType>& val) {
+            if (i >= dLength) {
+                throw std::out_of_range("Index out of range");
+            }
+            realValues[i] = val.real();
+            imagValues[i] = val.imag();
         }
 };
 
