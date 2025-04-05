@@ -20,19 +20,23 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
     #endif
     phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
     unsigned int x, y;
-    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
-        if (it->first == 0) {
+
+    for(size_t i = 0; i < dIndices.size(); i++) {
+
+        std::shared_ptr<diagonal> d = dPointers[i];
+
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+        if (d->dIndex == 0) {
             x = 0;
             y = 0;
         }
-        else if (it->first > 0) {
+        else if (d->dIndex > 0) {
             x = 0;
-            y = it->first;
+            y = d->dIndex;
         }
         else {
-            x = -1 * it->first;
+            x = -1 * d->dIndex;
             y = 0;
         }
         #pragma omp parallel for
@@ -113,20 +117,21 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
     std::vector<std::complex<valType>> vals(total_elements, std::complex<valType>(0.0, 0.0));
 
     #pragma omp parallel for
-    for (unsigned int i = 0; i < A->diagonalMap.size(); i++) {
-        auto it = std::next(A->diagonalMap.begin(), i);
-        int dIndex = it->first;
-        unsigned int dLength = it->second->dLength;
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
+    for(size_t i = 0; i < A->dIndices.size(); i++) {
 
+        std::shared_ptr<diagonal> d = A->dPointers[i];
+
+        int dIndex = d->dIndex;
+        unsigned int dLength = d->dLength;
+
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+
+        #pragma omp parallel for
         for (unsigned int j = 0; j < dLength; j++) {
             std::array<unsigned int, 2> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            // #pragma omp critical
-            // {
-                vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
-            // }
+            vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
         }
     }
 

@@ -13,64 +13,96 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     public:
         std::array<unsigned int, 2> matrix_shape;
         std::vector<unsigned int> shape;
+
+        std::vector<int> dIndices;
+        std::vector<std::shared_ptr<diagonal>> dPointers;
+        // faster lookup, #diagonal indices overhead!
         phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagonalMap;
 
         // Square matrix
         diaQMatrix(unsigned int s) {
+            reserveDiagonalMap();
             matrix_shape = {s, s};
             shape = {s, s};
-            reserveDiagonalMap();
         }
     
         // Rectangular matrix
         diaQMatrix(unsigned int x, unsigned int y) {
+            reserveDiagonalMap();
             matrix_shape = {x, y};
             shape = {x, y};
-            reserveDiagonalMap();
         }
     
         // From array
         diaQMatrix(std::array<unsigned int, 2> dimens) {
+            reserveDiagonalMap();
             matrix_shape = dimens;
             shape = {dimens[0], dimens[1]};
-            reserveDiagonalMap();
         }
     
         // From array and shape
         diaQMatrix(std::array<unsigned int, 2> dimens, std::vector<unsigned int> ts) {
+            reserveDiagonalMap();
             matrix_shape = dimens;
             shape = ts;
-            reserveDiagonalMap();
         }
     
         // From diag map and size
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
+            reserveDiagonalMap();
             diagonalMap = std::move(dm);
+            // let us set dIndices and dPointers to values from diagonalMap
+            dIndices.resize(diagonalMap.size());
+            dPointers.resize(diagonalMap.size());
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); ++i) {
+                auto it = std::next(diagonalMap.begin(), i);
+                dIndices[i] = it->first;
+                dPointers[i] = it->second;
+            }
             matrix_shape = {s, s};
             shape = {s, s};
-            reserveDiagonalMap();
         }
     
         // From diag map and dimensions
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
+            reserveDiagonalMap();
             diagonalMap = std::move(dm);
+            dIndices.resize(diagonalMap.size());
+            dPointers.resize(diagonalMap.size());
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); ++i) {
+                auto it = std::next(diagonalMap.begin(), i);
+                dIndices[i] = it->first;
+                dPointers[i] = it->second;
+            }
             matrix_shape = d;
             shape = {d[0], d[1]};
-            reserveDiagonalMap();
         }
     
         // From everything
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm,
                    std::array<unsigned int, 2> d,
                    std::vector<unsigned int> ts) {
+            reserveDiagonalMap();
             diagonalMap = std::move(dm);
+            dIndices.resize(diagonalMap.size());
+            dPointers.resize(diagonalMap.size());
+            #pragma omp parallel for
+            for (size_t i = 0; i < diagonalMap.size(); ++i) {
+                auto it = std::next(diagonalMap.begin(), i);
+                dIndices[i] = it->first;
+                dPointers[i] = it->second;
+            }
             matrix_shape = d;
             shape = ts;
-            reserveDiagonalMap();
         }
     
         void reserveDiagonalMap() {
-            diagonalMap.reserve(matrix_shape[0] + matrix_shape[1] - 1 + 100); // margin 10
+            size_t reserveSize = matrix_shape[0] + matrix_shape[1] - 1 + 10;
+            diagonalMap.reserve(reserveSize);
+            dIndices.reserve(reserveSize);
+            dPointers.reserve(reserveSize);
         }
 
         virtual ~diaQMatrix() {
@@ -78,6 +110,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::cout << "diaQMatrix destructor called" << std::endl;
             #endif
         }
+
         valType getItem_real(unsigned int flat_index) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
@@ -199,8 +232,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
             std::map<int, std::shared_ptr<diagonal>> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
-            for (auto it = sortedDiagonalMap.begin(); it != sortedDiagonalMap.end(); it++) {
-                it->second->print();
+            for(size_t i = 0; i < dIndices.size(); i++) {
+                dPointers[i]->print();
             }
         }
         void print_meta() {
@@ -275,13 +308,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLen, real_vals, imag_vals);
 
                 diagonalMap.insert({dIndex, newDiag});
+                dIndices.push_back(dIndex);
+                dPointers.push_back(newDiag);
             }
             else {
                 it->second->realValues[dPos] = real_val;
                 it->second->imagValues[dPos] = imag_val;
             }
         }
-        
+
         void setDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
             // this->diagonalMap.erase(dIndex);
             this->diagonalMap.insert({dIndex, diagNew});
@@ -331,10 +366,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
             #pragma omp parallel for
-            for (size_t i = 0; i < B->diagonalMap.size(); i++) {
-                auto it = std::next(B->diagonalMap.begin(), i);
-                int dIndex = it->first;
-                std::shared_ptr<diagonal> dB = it->second;
+            for (size_t i = 0; i < B->dIndices.size(); i++) {
+                int dIndex = B->dIndices[i];
+                std::shared_ptr<diagonal> dB = B->dPointers[i];
                 auto itA = diagonalMap.find(dIndex);
 
                 if(itA == diagonalMap.end()) {
@@ -371,9 +405,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
         std::shared_ptr<diaQMatrix> scale_by_imag(valType imag) {
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 #pragma omp parallel for
@@ -388,9 +421,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         
         std::shared_ptr<diaQMatrix> scale_by_real(valType real) {
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 #pragma omp parallel for
@@ -414,10 +446,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // If a diagonal exists in the current matrix but not in B, do nothing
 
             #pragma omp parallel for
-            for (size_t i = 0; i < B->diagonalMap.size(); i++) {
-                auto it = std::next(B->diagonalMap.begin(), i);
-                int dIndex = it->first;
-                std::shared_ptr<diagonal> dB = it->second;
+            for (size_t i = 0; i < B->dIndices.size(); i++) {
+                int dIndex = B->dIndices[i];
+                std::shared_ptr<diagonal> dB = dPointers[i];
                 auto itA = diagonalMap.find(dIndex);
 
                 if(itA == diagonalMap.end()) {
@@ -448,9 +479,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void divide_by_int(int x) {
 
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
 
@@ -621,10 +651,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
 
-            for(size_t i = 0; i < B->diagonalMap.size(); i++) {
-                auto it = std::next(B->diagonalMap.begin(), i);
-                int dIndex = it->first;
-                std::shared_ptr<diagonal> dB = it->second;
+            for(size_t i = 0; i < B->dIndices.size(); i++) {
+                int dIndex = B->dIndices[i];
+                std::shared_ptr<diagonal> dB = B->dPointers[i];
                 auto itA = diagonalMap.find(dIndex);
                 if(itA == diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
@@ -717,9 +746,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             valType min_threshold = std::numeric_limits<valType>::min();
         
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 #pragma omp simd
@@ -744,16 +772,14 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                int dIndex = it->first;
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                int dIndex = dIndices[i];
+                std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
                 
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, d->dLength);
 
-                // #pragma omp critical
                 C->diagonalMap.insert({dIndex, newDiag});
 
                 valType *new_real_vals = newDiag->realValues;
@@ -785,11 +811,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
             #pragma omp parallel for
-            for (size_t i = 0; i < B->diagonalMap.size(); i++) {
-                auto it = std::next(B->diagonalMap.begin(), i);
-                int dIndex = it->first;
-                std::shared_ptr<diagonal> dB = it->second;
-                auto itA = this->diagonalMap.find(dIndex);
+            for (size_t i = 0; i < B->dIndices.size(); i++) {
+                int dIndex = B->dIndices[i];
+                std::shared_ptr<diagonal> dB = B->dPointers[i];
+                auto itA = this->diagonalMap.find(B->dIndices[i]);
 
                 if(itA == this->diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
@@ -827,9 +852,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> newDiagonalMap;
         
             #pragma omp parallel for
-            for (size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
-                std::shared_ptr<diagonal> d = it->second;
+            for (size_t i = 0; i < dIndices.size(); i++) {
+
+                std::shared_ptr<diagonal> d = dPointers[i];
         
                 #if NUM_BYTES_ALIGNED == -1
                     valType *real_vals = (valType *)calloc(d->dLength, sizeof(valType));
@@ -862,10 +887,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #pragma omp parallel reduction(+:norm)
             {
                 valType local_norm = 0.0; // Use a local variable to accumulate within the parallel region
-                #pragma omp for
-                for (size_t i = 0; i < diagonalMap.size(); i++) {
-                    auto it = std::next(diagonalMap.begin(), i);
-                    std::shared_ptr<diagonal> d = it->second;
+                #pragma omp parallel for
+                for (size_t i = 0; i < dIndices.size(); i++) {
+                    std::shared_ptr<diagonal> d = dPointers[i];
                     valType *real_vals = d->realValues;
                     valType *imag_vals = d->imagValues;
                     #pragma omp simd reduction(+:local_norm)
@@ -1228,20 +1252,24 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return diagonalMap.size();
         }
         std::vector<std::shared_ptr<diagonal>> getDiagonals() {
-            std::vector<std::shared_ptr<diagonal>> res;
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                res.push_back(it->second);
-            }
-            return res;
+            // std::vector<std::shared_ptr<diagonal>> res;
+            // for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
+            //     res.push_back(it->second);
+            // }
+            return dPointers;
         }
         std::complex<valType> *flatten() {
             std::complex<valType> *res = new std::complex<valType>[matrix_shape[0] * matrix_shape[1]];
             std::fill(res, res + matrix_shape[0] * matrix_shape[1], std::complex<valType>(1));
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                int dIndex = it->first;
-                unsigned int dLength = it->second->dLength;
-                valType *real_vals = it->second->realValues;
-                valType *imag_vals = it->second->imagValues;
+
+            for(size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
+                int dIndex = d->dIndex;
+                unsigned int dLength = d->dLength;
+
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+
                 #pragma omp parallel for
                 for (unsigned int i = 0; i < dLength; i++) {
                     std::array<unsigned int, 2> mat_pos = getMatrixPosition(dIndex, i);
@@ -1251,28 +1279,37 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             return res;
         }
+
         valType sparsity() {
             unsigned int z = 0;
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                z += it->second->numNonZeros();
+
+            #pragma omp parallel for reduction(+:z)
+            for(size_t i = 0; i < dIndices.size(); i++) {
+                z += dPointers[i]->numNonZeros();
             }
+
             valType z_val = (valType) z;
             valType size_val = (valType) matrix_shape[0] * matrix_shape[1];
             return 1.0 - z_val / size_val;
         }
+
         void pruneMatrix() {
             std::vector<unsigned int> toDelete;
-            for (auto it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-                valType *real_vals = it->second->realValues;
-                valType *imag_vals = it->second->imagValues;
+
+            for(size_t j = 0; j < dIndices.size(); j++) {
+
+                std::shared_ptr<diagonal> d = dPointers[j];
+
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
                 unsigned int i;
-                for (i = 0; i < it->second->dLength; i++) {
+                for (i = 0; i < d->dLength; i++) {
                     if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) {
                         break;
                     }
                 }
-                if(i == it->second->dLength) {
-                    toDelete.push_back(it->first);
+                if(i == d->dLength) {
+                    toDelete.push_back(d->dIndex);;
                 }
             }
             // #pragma omp parallel for

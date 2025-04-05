@@ -7,7 +7,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
     valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_without_vectorization -- " << std::endl;
-        auto start = std::chrono::high_resolution_clock::now();
+        auto time_start = std::chrono::high_resolution_clock::now();
     #endif
     #pragma omp parallel for schedule(static)
     for (unsigned int k = start; k < end; ++k) {
@@ -20,8 +20,8 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
     }
 
     #ifdef DEEP_DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
         printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
     #endif
 }
@@ -1376,22 +1376,28 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
 #endif
 
 bool diagonal::isEmpty() {
-	bool isEmpty = true;
+	bool found_nonzero = false;
 
-	#pragma omp parallel for shared(isEmpty)
-	for (unsigned int i = 0; i < dLength; ++i) {
-		// Fast exit if a thread finds a non-zero
-		if (!isEmpty) {
-			#pragma omp cancel for
+	#pragma omp parallel
+	{
+		bool local_found = false;
+
+		#pragma omp for nowait
+		for (unsigned int i = 0; i < dLength; ++i) {
+			if (found_nonzero || local_found) continue;
+
+			if (realValues[i] != 0.0 || imagValues[i] != 0.0) {
+				local_found = true;
+			}
 		}
 
-		if (realValues[i] != 0.0 || imagValues[i] != 0.0) {
-			isEmpty = false;
-			#pragma omp cancel for
+		if (local_found) {
+			#pragma omp atomic write
+			found_nonzero = true;
 		}
 	}
 
-	return isEmpty;
+	return !found_nonzero;
 }
 
 } // namespace diaq

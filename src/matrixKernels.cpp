@@ -199,14 +199,14 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     return res;
 }
 
-/**
- * @brief quantum sparse matrix multiplication (C = A.B)
- * 
- * @param A diaQMatrix
- * @param B diaQMatrix
- * 
- * @return diaQMatrix  C
- */
+// /**
+//  * @brief quantum sparse matrix multiplication (C = A.B)
+//  * 
+//  * @param A diaQMatrix
+//  * @param B diaQMatrix
+//  * 
+//  * @return diaQMatrix  C
+//  */
 // std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
 // 	#ifdef DEBUG
 //         std::cout << "starting product -- ";
@@ -221,22 +221,24 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 // 	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
 // 	// Step 1: Precompute which diag pairs contribute to which result diag
-// 	phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
+//     phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
 // 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
+//     res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
+// 	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
 
-// 	res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
-// 	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
+//     #pragma omp parallel for collapse(2)
+//     for(size_t a = 0; a < A->dIndices.size(); a++) {
+//         for(size_t b = 0; b < B->dIndices.size(); b++) {
 
-// 	for (const auto& [dA, _] : A->diagonalMap) {
-// 		for (const auto& [dB, _] : B->diagonalMap) {
+//             int dA = A->dIndices[a];
+//             int dB = B->dIndices[b];
 // 			int res_idx = dA + dB;
 
 // 			if ((res_idx < -(int)res_dims[0] + 1) || (res_idx > (int)res_dims[1] - 1)) continue;
-
 // 			unsigned int lenRes = getDiagonalLength(res_idx, res_dims);
 // 			if (lenRes <= 0) continue;
 
-// 			res_index_sources[res_idx].emplace_back(dA, dB);
+//             res_index_sources[res_idx].emplace_back(dA, dB);
 // 			res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
 // 		}
 // 	}
@@ -287,7 +289,6 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 //         if (sources.size() == 1) continue; // already computed in step 2.a
 
 // 		std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
-// 		int lenRes = res_diag->dLength;
 
 // 		for (const auto& [dA, dB] : sources) {
 // 			auto itA = A->diagonalMap.find(dA);
@@ -326,6 +327,8 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 
 // 	#endif // !CUDA_ENABLED
 // }
+
+// newer version of product function
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
 	#ifdef DEBUG
 	std::cout << "starting product -- ";
@@ -336,47 +339,42 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	return product_cuda(A, B);
 	#else
 
-	constexpr int BLOCK_DA = 4; // tune these..
-	constexpr int BLOCK_DB = 4;
-
 	std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
 	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
-	phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-
-	res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
 	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
 
-	std::vector<int> all_dA, all_dB;
-	for (const auto& [dA, _] : A->diagonalMap) all_dA.push_back(dA);
-	for (const auto& [dB, _] : B->diagonalMap) all_dB.push_back(dB);
-
 	// Step 1: Precompute all res indices and allocate
-	for (int dA : all_dA) {
-		for (int dB : all_dB) {
+    for(size_t i = 0; i < A->dIndices.size(); ++i) {
+        int dA = A->dIndices[i];
+        for(size_t j = 0; j < B->dIndices.size(); ++j) {
+            int dB = B->dIndices[j];
 			int res_idx = dA + dB;
-			if (res_idx < -(int)res_dims[0] + 1 || res_idx > (int)res_dims[1] - 1) continue;
+
+            if (res_idx < -(int)res_dims[0] + 1 || res_idx > (int)res_dims[1] - 1) continue;
 			unsigned int lenRes = getDiagonalLength(res_idx, res_dims);
 			if (lenRes <= 0) continue;
-			res_index_sources[res_idx].emplace_back(dA, dB);
+
 			res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
 		}
 	}
 
-	// Step 2: Blocked traversal
-	#pragma omp parallel for
-	for (size_t i = 0; i < all_dA.size(); i += BLOCK_DA) {
-		for (size_t j = 0; j < all_dB.size(); j += BLOCK_DB) {
+    constexpr int BLOCK_DA = 4; // tune these..
+	constexpr int BLOCK_DB = 4;
 
-			for (size_t bi = i; bi < std::min(i + BLOCK_DA, all_dA.size()); ++bi) {
-				int dA = all_dA[bi];
+	// Step 2: Blocked traversal (outer-block)
+	for (size_t i = 0; i < A->dIndices.size(); i += BLOCK_DA) {
+		for (size_t j = 0; j < B->dIndices.size(); j += BLOCK_DB) {
+
+			for (size_t bi = i; bi < std::min(i + BLOCK_DA, A->dIndices.size()); ++bi) {
+				int dA = A->dIndices[bi];
 				auto itA = A->diagonalMap.find(dA);
 				if (itA == A->diagonalMap.end()) continue;
 				auto diagA = itA->second;
 
-				for (size_t bj = j; bj < std::min(j + BLOCK_DB, all_dB.size()); ++bj) {
-					int dB = all_dB[bj];
+                for (size_t bj = j; bj < std::min(j + BLOCK_DB, B->dIndices.size()); ++bj) {
+					int dB = B->dIndices[bj];
 					auto itB = B->diagonalMap.find(dB);
 					if (itB == B->diagonalMap.end()) continue;
 					auto diagB = itB->second;
@@ -387,7 +385,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 					std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
 					if (!res_diag) continue;  // Safety
 
-					multiplyDiagonals(
+                    multiplyDiagonals(
 						A->matrix_shape, B->matrix_shape,
 						dA, dB,
 						diagA, diagB,
@@ -402,6 +400,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	for (const auto& [res_idx, res_diag] : res_diags) {
 		if (res_diag && !res_diag->isEmpty()) {
 			result->diagonalMap.insert({res_idx, res_diag});
+            result->dIndices.push_back(res_idx);
+            result->dPointers.push_back(res_diag);
 		}
 	}
 
