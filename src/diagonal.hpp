@@ -181,6 +181,16 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             realValues[i] = val.real();
             imagValues[i] = val.imag();
         }
+        void accumulate(const diagonal& other) {
+            const valType* real_other = other.realValues;
+            const valType* imag_other = other.imagValues;
+        
+            #pragma omp simd
+            for (unsigned int i = 0; i < dLength; ++i) {
+                realValues[i] += real_other[i];
+                imagValues[i] += imag_other[i];
+            }
+        }        
 };
 
 } // namespace diaq

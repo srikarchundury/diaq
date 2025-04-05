@@ -1376,31 +1376,22 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
 #endif
 
 bool diagonal::isEmpty() {
-    // bool result = true;
-    // const int vecSize = 8;  // AVX-512 processes 8 doubles at a time
-    // __m512d zero = _mm512_setzero_pd();
+	bool isEmpty = true;
 
-    // #pragma omp parallel for simd
-    // for (int i = 0; i < dLength; i += vecSize) {
-    //     __m512d realVec = _mm512_loadu_pd(&realValues[i]);
-    //     __m512d imagVec = _mm512_loadu_pd(&imagValues[i]);
+	#pragma omp parallel for shared(isEmpty)
+	for (unsigned int i = 0; i < dLength; ++i) {
+		// Fast exit if a thread finds a non-zero
+		if (!isEmpty) {
+			#pragma omp cancel for
+		}
 
-    //     __mmask8 cmpReal = _mm512_cmp_pd_mask(realVec, zero, _CMP_NEQ_UQ);
-    //     __mmask8 cmpImag = _mm512_cmp_pd_mask(imagVec, zero, _CMP_NEQ_UQ);
+		if (realValues[i] != 0.0 || imagValues[i] != 0.0) {
+			isEmpty = false;
+			#pragma omp cancel for
+		}
+	}
 
-    //     if (cmpReal || cmpImag) {
-    //         result = false;
-    //     }
-    // }
-    // return result;
-    bool isEmpty = true;
-    #pragma omp parallel for reduction(&:isEmpty)
-    for (unsigned int i = 0; i < dLength; i++) {
-        if (realValues[i] != 0 || imagValues[i] != 0) {
-            isEmpty = false;
-        }
-    }
-    return isEmpty;
+	return isEmpty;
 }
 
 } // namespace diaq

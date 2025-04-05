@@ -1,6 +1,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <string>
+#include <set>
 
 #include "../include/diaq.hpp"
 
@@ -11,51 +12,59 @@ std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix(phmap::parallel_flat_h
 }
 
 std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B) {
-    if(A->diagonalMap.size() != B->diagonalMap.size()) {
-        printf("A: \n");
-        A->print();
-        printf("B: \n");
-        B->print();
-        return "false - size mis-match";
-    }
-    const diaq::valType epsilon = 0.00002;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal> >::iterator itA, itB;
-    for(itA = A->diagonalMap.begin(); itA != A->diagonalMap.end(); itA++) {
-        diaq::valType *a_real_values = itA->second->realValues;
-        diaq::valType *a_imag_values = itA->second->imagValues;
-        auto itB = B->diagonalMap.find(itA->first);
-        if(itB == B->diagonalMap.end()) {
-            // A->print();
-            std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - dIndex mis-match";
-        }
-        if(itB->second->dLength != itA->second->dLength) { 
-            // A->print();
-            std::cout << "error with diag idx - " << itA->second->dIndex << std::endl;
-            return "false - dLength mis-match";
-        }
-        else {
-            diaq::valType *b_real_values = itB->second->realValues;
-            diaq::valType *b_imag_values = itB->second->imagValues;
-            for(unsigned int i = 0; i < itA->second->dLength; i++) {
-                if(b_real_values[i] - a_real_values[i] > epsilon) {
-                    // print where the error is
-                    std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    std::cout << "Correct value: " << a_real_values[i] << std::endl;
-                    std::cout << "Wrong value: " << b_real_values[i] << std::endl;
-                    return "false - Real mis-match";
-                }
-                if(b_imag_values[i] - a_imag_values[i] > epsilon) {
-                    // print where the error is
-                    std::cout << "error with diag idx and i - " << itA->second->dIndex << " " << i << std::endl;
-                    std::cout << "Correct value: " << a_imag_values[i] << std::endl;
-                    std::cout << "Wrong value: " << b_imag_values[i] << std::endl;
-                    return "false - Imag mis-match";
-                }
-            }
-        }
-    }
-    return "true";
+	if (A->diagonalMap.size() != B->diagonalMap.size()) {
+		std::cout << "Size mismatch: A has " << A->diagonalMap.size() << ", B has " << B->diagonalMap.size() << std::endl;
+
+		std::set<int> keysA, keysB;
+		for (const auto& [k, _] : A->diagonalMap) keysA.insert(k);
+		for (const auto& [k, _] : B->diagonalMap) keysB.insert(k);
+
+		std::vector<int> only_in_A, only_in_B;
+		std::set_difference(keysA.begin(), keysA.end(), keysB.begin(), keysB.end(), std::back_inserter(only_in_A));
+		std::set_difference(keysB.begin(), keysB.end(), keysA.begin(), keysA.end(), std::back_inserter(only_in_B));
+
+		std::cout << "Diagonal indices only in A: ";
+		for (auto d : only_in_A) std::cout << d << " ";
+		std::cout << "\nDiagonal indices only in B: ";
+		for (auto d : only_in_B) std::cout << d << " ";
+		std::cout << std::endl;
+
+		A->print();
+		B->print();
+		return "false - size mis-match";
+	}
+
+	const diaq::valType epsilon = 0.00002;
+
+	for (const auto& [dIdx, diagA] : A->diagonalMap) {
+		auto itB = B->diagonalMap.find(dIdx);
+		if (itB == B->diagonalMap.end()) {
+			std::cout << "Missing diagonal index in B: " << dIdx << std::endl;
+			return "false - dIndex mis-match";
+		}
+
+		auto diagB = itB->second;
+		if (diagA->dLength != diagB->dLength) {
+			std::cout << "Length mismatch at dIndex = " << dIdx << ": "
+			          << diagA->dLength << " vs " << diagB->dLength << std::endl;
+			return "false - dLength mis-match";
+		}
+
+		for (unsigned int i = 0; i < diagA->dLength; i++) {
+			if (std::abs(diagA->realValues[i] - diagB->realValues[i]) > epsilon) {
+				std::cout << "Real mismatch at dIndex = " << dIdx << ", i = " << i << std::endl;
+				std::cout << "A: " << diagA->realValues[i] << ", B: " << diagB->realValues[i] << std::endl;
+				return "false - Real mis-match";
+			}
+			if (std::abs(diagA->imagValues[i] - diagB->imagValues[i]) > epsilon) {
+				std::cout << "Imag mismatch at dIndex = " << dIdx << ", i = " << i << std::endl;
+				std::cout << "A: " << diagA->imagValues[i] << ", B: " << diagB->imagValues[i] << std::endl;
+				return "false - Imag mis-match";
+			}
+		}
+	}
+
+	return "true";
 }
 
 std::string check_vectors(std::shared_ptr<diaq::vector> a, std::shared_ptr<diaq::vector> b) {

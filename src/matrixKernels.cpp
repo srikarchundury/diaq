@@ -168,6 +168,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     unsigned int b_offset     = offsetB - jump;
 
     // BLOCKED over result diagonal using BLOCK_SIZE
+    #pragma omp parallel for
 	for (unsigned int block_start = loop_start; block_start < loop_end; block_start += BLOCK_SIZE) {
         unsigned int block_end = std::min(block_start + BLOCK_SIZE, loop_end);
 
@@ -223,8 +224,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
 
-	res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
-	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
+	res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
+	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
 
 	for (const auto& [dA, _] : A->diagonalMap) {
 		for (const auto& [dB, _] : B->diagonalMap) {
@@ -240,11 +241,50 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 		}
 	}
 
-	// Step 2: Main blocked compute loop (per result diagonal)
+	// Step 2.a: Main blocked compute loop (per result diagonal), single diagnal result!
+    #pragma omp parallel for
 	for (size_t i = 0; i < res_index_sources.size(); ++i) {
 		auto it = std::next(res_index_sources.begin(), i);
 		int res_idx = it->first;
 		auto& sources = it->second;
+
+        // if sources has just one pair, we can just do the multiplication and insert the result
+        if (sources.size() != 1) continue;
+
+        std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+
+        auto [dA, dB] = sources[0];
+        auto itA = A->diagonalMap.find(dA);
+        auto itB = B->diagonalMap.find(dB);
+        if (itA == A->diagonalMap.end() || itB == B->diagonalMap.end()) continue;
+
+        std::shared_ptr<diagonal> diagA = itA->second;
+        std::shared_ptr<diagonal> diagB = itB->second;
+
+        multiplyDiagonals(
+            A->matrix_shape,
+            B->matrix_shape,
+            dA,
+            dB,
+            diagA,
+            diagB,
+            res_idx,
+            res_diag
+        );
+
+        // insert the result
+        if(!res_diag->isEmpty()) {
+            result->diagonalMap.insert({res_idx, res_diag});
+        }
+	}
+
+    // Step 2: Main blocked compute loop (per result diagonal)
+	for (size_t i = 0; i < res_index_sources.size(); ++i) {
+		auto it = std::next(res_index_sources.begin(), i);
+		int res_idx = it->first;
+		auto& sources = it->second;
+
+        if (sources.size() == 1) continue; // already computed in step 2.a
 
 		std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
 		int lenRes = res_diag->dLength;
@@ -276,7 +316,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 		}
 	}
 
-	#ifdef DEBUG
+    #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t product took %f milliseconds\n", duration.count()/1000.0);
