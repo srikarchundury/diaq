@@ -319,7 +319,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
         void setDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
             // this->diagonalMap.erase(dIndex);
-            this->diagonalMap.insert({dIndex, diagNew});
+            diagonalMap.insert({dIndex, diagNew});
+            dIndices.push_back(dIndex);
+            dPointers.push_back(diagNew);
         }
 
         void addDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
@@ -330,6 +332,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 #endif
 
                 diagonalMap.insert({dIndex, diagNew});
+                dIndices.push_back(dIndex);
+                dPointers.push_back(diagNew);
 
                 #ifdef DEBUG
                     auto end = std::chrono::high_resolution_clock::now();
@@ -343,9 +347,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                 #pragma omp parallel for
                 for(unsigned int i = 0; i < it->second->dLength; i++) {
-                    #pragma omp atomic
                     it->second->realValues[i] += diagNew->realValues[i];
-                    #pragma omp atomic
                     it->second->imagValues[i] += diagNew->imagValues[i];
                 }
 
@@ -365,7 +367,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
         
-            #pragma omp parallel for
+            // #pragma omp parallel for
             for (size_t i = 0; i < B->dIndices.size(); i++) {
                 int dIndex = B->dIndices[i];
                 std::shared_ptr<diagonal> dB = B->dPointers[i];
@@ -373,7 +375,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                 if(itA == diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
-                    C->diagonalMap.insert({dIndex, dB->copy()});
+                    std::shared_ptr<diagonal> dB_copy = dB->copy();
+                    C->diagonalMap.insert({dIndex, dB_copy});
+                    C->dIndices.push_back(dIndex);
+                    C->dPointers.push_back(dB_copy);
                 } else {
                     // If the diagonal exists, subtract the elements
                     std::shared_ptr<diagonal> dA = itA->second;
@@ -384,6 +389,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                     std::shared_ptr<diagonal> dC = std::make_shared<diagonal>(dIndex, dA->dLength);
                     C->diagonalMap.insert({dIndex, dC});
+                    C->dIndices.push_back(dIndex);
+                    C->dPointers.push_back(dC);
 
                     valType *dC_real_vals = dC->realValues;
                     valType *dC_imag_vals = dC->imagValues;
