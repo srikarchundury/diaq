@@ -82,7 +82,7 @@ valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 class OMPInitializer {
 public:
     OMPInitializer() {
-        omp_set_dynamic(1);
+        // omp_set_dynamic(1);
         omp_set_num_threads(NUMBER_OF_OMP_THREADS);
 
 		// // testing
