@@ -97,6 +97,19 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
             }
         }
     }
+
+    // assigning dIndices and dPointers
+    qm->dIndices.resize(qm->diagonalMap.size());
+    qm->dPointers.resize(qm->diagonalMap.size());
+    #pragma omp parallel for
+    for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
+        auto it = std::next(qm->diagonalMap.begin(), a);
+        int dIndex = it->first;
+        std::shared_ptr<diagonal> d = it->second;
+        qm->dIndices[a] = dIndex;
+        qm->dPointers[a] = d;
+    }
+
     // qm->pruneMatrix();
     qm->shape = shape;
     // comment below line for tests.cpp
@@ -209,95 +222,45 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 
         }  else { // matrix!
 
-            // using diag_update = std::tuple<unsigned int, unsigned int, valType, valType>;
-            // phmap::parallel_flat_hash_map<int, phmap::parallel_flat_hash_set<diag_update>> tmp_store;
-            
             std::array<unsigned int, 2> mat_shape = {shape[0], shape[1]};
             std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(mat_shape);
-            
-            // // --- Step 1: Collect updates into tmp_store in parallel ---
-            // #pragma omp parallel for schedule(static)
-            // for (long unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
-            //     valType r = vals[flatIndex].real();
-            //     valType i = vals[flatIndex].imag();
-            
-            //     if (r != 0.0 || i != 0.0) {
-            //         std::array<int, 2> d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
-            //         int diag_index = d_pos[0];
-            //         unsigned int offset = d_pos[1];
-            //         unsigned int diag_len = qm->getDiagonalLength(diag_index);
-            
-            //         #pragma omp critical  // just guards insert into shared set
-            //         tmp_store[diag_index].insert(std::make_tuple(diag_len, offset, r, i));
-            //     }
-            // }
-            
-            // // --- Step 2: Preallocate and fill dIndices/dPointers in parallel ---
-            // size_t num_diagonals = tmp_store.size();
-            // qm->dIndices.resize(num_diagonals);
-            // qm->dPointers.resize(num_diagonals);
 
-            // #pragma omp parallel for schedule(dynamic)
-            // for (size_t i = 0; i < num_diagonals; ++i) {
-            //     auto it = std::next(tmp_store.begin(), i);
-            //     int diag_index = it->first;
-            //     const auto& updates = it->second;
+            #pragma omp parallel for schedule(static)
+            for (long unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
+                valType r = vals[flatIndex].real();
+                valType i = vals[flatIndex].imag();
             
-            //     unsigned int dLen = std::get<0>(*updates.begin());
-            //     std::shared_ptr<diagonal> d = std::make_shared<diagonal>(diag_index, dLen);
-            
-            //     for (const auto& tup : updates) {
-            //         unsigned int offset = std::get<1>(tup);
-            //         d->realValues[offset] = std::get<2>(tup);
-            //         d->imagValues[offset] = std::get<3>(tup);
-            //     }
-
-            //     qm->dIndices[i] = diag_index;
-            //     qm->dPointers[i] = d;
-            // }
-            
-            // // --- Step 3: Populate diagonalMap ---
-            // qm->diagonalMap.clear();
-            // for (size_t i = 0; i < num_diagonals; ++i) {
-            //     qm->diagonalMap[qm->dIndices[i]] = qm->dPointers[i];
-            // }
-            
-
-            #pragma omp parallel
-            {
-                std::vector<std::tuple<int, unsigned int, valType, valType>> local_updates;
-
-                #pragma omp for nowait
-                for (long unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
-                    valType r = vals[flatIndex].real();
-                    valType i = vals[flatIndex].imag();
-                    if (r != 0.0 || i != 0.0) {
-                        std::array<int, 2> d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
-                        local_updates.emplace_back(d_pos[0], d_pos[1], r, i);
-                    }
-                }
-
-                // Merge results into the matrix in parallel
-                #pragma omp critical
-                {
-                    for (const auto& update : local_updates) {
-                        qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
+                if (r != 0.0 || i != 0.0) {
+                    std::array<int, 2> d_pos = qm->getDiagonalPositionByFlatIndex(flatIndex);
+                    int diag_index = d_pos[0];
+                    unsigned int offset = d_pos[1];
+                    unsigned int diag_len = qm->getDiagonalLength(diag_index);
+                    #pragma omp critical
+                    {
+                        qm->setDiagonalElement(diag_index, offset, diag_len, r, i);
                     }
                 }
             }
 
-            // store dIndices and dPointers too
-            for (size_t i = 0; i < qm->dIndices.size(); ++i) {
-                auto it = std::next(qm->diagonalMap.begin(), i);
-                qm->dIndices[i] = it->first;
-                qm->dPointers[i] = it->second;
+            // printf(" -- before assigning dindices and dpointers -- \n");
+            qm->dIndices.resize(qm->diagonalMap.size());
+            qm->dPointers.resize(qm->diagonalMap.size());
+            #pragma omp parallel for
+            for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
+                auto it = std::next(qm->diagonalMap.begin(), a);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> d = it->second;
+                qm->dIndices[a] = dIndex;
+                // printf("\t qm->dIndices[%ld] = %d\n", a, dIndex);
+                qm->dPointers[a] = d;
             }
+
+            // printf(" -- after assigning dindices and dpointers -- \n");
 
             #ifdef DEEP_DEBUG
                 std::cout << "from_numpy result below: " << std::endl;
                 qm->print();
             #endif
-
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();

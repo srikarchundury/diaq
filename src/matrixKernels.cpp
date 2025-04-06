@@ -564,6 +564,16 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
         }
     }
 
+    // setting dIndices and dPointers
+    res->dIndices.resize(res->diagonalMap.size());
+    res->dPointers.resize(res->diagonalMap.size());
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
+        auto it = std::next(res->diagonalMap.begin(), i);
+        res->dIndices[i] = it->first;
+        res->dPointers[i] = it->second;
+    }
+
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -769,6 +779,17 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
             }
         }
     }
+
+    // setting dIndices and dPointers
+    res->dIndices.resize(res->diagonalMap.size());
+    res->dPointers.resize(res->diagonalMap.size());
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
+        auto it = std::next(res->diagonalMap.begin(), i);
+        res->dIndices[i] = it->first;
+        res->dPointers[i] = it->second;
+    }
+
     return res;
 }
 
@@ -1052,6 +1073,16 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
                 }
             }
         }
+    }
+
+    // setting dIndices and dPointers
+    res->dIndices.resize(res->diagonalMap.size());
+    res->dPointers.resize(res->diagonalMap.size());
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
+        auto it = std::next(res->diagonalMap.begin(), i);
+        res->dIndices[i] = it->first;
+        res->dPointers[i] = it->second;
     }
 
     return res;
@@ -1552,6 +1583,16 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
         }
     }
 
+    // setting dIndices and dPointers
+    result->dIndices.resize(result->diagonalMap.size());
+    result->dPointers.resize(result->diagonalMap.size());
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < result->diagonalMap.size(); i++) {
+        auto it = std::next(result->diagonalMap.begin(), i);
+        result->dIndices[i] = it->first;
+        result->dPointers[i] = it->second;
+    }
+
     // // free unique_kron_blocks
     // #pragma omp parallel for
     // for (int a = 0; a < unique_kron_blocks.size(); a++) {
@@ -1843,7 +1884,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
         std::cout << "identity_kron_matrix_kron_identity_times_vector called" << std::endl;
         printf("gate matrix below\n");
         gate->print();
-        printf("\t\tbefore = %ld; after = %ld\n", before, after);
+        printf("\t\tbefore = %u; after = %u\n", before, after);
     #endif
 
     unsigned int before_N = 1L << before;
@@ -3261,6 +3302,16 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
                 }
             }
         }
+    }
+
+    // setting dIndices and dPointers
+    result->dIndices.resize(result->diagonalMap.size());
+    result->dPointers.resize(result->diagonalMap.size());
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < result->diagonalMap.size(); i++) {
+        auto it = std::next(result->diagonalMap.begin(), i);
+        result->dIndices[i] = it->first;
+        result->dPointers[i] = it->second;
     }
 
     // result->pruneMatrix(); // Prune the resulting matrix if necessary; we don't actually need this :thinking
