@@ -308,8 +308,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLen, real_vals, imag_vals);
 
                 diagonalMap.insert({dIndex, newDiag});
-                dIndices.push_back(dIndex);
-                dPointers.push_back(newDiag);
             }
             else {
                 it->second->realValues[dPos] = real_val;
