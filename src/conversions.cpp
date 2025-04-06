@@ -18,7 +18,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
         valType *real_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
         valType *imag_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
     #endif
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
+
     unsigned int x, y;
 
     for(size_t i = 0; i < dIndices.size(); i++) {
@@ -40,7 +40,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
             y = 0;
         }
         #pragma omp parallel for
-        for (unsigned int i = 0; i < it->second->dLength; i++) {
+        for (unsigned int i = 0; i < d->dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
             imag_data[ matrix_shape[1] * (x+i) + (y+i) ] = imag_vals[i];
