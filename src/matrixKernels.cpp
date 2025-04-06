@@ -327,8 +327,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	// Step 1: Precompute which diag pairs contribute to which result diag
     phmap::parallel_flat_hash_map<int, std::vector<std::pair<int, int>>> res_index_sources;
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-    res_index_sources.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
-	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 10);
+
+    res_index_sources.reserve(A->dIndices.size() * B->dIndices.size() + 10);
+	res_diags.reserve(A->dIndices.size() * B->dIndices.size() + 10);
 
     // #pragma omp parallel for collapse(2)
     for(size_t a = 0; a < A->dIndices.size(); a++) {
@@ -347,15 +348,21 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 		}
 	}
 
+    std::vector<int> res_indices;
+    res_indices.reserve(res_index_sources.size());
+    for (const auto& pair : res_index_sources) {
+        res_indices.push_back(pair.first);
+    }
+
 	// Step 2.a: Main blocked compute loop (per result diagonal), single diagnal result!
     #pragma omp parallel for
-	for (size_t i = 0; i < res_index_sources.size(); ++i) {
-		auto it = std::next(res_index_sources.begin(), i);
-		int res_idx = it->first;
+    for(size_t i = 0; i < res_indices.size(); ++i) {
+		int res_idx = res_indices[i];
+        auto it = res_index_sources.find(res_idx);
 		auto& sources = it->second;
 
-        // // if sources has just one pair, we can just do the multiplication and insert the result
-        // if (sources.size() != 1) continue;
+        // if sources has just one pair, we can just do the multiplication and insert the result
+        if (sources.size() != 1) continue;
 
         std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
 
@@ -385,12 +392,12 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	}
 
     // Step 2: Main blocked compute loop (per result diagonal)
-	for (size_t i = 0; i < res_index_sources.size(); ++i) {
-		auto it = std::next(res_index_sources.begin(), i);
-		int res_idx = it->first;
+    for(size_t i = 0; i < res_indices.size(); ++i) {
+		int res_idx = res_indices[i];
+        auto it = res_index_sources.find(res_idx);
 		auto& sources = it->second;
 
-        if (sources.size() == 1) continue; // already computed in step 2.a
+        if (sources.size() == 1) continue; // already computed in step 2.a, skip!
 
 		std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
 
@@ -414,10 +421,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
             );
 		}
 
-		// Final insertion into result if not empty
+        // insert the result
 		if (res_diag && res_diag->dLength > 0 && !res_diag->isEmpty()) {
 			result->diagonalMap.insert({res_idx, res_diag});
-            // result->diagonalMap.insert_or_assign(res_idx, res_diag);
 		}
 	}
 
