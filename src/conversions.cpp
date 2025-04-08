@@ -222,8 +222,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 
         }  else { // matrix!
 
-            std::array<unsigned int, 2> mat_shape = {shape[0], shape[1]};
-            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(mat_shape);
+            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(shape[0], shape[1]);
 
             #pragma omp parallel for schedule(static)
             for (long unsigned int flatIndex = 0; flatIndex < vals_len; flatIndex++) {
@@ -245,6 +244,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
             // printf(" -- before assigning dindices and dpointers -- \n");
             qm->dIndices.resize(qm->diagonalMap.size());
             qm->dPointers.resize(qm->diagonalMap.size());
+
             #pragma omp parallel for
             for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
                 auto it = std::next(qm->diagonalMap.begin(), a);

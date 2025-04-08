@@ -21,35 +21,35 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
         // Square matrix
         diaQMatrix(unsigned int s) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             matrix_shape = {s, s};
             shape = {s, s};
         }
     
         // Rectangular matrix
         diaQMatrix(unsigned int x, unsigned int y) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             matrix_shape = {x, y};
             shape = {x, y};
         }
     
         // From array
         diaQMatrix(std::array<unsigned int, 2> dimens) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             matrix_shape = dimens;
             shape = {dimens[0], dimens[1]};
         }
     
         // From array and shape
         diaQMatrix(std::array<unsigned int, 2> dimens, std::vector<unsigned int> ts) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             matrix_shape = dimens;
             shape = ts;
         }
     
         // From diag map and size
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, unsigned int s) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             diagonalMap = std::move(dm);
             // let us set dIndices and dPointers to values from diagonalMap
             dIndices.resize(diagonalMap.size());
@@ -66,7 +66,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
     
         // From diag map and dimensions
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm, std::array<unsigned int, 2> d) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             diagonalMap = std::move(dm);
             dIndices.resize(diagonalMap.size());
             dPointers.resize(diagonalMap.size());
@@ -84,7 +84,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         diaQMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> dm,
                    std::array<unsigned int, 2> d,
                    std::vector<unsigned int> ts) {
-            reserveDiagonalMap();
+            // reserveDiagonalMap();
             diagonalMap = std::move(dm);
             dIndices.resize(diagonalMap.size());
             dPointers.resize(diagonalMap.size());

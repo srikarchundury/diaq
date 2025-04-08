@@ -35,13 +35,13 @@ PYBIND11_MODULE(diaq, m) {
             if (d_pos >= self->dLength)
                 throw std::out_of_range("Index out of range");
             return std::complex<diaq::valType>(self->realValues[d_pos], self->imagValues[d_pos]);
-        }, py::return_value_policy::copy)
+        }, py::return_value_policy::automatic)
         .def("__setitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos, const std::complex<diaq::valType>& val) {
             if (d_pos >= self->dLength)
                 throw std::out_of_range("Index out of range");
             self->realValues[d_pos] = val.real();
             self->imagValues[d_pos] = val.imag();
-        })        
+        })
 		.def("scale_by_imag", &diaq::diagonal::scale_by_imag, py::return_value_policy::automatic)
 		.def("scale_by_real", &diaq::diagonal::scale_by_real, py::return_value_policy::automatic)
 	;
