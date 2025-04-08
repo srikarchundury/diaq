@@ -229,7 +229,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-	res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size() + 100);
+	// res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size());
 
 	// Step 1: Precompute all res indices and allocate
     for(size_t i = 0; i < A->dIndices.size(); ++i) {
