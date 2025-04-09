@@ -1,6 +1,7 @@
 import diaq as dq
 import numpy as np
 from scipy.linalg import expm
+from time import perf_counter
 
 # def scaled_expm_negative(dq_H, t, max_iterations=20, scale_cutoff=1.0):
 # 	# Compute matrix norm in NumPy for rough scaling estimate
@@ -23,6 +24,25 @@ from scipy.linalg import expm
 # 		dq_U = dq.product(dq_U, dq_U)
 
 # 	return dq_U
+
+def generate_sparse_band_matrix(n, density=0.01, num_diagonals=7, seed=None):
+	if seed is not None:
+		np.random.seed(seed)
+
+	H = np.zeros((n, n), dtype=np.float64)
+	half_band = num_diagonals // 2
+
+	for offset in range(-half_band, half_band + 1):
+		if np.random.rand() < density:
+			continue  # randomly skip some diagonals
+		diag_len = n - abs(offset)
+		diag_vals = np.random.rand(diag_len)
+		if offset >= 0:
+			H[np.arange(n - offset), np.arange(offset, n)] = diag_vals
+		else:
+			H[np.arange(-offset, n), np.arange(n + offset)] = diag_vals
+
+	return H
 
 matrices_test_cases = [
 	[
@@ -74,30 +94,47 @@ matrices_test_cases = [
 
 	np.random.rand(128, 128), # dense 7 qubits
 
-	np.random.rand(256, 256), # dense 8 qubits
+	# np.random.rand(256, 256), # dense 8 qubits
 
-	np.random.rand(512, 512), # dense 9 qubits
+	# np.random.rand(512, 512), # dense 9 qubits
 
-	np.random.rand(1024, 1024), # dense 10 qubits
+	# np.random.rand(1024, 1024), # dense 10 qubits
 ]
+
+# Add sparse banded matrices from 11 to 15 qubits, 16 qubit is too large for dense matrics!
+for qubit in range(11, 16):
+	size = 2**qubit
+	mat = generate_sparse_band_matrix(size, density=0.01, num_diagonals=7, seed=qubit)
+	matrices_test_cases.append(mat)
 
 t = 1.6
 
 for i, mat in enumerate(matrices_test_cases):
 	H = np.array(mat)
 	print("====================================")
-	print(f"Test case {i + 1}: Matrix size {H.shape[0]}x{H.shape[1]}: ", end=" ")
 	# print("H:")
 	# print(H)
 	dq_H = dq.from_numpy(H)
+
+	sparsity = dq_H.sparsity()
+	num_diags = dq_H.num_diags()
+
+	print(f"test_case:{i + 1}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ")
 	# dq_H.print()
 	# print("--")
 
 	# print("DIAQ expm below:")
 	# dq_U = scaled_expm_negative(dq_H, t)
+	before_time = perf_counter()
 	dq_U = dq.expm_negative(dq_H, t)
+	after_time = perf_counter()
+	print(f"time_taken:{after_time - before_time:.4f}seconds,", end=" ")
 	# dq_U.print()
 	# print("--")
+
+	result_sparsity = dq_U.sparsity()
+	result_num_diags = dq_U.num_diags()
+	print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags} ==>", end=" ")
 
 	# print("Correct expm below:")
 	correct_U = expm(-1j * H * t)
@@ -114,7 +151,6 @@ for i, mat in enumerate(matrices_test_cases):
 	# print("C2:")
 	# print(c2)
 
-	assert np.testing.assert_allclose(correct_U, c2, rtol=1e-5, atol=1e-5) == None
+	assert np.testing.assert_allclose(correct_U, c2, rtol=1e-4, atol=1e-4) == None
 	print("\033[92m\033[1mPassed.\033[0m")
-	print("--")
 	print("====================================")

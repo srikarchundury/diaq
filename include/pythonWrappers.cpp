@@ -453,7 +453,7 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { 
+        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 50) { 
             // return diaq::expm_negative_taylor(A, t, max_iterations);
             diaq::valType scale_cutoff = 1.0;
             return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
@@ -461,7 +461,7 @@ PYBIND11_MODULE(diaq, m) {
         // [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { return diaq::expm_negative_pade(A, t, max_iterations); },
         py::arg(),
         py::arg(),
-        py::arg("max_iterations") = 100,
+        py::arg("max_iterations") = 50,
         py::return_value_policy::automatic
     );
 
