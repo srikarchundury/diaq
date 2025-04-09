@@ -109,8 +109,61 @@ for qubit in range(11, 16):
 
 t = 1.6
 
-for i, mat in enumerate(matrices_test_cases):
-	H = np.array(mat)
+import sys
+
+if len(sys.argv) > 1:
+	case = int(sys.argv[1])
+else:
+	case = "all"
+
+if case == "all":
+	for i, mat in enumerate(matrices_test_cases):
+		H = np.array(mat)
+		print("====================================", flush=True)
+		# print("H:")
+		# print(H)
+		dq_H = dq.from_numpy(H)
+
+		sparsity = dq_H.sparsity()
+		num_diags = dq_H.num_diags()
+
+		print(f"test_case:{i + 1}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ", flush=True)
+		# dq_H.print()
+		# print("--")
+
+		# print("DIAQ expm below:")
+		# dq_U = scaled_expm_negative(dq_H, t)
+		before_time = perf_counter()
+		dq_U = dq.expm_negative(dq_H, t)
+		after_time = perf_counter()
+		print(f"time_taken:{after_time - before_time:.4f}seconds,", end=" ", flush=True)
+		# dq_U.print()
+		# print("--")
+
+		result_sparsity = dq_U.sparsity()
+		result_num_diags = dq_U.num_diags()
+		print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags} ==>", end=" ", flush=True)
+
+		# print("Correct expm below:")
+		correct_U = expm(-1j * H * t)
+		# dq_correct_U = dq.from_numpy(correct_U)
+		# dq_correct_U.print()
+		# print("--")
+
+		# print("Testing correctness:")
+		c2 = dq.to_numpy(dq_U)
+
+		# print("correct_U:")
+		# print(correct_U)
+
+		# print("C2:")
+		# print(c2)
+
+		assert np.testing.assert_allclose(correct_U, c2, rtol=1e-4, atol=1e-4) == None
+		print("\033[92m\033[1mPassed.\033[0m", flush=True)
+		print("====================================", flush=True)
+else:
+	H = np.array(matrices_test_cases[case])
 	print("====================================", flush=True)
 	# print("H:")
 	# print(H)
@@ -119,7 +172,7 @@ for i, mat in enumerate(matrices_test_cases):
 	sparsity = dq_H.sparsity()
 	num_diags = dq_H.num_diags()
 
-	print(f"test_case:{i + 1}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ", flush=True)
+	print(f"test_case:{case}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ", flush=True)
 	# dq_H.print()
 	# print("--")
 
