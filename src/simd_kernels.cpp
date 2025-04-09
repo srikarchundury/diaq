@@ -777,7 +777,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         double *real_vals_b, double *imag_vals_b,
         double *real_vals_final, double *imag_vals_final
     ) {
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             auto start_time = std::chrono::high_resolution_clock::now();
         #endif
 
@@ -859,7 +859,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
             imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
         }
 
-        #ifdef DEBUG
+        #ifdef DEEP_DEBUG
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
             printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count() / 1000.0);

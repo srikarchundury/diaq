@@ -229,7 +229,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;
-	// res_diags.reserve(A->diagonalMap.size() * B->diagonalMap.size());
+    std::unordered_map<int, std::vector<std::pair<int, int>>> res_index_sources;
 
 	// Step 1: Precompute all res indices and allocate
     for(size_t i = 0; i < A->dIndices.size(); ++i) {
@@ -243,45 +243,64 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 			if (lenRes <= 0) continue;
 
 			res_diags.try_emplace(res_idx, std::make_shared<diagonal>(res_idx, lenRes));
+            res_index_sources[res_idx].emplace_back(dA, dB);
 		}
 	}
 
-    const int num_threads = NUMBER_OF_OMP_THREADS;
-    const int BLOCK_DA = std::max(1ul, A->dIndices.size() / (4 * num_threads));
-    const int BLOCK_DB = std::max(1ul, B->dIndices.size() / (4 * num_threads));
+    // const int num_threads = NUMBER_OF_OMP_THREADS;
+    // const int BLOCK_DA = std::max(1ul, A->dIndices.size() / (4 * num_threads));
+    // const int BLOCK_DB = std::max(1ul, B->dIndices.size() / (4 * num_threads));
+	// // Step 2: Blocked traversal (outer-block)
+	// for (size_t i = 0; i < A->dIndices.size(); i += BLOCK_DA) {
+	// 	for (size_t j = 0; j < B->dIndices.size(); j += BLOCK_DB) {
 
-	// Step 2: Blocked traversal (outer-block)
-	for (size_t i = 0; i < A->dIndices.size(); i += BLOCK_DA) {
-		for (size_t j = 0; j < B->dIndices.size(); j += BLOCK_DB) {
+	// 		for (size_t bi = i; bi < std::min(i + BLOCK_DA, A->dIndices.size()); ++bi) {
+	// 			int dA = A->dIndices[bi];
+	// 			auto itA = A->diagonalMap.find(dA);
+	// 			if (itA == A->diagonalMap.end()) continue;
+	// 			auto diagA = itA->second;
 
-			for (size_t bi = i; bi < std::min(i + BLOCK_DA, A->dIndices.size()); ++bi) {
-				int dA = A->dIndices[bi];
-				auto itA = A->diagonalMap.find(dA);
-				if (itA == A->diagonalMap.end()) continue;
-				auto diagA = itA->second;
+    //             for (size_t bj = j; bj < std::min(j + BLOCK_DB, B->dIndices.size()); ++bj) {
+	// 				int dB = B->dIndices[bj];
+	// 				auto itB = B->diagonalMap.find(dB);
+	// 				if (itB == B->diagonalMap.end()) continue;
+	// 				auto diagB = itB->second;
 
-                for (size_t bj = j; bj < std::min(j + BLOCK_DB, B->dIndices.size()); ++bj) {
-					int dB = B->dIndices[bj];
-					auto itB = B->diagonalMap.find(dB);
-					if (itB == B->diagonalMap.end()) continue;
-					auto diagB = itB->second;
+	// 				int res_idx = dA + dB;
+	// 				if (res_idx < -(int)res_dims[0] + 1 || res_idx > (int)res_dims[1] - 1) continue;
 
-					int res_idx = dA + dB;
-					if (res_idx < -(int)res_dims[0] + 1 || res_idx > (int)res_dims[1] - 1) continue;
+	// 				std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+	// 				if (!res_diag) continue;  // Safety
 
-					std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
-					if (!res_diag) continue;  // Safety
+    //                 multiplyDiagonals(
+	// 					A->matrix_shape, B->matrix_shape,
+	// 					dA, dB,
+	// 					diagA, diagB,
+	// 					res_idx, res_diag
+	// 				);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-                    multiplyDiagonals(
-						A->matrix_shape, B->matrix_shape,
-						dA, dB,
-						diagA, diagB,
-						res_idx, res_diag
-					);
-				}
-			}
-		}
-	}
+    // Step 2: Main blocked compute loop (per result diagonal)
+    #pragma omp parallel for
+    for (size_t i = 0; i < res_index_sources.size(); ++i) {
+        auto it = std::next(res_index_sources.begin(), i);
+        int res_idx = it->first;
+        const auto& sources = it->second;
+
+        std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+        if (!res_diag) continue;
+
+        for (auto& [dA, dB] : sources) {
+            auto diagA = A->diagonalMap[dA];
+            auto diagB = B->diagonalMap[dB];
+            multiplyDiagonals(A->matrix_shape, B->matrix_shape,
+                            dA, dB, diagA, diagB,
+                            res_idx, res_diag);
+        }
+    }
 
 	// Step 3: Insert final non-empty result diagonals
 	for (const auto& [res_idx, res_diag] : res_diags) {
@@ -1167,7 +1186,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 
     size_t total_diagonals = A->dIndices.size();
 
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for
     for (size_t blk_start = 0; blk_start < total_diagonals; blk_start += blockSize) {
         size_t blk_end = std::min(blk_start + blockSize, total_diagonals);
 
