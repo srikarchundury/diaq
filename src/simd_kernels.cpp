@@ -775,7 +775,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
         double *real_vals_a, double *imag_vals_a,
         double *real_vals_b, double *imag_vals_b,
-        double *real_vals_final, double *imag_vals_final
+        double *real_vals_final, double *imag_vals_final, bool overwrite
     ) {
         #ifdef DEEP_DEBUG
             auto start_time = std::chrono::high_resolution_clock::now();
@@ -806,9 +806,14 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
 
-            // Accumulate instead of overwrite
-            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            if (overwrite) {
+                real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            }
+            
         }
 
         // --- SIMD aligned main loop ---
@@ -835,12 +840,17 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
             __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));
             __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));
 
-            // Accumulate with existing buffer values
-            __m512d existing_real = _mm512_load_pd(&real_vals_final[idx]);
-            __m512d existing_imag = _mm512_load_pd(&imag_vals_final[idx]);
-
-            _mm512_store_pd(&real_vals_final[idx], _mm512_add_pd(existing_real, real_res));
-            _mm512_store_pd(&imag_vals_final[idx], _mm512_add_pd(existing_imag, imag_res));
+            if (overwrite) {
+                _mm512_store_pd(&real_vals_final[idx], real_res);
+                _mm512_store_pd(&imag_vals_final[idx], imag_res);
+            } else {
+                __m512d existing_real = _mm512_load_pd(&real_vals_final[idx]);
+                __m512d existing_imag = _mm512_load_pd(&imag_vals_final[idx]);
+            
+                _mm512_store_pd(&real_vals_final[idx], _mm512_add_pd(existing_real, real_res));
+                _mm512_store_pd(&imag_vals_final[idx], _mm512_add_pd(existing_imag, imag_res));
+            }
+            
         }
 
         // --- Epilogue ---
@@ -854,9 +864,14 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
 
-            // Accumulate instead of overwrite
-            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            if (overwrite) {
+                real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            }
+            
         }
 
         #ifdef DEEP_DEBUG
@@ -969,7 +984,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         unsigned int a_offset, unsigned int b_offset,
         float *real_vals_a, float *imag_vals_a,
         float *real_vals_b, float *imag_vals_b,
-        float *real_vals_final, float *imag_vals_final
+        float *real_vals_final, float *imag_vals_final, bool overwrite
     ) {
         #ifdef DEEP_DEBUG
             std::cout << "Starting run_avx512 float -- " << std::endl;
