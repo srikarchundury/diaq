@@ -111,7 +111,7 @@ t = 1.6
 
 for i, mat in enumerate(matrices_test_cases):
 	H = np.array(mat)
-	print("====================================")
+	print("====================================", flush=True)
 	# print("H:")
 	# print(H)
 	dq_H = dq.from_numpy(H)
@@ -119,7 +119,7 @@ for i, mat in enumerate(matrices_test_cases):
 	sparsity = dq_H.sparsity()
 	num_diags = dq_H.num_diags()
 
-	print(f"test_case:{i + 1}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ")
+	print(f"test_case:{i + 1}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ", flush=True)
 	# dq_H.print()
 	# print("--")
 
@@ -128,13 +128,13 @@ for i, mat in enumerate(matrices_test_cases):
 	before_time = perf_counter()
 	dq_U = dq.expm_negative(dq_H, t)
 	after_time = perf_counter()
-	print(f"time_taken:{after_time - before_time:.4f}seconds,", end=" ")
+	print(f"time_taken:{after_time - before_time:.4f}seconds,", end=" ", flush=True)
 	# dq_U.print()
 	# print("--")
 
 	result_sparsity = dq_U.sparsity()
 	result_num_diags = dq_U.num_diags()
-	print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags} ==>", end=" ")
+	print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags} ==>", end=" ", flush=True)
 
 	# print("Correct expm below:")
 	correct_U = expm(-1j * H * t)
@@ -152,5 +152,5 @@ for i, mat in enumerate(matrices_test_cases):
 	# print(c2)
 
 	assert np.testing.assert_allclose(correct_U, c2, rtol=1e-4, atol=1e-4) == None
-	print("\033[92m\033[1mPassed.\033[0m")
-	print("====================================")
+	print("\033[92m\033[1mPassed.\033[0m", flush=True)
+	print("====================================", flush=True)
