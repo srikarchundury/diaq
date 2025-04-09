@@ -104,7 +104,7 @@ matrices_test_cases = [
 # Add sparse banded matrices from 11 to 15 qubits, 16 qubit is too large for dense matrics!
 for qubit in range(11, 16):
 	size = 2**qubit
-	mat = generate_sparse_band_matrix(size, density=0.01, num_diagonals=7, seed=qubit)
+	mat = generate_sparse_band_matrix(size, density=0.01, num_diagonals=20, seed=qubit)
 	matrices_test_cases.append(mat)
 
 t = 1.6
