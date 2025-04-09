@@ -439,42 +439,111 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return shared_from_this();
         }
 
+        // void add(std::shared_ptr<diaQMatrix> B) {
+        //     #ifdef DEBUG
+        //         printf("starting add -- ");
+        //         auto start = std::chrono::high_resolution_clock::now();
+        //     #endif
+
+        //     // Add the elements of the matrix B to the current matrix
+        //     // If a diagonal exists in both matrices, add the elements
+        //     // If a diagonal exists in B but not in the current matrix, add the diagonal to the current matrix
+        //     // If a diagonal exists in the current matrix but not in B, do nothing
+
+        //     for (size_t i = 0; i < B->dIndices.size(); i++) {
+        //         int dIndex = B->dIndices[i];
+        //         std::shared_ptr<diagonal> dB = dPointers[i];
+        //         auto itA = diagonalMap.find(dIndex);
+
+        //         if(itA == diagonalMap.end()) {
+        //             // If the diagonal does not exist in the current matrix, add it
+        //             std::shared_ptr<diagonal> dB_copy = dB->copy();
+        //             diagonalMap.insert({dIndex, dB_copy});
+        //             dIndices.push_back(dIndex);
+        //             dPointers.push_back(dB_copy);
+        //         } else {
+        //             // If the diagonal exists, add the elements
+        //             std::shared_ptr<diagonal> dA = itA->second;
+        //             valType *dA_real_vals = dA->realValues;
+        //             valType *dA_imag_vals = dA->imagValues;
+        //             valType *dB_real_vals = dB->realValues;
+        //             valType *dB_imag_vals = dB->imagValues;
+
+        //             #pragma omp simd
+        //             for (unsigned int j = 0; j < dA->dLength; j++) {
+        //                 dA_real_vals[j] += dB_real_vals[j];
+        //                 dA_imag_vals[j] += dB_imag_vals[j];
+        //             }
+        //         }
+        //     }
+
+        //     #ifdef DEBUG
+        //         auto end = std::chrono::high_resolution_clock::now();
+        //         std::cout << "\t\t add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+        //     #endif
+        // }
+
         void add(std::shared_ptr<diaQMatrix> B) {
             #ifdef DEBUG
                 printf("starting add -- ");
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
-
-            // Add the elements of the matrix B to the current matrix
-            // If a diagonal exists in both matrices, add the elements
-            // If a diagonal exists in B but not in the current matrix, add the diagonal to the current matrix
-            // If a diagonal exists in the current matrix but not in B, do nothing
-
-            #pragma omp parallel for
-            for (size_t i = 0; i < B->dIndices.size(); i++) {
-                int dIndex = B->dIndices[i];
-                std::shared_ptr<diagonal> dB = dPointers[i];
-                auto itA = diagonalMap.find(dIndex);
-
-                if(itA == diagonalMap.end()) {
-                    // If the diagonal does not exist in the current matrix, add it
-                    diagonalMap.insert({dIndex, dB->copy()});
-                } else {
-                    // If the diagonal exists, add the elements
-                    std::shared_ptr<diagonal> dA = itA->second;
-                    valType *dA_real_vals = dA->realValues;
-                    valType *dA_imag_vals = dA->imagValues;
-                    valType *dB_real_vals = dB->realValues;
-                    valType *dB_imag_vals = dB->imagValues;
-
-                    #pragma omp simd
-                    for (unsigned int j = 0; j < dA->dLength; j++) {
-                        dA_real_vals[j] += dB_real_vals[j];
-                        dA_imag_vals[j] += dB_imag_vals[j];
+        
+            int num_threads = omp_get_max_threads();
+            std::vector<phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>> thread_local_maps(num_threads);
+        
+            #pragma omp parallel
+            {
+                int tid = omp_get_thread_num();
+                auto& local_map = thread_local_maps[tid];
+        
+                #pragma omp for
+                for (size_t i = 0; i < B->dIndices.size(); i++) {
+                    int dIndex = B->dIndices[i];
+                    std::shared_ptr<diagonal> dB = B->dPointers[i];
+        
+                    if (local_map.count(dIndex)) {
+                        auto dLocal = local_map[dIndex];
+                        valType *dLocal_r = dLocal->realValues;
+                        valType *dLocal_i = dLocal->imagValues;
+                        valType *dB_r = dB->realValues;
+                        valType *dB_i = dB->imagValues;
+        
+                        #pragma omp simd
+                        for (unsigned int j = 0; j < dB->dLength; j++) {
+                            dLocal_r[j] += dB_r[j];
+                            dLocal_i[j] += dB_i[j];
+                        }
+                    } else {
+                        local_map.insert({dIndex, dB->copy()});
                     }
                 }
             }
-
+        
+            // Now merge thread-local maps into main matrix (this part is serial)
+            for (auto& local_map : thread_local_maps) {
+                for (auto& [dIndex, dDiag] : local_map) {
+                    auto it = diagonalMap.find(dIndex);
+                    if (it == diagonalMap.end()) {
+                        diagonalMap.insert({dIndex, dDiag});
+                        dIndices.push_back(dIndex);
+                        dPointers.push_back(dDiag);
+                    } else {
+                        auto dA = it->second;
+                        valType *dA_real_vals = dA->realValues;
+                        valType *dA_imag_vals = dA->imagValues;
+                        valType *dB_real_vals = dDiag->realValues;
+                        valType *dB_imag_vals = dDiag->imagValues;
+        
+                        #pragma omp simd
+                        for (unsigned int j = 0; j < dA->dLength; j++) {
+                            dA_real_vals[j] += dB_real_vals[j];
+                            dA_imag_vals[j] += dB_imag_vals[j];
+                        }
+                    }
+                }
+            }
+        
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
@@ -774,19 +843,43 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
 
-            std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
-        
+            if (imag == 0.0) {
+                // return empty matrix
+                return std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
+            }
+
+            std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(matrix_shape[0], matrix_shape[1]);
+            // Preallocate
+            // // #pragma omp parallel for // this is serial!
+            // for (size_t i = 0; i < dIndices.size(); i++) {
+            //     int dIndex = dIndices[i];
+            //     std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dPointers[i]->dLength);
+            //     C->diagonalMap.insert({dIndex, newDiag});
+            // }
+
+            C->dIndices.resize(dIndices.size());
+            C->dPointers.resize(dIndices.size());
+
+            // Parallel allocate and serialize insert
+            #pragma omp parallel for
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                int dIndex = dIndices[i];
+                C->dIndices[i] = dIndex;
+                C->dPointers[i] = std::make_shared<diagonal>(dIndex, dPointers[i]->dLength);
+            }
+            // Serial insert
+            for (size_t i = 0; i < dIndices.size(); i++) {
+                C->diagonalMap.insert({C->dIndices[i], C->dPointers[i]});
+            }
+
             #pragma omp parallel for
             for (size_t i = 0; i < dIndices.size(); i++) {
                 int dIndex = dIndices[i];
                 std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
-                
-                std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, d->dLength);
 
-                C->diagonalMap.insert({dIndex, newDiag});
-
+                std::shared_ptr<diagonal> newDiag = C->diagonalMap.find(dIndex)->second;
                 valType *new_real_vals = newDiag->realValues;
                 valType *new_imag_vals = newDiag->imagValues;
 
@@ -795,7 +888,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     new_real_vals[j] = -1.0 * imag_vals[j] * imag;
                     new_imag_vals[j] = real_vals[j] * imag;
                 }
-
             }
 
             #ifdef DEBUG
@@ -805,7 +897,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             return C;
         }
-        
+
         std::shared_ptr<diaQMatrix> subtractMatrix(std::shared_ptr<diaQMatrix> B) {
 
             #ifdef DEBUG
@@ -883,6 +975,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return newMatrix;
         }
 
+        // Forbeius norm
         valType norm() {
             #ifdef DEBUG
                 printf("starting norm -- ");
@@ -912,6 +1005,65 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #endif
 
             return std::sqrt(norm);
+        }
+
+        // 1-norm
+        valType estimate_1norm() {
+            #ifdef DEBUG
+                printf("starting 1-norm -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+       
+            unsigned int nCols = matrix_shape[1];
+            
+            std::vector<valType> colSums(nCols, 0.0);
+        
+            #pragma omp parallel
+            {
+                std::vector<valType> localSums(nCols, 0.0); // thread-local
+        
+                #pragma omp for
+                for (size_t k = 0; k < dIndices.size(); k++) {
+                    int offset = dIndices[k];
+                    std::shared_ptr<diagonal> d = dPointers[k];
+                    valType *real_vals = d->realValues;
+                    valType *imag_vals = d->imagValues;
+                    unsigned int length = d->dLength;
+        
+                    for (unsigned int i = 0; i < length; i++) {
+                        unsigned int row = i;
+                        int col = static_cast<int>(row) + offset;
+                        if (col < 0 || col >= static_cast<int>(nCols)) {
+                            continue;
+                        }
+        
+                        valType absval = std::abs(real_vals[i]) + std::abs(imag_vals[i]);
+                        localSums[col] += absval;
+                    }
+                }
+        
+                // Reduce localSums into global colSums
+                #pragma omp critical
+                {
+                    for (size_t j = 0; j < nCols; j++) {
+                        colSums[j] += localSums[j];
+                    }
+                }
+            }
+        
+            // Compute max column sum
+            valType maxColSum = 0.0;
+            for (size_t j = 0; j < nCols; j++) {
+                if (colSums[j] > maxColSum)
+                    maxColSum = colSums[j];
+            }
+        
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "\t\t 1-norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms" << std::endl;
+            #endif
+
+            return maxColSum;
         }
 
         void balance() {

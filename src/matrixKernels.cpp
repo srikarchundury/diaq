@@ -1163,9 +1163,10 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    constexpr unsigned int blockSize = 16;  // or 32 or 64 depending on your architecture
+    constexpr unsigned int blockSize = 16; // block size for OpenMP parallelization
 
     size_t total_diagonals = A->dIndices.size();
+
     #pragma omp parallel for schedule(static)
     for (size_t blk_start = 0; blk_start < total_diagonals; blk_start += blockSize) {
         size_t blk_end = std::min(blk_start + blockSize, total_diagonals);
@@ -3362,7 +3363,7 @@ std::shared_ptr<vector> diaQMatrix::multiplyVector(std::shared_ptr<vector> V) {
     return spMV(shared_from_this(), V);
 }
 
-std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t) {
+std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations) {
     // Computes e^(-i * A * t) using the Taylor series expansion
     // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
     // Stops when terms become negligibly small or reach a max iteration count.
@@ -3413,32 +3414,34 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     }
 
     // Parameters
-    int max_iterations = 100; // Limit to avoid infinite loops
+    // int max_iterations = 100; // Limit to avoid infinite loops // this is now a function parameter!
     valType tolerance = 1e-8; // Tolerance for convergence
 
     std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
-    // printf("X\n");
-    // X->print();
 
     // std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = new identityMatrix(A->matrix_shape[0]); // X pwoer 0 / 0! // result is already identity matrix currently
     std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]);
     // printf("X_power_i_whole_divided_by_i\n");
     // X_power_i_whole_divided_by_i->print_meta();
 
-    for(int i = 1; i <= max_iterations; i++) {
+    int i;
+    for(i = 1; i <= max_iterations; i++) {
         X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
-        // printf("X_power_i_whole_divided_by_i 0 \n");
-        // X_power_i_whole_divided_by_i->print();
         X_power_i_whole_divided_by_i->divide_by_int(i);
-        // printf("X_power_i_whole_divided_by_i 1\n");
+        // printf("X_power_i_whole_divided_by_i\n");
         // X_power_i_whole_divided_by_i->print();
-        result->add(X_power_i_whole_divided_by_i);
-        // printf("result\n");
-        // result->print();
-        if(X_power_i_whole_divided_by_i->norm() < tolerance) {
+
+        // // Check convergence
+        if (X_power_i_whole_divided_by_i->norm() < tolerance) {
             break;
         }
+        result->add(X_power_i_whole_divided_by_i);
     }
+
+    if(i == max_iterations) {
+        printf("Warning: expm_negative_taylor reached max iterations (%d) without convergence.\n", max_iterations);
+    }
+
     #ifdef DEBUG
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -3448,7 +3451,46 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     return result;
 }
 
-std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t) {
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0) {
+	#ifdef DEBUG
+		printf("starting expm_negative_taylor_scaled -- ");
+		auto start = std::chrono::high_resolution_clock::now();
+	#endif
+
+	// Step 1: Estimate the 1-norm
+	valType norm_est = A->estimate_1norm();
+	valType scaled_norm = t * norm_est;
+
+	// Step 2: Determine scaling factor s
+	int s = 0;
+	if (scaled_norm > scale_cutoff) {
+		s = static_cast<int>(std::ceil(std::log2(scaled_norm / scale_cutoff)));
+	}
+
+	valType scaled_t = t / static_cast<valType>(1 << s); // t / 2^s
+
+	if (s > 10) {
+		printf("\033[93m[WARNING]\033[0m expm_negative_taylor_scaled: scaling exponent s = %d is large (‖A‖₁ = %.3f)\n", s, norm_est);
+	}
+
+	// Step 3: Compute e^{-i A t / 2^s}
+	std::shared_ptr<diaQMatrix> U = expm_negative_taylor(A, scaled_t, max_iterations);
+
+	// Step 4: Square result s times
+	for (int i = 0; i < s; i++) {
+		U = product(U, U);
+	}
+
+	#ifdef DEBUG
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		printf("\t\t expm_negative_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
+	#endif
+
+	return U;
+}
+
+std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations) {
     #ifdef DEBUG
         printf("starting expm_negative_pade -- ");
         auto start = std::chrono::high_resolution_clock::now();
