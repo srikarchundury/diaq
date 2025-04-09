@@ -62,7 +62,7 @@ valType* aligned_alloc_helper(unsigned int size); // see config.cpp
 
 
 // ------- Cache related ------- //
-#define BLOCK_SIZE 128    // Block size for cache optimization
+#define BLOCK_SIZE 2048    // Block size for cache optimization
 // ------------------------------- //
 
 
@@ -83,7 +83,7 @@ class OMPInitializer {
 public:
     OMPInitializer() {
         omp_set_dynamic(1);
-		// omp_set_nested(1); // this is very bad!
+		// omp_set_nested(1); // Enable nested parallelism // this is very bad!
         omp_set_num_threads(NUMBER_OF_OMP_THREADS);
 
 		// // testing

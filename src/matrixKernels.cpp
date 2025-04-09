@@ -99,7 +99,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
             offsetB = offsetA;
             offsetA = 0;
         } 
-        else if (indexB < 0) { 
+        else if (indexB < 0) {
             // Align diagonals based on their relative distance from the main diagonal
             if (offsetA > offsetB) {
                 offsetB = abs(res_index);  // Align indexB to the result index
@@ -185,7 +185,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
     unsigned int b_offset     = offsetB - jump;
 
     // unsigned int blockSize = getOptimalBlockSize(loop_count, lenDiagA, lenDiagB);
-    unsigned int blockSize = BLOCK_SIZE;
+    unsigned int blockSize = BLOCK_SIZE / 4;
 
     // BLOCKED over result diagonal using blockSize
     #pragma omp parallel for
@@ -265,23 +265,46 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     #endif
 
     // Step 2: Main blocked compute loop (per result diagonal)
-    #pragma omp parallel for
-    for (size_t i = 0; i < res_index_sources_vec.size(); ++i) {
-        int res_idx = res_index_sources_vec[i].first;
-        const auto& sources = res_index_sources_vec[i].second;
+    // #pragma omp parallel for
+    // for (size_t i = 0; i < res_index_sources_vec.size(); ++i) {
+    //     int res_idx = res_index_sources_vec[i].first;
+    //     const auto& sources = res_index_sources_vec[i].second;
 
-        std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
-        if (!res_diag) continue;
+    //     std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+    //     if (!res_diag) continue;
 
-        bool overwrite = sources.size() == 1;
+    //     bool overwrite = sources.size() == 1;
 
-        for (const auto& [dA, dB] : sources) {
-            auto diagA = A->diagonalMap[dA];
-            auto diagB = B->diagonalMap[dB];
+    //     for (size_t s = 0; s < sources.size(); ++s) {
+    //         const auto& [dA, dB] = sources[s];
+    //         auto diagA = A->diagonalMap[dA];
+    //         auto diagB = B->diagonalMap[dB];
 
-            multiplyDiagonals(A->matrix_shape, B->matrix_shape,
-                            dA, dB, diagA, diagB,
-                            res_idx, res_diag, overwrite);
+    //         multiplyDiagonals(A->matrix_shape, B->matrix_shape,
+    //                           dA, dB, diagA, diagB,
+    //                           res_idx, res_diag, overwrite && (s == 0));
+    //     }
+    // }
+
+    #pragma omp parallel
+    {
+        std::vector<std::pair<int, std::vector<std::pair<int, int>>>> my_work;
+        #pragma omp for schedule(static)
+        for (size_t i = 0; i < res_index_sources_vec.size(); ++i)
+            my_work.push_back(res_index_sources_vec[i]);
+
+        for (auto& [res_idx, sources] : my_work) {
+            std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
+            if (!res_diag) continue;
+
+            bool overwrite = sources.size() == 1;
+            for (size_t s = 0; s < sources.size(); ++s) {
+                const auto& [dA, dB] = sources[s];
+                auto diagA = A->diagonalMap[dA];
+                auto diagB = B->diagonalMap[dB];
+
+                multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, diagA, diagB, res_idx, res_diag, overwrite && (s == 0));
+            }
         }
     }
 
@@ -1177,15 +1200,16 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
 
-    constexpr unsigned int blockSize = 16; // block size for OpenMP parallelization
-
     size_t total_diagonals = A->dIndices.size();
 
-    #pragma omp parallel for
-    for (size_t blk_start = 0; blk_start < total_diagonals; blk_start += blockSize) {
-        size_t blk_end = std::min(blk_start + blockSize, total_diagonals);
+    // unsigned int blockSize = BLOCK_SIZE;
+    // #pragma omp parallel for
+    // for (size_t blk_start = 0; blk_start < total_diagonals; blk_start += blockSize) {
+    //     size_t blk_end = std::min(blk_start + blockSize, total_diagonals);
 
-        for (size_t a = blk_start; a < blk_end; ++a) {
+    //     for (size_t a = blk_start; a < blk_end; ++a) {
+    // #pragma omp parallel for // this can be sequential since there will be less than 200 diagonals overall!
+    for (size_t a = 0; a < total_diagonals; ++a) {
             int dIndex = A->dIndices[a];
             std::shared_ptr<diagonal> d = A->dPointers[a];
             unsigned int dLength = d->dLength;
@@ -1194,13 +1218,24 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             valType *imag_vals = d->imagValues;
 
             if(dIndex < 0) { // negative diagonals
+                unsigned int simd_start = 0;
+                for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+                    if ((simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0)) {
+                        break;
+                    }
+                }
+                if (simd_start + VEC_WIDTH > dLength)
+                    simd_start = dLength;  // no aligned region found
+            
+                unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
                 // #pragma omp critical
                 // {
                     // printf("Negative diagonal!!\n");
-                    #if VECTORIZATION_TYPE == 1
-                            run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-                    #elif VECTORIZATION_TYPE == 2
-                        run_spmv_avx512_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #if VECTORIZATION_TYPE == 2
+                        run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                    #elif VECTORIZATION_TYPE == 1
+                        run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength); 
                     #elif VECTORIZATION_TYPE == 0
                         run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #else // run without vectorization
@@ -1216,11 +1251,23 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             }
 
             else if(dIndex > 0) { // positive diagonals
+                // --- Alignment scan for both i and i + dIndex ---
+                unsigned int simd_start = 0;
+                for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+                    if ((simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0)) {
+                        break;
+                    }
+                }
+                if (simd_start + VEC_WIDTH > dLength)
+                    simd_start = dLength;  // no aligned region
+
+                unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
                 // #pragma omp critical
                 // {
                     // printf("Positive diagonal!!\n");
                     #if VECTORIZATION_TYPE == 2
-                            run_spmv_avx512_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                            run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #elif VECTORIZATION_TYPE == 1
                             run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #elif VECTORIZATION_TYPE == 0
@@ -1237,13 +1284,26 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 // }
             }
 
-            else {
-                // 0th diagonal
+            else { // 0th diagonal
+                // Find the first aligned index
+                unsigned int simd_start = 0;
+                for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+                    if ((simd_start % VEC_WIDTH == 0) &&
+                        ((x_real_values == nullptr || ((uintptr_t)&x_real_values[simd_start]) % 64 == 0)) &&
+                        ((y_real_values == nullptr || ((uintptr_t)&y_real_values[simd_start]) % 64 == 0))) {
+                        break;
+                    }
+                }
+                if (simd_start + VEC_WIDTH > dLength)
+                    simd_start = dLength;
+            
+                unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
                 // #pragma omp critical
                 // {
                     // printf("Zero diagonal!!\n");
                     #if VECTORIZATION_TYPE == 2
-                            run_spmv_avx512_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+                            run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #elif VECTORIZATION_TYPE == 1
                             run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
                     #elif VECTORIZATION_TYPE == 0
@@ -1257,8 +1317,43 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                     #endif
                 // }
             }
-        }
+        // } // if used outer blokcing!
     }
+
+    // // unsigned int blockSize = getOptimalBlockSize(x->numRows, y->numRows, x->numRows);
+
+    // unsigned int blockSize = BLOCK_SIZE;
+    // #pragma omp parallel for
+    // for (size_t blk_start = 0; blk_start < total_diagonals; blk_start += blockSize) {
+    //     size_t blk_end = std::min(blk_start + blockSize, total_diagonals);
+    //     for (size_t a = blk_start; a < blk_end; ++a) {
+    //         int dIndex = A->dIndices[a];
+    //         std::shared_ptr<diagonal> d = A->dPointers[a];
+    //         unsigned int dLength = d->dLength;
+    //         valType *real_vals = d->realValues;
+    //         valType *imag_vals = d->imagValues;
+
+    //         unsigned int x_offset = 0;
+    //         unsigned int y_offset = 0;
+
+    //         if(dIndex < 0) { // negative diagonals
+    //             y_offset = -dIndex;
+    //         }
+
+    //         else if(dIndex > 0) { // positive diagonals
+    //             x_offset = dIndex;
+    //         }
+
+    //         #pragma omp simd
+    //         for(unsigned int k = 0; k < dLength; k++) {
+    //             #pragma omp atomic
+    //             y_real_values[k + y_offset] += real_vals[k] * x_real_values[k + x_offset] - imag_vals[k] * x_imag_values[k + x_offset];
+    //             #pragma omp atomic
+    //             y_imag_values[k + y_offset] += real_vals[k] * x_imag_values[k + x_offset] + imag_vals[k] * x_real_values[k + x_offset];
+    //         }
+
+    //     }
+    // }
 
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;
@@ -3442,7 +3537,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         // X_power_i_whole_divided_by_i->print();
 
         // Check convergence
-        if (i % 3 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
+        if (i % 2 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
 
         result->add(X_power_i_whole_divided_by_i);
     }

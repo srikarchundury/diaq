@@ -483,44 +483,46 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         //     #endif
         // }
 
+        // BLOCKED VERSION of add()
         void add(std::shared_ptr<diaQMatrix> B) {
             #ifdef DEBUG
                 printf("starting add -- ");
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
-        
+
             int num_threads = omp_get_max_threads();
             std::vector<phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>> thread_local_maps(num_threads);
-        
+
             #pragma omp parallel
             {
                 int tid = omp_get_thread_num();
                 auto& local_map = thread_local_maps[tid];
-        
+
                 #pragma omp for
                 for (size_t i = 0; i < B->dIndices.size(); i++) {
                     int dIndex = B->dIndices[i];
                     std::shared_ptr<diagonal> dB = B->dPointers[i];
-        
+                    unsigned int len = dB->dLength;
+                    valType *dB_r = dB->realValues;
+                    valType *dB_i = dB->imagValues;
+
                     if (local_map.count(dIndex)) {
                         auto dLocal = local_map[dIndex];
                         valType *dLocal_r = dLocal->realValues;
                         valType *dLocal_i = dLocal->imagValues;
-                        valType *dB_r = dB->realValues;
-                        valType *dB_i = dB->imagValues;
-        
-                        #pragma omp simd
-                        for (unsigned int j = 0; j < dB->dLength; j++) {
-                            dLocal_r[j] += dB_r[j];
-                            dLocal_i[j] += dB_i[j];
+                        for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
+                            unsigned int end = std::min(j + BLOCK_SIZE, len);
+                            for (unsigned int k = j; k < end; ++k) {
+                                dLocal_r[k] += dB_r[k];
+                                dLocal_i[k] += dB_i[k];
+                            }
                         }
                     } else {
                         local_map.insert({dIndex, dB->copy()});
                     }
                 }
             }
-        
-            // Now merge thread-local maps into main matrix (this part is serial)
+
             for (auto& local_map : thread_local_maps) {
                 for (auto& [dIndex, dDiag] : local_map) {
                     auto it = diagonalMap.find(dIndex);
@@ -530,38 +532,45 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                         dPointers.push_back(dDiag);
                     } else {
                         auto dA = it->second;
-                        valType *dA_real_vals = dA->realValues;
-                        valType *dA_imag_vals = dA->imagValues;
-                        valType *dB_real_vals = dDiag->realValues;
-                        valType *dB_imag_vals = dDiag->imagValues;
-        
-                        #pragma omp simd
-                        for (unsigned int j = 0; j < dA->dLength; j++) {
-                            dA_real_vals[j] += dB_real_vals[j];
-                            dA_imag_vals[j] += dB_imag_vals[j];
+                        valType *dA_r = dA->realValues;
+                        valType *dA_i = dA->imagValues;
+                        valType *dB_r = dDiag->realValues;
+                        valType *dB_i = dDiag->imagValues;
+                        unsigned int len = dA->dLength;
+
+                        for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
+                            unsigned int end = std::min(j + BLOCK_SIZE, len);
+                            for (unsigned int k = j; k < end; ++k) {
+                                dA_r[k] += dB_r[k];
+                                dA_i[k] += dB_i[k];
+                            }
                         }
                     }
                 }
             }
-        
+
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "\t\t add took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+                printf("\t\t add took %f milliseconds\n", duration.count() / 1000.0);
             #endif
         }
 
+        // BLOCKED VERSION of divide_by_int()
         void divide_by_int(int x) {
-
             #pragma omp parallel for
             for (size_t i = 0; i < dIndices.size(); i++) {
                 std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
+                unsigned int len = d->dLength;
 
-                #pragma omp parallel for
-                for(unsigned int j = 0; j < d->dLength; j++) {
-                    real_vals[j] = real_vals[j] / x;
-                    imag_vals[j] = imag_vals[j] / x;
+                for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
+                    unsigned int end = std::min(j + BLOCK_SIZE, len);
+                    for (unsigned int k = j; k < end; ++k) {
+                        real_vals[k] /= x;
+                        imag_vals[k] /= x;
+                    }
                 }
             }
         }
@@ -976,95 +985,103 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         // Forbeius norm
+        // BLOCKED VERSION of norm()
         valType norm() {
             #ifdef DEBUG
                 printf("starting norm -- ");
                 auto start = std::chrono::high_resolution_clock::now();
             #endif
+
             valType norm = 0.0;
-            #pragma omp parallel reduction(+:norm)
+            #pragma omp parallel
             {
-                valType local_norm = 0.0; // Use a local variable to accumulate within the parallel region
-                #pragma omp parallel for
+                valType local_norm = 0.0;
+                #pragma omp for
                 for (size_t i = 0; i < dIndices.size(); i++) {
                     std::shared_ptr<diagonal> d = dPointers[i];
                     valType *real_vals = d->realValues;
                     valType *imag_vals = d->imagValues;
-                    #pragma omp simd reduction(+:local_norm)
-                    for (unsigned int j = 0; j < d->dLength; j++) {
-                        local_norm += real_vals[j] * real_vals[j] + imag_vals[j] * imag_vals[j];
+                    unsigned int len = d->dLength;
+
+                    for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
+                        unsigned int end = std::min(j + BLOCK_SIZE, len);
+                        for (unsigned int k = j; k < end; ++k) {
+                            local_norm += real_vals[k] * real_vals[k] + imag_vals[k] * imag_vals[k];
+                        }
                     }
                 }
                 #pragma omp atomic
-                norm += local_norm; // Accumulate local_norm to norm in the parallel region
+                norm += local_norm;
             }
 
             #ifdef DEBUG
                 auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "\t\t norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+                std::cout << "\t\t norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms\n";
             #endif
 
             return std::sqrt(norm);
         }
 
-        // 1-norm
         valType estimate_1norm() {
             #ifdef DEBUG
-                printf("starting 1-norm -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+            printf("starting 1-norm -- ");
+            auto start = std::chrono::high_resolution_clock::now();
             #endif
-       
+        
             unsigned int nCols = matrix_shape[1];
-            
-            std::vector<valType> colSums(nCols, 0.0);
+            std::vector<std::vector<valType>> threadLocalSums;
+            int max_threads = omp_get_max_threads();
+            threadLocalSums.resize(max_threads, std::vector<valType>(nCols, 0.0));
         
             #pragma omp parallel
             {
-                std::vector<valType> localSums(nCols, 0.0); // thread-local
+                int tid = omp_get_thread_num();
+                auto& localSums = threadLocalSums[tid];
         
                 #pragma omp for
                 for (size_t k = 0; k < dIndices.size(); k++) {
                     int offset = dIndices[k];
                     std::shared_ptr<diagonal> d = dPointers[k];
-                    valType *real_vals = d->realValues;
-                    valType *imag_vals = d->imagValues;
+                    valType* real_vals = d->realValues;
+                    valType* imag_vals = d->imagValues;
                     unsigned int length = d->dLength;
         
-                    for (unsigned int i = 0; i < length; i++) {
-                        unsigned int row = i;
-                        int col = static_cast<int>(row) + offset;
-                        if (col < 0 || col >= static_cast<int>(nCols)) {
-                            continue;
+                    for (unsigned int i = 0; i < length; i += BLOCK_SIZE) {
+                        unsigned int block_end = std::min(i + BLOCK_SIZE, length);
+                        for (unsigned int j = i; j < block_end; ++j) {
+                            int col = static_cast<int>(j) + offset;
+                            if (col >= 0 && col < static_cast<int>(nCols)) {
+                                valType absval = std::abs(real_vals[j]) + std::abs(imag_vals[j]);
+                                localSums[col] += absval;
+                            }
                         }
-        
-                        valType absval = std::abs(real_vals[i]) + std::abs(imag_vals[i]);
-                        localSums[col] += absval;
-                    }
-                }
-        
-                // Reduce localSums into global colSums
-                #pragma omp critical
-                {
-                    for (size_t j = 0; j < nCols; j++) {
-                        colSums[j] += localSums[j];
                     }
                 }
             }
         
-            // Compute max column sum
+            // Final reduction: sum across threads
+            std::vector<valType> colSums(nCols, 0.0);
+            for (int tid = 0; tid < max_threads; ++tid) {
+                for (unsigned int j = 0; j < nCols; ++j) {
+                    colSums[j] += threadLocalSums[tid][j];
+                }
+            }
+        
+            // Final max
             valType maxColSum = 0.0;
-            for (size_t j = 0; j < nCols; j++) {
+            #pragma omp parallel for reduction(max:maxColSum)
+            for (unsigned int j = 0; j < nCols; ++j) {
                 if (colSums[j] > maxColSum)
                     maxColSum = colSums[j];
             }
         
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "\t\t 1-norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms" << std::endl;
+            auto end = std::chrono::high_resolution_clock::now();
+            std::cout << "\t\t 1-norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms\n";
             #endif
-
+        
             return maxColSum;
-        }
+        }        
 
         void balance() {
             // printf("balance called\n");
@@ -1466,12 +1483,24 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     }
                 }
                 if(i == d->dLength) {
+                    #ifdef DEBUG
+                        std::cout << "deleting diagonal " << d->dIndex << std::endl;
+                    #endif
                     toDelete.push_back(d->dIndex);;
                 }
             }
             // #pragma omp parallel for
             for(size_t i = 0; i < toDelete.size(); i++) {
                 this->diagonalMap.erase(toDelete[i]);
+            }
+
+            dIndices.resize(dIndices.size() - toDelete.size());
+            dPointers.resize(dPointers.size() - toDelete.size());
+            #pragma omp parallel for
+            for(size_t i = 0; i < diagonalMap.size(); i++) {
+                auto it = std::next(diagonalMap.begin(), i);
+                dIndices[i] = it->first;
+                dPointers[i] = it->second;
             }
         }
         std::shared_ptr<diagonal> operator[](int dIndex) {
