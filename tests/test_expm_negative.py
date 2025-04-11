@@ -2,6 +2,7 @@ import diaq as dq
 import numpy as np
 from scipy.linalg import expm
 from time import perf_counter
+import scipy as sc
 
 # def scaled_expm_negative(dq_H, t, max_iterations=20, scale_cutoff=1.0):
 # 	# Compute matrix norm in NumPy for rough scaling estimate
@@ -104,10 +105,10 @@ matrices_test_cases = [
 # Add sparse banded matrices from 11 to 15 qubits, 16 qubit is too large for dense matrics!
 for qubit in range(10, 16):
 	size = 2**qubit
-	mat = generate_sparse_band_matrix(size, density=0.01, num_diagonals=20, seed=qubit)
+	mat = generate_sparse_band_matrix(size, density=0.01, num_diagonals=10, seed=qubit)
 	matrices_test_cases.append(mat)
 
-t = 1.6
+t = 1.8
 
 import sys
 
@@ -170,43 +171,42 @@ else:
 	# print(H)
 	dq_H = dq.from_numpy(H)
 
+	H_csr = sc.sparse.csr_matrix(H)
+
 	sparsity = dq_H.sparsity()
 	num_diags = dq_H.num_diags()
 
+	print(f"test_case:{case}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags}", flush=True)
+	print("====================================", flush=True)
+
 	for i in range(ITRS):
-
-		print(f"test_case:{case}, matrix_shape:{H.shape[0]}x{H.shape[1]}, sparsity:{sparsity:.2f}, num_diags:{num_diags},", end=" ", flush=True)
-		# dq_H.print()
-		# print("--")
-
-		# print("DIAQ expm below:")
-		# dq_U = scaled_expm_negative(dq_H, t)
 		before_time = perf_counter()
 		dq_U = dq.expm_negative(dq_H, t)
 		after_time = perf_counter()
-		print(f"time_taken:{after_time - before_time:.4f}seconds,", end=" ", flush=True)
-		# dq_U.print()
-		# print("--")
+		print(f"DIAQ time_taken:{after_time - before_time:.4f}seconds", flush=True)
+	print("====================================", flush=True)
 
-		result_sparsity = dq_U.sparsity()
-		result_num_diags = dq_U.num_diags()
-		print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags} ==>", end=" ", flush=True)
+	result_sparsity = dq_U.sparsity()
+	result_num_diags = dq_U.num_diags()
+	print(f"result_sparsity:{result_sparsity:.2f}, result_num_diags:{result_num_diags}", flush=True)
+	print("====================================", flush=True)
 
-		# print("Correct expm below:")
+	for i in range(ITRS):
+		before_time = perf_counter()
 		correct_U = expm(-1j * H * t)
-		# dq_correct_U = dq.from_numpy(correct_U)
-		# dq_correct_U.print()
-		# print("--")
+		after_time = perf_counter()
+		print(f"DENSE time_taken:{after_time - before_time:.4f}seconds", flush=True)
+	print("====================================", flush=True)
 
-		# print("Testing correctness:")
-		c2 = dq.to_numpy(dq_U)
+	for i in range(ITRS):
+		before_time = perf_counter()
+		csr_U = sc.sparse.linalg.expm(-1j * H_csr * t)
+		after_time = perf_counter()
+		print(f"CSR time_taken:{after_time - before_time:.4f}seconds", flush=True)
+	print("====================================", flush=True)
 
-		# print("correct_U:")
-		# print(correct_U)
+	c2 = dq.to_numpy(dq_U)
 
-		# print("C2:")
-		# print(c2)
-
-		assert np.testing.assert_allclose(correct_U, c2, rtol=1e-4, atol=1e-4) == None
-		print("\033[92m\033[1mPassed.\033[0m", flush=True)
-		print("====================================", flush=True)
+	assert np.testing.assert_allclose(correct_U, c2, rtol=1e-4, atol=1e-4) == None
+	print("\033[92m\033[1mPassed.\033[0m", flush=True)
+	print("====================================", flush=True)

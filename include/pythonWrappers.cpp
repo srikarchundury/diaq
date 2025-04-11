@@ -59,6 +59,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("setDiagonalElement", &diaq::diaQMatrix::setDiagonalElement, py::return_value_policy::automatic) 
         .def("addDiagonal", &diaq::diaQMatrix::addDiagonal, py::return_value_policy::automatic)
         .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::automatic)
+        .def("delete_diagonal", &diaq::diaQMatrix::delete_diagonal, py::return_value_policy::automatic)
         .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::automatic)
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::automatic)
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::automatic)

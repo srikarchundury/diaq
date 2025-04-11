@@ -111,6 +111,15 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #endif
         }
 
+        void delete_diagonal(int dIndex) {
+            auto it = diagonalMap.find(dIndex);
+            if(it != diagonalMap.end()) {
+                diagonalMap.erase(it);
+                dIndices.erase(std::remove(dIndices.begin(), dIndices.end(), dIndex), dIndices.end());
+                dPointers.erase(std::remove(dPointers.begin(), dPointers.end(), it->second), dPointers.end());
+            }
+        }
+
         valType getItem_real(unsigned int flat_index) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
             auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
@@ -245,7 +254,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
-            std::cout << "#Diagonals = " << diagonalMap.size() << std::endl;
+            std::cout << "#Diagonals = " << diagonalMap.size();
+            if (diagonalMap.size() == 1) {
+                std::cout << "(index = " << dIndices[0] << ")";
+            }
+            std::cout << std::endl;
             std::cout << "Sparsity = " << sparsity() << std::endl;
         }
         void createDiagonal(int dIndex) {
