@@ -258,11 +258,11 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         res_index_sources_vec.emplace_back(kv.first, std::move(kv.second));
     }
 
-    #ifdef DEBUG
-        auto precompute_end = std::chrono::high_resolution_clock::now();
-        auto precompute_duration = std::chrono::duration_cast<std::chrono::microseconds>(precompute_end - start);
-        printf("\t\t precompute took %f milliseconds\n", precompute_duration.count() / 1000.0);
-    #endif
+    // #ifdef DEBUG
+    //     auto precompute_end = std::chrono::high_resolution_clock::now();
+    //     auto precompute_duration = std::chrono::duration_cast<std::chrono::microseconds>(precompute_end - start);
+    //     printf("\t\t precompute took %f milliseconds\n", precompute_duration.count() / 1000.0);
+    // #endif
 
     // Step 2: Main blocked compute loop (per result diagonal)
     // #pragma omp parallel for
@@ -308,11 +308,11 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         }
     }
 
-    #ifdef DEBUG
-        auto compute_end = std::chrono::high_resolution_clock::now();
-        auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end - precompute_end);
-        printf("\t\t compute took %f milliseconds\n", compute_duration.count() / 1000.0);
-    #endif
+    // #ifdef DEBUG
+    //     auto compute_end = std::chrono::high_resolution_clock::now();
+    //     auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end - precompute_end);
+    //     printf("\t\t compute took %f milliseconds\n", compute_duration.count() / 1000.0);
+    // #endif
 
 	// Step 3: Insert final non-empty result diagonals
 	for (const auto& [res_idx, res_diag] : res_diags) {
@@ -323,11 +323,11 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 		}
 	}
 
-    #ifdef DEBUG
-        auto insert_end = std::chrono::high_resolution_clock::now();
-        auto insert_duration = std::chrono::duration_cast<std::chrono::microseconds>(insert_end - compute_end);
-        printf("\t\t insert took %f milliseconds\n", insert_duration.count() / 1000.0);
-    #endif
+    // #ifdef DEBUG
+    //     auto insert_end = std::chrono::high_resolution_clock::now();
+    //     auto insert_duration = std::chrono::duration_cast<std::chrono::microseconds>(insert_end - compute_end);
+    //     printf("\t\t insert took %f milliseconds\n", insert_duration.count() / 1000.0);
+    // #endif
 
 	#ifdef DEBUG
 	auto end = std::chrono::high_resolution_clock::now();
@@ -1376,6 +1376,12 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 		for (unsigned int i = 1; i < num_batches; ++i)
 			y_locals[i] = y->copy();
 
+        #ifdef DEBUG
+            auto allocate_end = std::chrono::high_resolution_clock::now();
+            auto allocate_duration = std::chrono::duration_cast<std::chrono::microseconds>(allocate_end - start);
+            printf("\t\t spMV allocation took %f milliseconds\n", allocate_duration.count()/1000.0);
+        #endif
+
 		#pragma omp parallel
 		{
 			#pragma omp single nowait
@@ -1483,6 +1489,12 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 			} // end single
 		} // end parallel
 
+        #ifdef DEBUG
+            auto compute_end = std::chrono::high_resolution_clock::now();
+            auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end - start);
+            printf("\t\t spMV compute took %f milliseconds\n", compute_duration.count() / 1000.0);
+        #endif
+
 		// Merge results back
 		valType* y_real = y->realValues;
 		valType* y_imag = y->imagValues;
@@ -1494,6 +1506,12 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 				y_imag[i] += y_locals[b]->imagValues[i];
 			}
 		}
+
+        #ifdef DEBUG
+            auto merge_end = std::chrono::high_resolution_clock::now();
+            auto merge_duration = std::chrono::duration_cast<std::chrono::microseconds>(merge_end - compute_end);
+            printf("\t\t spMV merge took %f milliseconds\n", merge_duration.count() / 1000.0);
+        #endif
 
 		#ifdef DEEP_DEBUG
 			std::cout << " --- " << std::endl;
@@ -3943,7 +3961,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         // X_power_i_whole_divided_by_i->print();
 
         // Check convergence
-        // if (i % 2 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
+        // if (i % 5 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
+        if (X_power_i_whole_divided_by_i->norm() < tolerance) break;
 
         result->add(X_power_i_whole_divided_by_i);
     }
@@ -3980,7 +3999,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 	}
 
     // valType tolerance = std::max(1e-7, std::min(1e-4, 1e-6 / (1 << s)));
-    valType tolerance = 3e-5;
+    valType tolerance = 1e-5;
 
 	valType scaled_t = t / static_cast<valType>(1 << s); // t / 2^s
 
