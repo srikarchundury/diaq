@@ -42,27 +42,53 @@ namespace diaq {
 
 
 // ------- Data type related ------- //
- // double or float
-using valType = double;
+using valType = double; // double or float
 // ------------------------------- //
 
 // ------- Vectorization related ------- //
-#define VECTORIZATION_TYPE 2 // 0 for SSE, 1 for AVX, 2 for AVX512, set -1 to run without vectorization
-#define NUM_BYTES_ALIGNED 64 // choose 32 for AVX, 64 for AVX512, 16 for SSE, -1 for no vectorization
-#define VEC_WIDTH 8 // since double and AVX512... Other combinations are: 
-#define PREFETCH_DIST 16 // prefetch distance, double of VEC_WIDTH
-valType* aligned_alloc_helper(unsigned int size); // see config.cpp
+
+#if defined(__AVX512F__)
+	#define VECTORIZATION_TYPE 2
+	#define NUM_BYTES_ALIGNED 64
+	#define VEC_WIDTH 8
+#elif defined(__AVX2__)
+	#define VECTORIZATION_TYPE 1
+	#define NUM_BYTES_ALIGNED 32
+	#define VEC_WIDTH 4
+#elif defined(__SSE2__)
+	#define VECTORIZATION_TYPE 0
+	#define NUM_BYTES_ALIGNED 16
+	#define VEC_WIDTH 2
+#else
+	#define VECTORIZATION_TYPE -1
+	#define NUM_BYTES_ALIGNED -1
+	#define VEC_WIDTH 1
+#endif
+
+#define PREFETCH_DIST (2 * VEC_WIDTH)
+
+// ------- L1 Cache Auto-Detection or Override ------- //
+
+#ifndef L1_CACHE_SIZE_BYTES
+	// Fallback assumption: 32KB
+	#define L1_CACHE_SIZE_BYTES 32768
+#endif
+
+#define CACHE_UTILIZATION 0.75
+#define NUM_ARRAYS_ACCESSED 6
+
+#define BLOCK_SIZE_RAW (int)((L1_CACHE_SIZE_BYTES * CACHE_UTILIZATION) / (NUM_ARRAYS_ACCESSED * sizeof(valType)))
+#define BLOCK_SIZE ((BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH > 0 ? (BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH : VEC_WIDTH)
+// Alloc helper
+valType* aligned_alloc_helper(unsigned int size);
+void print_simd_info();
+
 // ------------------------------- //
 
 
 // ------- Debugging related ------- //
 #define PRINT_WITH_LINE(fmt, ...) \
     printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
-// ------------------------------- //
-
-
-// ------- Cache related ------- //
-#define BLOCK_SIZE 1024    // Block size for cache optimization
 // ------------------------------- //
 
 

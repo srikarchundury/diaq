@@ -126,6 +126,7 @@ void kron_test(std::shared_ptr<diaq::denseMatrix> A24, std::shared_ptr<diaq::den
 }
 
 int main(int argc, char **argv) {
+    diaq::print_simd_info();
 
     #ifdef PAPI_ON
         diaq::initPAPI();
