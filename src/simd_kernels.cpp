@@ -3,28 +3,25 @@
 
 namespace diaq {
 
-void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
-    // no vectorization
-    // logger.log("No vectorization");
+void run_without_vectorization(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+    valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_without_vectorization -- " << std::endl;
-        auto start = std::chrono::high_resolution_clock::now();
+        auto time_start = std::chrono::high_resolution_clock::now();
     #endif
-    // #pragma omp simd; this does not work as is!
-    while(k < lenRes && k + offsetA - jump < lenDiagA && k + offsetB - jump < lenDiagB) {
-        // std::cout << "loop k=" << k << std::endl;
-		valType real_a = real_vals_a[k + offsetA - jump];
-        valType imag_a = imag_vals_a[k + offsetA - jump];
-        valType real_b = real_vals_b[k + offsetB - jump];
-        valType imag_b = imag_vals_b[k + offsetB - jump];
+    #pragma omp parallel for schedule(static)
+    for (unsigned int k = start; k < end; ++k) {
+		valType real_a = real_vals_a[k + a_offset];
+        valType imag_a = imag_vals_a[k + a_offset];
+        valType real_b = real_vals_b[k + b_offset];
+        valType imag_b = imag_vals_b[k + b_offset];
 		real_vals_final[k] = (valType)((valType)(real_a * real_b) - (valType)(imag_a * imag_b));
 		imag_vals_final[k] = (valType)((valType)(real_a * imag_b) + (valType)(imag_a * real_b));
-        k += 1;
     }
 
     #ifdef DEEP_DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        auto time_end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
         printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
     #endif
 }
@@ -81,10 +78,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         for (unsigned int i = 0; i < vec_loop; ++i) {
             unsigned int idx = k + i * 4;
             // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 8], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_a[idx + offsetA - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_a[idx + offsetA - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_b[idx + offsetB - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_b[idx + offsetB - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_final[idx + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_final[idx + PREFETCH_DIST], _MM_HINT_T0);
 
             __m256d real_a = _mm256_loadu_pd(&real_vals_a[idx + offsetA - jump]);
             __m256d imag_a = _mm256_loadu_pd(&imag_vals_a[idx + offsetA - jump]);
@@ -99,10 +98,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         }
         k += vec_loop * 4;
         if (left_overs != 0) {
-            _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 4], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 4], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[left_overs_start_at_B + 4], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[left_overs_start_at_B + 4], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_a[left_overs_start_at_A + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_a[left_overs_start_at_A + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_b[left_overs_start_at_B + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_b[left_overs_start_at_B + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_final[k + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_final[k + PREFETCH_DIST], _MM_HINT_T0);
 
             real_a = avx_load_partial_double(left_overs, &real_vals_a[left_overs_start_at_A]);
             imag_a = avx_load_partial_double(left_overs, &imag_vals_a[left_overs_start_at_A]);
@@ -161,17 +162,17 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         __m256 real_res, imag_res;
         int left_overs = loop_count - ((loop_count / 8) * 8);
         unsigned int vec_loop = (loop_count / 8);
-        unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
-        unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+        unsigned int left_overs_start_at_A = k + offsetA - jump + PREFETCH_DIST * (loop_count / 8);
+        unsigned int left_overs_start_at_B = k + offsetB - jump + PREFETCH_DIST * (loop_count / 8);
 
         #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop; ++i) {
             unsigned int idx = k + i * 8;
             // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 16], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_a[idx + offsetA - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_a[idx + offsetA - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_b[idx + offsetB - jump + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_b[idx + offsetB - jump + PREFETCH_DIST], _MM_HINT_T0);
 
             __m256 real_a = _mm256_loadu_ps(&real_vals_a[idx + offsetA - jump]);
             __m256 imag_a = _mm256_loadu_ps(&imag_vals_a[idx + offsetA - jump]);
@@ -186,10 +187,10 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         }
         k += vec_loop * 8;
         if (left_overs != 0) {
-            _mm_prefetch((const char*)&real_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[left_overs_start_at_A + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[left_overs_start_at_B + 8], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_a[left_overs_start_at_A + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_a[left_overs_start_at_A + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_b[left_overs_start_at_B + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_b[left_overs_start_at_B + PREFETCH_DIST], _MM_HINT_T0);
 
             real_a = avx_load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
             imag_a = avx_load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
@@ -237,12 +238,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
-            _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[i - dIndex + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[i - dIndex + 8], _MM_HINT_T0);
+            _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_imag_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_real_values[i - dIndex + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_imag_values[i - dIndex + PREFETCH_DIST], _MM_HINT_T0);
 
             real_vals_vec = _mm256_load_pd(&real_vals[i]);
             imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
@@ -297,12 +298,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
-            _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[dIndex + i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[dIndex + i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[i + 8], _MM_HINT_T0);
+            _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_real_values[dIndex + i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_imag_values[dIndex + i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_imag_values[i + PREFETCH_DIST], _MM_HINT_T0);
 
             real_vals_vec = _mm256_load_pd(&real_vals[i]);
             imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
@@ -356,12 +357,12 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         #pragma omp parallel for schedule(static)
         for (unsigned int i = 0; i < vec_loop * 4; i += 4) {
             // Prefetch future data to optimize cache usage
-            _mm_prefetch((const char*)&real_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[i + 8], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[i + 8], _MM_HINT_T0);
+            _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&x_imag_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&y_imag_values[i + PREFETCH_DIST], _MM_HINT_T0);
 
             real_vals_vec = _mm256_load_pd(&real_vals[i]);
             imag_vals_vec = _mm256_load_pd(&imag_vals[i]);
@@ -771,109 +772,112 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
 
     template<>
     void run_avx512<double>(
-        unsigned int k, unsigned int lenRes,
-        unsigned int offsetA, unsigned int offsetB, unsigned int jump,
-        unsigned int lenDiagA, unsigned int lenDiagB,
+        unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
         double *real_vals_a, double *imag_vals_a,
         double *real_vals_b, double *imag_vals_b,
-        double *real_vals_final, double *imag_vals_final
+        double *real_vals_final, double *imag_vals_final, bool overwrite
     ) {
-        #ifdef DEBUG
-            auto start_time = std::chrono::high_resolution_clock::now();
-        #endif
-        constexpr unsigned int VEC_WIDTH = 8;
-
-        unsigned int max_lenRes   = lenRes - k;
-        unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
-        unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
-        unsigned int loop_count   = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
-
-        unsigned int start = k;
-        unsigned int end   = k + loop_count;
-
+    #ifdef DEEP_DEBUG
+        auto start_time = std::chrono::high_resolution_clock::now();
+    #endif
+    
         // Find first aligned SIMD index
         unsigned int simd_start = start;
         for (; simd_start + VEC_WIDTH <= end; simd_start++) {
             if ((simd_start % VEC_WIDTH == 0) &&
-                ((simd_start + offsetA - jump) % VEC_WIDTH == 0) &&
-                ((simd_start + offsetB - jump) % VEC_WIDTH == 0)) {
+                ((simd_start + a_offset) % VEC_WIDTH == 0) &&
+                ((simd_start + b_offset) % VEC_WIDTH == 0)) {
                 break;
             }
         }
         if (simd_start + VEC_WIDTH > end)
             simd_start = end; // no SIMD possible
-
+    
         unsigned int simd_end = end - ((end - simd_start) % VEC_WIDTH);
-
+    
         // --- Prologue (unaligned/scalar) ---
         #pragma omp parallel for
         for (unsigned int idx = start; idx < simd_start; ++idx) {
-            unsigned int idx_a = idx + offsetA - jump;
-            unsigned int idx_b = idx + offsetB - jump;
-
+            unsigned int idx_a = idx + a_offset;
+            unsigned int idx_b = idx + b_offset;
+    
             double real_a = real_vals_a[idx_a];
             double imag_a = imag_vals_a[idx_a];
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
-
-            // Accumulate instead of overwrite
-            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+    
+            if (overwrite) {
+                real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            }
         }
-
-        // --- SIMD aligned main loop ---
-        unsigned int simd_vec_blocks = (simd_end - simd_start) / VEC_WIDTH;
-
-        #pragma omp parallel for
-        for (unsigned int i = 0; i < simd_vec_blocks; ++i) {
-            unsigned int idx   = simd_start + i * VEC_WIDTH;
-            unsigned int idx_a = idx + offsetA - jump;
-            unsigned int idx_b = idx + offsetB - jump;
-
-            _mm_prefetch((const char*)&real_vals_a[idx_a + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[idx_a + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[idx_b + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[idx_b + 16], _MM_HINT_T0);
-
-            __m512d real_a = _mm512_load_pd(&real_vals_a[idx_a]);
-            __m512d imag_a = _mm512_load_pd(&imag_vals_a[idx_a]);
-            __m512d real_b = _mm512_load_pd(&real_vals_b[idx_b]);
-            __m512d imag_b = _mm512_load_pd(&imag_vals_b[idx_b]);
-
-            __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));
-            __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));
-
-            // Accumulate with existing buffer values
-            __m512d existing_real = _mm512_load_pd(&real_vals_final[idx]);
-            __m512d existing_imag = _mm512_load_pd(&imag_vals_final[idx]);
-
-            _mm512_store_pd(&real_vals_final[idx], _mm512_add_pd(existing_real, real_res));
-            _mm512_store_pd(&imag_vals_final[idx], _mm512_add_pd(existing_imag, imag_res));
+    
+        // --- SIMD Main Loop with BLOCKED vector chunks ---
+        #pragma omp parallel for schedule(static)
+        for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+            unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+    
+            for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+                unsigned int idx_a = i + a_offset;
+                unsigned int idx_b = i + b_offset;
+    
+                _mm_prefetch(&real_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&imag_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&real_vals_b[idx_b + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&imag_vals_b[idx_b + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&real_vals_final[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&imag_vals_final[i + PREFETCH_DIST], _MM_HINT_T0);
+    
+                __m512d real_a = _mm512_load_pd(&real_vals_a[idx_a]);
+                __m512d imag_a = _mm512_load_pd(&imag_vals_a[idx_a]);
+                __m512d real_b = _mm512_load_pd(&real_vals_b[idx_b]);
+                __m512d imag_b = _mm512_load_pd(&imag_vals_b[idx_b]);
+    
+                __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));
+                __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));
+    
+                if (overwrite) {
+                    _mm512_store_pd(&real_vals_final[i], real_res);
+                    _mm512_store_pd(&imag_vals_final[i], imag_res);
+                } else {
+                    __m512d existing_real = _mm512_load_pd(&real_vals_final[i]);
+                    __m512d existing_imag = _mm512_load_pd(&imag_vals_final[i]);
+    
+                    _mm512_store_pd(&real_vals_final[i], _mm512_add_pd(existing_real, real_res));
+                    _mm512_store_pd(&imag_vals_final[i], _mm512_add_pd(existing_imag, imag_res));
+                }
+            }
         }
-
+    
         // --- Epilogue ---
         #pragma omp parallel for
         for (unsigned int idx = simd_end; idx < end; ++idx) {
-            unsigned int idx_a = idx + offsetA - jump;
-            unsigned int idx_b = idx + offsetB - jump;
-
+            unsigned int idx_a = idx + a_offset;
+            unsigned int idx_b = idx + b_offset;
+    
             double real_a = real_vals_a[idx_a];
             double imag_a = imag_vals_a[idx_a];
             double real_b = real_vals_b[idx_b];
             double imag_b = imag_vals_b[idx_b];
-
-            // Accumulate instead of overwrite
-            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
-            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+    
+            if (overwrite) {
+                real_vals_final[idx] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+            }
         }
-
-        #ifdef DEBUG
+    
+        #ifdef DEEP_DEBUG
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-            printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count() / 1000.0);
+            printf("\t\trun_avx512 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
         #endif
-    }
-
+    }    
 
     // // old original code
     // template<>
@@ -901,8 +905,8 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     //     __m512d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
     //     int left_overs = loop_count - ((loop_count / 8) * 8);
     //     unsigned int vec_loop = (loop_count / 8);
-    //     unsigned int left_overs_start_at_A = k + offsetA - jump + 8 * (loop_count / 8);
-    //     unsigned int left_overs_start_at_B = k + offsetB - jump + 8 * (loop_count / 8);
+    //     unsigned int left_overs_start_at_A = k + offsetA - jump + PREFETCH_DIST * (loop_count / 8);
+    //     unsigned int left_overs_start_at_B = k + offsetB - jump + PREFETCH_DIST * (loop_count / 8);
 
     //     #pragma omp parallel for
     //     for (unsigned int i = 0; i < vec_loop; ++i) {
@@ -914,10 +918,10 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     //         unsigned int offsetB_idx = idx + offsetB - jump;
 
     //         // Prefetch the next set of values for better cache utilization
-    //         _mm_prefetch((const char*)&real_vals_a[offsetA_idx + 16], _MM_HINT_T0);
-    //         _mm_prefetch((const char*)&imag_vals_a[offsetA_idx + 16], _MM_HINT_T0);
-    //         _mm_prefetch((const char*)&real_vals_b[offsetB_idx + 16], _MM_HINT_T0);
-    //         _mm_prefetch((const char*)&imag_vals_b[offsetB_idx + 16], _MM_HINT_T0);
+    //         _mm_prefetch(&real_vals_a[offsetA_idx + PREFETCH_DIST], _MM_HINT_T0);
+    //         _mm_prefetch(&imag_vals_a[offsetA_idx + PREFETCH_DIST], _MM_HINT_T0);
+    //         _mm_prefetch(&real_vals_b[offsetB_idx + PREFETCH_DIST], _MM_HINT_T0);
+    //         _mm_prefetch(&imag_vals_b[offsetB_idx + PREFETCH_DIST], _MM_HINT_T0);
 
     //         __m512d real_a = _mm512_loadu_pd(&real_vals_a[offsetA_idx]);
     //         __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[offsetA_idx]);
@@ -973,368 +977,333 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
         _mm512_mask_storeu_ps(loc, mask, vec);
     }
     template<>
-    void run_avx512<float>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final) {
-
+    void run_avx512<float>(
+        unsigned int start, unsigned int end,
+        unsigned int a_offset, unsigned int b_offset,
+        float *real_vals_a, float *imag_vals_a,
+        float *real_vals_b, float *imag_vals_b,
+        float *real_vals_final, float *imag_vals_final, bool overwrite
+    ) {
         #ifdef DEEP_DEBUG
             std::cout << "Starting run_avx512 float -- " << std::endl;
-            auto start = std::chrono::high_resolution_clock::now();
+            auto start_time = std::chrono::high_resolution_clock::now();
         #endif
-        
-        unsigned int max_lenRes = lenRes - k;
-        unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
-        unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
 
-        unsigned int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
+        // Find first aligned SIMD index
+        unsigned int simd_start = start;
+        for (; simd_start + VEC_WIDTH <= end; simd_start++) {
+            if ((simd_start % VEC_WIDTH == 0) &&
+                ((simd_start + a_offset) % VEC_WIDTH == 0) &&
+                ((simd_start + b_offset) % VEC_WIDTH == 0)) {
+                break;
+            }
+        }
+        if (simd_start + VEC_WIDTH > end)
+            simd_start = end; // no SIMD possible
 
-        __m512 real_a, real_b; // a for valuesA and b for valuesB
-        __m512 imag_a, imag_b; // a for valuesA and b for valuesB
-        __m512 real_res, imag_res;
-        int left_overs = loop_count - ((loop_count / 16) * 16);
-        unsigned int vec_loop = (loop_count / 16);
-        unsigned int left_overs_start_at_A = k + offsetA - jump + 16 * (loop_count / 16);
-        unsigned int left_overs_start_at_B = k + offsetB - jump + 16 * (loop_count / 16);
+        unsigned int simd_end = end - ((end - simd_start) % VEC_WIDTH);
+
+        // --- Prologue (unaligned/scalar) ---
+        #pragma omp parallel for
+        for (unsigned int idx = start; idx < simd_start; ++idx) {
+            unsigned int idx_a = idx + a_offset;
+            unsigned int idx_b = idx + b_offset;
+
+            float real_a = real_vals_a[idx_a];
+            float imag_a = imag_vals_a[idx_a];
+            float real_b = real_vals_b[idx_b];
+            float imag_b = imag_vals_b[idx_b];
+
+            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
+        }
+
+        // --- SIMD aligned main loop ---
+        unsigned int simd_vec_blocks = (simd_end - simd_start) / VEC_WIDTH;
 
         #pragma omp parallel for
-        for (unsigned int i = 0; i < vec_loop; ++i) {
-            unsigned int idx = k + i * 16;
+        for (unsigned int i = 0; i < simd_vec_blocks; ++i) {
+            unsigned int idx   = simd_start + i * VEC_WIDTH;
+            unsigned int idx_a = idx + a_offset;
+            unsigned int idx_b = idx + b_offset;
 
-            // Prefetch the next set of values for better cache utilization
-            _mm_prefetch((const char*)&real_vals_a[idx + offsetA - jump + 32], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_a[idx + offsetA - jump + 32], _MM_HINT_T0);
-            _mm_prefetch((const char*)&real_vals_b[idx + offsetB - jump + 32], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals_b[idx + offsetB - jump + 32], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_b[idx_b + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_b[idx_b + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&real_vals_final[idx + PREFETCH_DIST], _MM_HINT_T0);
+            _mm_prefetch(&imag_vals_final[idx + PREFETCH_DIST], _MM_HINT_T0);
 
-            real_a = _mm512_loadu_ps(&real_vals_a[idx + offsetA - jump]);
-            imag_a = _mm512_loadu_ps(&imag_vals_a[idx + offsetA - jump]);
-            real_b = _mm512_loadu_ps(&real_vals_b[idx + offsetB - jump]);
-            imag_b = _mm512_loadu_ps(&imag_vals_b[idx + offsetB - jump]);
+            __m512 real_a = _mm512_load_ps(&real_vals_a[idx_a]);
+            __m512 imag_a = _mm512_load_ps(&imag_vals_a[idx_a]);
+            __m512 real_b = _mm512_load_ps(&real_vals_b[idx_b]);
+            __m512 imag_b = _mm512_load_ps(&imag_vals_b[idx_b]);
 
-            real_res = _mm512_fnmadd_ps(imag_a, imag_b, _mm512_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm512_fmadd_ps(real_a, imag_b, _mm512_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+            __m512 real_res = _mm512_fnmadd_ps(imag_a, imag_b, _mm512_mul_ps(real_a, real_b));
+            __m512 imag_res = _mm512_fmadd_ps(real_a, imag_b, _mm512_mul_ps(imag_a, real_b));
 
-            _mm512_storeu_ps(&real_vals_final[idx], real_res);
-            _mm512_storeu_ps(&imag_vals_final[idx], imag_res);
+            __m512 existing_real = _mm512_load_ps(&real_vals_final[idx]);
+            __m512 existing_imag = _mm512_load_ps(&imag_vals_final[idx]);
+
+            _mm512_store_ps(&real_vals_final[idx], _mm512_add_ps(existing_real, real_res));
+            _mm512_store_ps(&imag_vals_final[idx], _mm512_add_ps(existing_imag, imag_res));
         }
-        k += vec_loop * 16;
-        if (left_overs != 0) {
-            real_a = avx512_load_partial_float(left_overs, &real_vals_a[left_overs_start_at_A]);
-            imag_a = avx512_load_partial_float(left_overs, &imag_vals_a[left_overs_start_at_A]);
-            real_b = avx512_load_partial_float(left_overs, &real_vals_b[left_overs_start_at_B]);
-            imag_b = avx512_load_partial_float(left_overs, &imag_vals_b[left_overs_start_at_B]);
 
-            real_res = _mm512_fnmadd_ps(imag_a, imag_b, _mm512_mul_ps(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-            imag_res = _mm512_fmadd_ps(real_a, imag_b, _mm512_mul_ps(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
+        // --- Epilogue (unaligned/scalar) ---
+        #pragma omp parallel for
+        for (unsigned int idx = simd_end; idx < end; ++idx) {
+            unsigned int idx_a = idx + a_offset;
+            unsigned int idx_b = idx + b_offset;
 
-            avx512_store_partial_float(left_overs, &real_vals_final[k], real_res);
-            avx512_store_partial_float(left_overs, &imag_vals_final[k], imag_res);
+            float real_a = real_vals_a[idx_a];
+            float imag_a = imag_vals_a[idx_a];
+            float real_b = real_vals_b[idx_b];
+            float imag_b = imag_vals_b[idx_b];
+
+            real_vals_final[idx] += (real_a * real_b) - (imag_a * imag_b);
+            imag_vals_final[idx] += (real_a * imag_b) + (imag_a * real_b);
         }
 
         #ifdef DEEP_DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\trun_avx512 - Float took %f milliseconds\n", duration.count()/1000.0);
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            printf("\t\trun_avx512 - Float took %f milliseconds\n", duration.count() / 1000.0);
         #endif
     }
+
 
     // SPMV for AVX
     template<typename valTypeTemplate>
-    void run_spmv_avx512_1(valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
+    void run_spmv_avx512_1(unsigned int start, unsigned int end, valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
 
     template<typename valTypeTemplate>
-    void run_spmv_avx512_2(valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
+    void run_spmv_avx512_2(unsigned int start, unsigned int end, valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
 
     template<typename valTypeTemplate>
-    void run_spmv_avx512_0(valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
+    void run_spmv_avx512_0(unsigned int start, unsigned int end, valTypeTemplate *x_real_values, valTypeTemplate *x_imag_values, valTypeTemplate *real_vals, valTypeTemplate *imag_vals, valTypeTemplate *y_real_values, valTypeTemplate *y_imag_values, int dIndex, unsigned int dLength);
 
     // ------------------------AVX512 DOUBLE----------------------------------------
     template<>
-    void run_spmv_avx512_1<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
+    void run_spmv_avx512_1<double>(
+        unsigned int simd_start, unsigned int simd_end,
+        double *x_real_values, double *x_imag_values,
+        double *real_vals, double *imag_vals,
+        double *y_real_values, double *y_imag_values,
+        int dIndex, unsigned int dLength) {
 
-        #ifdef DEEP_DEBUG
-            std::cout << "Starting run_spmv_avx512_1 - Double -- " << std::endl;
-            auto start = std::chrono::high_resolution_clock::now();
-        #endif
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        auto start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
-        // printf("run_spmv_avx512_1 - Double\n");
-        unsigned int vec_loop = dLength / 8;
-        int left_overs = dLength % 8;
+        // --- Prologue ---
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < simd_start; ++i) {
+            unsigned int y_index = i - dIndex;
 
-        __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[i];
+            double x_i = x_imag_values[i];
 
+            y_real_values[y_index] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[y_index] += (a_r * x_i) + (a_i * x_r);
+        }
+
+        // --- SIMD Main Loop with Blocking ---
         #pragma omp parallel for schedule(static)
-        for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            // Prefetch future data to optimize cache usage
-            _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[i - dIndex + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[i - dIndex + 16], _MM_HINT_T0);
-        
-            // Load data into AVX-512 registers
-            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-            __m512d x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
-            __m512d x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
-        
-            __m512d y_real_vals_vec = _mm512_loadu_pd(&y_real_values[i - dIndex]);
-            __m512d y_imag_vals_vec = _mm512_loadu_pd(&y_imag_values[i - dIndex]);
-        
-            // Optimized FMA operations
-            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, 
-                                _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec));
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
-                                _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
-        
-            // Store results back
-            _mm512_storeu_pd(&y_real_values[i - dIndex], y_real_vals_vec);
-            _mm512_storeu_pd(&y_imag_values[i - dIndex], y_imag_vals_vec);
-        }
-        
-        // Handle leftover elements
-        if (left_overs != 0) {
-            unsigned int left_overs_start_at = vec_loop * 8;
-        
-            // Prefetch leftover elements
-            _mm_prefetch((const char*)&real_vals[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[left_overs_start_at - dIndex], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[left_overs_start_at - dIndex], _MM_HINT_T0);
-        
-            // Load leftover elements
-            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
-            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
-        
-            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex]);
-            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex]);
-        
-            // Optimized FMA operations for leftovers
-            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, 
-                                _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec));
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
-                                _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
-        
-            // Store leftover results
-            avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at - dIndex], y_real_vals_vec);
-            avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at - dIndex], y_imag_vals_vec);
-        }
-        
-        #ifdef DEEP_DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\trun_spmv_avx512_1 - Double took %f milliseconds\n", duration.count()/1000.0);
-        #endif
-        
-    }
-    template<>
-    void run_spmv_avx512_2<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
+        for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+            unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
 
-        #ifdef DEEP_DEBUG
-            std::cout << "Starting run_spmv_avx512_2 - Double -- " << std::endl;
-            auto start = std::chrono::high_resolution_clock::now();
-        #endif
+            for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+                unsigned int y_index = i - dIndex;
 
-        // // cross checking with non-simd version
-        // double *temp_real = new double[dLength];
-        // double *temp_imag = new double[dLength];
-        // for(int i = 0; i < dLength; i++) {
-        //     temp_real[i] = y_real_values[i];
-        //     temp_imag[i] = y_imag_values[i];
-        // }
+                _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&y_real_values[y_index + PREFETCH_DIST], _MM_HINT_T0);
 
-        unsigned int vec_loop = dLength / 8;
-        int left_overs = dLength % 8;
+                __m512d a_r = _mm512_load_pd(&real_vals[i]);
+                __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+                __m512d x_r = _mm512_load_pd(&x_real_values[i]);
+                __m512d x_i = _mm512_load_pd(&x_imag_values[i]);
 
-        // printf("vec_loop = %ld, left_overs = %ld, dIndex = %ld, dLength = %ld\n", vec_loop, left_overs, dIndex, dLength);
+                __m512d y_r = _mm512_load_pd(&y_real_values[y_index]);
+                __m512d y_i = _mm512_load_pd(&y_imag_values[y_index]);
 
-        __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
+                y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
+                y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
 
-        #pragma omp parallel for schedule(static)
-        for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            // Prefetch future data to improve cache efficiency
-            _mm_prefetch((const char*)&real_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[dIndex + i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[dIndex + i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[i + 16], _MM_HINT_T0);
-        
-            // Load data into AVX-512 registers
-            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-            __m512d x_real_vals_vec = _mm512_loadu_pd(&x_real_values[dIndex + i]);
-            __m512d x_imag_vals_vec = _mm512_loadu_pd(&x_imag_values[dIndex + i]);
-            __m512d y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
-            __m512d y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
-        
-            // Optimized FMA operations for high precision and performance
-            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, 
-                             _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec));
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
-                             _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
-        
-            // Store results back to memory
-            _mm512_store_pd(&y_real_values[i], y_real_vals_vec);
-            _mm512_store_pd(&y_imag_values[i], y_imag_vals_vec);
+                _mm512_store_pd(&y_real_values[y_index], y_r);
+                _mm512_store_pd(&y_imag_values[y_index], y_i);
+            }
         }
 
-        // Handle remaining elements
-        if (left_overs != 0) {
-            unsigned int left_overs_start_at = vec_loop * 8;
-        
-            // Prefetch leftover elements
-            _mm_prefetch((const char*)&real_vals[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&imag_vals[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_real_values[dIndex + left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&x_imag_values[dIndex + left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_real_values[left_overs_start_at], _MM_HINT_T0);
-            _mm_prefetch((const char*)&y_imag_values[left_overs_start_at], _MM_HINT_T0);
-        
-            // Load partial leftover elements
-            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[dIndex + left_overs_start_at]);
-            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[dIndex + left_overs_start_at]);
-            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
-            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
-        
-            // Optimized FMA operations for leftovers
-            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, 
-                             _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec));
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, 
-                             _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec));
-        
-            // Store leftover results
-            avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
-            avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
-        } 
-        
-        #ifdef DEEP_DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\trun_spmv_avx512_2 - Double took %f milliseconds\n", duration.count()/1000.0);
-        #endif
+        // --- Epilogue ---
+        #pragma omp parallel for
+        for (unsigned int i = simd_end; i < dLength; ++i) {
+            unsigned int y_index = i - dIndex;
 
-        // // printing y_real_values, y_imag_values in single line
-        // printf("y_real_values = [");
-        // for(unsigned int i = 0; i < dLength; i++) {
-        //     printf("%f, ", y_real_values[i]);
-        // }
-        // printf("]\n");
-        // printf("y_imag_values = [");
-        // for(unsigned int i = 0; i < dLength; i++) {
-        //     printf("%f, ", y_imag_values[i]);
-        // }
-        // printf("]\n");
-        
-        // #pragma omp simd
-        // for (unsigned int i = 0; i < dLength; i++) {
-        //     unsigned int x_idx = dIndex + i;
-        //     unsigned int y_idx = i;
-        //     temp_real[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-        //     temp_imag[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-        // }
-        // printf("temp_real = [");
-        // for(unsigned int i = 0; i < dLength; i++) {
-        //     printf("%f, ", temp_real[i]);
-        // }
-        // printf("]\n");
-        // printf("temp_imag = [");
-        // for(unsigned int i = 0; i < dLength; i++) {
-        //     printf("%f, ", temp_imag[i]);
-        // }
-        // printf("]\n");
-        // // write a quick check to see if temp_real and y_real_values are same and temp_imag and y_imag_values are same
-        // for(unsigned int i = 0; i < dLength; i++) {
-        //     if(temp_real[i] != y_real_values[i]) {
-        //         printf("temp_real[%ld] = %f, y_real_values[%ld] = %f\n", i, temp_real[i], i, y_real_values[i]);
-        //     }
-        //     if(temp_imag[i] != y_imag_values[i]) {
-        //         printf("temp_imag[%ld] = %f, y_imag_values[%ld] = %f\n", i, temp_imag[i], i, y_imag_values[i]);
-        //     }
-        // }
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[i];
+            double x_i = x_imag_values[i];
+
+            y_real_values[y_index] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[y_index] += (a_r * x_i) + (a_i * x_r);
+        }
+
+        #ifdef DEEP_DEBUG
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            printf("\t\trun_spmv_avx512_1 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
     }
 
     template<>
-    void run_spmv_avx512_0<double>(double *x_real_values, double *x_imag_values, double *real_vals, double *imag_vals, double *y_real_values, double *y_imag_values, int dIndex, unsigned int dLength) {
-
-        #ifdef DEEP_DEBUG
-            std::cout << "Starting run_spmv_avx512_0 - Double -- " << std::endl;
-            auto start = std::chrono::high_resolution_clock::now();
-        #endif
-
-        // printf("run_spmv_avx512_0 - Double\n");
-        unsigned int vec_loop = dLength / 8;
-        int left_overs = dLength % 8;
-
-        __m512d real_vals_vec, imag_vals_vec, x_real_vals_vec, x_imag_vals_vec, y_real_vals_vec, y_imag_vals_vec;
-
+    void run_spmv_avx512_2<double>(
+        unsigned int simd_start, unsigned int simd_end,
+        double *x_real_values, double *x_imag_values,
+        double *real_vals, double *imag_vals,
+        double *y_real_values, double *y_imag_values,
+        int dIndex, unsigned int dLength) {
+    
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        auto start_time = std::chrono::high_resolution_clock::now();
+    #endif
+    
+        // --- Prologue ---
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < simd_start; ++i) {
+            unsigned int x_index = i + dIndex;
+    
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[x_index];
+            double x_i = x_imag_values[x_index];
+    
+            y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+        }
+    
+        // --- SIMD Main Loop with Blocking ---
         #pragma omp parallel for schedule(static)
-        for (unsigned int i = 0; i < vec_loop * 8; i += 8) {
-            // Prefetch next iterations' data to reduce cache latency
-            _mm_prefetch((char*)&real_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((char*)&imag_vals[i + 16], _MM_HINT_T0);
-            _mm_prefetch((char*)&x_real_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((char*)&x_imag_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((char*)&y_real_values[i + 16], _MM_HINT_T0);
-            _mm_prefetch((char*)&y_imag_values[i + 16], _MM_HINT_T0);
-        
-            // Load data
-            __m512d real_vals_vec = _mm512_load_pd(&real_vals[i]);
-            __m512d imag_vals_vec = _mm512_load_pd(&imag_vals[i]);
-            __m512d x_real_vals_vec = _mm512_load_pd(&x_real_values[i]);
-            __m512d x_imag_vals_vec = _mm512_load_pd(&x_imag_values[i]);
-            __m512d y_real_vals_vec = _mm512_load_pd(&y_real_values[i]);
-            __m512d y_imag_vals_vec = _mm512_load_pd(&y_imag_values[i]);
-        
-            // Compute using FMA
-            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec);
-            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec);
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, y_imag_vals_vec);
-            y_imag_vals_vec = _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec);
-        
-            // Store results
-            _mm512_store_pd(&y_real_values[i], y_real_vals_vec);
-            _mm512_store_pd(&y_imag_values[i], y_imag_vals_vec);
+        for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+            unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+    
+            for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+                unsigned int x_index = i + dIndex;
+    
+                _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&x_real_values[x_index + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+    
+                __m512d a_r = _mm512_load_pd(&real_vals[i]);
+                __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+                __m512d x_r = _mm512_load_pd(&x_real_values[x_index]);
+                __m512d x_i = _mm512_load_pd(&x_imag_values[x_index]);
+    
+                __m512d y_r = _mm512_load_pd(&y_real_values[i]);
+                __m512d y_i = _mm512_load_pd(&y_imag_values[i]);
+    
+                y_r = _mm512_fmadd_pd(a_r, x_r, _mm512_fnmadd_pd(a_i, x_i, y_r));
+                y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
+    
+                _mm512_store_pd(&y_real_values[i], y_r);
+                _mm512_store_pd(&y_imag_values[i], y_i);
+            }
         }
-        
-        // Handle leftovers efficiently
-        if (left_overs != 0) {
-            unsigned int left_overs_start_at = vec_loop * 8;
-        
-            __m512d real_vals_vec = avx512_load_partial_double(left_overs, &real_vals[left_overs_start_at]);
-            __m512d imag_vals_vec = avx512_load_partial_double(left_overs, &imag_vals[left_overs_start_at]);
-            __m512d x_real_vals_vec = avx512_load_partial_double(left_overs, &x_real_values[left_overs_start_at]);
-            __m512d x_imag_vals_vec = avx512_load_partial_double(left_overs, &x_imag_values[left_overs_start_at]);
-            __m512d y_real_vals_vec = avx512_load_partial_double(left_overs, &y_real_values[left_overs_start_at]);
-            __m512d y_imag_vals_vec = avx512_load_partial_double(left_overs, &y_imag_values[left_overs_start_at]);
-        
-            y_real_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_real_vals_vec, y_real_vals_vec);
-            y_real_vals_vec = _mm512_fnmadd_pd(imag_vals_vec, x_imag_vals_vec, y_real_vals_vec);
-        
-            y_imag_vals_vec = _mm512_fmadd_pd(real_vals_vec, x_imag_vals_vec, y_imag_vals_vec);
-            y_imag_vals_vec = _mm512_fmadd_pd(imag_vals_vec, x_real_vals_vec, y_imag_vals_vec);
-        
-            avx512_store_partial_double(left_overs, &y_real_values[left_overs_start_at], y_real_vals_vec);
-            avx512_store_partial_double(left_overs, &y_imag_values[left_overs_start_at], y_imag_vals_vec);
+    
+        // --- Epilogue ---
+        #pragma omp parallel for
+        for (unsigned int i = simd_end; i < dLength; ++i) {
+            unsigned int x_index = i + dIndex;
+    
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[x_index];
+            double x_i = x_imag_values[x_index];
+    
+            y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
         }
-        
+    
         #ifdef DEEP_DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\trun_spmv_avx512_0 - Double took %f milliseconds\n", duration.count()/1000.0);
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            printf("\t\trun_spmv_avx512_2 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
         #endif
     }
 
+    template<>
+    void run_spmv_avx512_0<double>(
+        unsigned int simd_start, unsigned int simd_end,
+        double *x_real_values, double *x_imag_values,
+        double *real_vals, double *imag_vals,
+        double *y_real_values, double *y_imag_values,
+        int dIndex, unsigned int dLength) {
+    
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_spmv_avx512_0 - SIMD aligned version --" << std::endl;
+            auto start_time = std::chrono::high_resolution_clock::now();
+        #endif
+    
+        // --- Prologue ---
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < simd_start; ++i) {
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[i];
+            double x_i = x_imag_values[i];
+    
+            y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+        }
+    
+        // --- SIMD aligned loop with blocking ---
+        #pragma omp parallel for schedule(static)
+        for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+            unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+    
+            for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+                _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+                _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
+    
+                __m512d a_r = _mm512_load_pd(&real_vals[i]);
+                __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+                __m512d x_r = _mm512_load_pd(&x_real_values[i]);
+                __m512d x_i = _mm512_load_pd(&x_imag_values[i]);
+                __m512d y_r = _mm512_load_pd(&y_real_values[i]);
+                __m512d y_i = _mm512_load_pd(&y_imag_values[i]);
+    
+                y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
+                y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
+    
+                _mm512_store_pd(&y_real_values[i], y_r);
+                _mm512_store_pd(&y_imag_values[i], y_i);
+            }
+        }
+    
+        // --- Epilogue ---
+        #pragma omp parallel for
+        for (unsigned int i = simd_end; i < dLength; ++i) {
+            double a_r = real_vals[i];
+            double a_i = imag_vals[i];
+            double x_r = x_real_values[i];
+            double x_i = x_imag_values[i];
+    
+            y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+            y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+        }
+    
+        #ifdef DEEP_DEBUG
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            printf("\t\trun_spmv_avx512_0 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
+    }
+    
 
     // // ------------------------AVX512 FLOAT----------------------------------------
     // template<>
@@ -1349,35 +1318,32 @@ void run_without_vectorization(unsigned int k, unsigned int lenRes, unsigned int
     // void run_spmv_avx512_0<float>(float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, int dIndex, unsigned int dLength) {
     //     // TODO
     // }
-    
+
 #endif
 
 bool diagonal::isEmpty() {
-    // bool result = true;
-    // const int vecSize = 8;  // AVX-512 processes 8 doubles at a time
-    // __m512d zero = _mm512_setzero_pd();
+	bool found_nonzero = false;
 
-    // #pragma omp parallel for simd
-    // for (int i = 0; i < dLength; i += vecSize) {
-    //     __m512d realVec = _mm512_loadu_pd(&realValues[i]);
-    //     __m512d imagVec = _mm512_loadu_pd(&imagValues[i]);
+	#pragma omp parallel
+	{
+		bool local_found = false;
 
-    //     __mmask8 cmpReal = _mm512_cmp_pd_mask(realVec, zero, _CMP_NEQ_UQ);
-    //     __mmask8 cmpImag = _mm512_cmp_pd_mask(imagVec, zero, _CMP_NEQ_UQ);
+		#pragma omp for nowait
+		for (unsigned int i = 0; i < dLength; ++i) {
+			if (found_nonzero || local_found) continue;
 
-    //     if (cmpReal || cmpImag) {
-    //         result = false;
-    //     }
-    // }
-    // return result;
-    bool isEmpty = true;
-    #pragma omp parallel for reduction(&:isEmpty)
-    for (unsigned int i = 0; i < dLength; i++) {
-        if (realValues[i] != 0 || imagValues[i] != 0) {
-            isEmpty = false;
-        }
-    }
-    return isEmpty;
+			if (realValues[i] != 0.0 || imagValues[i] != 0.0) {
+				local_found = true;
+			}
+		}
+
+		if (local_found) {
+			#pragma omp atomic write
+			found_nonzero = true;
+		}
+	}
+
+	return !found_nonzero;
 }
 
 } // namespace diaq
