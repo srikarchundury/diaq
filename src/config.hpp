@@ -47,15 +47,15 @@ using valType = double; // double or float
 
 // ------- Vectorization related ------- //
 
-#if defined(__AVX512F__)
+#if defined(CPU_SUPPORTS_AVX512F)
 	#define VECTORIZATION_TYPE 2
 	#define NUM_BYTES_ALIGNED 64
 	#define VEC_WIDTH 8
-#elif defined(__AVX2__)
+#elif defined(CPU_SUPPORTS_AVX2)
 	#define VECTORIZATION_TYPE 1
 	#define NUM_BYTES_ALIGNED 32
 	#define VEC_WIDTH 4
-#elif defined(__SSE2__)
+#elif defined(CPU_SUPPORTS_SSE2)
 	#define VECTORIZATION_TYPE 0
 	#define NUM_BYTES_ALIGNED 16
 	#define VEC_WIDTH 2

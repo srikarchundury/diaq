@@ -122,28 +122,28 @@ if(DEFINED CUDA_ENABLED)
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
         )
 
-        # Check for AVX-512 support
-        check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512F)
-        check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
-        check_cxx_compiler_flag("-msse2" COMPILER_SUPPORTS_SSE2)
+        # # Check for AVX-512 support
+        # check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512F)
+        # check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
+        # check_cxx_compiler_flag("-msse2" COMPILER_SUPPORTS_SSE2)
 
-        # Set the flags accordingly
-        if (COMPILER_SUPPORTS_AVX512F)
-            message(STATUS "Compiling with AVX512F support")
-            add_compile_options(-mavx512f)
-            add_definitions(-DUSE_AVX512)
-        elseif (COMPILER_SUPPORTS_AVX2)
-            message(STATUS "Compiling with AVX2 support")
-            add_compile_options(-mavx2)
-            add_definitions(-DUSE_AVX2)
-        elseif (COMPILER_SUPPORTS_SSE2)
-            message(STATUS "Compiling with SSE2 support")
-            add_compile_options(-msse2)
-            add_definitions(-DUSE_SSE2)
-        else()
-            message(STATUS "No SIMD support detected - compiling scalar")
-            add_definitions(-DUSE_SCALAR)
-        endif()
+        # # Set the flags accordingly
+        # if (COMPILER_SUPPORTS_AVX512F)
+        #     message(STATUS "Compiling with AVX512F support")
+        #     add_compile_options(-mavx512f)
+        #     add_definitions(-DUSE_AVX512)
+        # elseif (COMPILER_SUPPORTS_AVX2)
+        #     message(STATUS "Compiling with AVX2 support")
+        #     add_compile_options(-mavx2)
+        #     add_definitions(-DUSE_AVX2)
+        # elseif (COMPILER_SUPPORTS_SSE2)
+        #     message(STATUS "Compiling with SSE2 support")
+        #     add_compile_options(-msse2)
+        #     add_definitions(-DUSE_SSE2)
+        # else()
+        #     message(STATUS "No SIMD support detected - compiling scalar")
+        #     add_definitions(-DUSE_SCALAR)
+        # endif()
 
         # Set position-independent code (PIC) for shared libraries
         set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -164,27 +164,22 @@ else()
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
         )
 
-        # Check for AVX-512 support
-        check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512F)
-        check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
-        check_cxx_compiler_flag("-msse2" COMPILER_SUPPORTS_SSE2)
+        # Read /proc/cpuinfo to detect hardware SIMD support
+        file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
 
-        # Set the flags accordingly
-        if (COMPILER_SUPPORTS_AVX512F)
-            message(STATUS "Compiling with AVX512F support")
-            add_compile_options(-mavx512f)
-            add_definitions(-DUSE_AVX512)
-        elseif (COMPILER_SUPPORTS_AVX2)
-            message(STATUS "Compiling with AVX2 support")
-            add_compile_options(-mavx2)
-            add_definitions(-DUSE_AVX2)
-        elseif (COMPILER_SUPPORTS_SSE2)
-            message(STATUS "Compiling with SSE2 support")
-            add_compile_options(-msse2)
-            add_definitions(-DUSE_SSE2)
+        # Set a variable based on detected flags
+        if (CPUINFO_CONTENTS MATCHES "avx512f")
+            message(STATUS "Detected AVX-512 in hardware")
+            add_definitions(-DCPU_SUPPORTS_AVX512F)
+        elseif (CPUINFO_CONTENTS MATCHES "avx2")
+            message(STATUS "Detected AVX2 in hardware")
+            add_definitions(-DCPU_SUPPORTS_AVX2)
+        elseif (CPUINFO_CONTENTS MATCHES "sse2")
+            message(STATUS "Detected SSE2 in hardware")
+            add_definitions(-DCPU_SUPPORTS_SSE2)
         else()
-            message(STATUS "No SIMD support detected - compiling scalar")
-            add_definitions(-DUSE_SCALAR)
+            message(STATUS "No SIMD hardware support detected")
+            add_definitions(-DCPU_SUPPORTS_SCALAR)
         endif()
 
         # Correctly link OpenMP to the `diaq` library
