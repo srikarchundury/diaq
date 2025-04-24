@@ -50,8 +50,14 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dIndex = newIndex;
         }
         std::shared_ptr<diagonal> copy() {
-            valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-            valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #if NUM_BYTES_ALIGNED == -1
+                valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #else
+                valType *real_vals = aligned_alloc_helper(dLength * sizeof(valType));
+                valType *imag_vals = aligned_alloc_helper(dLength * sizeof(valType));
+            #endif
+
             #pragma omp parallel for
             for(unsigned int i = 0; i < dLength; i++) {
                 real_vals[i] = realValues[i];
@@ -162,14 +168,29 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return newDiag;
         }
-        std::complex<valType>& operator[](unsigned int i) {
+        std::complex<valType> operator[](unsigned int i) const {
             if (i >= dLength) {
                 throw std::out_of_range("Index out of range");
             }
-            // Return a reference to a std::complex, constructed on the fly
-            // This does not create a temporary because we return a reference to the real and imag parts
-            return *(reinterpret_cast<std::complex<valType>*>(&realValues[i]));
+            return std::complex<valType>(realValues[i], imagValues[i]);
         }
+        void set(unsigned int i, const std::complex<valType>& val) {
+            if (i >= dLength) {
+                throw std::out_of_range("Index out of range");
+            }
+            realValues[i] = val.real();
+            imagValues[i] = val.imag();
+        }
+        void accumulate(const diagonal& other) {
+            const valType* real_other = other.realValues;
+            const valType* imag_other = other.imagValues;
+        
+            #pragma omp simd
+            for (unsigned int i = 0; i < dLength; ++i) {
+                realValues[i] += real_other[i];
+                imagValues[i] += imag_other[i];
+            }
+        }        
 };
 
 } // namespace diaq

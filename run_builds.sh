@@ -8,7 +8,7 @@ then
     mkdir cpu_build
     cd cpu_build
     cmake "${@:2}" ..
-    make -j 4
+    make -j
     cd ..
 fi
 
@@ -18,6 +18,6 @@ then
     mkdir gpu_build
     cd gpu_build
     cmake -DCUDA_ENABLED=1 "${@:2}" ..
-    make -j 4
+    make -j
     cd ..
 fi

@@ -9,10 +9,12 @@ project(diaq)
 # for warnings!
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable")
 
-# # Parallel Hashmap directory
-# set(PHMAP_DIR /mnt/beegfs/schundu3/thesis/parallel-hashmap)
-# # Add include directories
-# include_directories(${INC_DIR} ${PHMAP_DIR})
+include(CheckCXXCompilerFlag)
+
+# Parallel Hashmap directory
+set(PHMAP_DIR /mnt/beegfs/schundu3/thesis/parallel-hashmap)
+# Add include directories
+include_directories(${INC_DIR} ${PHMAP_DIR})
 
 # Look for OpenMP package and set OpenMP flags
 find_package(OpenMP REQUIRED)
@@ -32,6 +34,14 @@ if(DEFINED DEEP_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     add_definitions(-DDEEP_DEBUG)  # Define DEEP_DEBUG preprocessor flag
 endif()
+
+# L1 cache size detection!
+file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
+string(REGEX MATCH "[0-9]+" L1_SIZE_NUM "${L1_SIZE_RAW}")
+message(STATUS "********** L1 cache size detected: ${L1_SIZE_NUM} KB **********")
+math(EXPR L1_SIZE_BYTES "${L1_SIZE_NUM} * 1024")
+message(STATUS "L1 cache size detected: ${L1_SIZE_BYTES} bytes")
+add_compile_definitions(L1_CACHE_SIZE_BYTES=${L1_SIZE_BYTES})
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -110,10 +120,30 @@ if(DEFINED CUDA_ENABLED)
         target_compile_options(diaq PRIVATE 
             $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU vectorization
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
-            $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
-            $<$<COMPILE_LANGUAGE:CXX>:-mavx512f>       # Support for AVX-512
-            $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
         )
+
+        # # Check for AVX-512 support
+        # check_cxx_compiler_flag("-mavx512f" COMPILER_SUPPORTS_AVX512F)
+        # check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
+        # check_cxx_compiler_flag("-msse2" COMPILER_SUPPORTS_SSE2)
+
+        # # Set the flags accordingly
+        # if (COMPILER_SUPPORTS_AVX512F)
+        #     message(STATUS "Compiling with AVX512F support")
+        #     add_compile_options(-mavx512f)
+        #     add_definitions(-DUSE_AVX512)
+        # elseif (COMPILER_SUPPORTS_AVX2)
+        #     message(STATUS "Compiling with AVX2 support")
+        #     add_compile_options(-mavx2)
+        #     add_definitions(-DUSE_AVX2)
+        # elseif (COMPILER_SUPPORTS_SSE2)
+        #     message(STATUS "Compiling with SSE2 support")
+        #     add_compile_options(-msse2)
+        #     add_definitions(-DUSE_SSE2)
+        # else()
+        #     message(STATUS "No SIMD support detected - compiling scalar")
+        #     add_definitions(-DUSE_SCALAR)
+        # endif()
 
         # Set position-independent code (PIC) for shared libraries
         set_property(TARGET diaq PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -132,10 +162,25 @@ else()
         target_compile_options(diaq PRIVATE 
             $<$<COMPILE_LANGUAGE:CXX>:-march=native>  # Use -march=native for CPU for automatic vectorization
             $<$<COMPILE_LANGUAGE:CXX>:-O3>             # Use -O3 optimization level
-            $<$<COMPILE_LANGUAGE:CXX>:-mavx2>          # Support for AVX2
-            $<$<COMPILE_LANGUAGE:CXX>:-mavx512f>       # Support for AVX-512
-            $<$<COMPILE_LANGUAGE:CXX>:-msse2>          # Support for SSE2
         )
+
+        # Read /proc/cpuinfo to detect hardware SIMD support
+        file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
+
+        # Set a variable based on detected flags
+        if (CPUINFO_CONTENTS MATCHES "avx512f")
+            message(STATUS "Detected AVX-512 in hardware")
+            add_definitions(-DCPU_SUPPORTS_AVX512F)
+        elseif (CPUINFO_CONTENTS MATCHES "avx2")
+            message(STATUS "Detected AVX2 in hardware")
+            add_definitions(-DCPU_SUPPORTS_AVX2)
+        elseif (CPUINFO_CONTENTS MATCHES "sse2")
+            message(STATUS "Detected SSE2 in hardware")
+            add_definitions(-DCPU_SUPPORTS_SSE2)
+        else()
+            message(STATUS "No SIMD hardware support detected")
+            add_definitions(-DCPU_SUPPORTS_SCALAR)
+        endif()
 
         # Correctly link OpenMP to the `diaq` library
         target_link_libraries(diaq PRIVATE OpenMP::OpenMP_CXX)
