@@ -224,15 +224,27 @@ if(MAKE_TESTS)
 endif()
 
 # Add option to make test_for_disassembly
-option(MAKE_TEST_FOR_DISASSEMBLY "Enable building test_for_disassembly" OFF)
+option(MAKE_TEST_FOR_DISASSEMBLY "Enable building test_for_disassembly and its static lib" OFF)
 if(MAKE_TEST_FOR_DISASSEMBLY)
-    # Compile the test_for_disassembly.cpp file
-    add_executable(test_for_disassembly ${TESTS_DIR}/test_for_disassembly.cpp)
-    # Link the diaq library to the test and OpenMP
-    target_link_libraries(test_for_disassembly PRIVATE diaq OpenMP::OpenMP_CXX)
-    # Link PAPI library if PAPI_ON is enabled
+    # Compile test_for_disassembly.cpp into an object file with minimal optimization
+    add_library(test_for_disassembly_obj OBJECT ${TESTS_DIR}/test_for_disassembly.cpp)
+    target_compile_options(test_for_disassembly_obj PRIVATE -O0)
+
+    # Create a static library from the object
+    add_library(test_for_disassembly_static STATIC $<TARGET_OBJECTS:test_for_disassembly_obj>)
+    set_target_properties(test_for_disassembly_static PROPERTIES OUTPUT_NAME test_for_disassembly)
+
+    # Link diaq and OpenMP to the object for static linking
+    target_link_libraries(test_for_disassembly_static PRIVATE diaq OpenMP::OpenMP_CXX)
+
+    # Optionally build an executable from the same object
+    add_executable(test_for_disassembly_exec $<TARGET_OBJECTS:test_for_disassembly_obj>)
+    target_link_libraries(test_for_disassembly_exec PRIVATE diaq OpenMP::OpenMP_CXX)
+
+    # Link PAPI if enabled
     if(PAPI_ON)
-        target_link_libraries(test_for_disassembly $ENV{PAPI_DIR}/lib/libpapi.so)
+        target_link_libraries(test_for_disassembly_static $ENV{PAPI_DIR}/lib/libpapi.so)
+        target_link_libraries(test_for_disassembly_exec $ENV{PAPI_DIR}/lib/libpapi.so)
     endif()
 endif()
 
