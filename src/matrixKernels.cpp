@@ -192,17 +192,17 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 	for (unsigned int block_start = loop_start; block_start < loop_end; block_start += blockSize) {
         unsigned int block_end = std::min(block_start + blockSize, loop_end);
 
-        #if VECTORIZATION_TYPE == 0
+        #if VEC_TYPE == 0
             // TODO, change to match avx512 later
             run_sse(block_start, block_end, offsetA, offsetB, jump, lenDiagA, lenDiagB,
                     real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
-        #elif VECTORIZATION_TYPE == 1
+        #elif VEC_TYPE == 1
             run_avx(block_start, block_end, a_offset, b_offset,
                 real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
-        #elif VECTORIZATION_TYPE == 2
+        #elif VEC_TYPE == 2
             run_avx512(block_start, block_end, a_offset, b_offset,
                        real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
-        #elif VECTORIZATION_TYPE == -1
+        #elif VEC_TYPE == -1
             run_without_vectorization(block_start, block_end, a_offset, b_offset,
                                       real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
         #endif
@@ -1231,11 +1231,11 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 //                 // #pragma omp critical
 //                 // {
 //                     // printf("Negative diagonal!!\n");
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                         run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                         run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength); 
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else // run without vectorization
 //                         #pragma omp simd
@@ -1265,11 +1265,11 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 //                 // #pragma omp critical
 //                 // {
 //                     // printf("Positive diagonal!!\n");
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                             run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                             run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else // run without vectorization
 //                         #pragma omp simd
@@ -1301,11 +1301,11 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 //                 // #pragma omp critical
 //                 // {
 //                     // printf("Zero diagonal!!\n");
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                             run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                             run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else // run without vectorization
 //                         #pragma omp simd
@@ -1413,13 +1413,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
 
-								#if VECTORIZATION_TYPE == 2
+								#if VEC_TYPE == 2
 									run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 1
+								#elif VEC_TYPE == 1
                                     run_spmv_avx_1(simd_start, simd_end, x_real_values, x_imag_values,
                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 0
+								#elif VEC_TYPE == 0
 									run_spmv_sse_1(x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 								#else
@@ -1438,13 +1438,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
 
-								#if VECTORIZATION_TYPE == 2
+								#if VEC_TYPE == 2
 									run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 1
+								#elif VEC_TYPE == 1
                                     run_spmv_avx_2(simd_start, simd_end, x_real_values, x_imag_values,
                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 0
+								#elif VEC_TYPE == 0
 									run_spmv_sse_2(x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 								#else
@@ -1465,13 +1465,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
 
-								#if VECTORIZATION_TYPE == 2
+								#if VEC_TYPE == 2
 									run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 1
+								#elif VEC_TYPE == 1
                                     run_spmv_avx_0(simd_start, simd_end, x_real_values, x_imag_values,
                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VECTORIZATION_TYPE == 0
+								#elif VEC_TYPE == 0
 									run_spmv_sse_0(x_real_values, x_imag_values,
 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 								#else
@@ -1593,13 +1593,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     
 //             // Select and call appropriate kernel
 //             if (dIndex < 0) {
-//     #if VECTORIZATION_TYPE == 2
+//     #if VEC_TYPE == 2
 //                 run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
 //                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 1
+//     #elif VEC_TYPE == 1
 //                 run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 0
+//     #elif VEC_TYPE == 0
 //                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
 //     #else
@@ -1612,13 +1612,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 //                 }
 //     #endif
 //             } else if (dIndex > 0) {
-//     #if VECTORIZATION_TYPE == 2
+//     #if VEC_TYPE == 2
 //                 run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
 //                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 1
+//     #elif VEC_TYPE == 1
 //                 run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 0
+//     #elif VEC_TYPE == 0
 //                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
 //     #else
@@ -1631,13 +1631,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 //                 }
 //     #endif
 //             } else {
-//     #if VECTORIZATION_TYPE == 2
+//     #if VEC_TYPE == 2
 //                 run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
 //                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 1
+//     #elif VEC_TYPE == 1
 //                 run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VECTORIZATION_TYPE == 0
+//     #elif VEC_TYPE == 0
 //                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
 //                                y_real_values, y_imag_values, dIndex, dLength);
 //     #else
@@ -1722,11 +1722,11 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 //                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 //                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
     
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                         run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                         run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else
 //                         #pragma omp simd
@@ -1746,11 +1746,11 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 //                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 //                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
     
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                         run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                         run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else
 //                         #pragma omp simd
@@ -1772,11 +1772,11 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 //                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
 //                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
     
-//                     #if VECTORIZATION_TYPE == 2
+//                     #if VEC_TYPE == 2
 //                         run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 1
+//                     #elif VEC_TYPE == 1
 //                         run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VECTORIZATION_TYPE == 0
+//                     #elif VEC_TYPE == 0
 //                         run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
 //                     #else
 //                         #pragma omp simd

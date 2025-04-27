@@ -24,13 +24,14 @@ else()
     message(FATAL_ERROR "OpenMP flags were not found!")
 endif()
 
-# Check if DEBUG variable is set
-if(DEFINED DEBUG)
+option(DEBUG "Enable debugging mode" OFF)
+if(DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     add_definitions(-DDEBUG)  # Define DEBUG preprocessor flag
 endif()
 
-if(DEFINED DEEP_DEBUG)
+option(DEEP_DEBUG "Enable deep debugging mode" OFF)
+if(DEEP_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     add_definitions(-DDEEP_DEBUG)  # Define DEEP_DEBUG preprocessor flag
 endif()
@@ -96,8 +97,10 @@ set(CUDA_SOURCES
 # Set include directories
 include_directories(${INC_DIR})
 
+# Add option for CUDA_ENABLED, default is OFF
+option(CUDA_ENABLED "Enable CUDA support" OFF)
 # Check if CUDA_ENABLED variable is set
-if(DEFINED CUDA_ENABLED)
+if(CUDA_ENABLED)
         message(STATUS "CUDA is enabled")
 
         # Find CUDA package and set NVCC flags for CUDA compilation
@@ -200,23 +203,36 @@ else()
         # endif()
 endif()
 
-# Check if PAPI_ON variable is set
-if(DEFINED PAPI_ON)
+# Add option for PAPI_ON, default is OFF
+option(PAPI_ON "Enable PAPI support" OFF)
+if(PAPI_ON)
     target_link_libraries(diaq $ENV{PAPI_DIR}/lib/libpapi.so)
     message(STATUS "PAPI is linked")
 endif()
 
-# Check if MAKE_TESTS variable is set
-if(DEFINED MAKE_TESTS)
+# Add option for MAKE_TESTS, default is OFF
+option(MAKE_TESTS "Enable building tests" OFF)
+if(MAKE_TESTS)
     # Compile the tests.cpp file
     add_executable(tests ${TESTS_DIR}/tests.cpp)
-
     # Link the diaq library to the tests and OpenMP
     target_link_libraries(tests PRIVATE diaq OpenMP::OpenMP_CXX)
-
-    # Link PAPI library if PAPI_ON is defined to tests
-    if(DEFINED PAPI_ON)
+    # Link PAPI library if PAPI_ON is enabled
+    if(PAPI_ON)
         target_link_libraries(tests $ENV{PAPI_DIR}/lib/libpapi.so)
+    endif()
+endif()
+
+# Add option to make test_for_disassembly
+option(MAKE_TEST_FOR_DISASSEMBLY "Enable building test_for_disassembly" OFF)
+if(MAKE_TEST_FOR_DISASSEMBLY)
+    # Compile the test_for_disassembly.cpp file
+    add_executable(test_for_disassembly ${TESTS_DIR}/test_for_disassembly.cpp)
+    # Link the diaq library to the test and OpenMP
+    target_link_libraries(test_for_disassembly PRIVATE diaq OpenMP::OpenMP_CXX)
+    # Link PAPI library if PAPI_ON is enabled
+    if(PAPI_ON)
+        target_link_libraries(test_for_disassembly $ENV{PAPI_DIR}/lib/libpapi.so)
     endif()
 endif()
 

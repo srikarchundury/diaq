@@ -240,7 +240,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::cout << shape[i] << ",";
             }
             std::cout << shape[shape.size()-1] << ")" << std::endl;
-            std::map<int, std::shared_ptr<diagonal>> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
+            // std::map<int, std::shared_ptr<diagonal>> sortedDiagonalMap(diagonalMap.begin(), diagonalMap.end());
             for(size_t i = 0; i < dIndices.size(); i++) {
                 dPointers[i]->print();
             }

@@ -59,9 +59,9 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         double *real_vals_b, double *imag_vals_b,
         double *real_vals_final, double *imag_vals_final, bool overwrite
     ) {
-    #ifdef DEEP_DEBUG
-        auto start_time = std::chrono::high_resolution_clock::now();
-    #endif
+        #ifdef DEEP_DEBUG
+            auto start_time = std::chrono::high_resolution_clock::now();
+        #endif
 
         // Find first aligned SIMD index
         unsigned int simd_start = start;

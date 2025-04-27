@@ -48,19 +48,19 @@ using valType = double; // double or float
 // ------- Vectorization related ------- //
 
 #if defined(CPU_SUPPORTS_AVX512F)
-	#define VECTORIZATION_TYPE 2
+	#define VEC_TYPE 2
 	#define NUM_BYTES_ALIGNED 64
 	#define VEC_WIDTH 8
 #elif defined(CPU_SUPPORTS_AVX2)
-	#define VECTORIZATION_TYPE 1
+	#define VEC_TYPE 1
 	#define NUM_BYTES_ALIGNED 32
 	#define VEC_WIDTH 4
 #elif defined(CPU_SUPPORTS_SSE2)
-	#define VECTORIZATION_TYPE 0
+	#define VEC_TYPE 0
 	#define NUM_BYTES_ALIGNED 16
 	#define VEC_WIDTH 2
 #else
-	#define VECTORIZATION_TYPE -1
+	#define VEC_TYPE -1
 	#define NUM_BYTES_ALIGNED -1
 	#define VEC_WIDTH 1
 #endif
@@ -77,7 +77,7 @@ using valType = double; // double or float
 #define CACHE_UTILIZATION 0.75
 #define NUM_ARRAYS_ACCESSED 6
 
-#define BLOCK_SIZE_RAW (int)((L1_CACHE_SIZE_BYTES * CACHE_UTILIZATION) / (NUM_ARRAYS_ACCESSED * sizeof(valType)))
+#define BLOCK_SIZE_RAW (int)((L1_CACHE_SIZE_BYTES * CACHE_UTILIZATION) / (NUM_ARRAYS_ACCESSED * sizeof(diaq::valType)))
 #define BLOCK_SIZE ((BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH > 0 ? (BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH : VEC_WIDTH)
 // Alloc helper
 valType* aligned_alloc_helper(unsigned int size);

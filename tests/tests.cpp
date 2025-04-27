@@ -2966,8 +2966,16 @@ int main(int argc, char **argv) {
         std::string command = "python tests/tests_list_tests.py";
         system(command.c_str());
     }
+    else if(strcmp(argv[1], "custom") == 0) {
+        
+    }
+    else {
+        std::cout << " -- Invalid test case -- " << std::endl;
+    }
+
     #ifdef PAPI_ON
         diaq::cleanupPAPI();
     #endif
+
     return 0;
 }

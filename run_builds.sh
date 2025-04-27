@@ -17,7 +17,7 @@ then
     rm -rf gpu_build
     mkdir gpu_build
     cd gpu_build
-    cmake -DCUDA_ENABLED=1 "${@:2}" ..
+    cmake -DCUDA_ENABLED=ON "${@:2}" ..
     make -j
     cd ..
 fi

@@ -2,6 +2,7 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
 from glob import glob
 import os
+import re
 
 __version__ = "0.0.1"
 cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED environment variable is set to '1'
@@ -17,12 +18,24 @@ compile_args = [
     "-O3",
     "-lstdc++",
     "-fopenmp",
-    "-mavx2",
-    "-msse2",
-    "-mavx512f", 
+    # "-mavx2",
+    # "-msse2",
+    # "-mavx512f", 
     "-fPIC",
     "-I/mnt/beegfs/schundu3/thesis/parallel-hashmap"  # Add the include path for parallel_hashmap
 ]
+
+# Read /proc/cpuinfo to determine supported instruction sets
+with open("/proc/cpuinfo", "r") as f:
+    cpuinfo = f.read()
+
+if re.search(r"sse2", cpuinfo, re.IGNORECASE):
+    compile_args.append("-msse2")
+if re.search(r"avx2", cpuinfo, re.IGNORECASE):
+    compile_args.append("-mavx2")
+if re.search(r"avx512f", cpuinfo, re.IGNORECASE):
+    compile_args.append("-mavx512f")
+
 link_args = ['-lgomp', '-lpthread']
 cpu_lib_dirs = [os.path.abspath("./cpu_build/lib")]
 libs = ["diaq"]

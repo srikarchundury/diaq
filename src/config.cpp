@@ -31,16 +31,17 @@ namespace diaq {
     // }
 
     void print_simd_info() {
-        #if VECTORIZATION_TYPE == 2
+        #if VEC_TYPE == 2
             std::cout << "[SIMD Info] AVX512F detected\n";
-        #elif VECTORIZATION_TYPE == 1
+        #elif VEC_TYPE == 1
             std::cout << "[SIMD Info] AVX2 detected\n";
-        #elif VECTORIZATION_TYPE == 0
+        #elif VEC_TYPE == 0
             std::cout << "[SIMD Info] SSE2 detected\n";
         #else
             std::cout << "[SIMD Info] No SIMD detected, using scalar code\n";
         #endif
 
+        std::cout << "[SIMD Info] VEC_TYPE: " << VEC_TYPE << "\n";
         std::cout << "[SIMD Info] NUM_BYTES_ALIGNED: " << NUM_BYTES_ALIGNED << "\n";
         std::cout << "[SIMD Info] VEC_WIDTH: " << VEC_WIDTH << "\n";
         std::cout << "[SIMD Info] BLOCK_SIZE: " << BLOCK_SIZE << "\n";
