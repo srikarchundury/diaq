@@ -3987,6 +3987,16 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 		auto start = std::chrono::high_resolution_clock::now();
 	#endif
 
+    if (A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
+        #ifdef DEBUG
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\t expm_negative_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
+
+        return expm_negative_taylor(A, t, max_iterations, scale_cutoff);
+    }
+
 	// Step 1: Estimate the 1-norm
 	valType norm_est = A->estimate_1norm();
 	valType scaled_norm = t * norm_est;
