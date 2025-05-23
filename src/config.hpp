@@ -74,7 +74,8 @@ using valType = double; // double or float
 	#define L1_CACHE_SIZE_BYTES 32768
 #endif
 
-#define CACHE_UTILIZATION 0.75
+// utilization ratio
+#define CACHE_UTILIZATION 0.90
 #define NUM_ARRAYS_ACCESSED 6
 
 #define BLOCK_SIZE_RAW (int)((L1_CACHE_SIZE_BYTES * CACHE_UTILIZATION) / (NUM_ARRAYS_ACCESSED * sizeof(diaq::valType)))
