@@ -740,41 +740,6 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             return minor;
         }
 
-        void addMatrixScaled(std::shared_ptr<diaQMatrix> B, valType real_scale_factor) {
-            // this = this + B * scale_factor
-            #ifdef DEBUG
-                printf("starting addMatrixScaled -- ");
-                auto start = std::chrono::high_resolution_clock::now();
-            #endif
-
-            for(size_t i = 0; i < B->dIndices.size(); i++) {
-                int dIndex = B->dIndices[i];
-                std::shared_ptr<diagonal> dB = B->dPointers[i];
-                auto itA = diagonalMap.find(dIndex);
-                if(itA == diagonalMap.end()) {
-                    // If the diagonal does not exist in the current matrix, add it
-                    diagonalMap.insert({dIndex, dB->scale_by_real(real_scale_factor)});
-                } else {
-                    // If the diagonal exists, add the elements
-                    std::shared_ptr<diagonal> dA = itA->second;
-                    valType *dA_real_vals = dA->realValues;
-                    valType *dA_imag_vals = dA->imagValues;
-                    valType *dB_real_vals = dB->realValues;
-                    valType *dB_imag_vals = dB->imagValues;
-                    #pragma omp simd
-                    for(unsigned int i = 0; i < dA->dLength; i++) {
-                        dA_real_vals[i] += real_scale_factor * dB_real_vals[i];
-                        dA_imag_vals[i] += real_scale_factor * dB_imag_vals[i];
-                    }
-                }
-            }
-
-            #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
-                std::cout << "\t\t addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
-            #endif
-        }
-
         void multiplyScalar(valType real_scale_factor, valType imag_scale_factor) {
             // this = this * scale_factor (complex multiplication)
             #ifdef DEBUG
@@ -815,8 +780,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 auto itA = diagonalMap.find(dIndex);
                 if(itA == diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
-                    diagonalMap.insert({dIndex, dB->multiply(real_scale_factor, imag_scale_factor)});
-
+                    std::shared_ptr<diagonal> dNew = dB->multiply(real_scale_factor, imag_scale_factor);
+                    diagonalMap.insert({dIndex, dNew});
+                    dIndices.push_back(dIndex);
+                    dPointers.push_back(dNew);
                 } else {
                     // If the diagonal exists, add the elements
                     std::shared_ptr<diagonal> dA = itA->second;

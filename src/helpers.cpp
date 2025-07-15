@@ -26,8 +26,8 @@ std::string compare(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B
 		for (auto d : only_in_B) std::cout << d << " ";
 		std::cout << std::endl;
 
-		A->print();
-		B->print();
+		// A->print();
+		// B->print();
 		return "false - size mis-match";
 	}
 

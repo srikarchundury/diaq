@@ -4097,8 +4097,8 @@ std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, va
 
     for (int k = 1; k <= 6; k++) { // Degree-13 approximation (only need terms up to 6)
         X_power = product(X_power, A_s); // Compute X^(2k+1)
-        U->addMatrixScaled(X_power, pade_numer[k]); // Add to U numerator
-        V->addMatrixScaled(X_power, pade_denom[k]); // Add to V denominator
+        U->addMatrixScaled(X_power, pade_numer[k], 0.0); // Add to U numerator
+        V->addMatrixScaled(X_power, pade_denom[k], 0.0); // Add to V denominator
     }
 
     #ifdef DEEP_DEBUG
