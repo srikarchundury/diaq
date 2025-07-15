@@ -775,6 +775,75 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #endif
         }
 
+        void multiplyScalar(valType real_scale_factor, valType imag_scale_factor) {
+            // this = this * scale_factor (complex multiplication)
+            #ifdef DEBUG
+                printf("starting multiplyScalar -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            for(size_t i = 0; i < dIndices.size(); i++) {
+                std::shared_ptr<diagonal> d = dPointers[i];
+                valType *real_vals = d->realValues;
+                valType *imag_vals = d->imagValues;
+                #pragma omp parallel for
+                for(unsigned int j = 0; j < d->dLength; j++) {
+                    valType a = real_vals[j];
+                    valType b = imag_vals[j];
+                    // (a + ib) * (real_scale_factor + i*imag_scale_factor)
+                    real_vals[j] = a * real_scale_factor - b * imag_scale_factor;
+                    imag_vals[j] = a * imag_scale_factor + b * real_scale_factor;
+                }
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "\t\t multiplyScalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+        }
+
+        void addMatrixScaled(std::shared_ptr<diaQMatrix> B, valType real_scale_factor, valType imag_scale_factor) {
+            // this = this + B * scale_factor
+            #ifdef DEBUG
+                printf("starting addMatrixScaled -- ");
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            for(size_t i = 0; i < B->dIndices.size(); i++) {
+                int dIndex = B->dIndices[i];
+                std::shared_ptr<diagonal> dB = B->dPointers[i];
+                auto itA = diagonalMap.find(dIndex);
+                if(itA == diagonalMap.end()) {
+                    // If the diagonal does not exist in the current matrix, add it
+                    diagonalMap.insert({dIndex, dB->multiply(real_scale_factor, imag_scale_factor)});
+
+                } else {
+                    // If the diagonal exists, add the elements
+                    std::shared_ptr<diagonal> dA = itA->second;
+                    valType *dA_real_vals = dA->realValues;
+                    valType *dA_imag_vals = dA->imagValues;
+                    valType *dB_real_vals = dB->realValues;
+                    valType *dB_imag_vals = dB->imagValues;
+                    #pragma omp simd
+                    for(unsigned int i = 0; i < dA->dLength; i++) {
+                        valType a = dA_real_vals[i];
+                        valType b = dA_imag_vals[i];
+                        valType c = dB_real_vals[i];
+                        valType d = dB_imag_vals[i];
+                        // (a + ib) + (real_scale_factor + i*imag_scale_factor) * (c + id)
+                        // = (a + real_scale_factor*c - imag_scale_factor*d) + i(b + real_scale_factor*d + imag_scale_factor*c)
+                        dA_real_vals[i] += real_scale_factor * c - imag_scale_factor * d;
+                        dA_imag_vals[i] += real_scale_factor * d + imag_scale_factor * c;
+                    }
+                }
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "\t\t addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+        }
+
         std::shared_ptr<diaQMatrix> adjugate() {
             // Compute the adjugate of the matrix
             // The adjugate of a matrix is the transpose of the cofactor matrix

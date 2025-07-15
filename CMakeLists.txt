@@ -85,6 +85,8 @@ set(SOURCES
 	${SRC_DIR}/norms.cpp
 	${SRC_DIR}/vectorKernels.hpp
 	${SRC_DIR}/vectorKernels.cpp
+    ${SRC_DIR}/helpers.hpp
+    ${SRC_DIR}/helpers.cpp
 )
 
 set(CUDA_SOURCES

@@ -26,7 +26,7 @@ class identityMatrix : public diaQMatrix {
 			std::shared_ptr<diagonal> d = std::make_shared<diagonal>(0, s, real, imag);
 			this->setDiagonal(0, d);
 		}
-};;
+};
 
 class permutationMatrix : public diaQMatrix {
 	public:

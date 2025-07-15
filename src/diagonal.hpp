@@ -168,6 +168,32 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return newDiag;
         }
+
+        std::shared_ptr<diagonal> multiply(valType real, valType imag) {
+            #ifdef DEBUG
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            if (real == 0.0 && imag == 0.0) {
+                // return empty diagonal
+                return std::make_shared<diagonal>(dIndex, dLength);
+            }
+
+            std::shared_ptr<diagonal> C = std::make_shared<diagonal>(dIndex, dLength);
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < dLength; i++) {
+                C->realValues[i] = real * realValues[i] - imag * imagValues[i];
+                C->imagValues[i] = real * imagValues[i] + imag * realValues[i];
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "multiply took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return C;
+        }
+
         std::complex<valType> operator[](unsigned int i) const {
             if (i >= dLength) {
                 throw std::out_of_range("Index out of range");

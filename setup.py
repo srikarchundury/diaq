@@ -7,6 +7,11 @@ import re
 __version__ = "0.0.1"
 cuda_enabled = os.getenv("CUDA_ENABLED") == "1"  # Check if the CUDA_ENABLED environment variable is set to '1'
 
+# Force optimization level to -O3
+os.environ["CFLAGS"] = "-O3"
+os.environ["CXXFLAGS"] = "-O3"
+os.environ["CPPFLAGS"] = "-O3"
+
 sources = ["include/pythonWrappers.cpp"]
 d_macros = [('VERSION_INFO', __version__)]
 compile_args = [

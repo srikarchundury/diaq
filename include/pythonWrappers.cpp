@@ -64,6 +64,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::automatic)
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::automatic)
         .def("multiplyVector", &diaq::diaQMatrix::multiplyVector, py::return_value_policy::automatic)
+        .def("multiplyScalar", &diaq::diaQMatrix::multiplyScalar, py::return_value_policy::automatic)
         // operator bindings
         .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::product(a, b);
@@ -122,7 +123,21 @@ PYBIND11_MODULE(diaq, m) {
             py::arg("diagonal_pos"),
             py::return_value_policy::automatic
         )
+        .def(
+            "addMatrixScaled",
+            [](std::shared_ptr<diaq::diaQMatrix> self, std::shared_ptr<diaq::diaQMatrix> B, diaq::valType real_scale_factor, diaq::valType imag_scale_factor) {
+                return self->addMatrixScaled(B, real_scale_factor, imag_scale_factor);
+            },
+            py::arg("B"),
+            py::arg("real_scale_factor"),
+            py::arg("imag_scale_factor"),
+            py::return_value_policy::automatic
+        )
         ;
+
+    // // diaq::zeroMatrix class
+    // py::class_<diaq::zeroMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::zeroMatrix>>(m, "zeroMatrix")
+    //     .def(py::init<unsigned int, unsigned int>());
 
     // diaq::identityMatrix class
     py::class_<diaq::identityMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::identityMatrix>>(m, "identityMatrix")
@@ -219,7 +234,17 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::automatic
         );
-    
+
+        // m.def(
+        //     "from_sparse_pauli_op",
+        //     [](py::object sparse_pauli_op) {
+        //         // Convert the sparse Pauli operator to a diaQMatrix
+        //         return diaq::from_sparse_pauli_op(sparse_pauli_op);
+        //     },
+        //     py::arg(),
+        //     py::return_value_policy::automatic
+        // );
+
         m.def(
         "from_numpy_vector",
         [](py::array_t<std::complex<diaq::valType>> vals) {
@@ -232,7 +257,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::automatic
         );
-    
+
         m.def(
             "to_numpy",
             [](std::shared_ptr<diaq::diaQMatrix> A) {
@@ -562,6 +587,14 @@ PYBIND11_MODULE(diaq, m) {
             return result;
         },
         py::arg(), py::arg(), py::return_value_policy::automatic
+    );
+
+    m.def(
+        "compare",
+        &diaq::compare,
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
     );
 
 } // end of PYBIND11_MODULE
