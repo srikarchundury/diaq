@@ -163,11 +163,44 @@ endif()
 #include "diaq.hpp"
 
 int main() {
-    auto m1 = diaq::from_vector({1,2,3,4}, {2,2});
-    auto m2 = diaq::from_vector({5,6,7,8}, {2,2});
+    std::cout << " -- testing identity_kron_matrix_times_vector -- " << std::endl;
 
-    auto res = diaq::product(m1, m2);
-    res.print();
+    // Define a 4x4 prime number matrix
+    diaq::valType prime_vals[16] = {
+        2, 3, 5, 7,
+        11, 13, 17, 19,
+        23, 29, 31, 37,
+        41, 43, 47, 53
+    };
+    std::array<unsigned int, 2> shape = {4, 4};
+    auto dense_prime_matrix = std::make_shared<diaq::denseMatrix>(shape, prime_vals);
+    auto gate_matrix = dense_prime_matrix->convertToDiaQ();
+
+    // Print the gate matrix
+    gate_matrix->print();
+
+    // Build I4 ⊗ gate_matrix
+    auto id4 = std::make_shared<diaq::identityMatrix>(4);
+    auto mat = diaq::kron_product(id4, gate_matrix);
+
+    // Input vector x
+    auto x = std::make_shared<diaq::vector>(16, 1.0);
+
+    // Compute result using full kron_product
+    auto correct_y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
+    diaq::spMV(mat, x, correct_y);
+    std::cout << " -- correct answer -- " << std::endl;
+    correct_y->print();
+
+    // Compute using optimized identity_kron_matrix_times_vector
+    auto y = std::make_shared<diaq::vector>(mat->shape[0], 0.0);
+    diaq::identity_kron_matrix_times_vector(2, gate_matrix, x, y);
+    std::cout << " -- optimized version -- " << std::endl;
+    y->print();
+
+    // Check correctness
+    std::cout << "Checking correctness: " 
+              << check_vectors(correct_y, y) << std::endl;
 
     return 0;
 }
@@ -196,12 +229,15 @@ DiaQ provides the **core kernels and sparse matrix formats** used in the larger 
 If you use DiaQ in your work, please cite the [arXiv paper (arXiv:2405.01250)](https://arxiv.org/abs/2405.01250):  
 
 ```bibtex
-@misc{diaq2024,
-  title     = {DiaQ: Sparse Quantum Simulation with Diagonal-Aware Kernels},
-  author    = {Chundury, Srikar and Li, Jiajia and et al.},
-  year      = {2024},
-  eprint    = {2405.01250},
-  archivePrefix = {arXiv},
-  primaryClass  = {quant-ph}
+@misc{chundury2024diaqefficientstatevectorquantum,
+      title={DiaQ: Efficient State-Vector Quantum Simulation}, 
+      author={Srikar Chundury and Jiajia Li and In-Saeng Suh and Frank Mueller},
+      year={2024},
+      eprint={2405.01250},
+      archivePrefix={arXiv},
+      primaryClass={quant-ph},
+      url={https://arxiv.org/abs/2405.01250}, 
 }
 ```
+
+We are currently preparing to submit this work to PPoPP26, and a related accelerator for systolic arrays is being targeted for submission to HPCA26.
