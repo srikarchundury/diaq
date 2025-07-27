@@ -161,18 +161,23 @@ if(CUDA_ENABLED)
 
     cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
     add_definitions(-DCUDA_ENABLED)
-    target_compile_options(diaq_core PRIVATE -march=native -O3)
+    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})   # ✅ add OpenMP flags for GPU build too
+    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)                        # ✅ link OpenMP
     set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
     set(BUILD_TYPE "gpu_build")
+
 else()
     message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
     add_library(diaq_core SHARED ${SOURCES})
-    target_compile_options(diaq_core PRIVATE -march=native -O3)
-    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})   # ✅ add OpenMP flags for CPU build
+    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)                        # ✅ link OpenMP
     set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
     set(BUILD_TYPE "cpu_build")
 endif()
 
+# =====================================================
+# PAPI linking
+# =====================================================
 if(PAPI)
     if(EXISTS "$ENV{PAPI_DIR}/lib/libpapi.so")
         target_link_libraries(diaq_core $ENV{PAPI_DIR}/lib/libpapi.so)

@@ -545,7 +545,7 @@ void run_without_vectorization(unsigned int start, unsigned int end, unsigned in
         return xmm;
     }
     void sse_store_partial_float(int n, float *loc, __m128 vec) {
-        #pragma unroll
+        #pragma GCC unroll 8
         for(int i = 0; i < n; i++){
             loc[i] = vec[i];
         }
