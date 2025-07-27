@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(diaq)
 
+# ==============================================
 # Colors for messages
+# ==============================================
 string(ASCII 27 Esc)
 set(Reset "${Esc}[m")
 set(BoldBlue "${Esc}[1;34m")
@@ -9,38 +11,33 @@ set(BoldGreen "${Esc}[1;32m")
 set(BoldRed "${Esc}[1;31m")
 set(BoldYellow "${Esc}[1;33m")
 
-# =====================================================
-# Compiler and standard settings
-# =====================================================
+# ==============================================
+# Compiler & standard
+# ==============================================
 message(STATUS "${BoldBlue}>>> Setting compiler flags and C++ standard${Reset}")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-c++17-extensions -Wno-pass-failed=transform-warning")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-sign-compare -fPIC")
 
 include(CheckCXXCompilerFlag)
 
-# =====================================================
+# ==============================================
 # Directories and dependencies
-# =====================================================
+# ==============================================
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
 set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
 
-# Parallel Hashmap
 set(PHMAP_DIR ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
 add_subdirectory(${PHMAP_DIR})
 
-# Pybind11
 set(PYBIND11_DIR ${CMAKE_SOURCE_DIR}/dependencies/pybind11)
-
-# Includes
 include_directories(${INC_DIR} ${PHMAP_DIR})
 
-# =====================================================
+# ==============================================
 # OpenMP
-# =====================================================
+# ==============================================
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "${BoldGreen}>>> OpenMP found! Flags: ${OpenMP_CXX_FLAGS}${Reset}")
@@ -48,9 +45,9 @@ else()
     message(FATAL_ERROR "${BoldRed}OpenMP not found!${Reset}")
 endif()
 
-# =====================================================
+# ==============================================
 # Build options
-# =====================================================
+# ==============================================
 option(DEBUG "Enable debugging mode" OFF)
 option(DEEP_DEBUG "Enable deep debugging mode" OFF)
 option(CUDA_ENABLED "Enable CUDA support" OFF)
@@ -71,23 +68,22 @@ message(STATUS "  BUILD_PYTHON = ${BUILD_PYTHON}")
 if(DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     add_definitions(-DDEBUG)
-    message(STATUS "${BoldYellow}>>> Debugging mode enabled (-DDEBUG)${Reset}")
 endif()
 
 if(DEEP_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     add_definitions(-DDEEP_DEBUG)
-    message(STATUS "${BoldYellow}>>> Deep Debugging mode enabled (-DDEEP_DEBUG)${Reset}")
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-# =====================================================
-# Cache and SIMD detection
-# =====================================================
+# ==============================================
+# Cache & SIMD detection (untouched, keeps AVX/SSE logic)
+# ==============================================
 file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
 string(REGEX MATCH "[0-9]+" L1_SIZE_NUM "${L1_SIZE_RAW}")
 math(EXPR L1_SIZE_BYTES "${L1_SIZE_NUM} * 1024")
@@ -109,18 +105,9 @@ else()
     message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
 endif()
 
-# =====================================================
-# Optional PAPI
-# =====================================================
-if(PAPI)
-    include_directories($ENV{PAPI_DIR}/include)
-    add_definitions(-DPAPI_ON)
-    message(STATUS "${BoldGreen}>>> PAPI enabled${Reset}")
-endif()
-
-# =====================================================
+# ==============================================
 # Sources
-# =====================================================
+# ==============================================
 set(SOURCES
     ${SRC_DIR}/config.hpp
     ${SRC_DIR}/config.cpp
@@ -151,9 +138,9 @@ set(CUDA_SOURCES
     ${SRC_DIR}/matrixKernels_gpu.cu
 )
 
-# =====================================================
+# ==============================================
 # CPU / GPU core library
-# =====================================================
+# ==============================================
 if(CUDA_ENABLED)
     message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
     find_package(CUDA REQUIRED)
@@ -161,24 +148,45 @@ if(CUDA_ENABLED)
 
     cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
     add_definitions(-DCUDA_ENABLED)
-    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})   # ✅ add OpenMP flags for GPU build too
-    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)                        # ✅ link OpenMP
+    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})
+    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
     set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
     set(BUILD_TYPE "gpu_build")
 
 else()
     message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
     add_library(diaq_core SHARED ${SOURCES})
-    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})   # ✅ add OpenMP flags for CPU build
-    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)                        # ✅ link OpenMP
+
+    # ==============================================
+    # Compiler-specific tuning
+    # ==============================================
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Cray")
+        message(STATUS "${BoldYellow}>>> Cray compiler detected: adding libsci and preload fix${Reset}")
+        target_compile_options(diaq_core PRIVATE -O3 -h aggressive --std=c++17 -fopenmp)
+        target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+        # Link libsci (Cray optimized math)
+        find_library(LIBSCI NAMES sci_cray_mp PATHS /opt/cray/pe/lib64)
+        if(LIBSCI)
+            target_link_libraries(diaq_core PRIVATE ${LIBSCI})
+        endif()
+        # Export LD_PRELOAD automatically
+        set_property(TARGET diaq_core APPEND PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+    else()
+        # GNU or other compilers
+        target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})
+        target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+
     set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
     set(BUILD_TYPE "cpu_build")
 endif()
 
-# =====================================================
-# PAPI linking
-# =====================================================
+# ==============================================
+# Optional PAPI
+# ==============================================
 if(PAPI)
+    include_directories($ENV{PAPI_DIR}/include)
+    add_definitions(-DPAPI_ON)
     if(EXISTS "$ENV{PAPI_DIR}/lib/libpapi.so")
         target_link_libraries(diaq_core $ENV{PAPI_DIR}/lib/libpapi.so)
     else()
@@ -186,53 +194,46 @@ if(PAPI)
     endif()
 endif()
 
-# =====================================================
-# Tests and Disassembly targets
-# =====================================================
+# ==============================================
+# Tests
+# ==============================================
 if(MAKE_TESTS)
-    message(STATUS "${BoldBlue}>>> Building tests.cpp${Reset}")
     add_executable(tests ${TESTS_DIR}/tests.cpp)
     target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
-    if(PAPI)
-        target_link_libraries(tests $ENV{PAPI_DIR}/lib/libpapi.so)
-    endif()
 endif()
 
 if(MAKE_TEST_FOR_DISASSEMBLY)
-    message(STATUS "${BoldBlue}>>> Building test_for_disassembly${Reset}")
     add_library(test_for_disassembly_obj OBJECT ${TESTS_DIR}/test_for_disassembly.cpp)
     target_compile_options(test_for_disassembly_obj PRIVATE -O0)
     add_library(test_for_disassembly_static STATIC $<TARGET_OBJECTS:test_for_disassembly_obj>)
     set_target_properties(test_for_disassembly_static PROPERTIES OUTPUT_NAME test_for_disassembly)
     target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
-
-    add_executable(test_for_disassembly_exec $<TARGET_OBJECTS:test_for_disassembly_obj>)
-    target_link_libraries(test_for_disassembly_exec PRIVATE diaq_core OpenMP::OpenMP_CXX)
-
-    if(PAPI)
-        target_link_libraries(test_for_disassembly_static $ENV{PAPI_DIR}/lib/libpapi.so)
-        target_link_libraries(test_for_disassembly_exec $ENV{PAPI_DIR}/lib/libpapi.so)
-    endif()
 endif()
 
-# =====================================================
+# ==============================================
 # Output directories
-# =====================================================
+# ==============================================
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 
-# =====================================================
-# Python bindings
-# =====================================================
+# ==============================================
+# Python bindings with RPATH fix
+# ==============================================
 if(BUILD_PYTHON)
     message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
     add_subdirectory(${PYBIND11_DIR})
     pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
     target_link_libraries(diaq PRIVATE diaq_core)
 
-    # Try to pick up the Python executable from the environment first
+    # RPATH fix: ensure Python module can find libdiaq_core.so
+    set_target_properties(diaq PROPERTIES
+        BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+        INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
+    )
+
+    # Find Python installation path
     if(DEFINED ENV{VIRTUAL_ENV})
         set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
     elseif(DEFINED ENV{CONDA_PREFIX})
