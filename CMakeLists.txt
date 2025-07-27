@@ -173,7 +173,13 @@ else()
         set_property(TARGET diaq_core APPEND PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
     else()
         # GNU or other compilers
-        target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})
+        message(STATUS "${BoldYellow}>>> GNU compiler detected: applying OpenMP flags globally${Reset}")
+
+        # Apply flags globally to avoid ignored pragmas in headers
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -fopenmp")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp")
+
+        target_compile_options(diaq_core PRIVATE -march=native -O3)
         target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
     endif()
 
