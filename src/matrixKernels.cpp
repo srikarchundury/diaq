@@ -621,10 +621,10 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
 
 std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_tensor_shape) {
     unsigned int old_product = 1;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
     unsigned int new_product = 1;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
         std::cout << old_product << "!=" << new_product << std::endl;
@@ -753,11 +753,11 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     new_shape[0] = 1;
     new_shape[1] = 1;
     unsigned int i = l / 2;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int r = 0; r<i ; r++) {
         new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
@@ -859,7 +859,7 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // move axes
     std::vector<unsigned int> order_A;
     std::vector<unsigned int> order_B;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i = 0; i < axes[1].size(); i++)
         order_B.push_back(axes[1][i]);
     for(unsigned int i = 0; i < A->shape.size(); i++) {
@@ -884,7 +884,7 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
             order_B.push_back(i);
         }
     }
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i = 0; i < axes[0].size(); i++)
         order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
@@ -897,10 +897,10 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // std::cout << order_B[order_B.size()-1] << ")" << std::endl;
 
     unsigned int axes_0_product = 1;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i=0;i<axes[0].size();i++) axes_0_product *= A->shape[axes[0][i]];
     unsigned int axes_1_product = 1;
-    #pragma unroll
+    #pragma GCC unroll 8
     for(unsigned int i=0;i<axes[1].size();i++) axes_1_product *= B->shape[axes[1][i]];
 
     A = transpose(A, order_A);

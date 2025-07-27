@@ -1189,7 +1189,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::vector<unsigned int> ten_pos(ndim);
             unsigned int prod = 1;
             // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
-            #pragma unroll
+            #pragma GCC unroll 8
             for (unsigned int i = 0; i < ndim; i++) {
                 prod *= shape[i];
                 // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
@@ -1376,7 +1376,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 total_elements = total_elements * shape[i];
             unsigned int flat_index = 0;
             unsigned int prod = 1;
-            #pragma unroll
+            #pragma GCC unroll 8
             for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
