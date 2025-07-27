@@ -39,9 +39,11 @@ void unitize(std::shared_ptr<vector> x) {
 void randomize(std::shared_ptr<vector> x, valType scale, valType mean) {
     std::default_random_engine generator;
     std::uniform_real_distribution<valType> distribution(mean - scale, mean + scale);
-    static auto dice = std::bind(distribution, generator);
+
+    // dice needs to be regenerated each time, otherwise distribution will not be updated correctly
     for (unsigned int i = 0; i < x->numRows; ++i) {
-        (*x)[i] = std::complex(dice(),dice());
+        auto dice = std::bind(distribution, generator);
+        (*x)[i] = std::complex<valType>(dice(), dice());
     }
 }
 

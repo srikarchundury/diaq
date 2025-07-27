@@ -1,1 +1,2 @@
+# this file is not used currently!
 g++ -O3 -Wall -std=c++11 -shared -fPIC pythonWrappers.cpp -o diaq$(python-config --extension-suffix) -fopenmp

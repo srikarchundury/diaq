@@ -4,8 +4,31 @@
 namespace diaq {
 
     valType* aligned_alloc_helper(unsigned int size) {
-        unsigned int aligned_size = ((size * sizeof(valType) + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED) * NUM_BYTES_ALIGNED;
-        valType *alloced_array = (valType *) std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+        unsigned int aligned_size = 
+            ((size * sizeof(valType) + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED) * NUM_BYTES_ALIGNED;
+
+        valType *alloced_array = nullptr;
+
+        // Handle compilers/platforms
+        #if defined(__GNUC__) || defined(__clang__)
+            // GCC/Clang (C++17 and above) supports std::aligned_alloc
+            #if __cplusplus >= 201703L
+                alloced_array = (valType*) std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+            #else
+                // Fallback for C++11 mode: use C version
+                alloced_array = (valType*) aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+            #endif
+
+        #elif defined(_MSC_VER)
+            // MSVC uses _aligned_malloc
+            alloced_array = (valType*) _aligned_malloc(aligned_size, NUM_BYTES_ALIGNED);
+
+        #else
+            // Fallback: assume C11 aligned_alloc exists
+            alloced_array = (valType*) aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+        #endif
+
+        // Handle allocation failure
         if (alloced_array == nullptr) {
             std::cerr << "Aligned memory allocation failed!" << std::endl;
             std::abort();
@@ -29,6 +52,23 @@ namespace diaq {
     //     }
     //     return (valType*)ptr;
     // }
+
+    void print_simd_info() {
+        #if VEC_TYPE == 2
+            std::cout << "[SIMD Info] AVX512F detected\n";
+        #elif VEC_TYPE == 1
+            std::cout << "[SIMD Info] AVX2 detected\n";
+        #elif VEC_TYPE == 0
+            std::cout << "[SIMD Info] SSE2 detected\n";
+        #else
+            std::cout << "[SIMD Info] No SIMD detected, using scalar code\n";
+        #endif
+
+        std::cout << "[SIMD Info] VEC_TYPE: " << VEC_TYPE << "\n";
+        std::cout << "[SIMD Info] NUM_BYTES_ALIGNED: " << NUM_BYTES_ALIGNED << "\n";
+        std::cout << "[SIMD Info] VEC_WIDTH: " << VEC_WIDTH << "\n";
+        std::cout << "[SIMD Info] BLOCK_SIZE: " << BLOCK_SIZE << "\n";
+    }
 
     #ifdef PAPI_ON
 	// Static variables for PAPI

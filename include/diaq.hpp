@@ -18,4 +18,7 @@
 #include "../src/specialMatrices.hpp"
 #include "../src/vector.hpp"
 
+// helpers
+#include "../src/helpers.hpp"
+
 #endif

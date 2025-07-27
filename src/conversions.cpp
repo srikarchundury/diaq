@@ -18,25 +18,29 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
         valType *real_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
         valType *imag_data = aligned_alloc_helper(matrix_shape[0] * matrix_shape[1] * sizeof(valType));
     #endif
-    std::unordered_map<int, std::shared_ptr<diagonal> >::iterator it;
+
     unsigned int x, y;
-    for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
-        if (it->first == 0) {
+
+    for(size_t i = 0; i < dIndices.size(); i++) {
+
+        std::shared_ptr<diagonal> d = dPointers[i];
+
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+        if (d->dIndex == 0) {
             x = 0;
             y = 0;
         }
-        else if (it->first > 0) {
+        else if (d->dIndex > 0) {
             x = 0;
-            y = it->first;
+            y = d->dIndex;
         }
         else {
-            x = -1 * it->first;
+            x = -1 * d->dIndex;
             y = 0;
         }
         #pragma omp parallel for
-        for (unsigned int i = 0; i < it->second->dLength; i++) {
+        for (unsigned int i = 0; i < d->dLength; i++) {
             // std::cout << "(" << real_vals[i] << "," << imag_vals[i] << ")" << std::endl;
             real_data[ matrix_shape[1] * (x+i) + (y+i) ] = real_vals[i];
             imag_data[ matrix_shape[1] * (x+i) + (y+i) ] = imag_vals[i];
@@ -93,6 +97,19 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
             }
         }
     }
+
+    // assigning dIndices and dPointers
+    qm->dIndices.resize(qm->diagonalMap.size());
+    qm->dPointers.resize(qm->diagonalMap.size());
+    #pragma omp parallel for
+    for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
+        auto it = std::next(qm->diagonalMap.begin(), a);
+        int dIndex = it->first;
+        std::shared_ptr<diagonal> d = it->second;
+        qm->dIndices[a] = dIndex;
+        qm->dPointers[a] = d;
+    }
+
     // qm->pruneMatrix();
     qm->shape = shape;
     // comment below line for tests.cpp
@@ -113,20 +130,21 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
     std::vector<std::complex<valType>> vals(total_elements, std::complex<valType>(0.0, 0.0));
 
     #pragma omp parallel for
-    for (unsigned int i = 0; i < A->diagonalMap.size(); i++) {
-        auto it = std::next(A->diagonalMap.begin(), i);
-        int dIndex = it->first;
-        unsigned int dLength = it->second->dLength;
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
+    for(size_t i = 0; i < A->dIndices.size(); i++) {
 
+        std::shared_ptr<diagonal> d = A->dPointers[i];
+
+        int dIndex = d->dIndex;
+        unsigned int dLength = d->dLength;
+
+        valType *real_vals = d->realValues;
+        valType *imag_vals = d->imagValues;
+
+        #pragma omp parallel for
         for (unsigned int j = 0; j < dLength; j++) {
             std::array<unsigned int, 2> mat_pos = A->getMatrixPosition(dIndex, j);
             unsigned int flat_index = mat_pos[0] * matrix_shape[1] + mat_pos[1];
-            // #pragma omp critical
-            // {
-                vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
-            // }
+            vals[flat_index] = std::complex<valType>(real_vals[j], imag_vals[j]);
         }
     }
 
@@ -204,9 +222,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 
         }  else { // matrix!
 
-            std::array<unsigned int, 2> mat_shape = {shape[0], shape[1]};
-
-            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(mat_shape);
+            std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(shape[0], shape[1]);
 
             #pragma omp parallel
             {
@@ -230,6 +246,23 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                     }
                 }
             }
+
+            // printf(" -- before assigning dindices and dpointers -- \n");
+            qm->dIndices.resize(qm->diagonalMap.size());
+            qm->dPointers.resize(qm->diagonalMap.size());
+
+            #pragma omp parallel for
+            for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
+                auto it = std::next(qm->diagonalMap.begin(), a);
+                int dIndex = it->first;
+                std::shared_ptr<diagonal> d = it->second;
+                qm->dIndices[a] = dIndex;
+                // printf("\t qm->dIndices[%ld] = %d\n", a, dIndex);
+                qm->dPointers[a] = d;
+            }
+
+            // printf(" -- after assigning dindices and dpointers -- \n");
+
             #ifdef DEEP_DEBUG
                 std::cout << "from_numpy result below: " << std::endl;
                 qm->print();
