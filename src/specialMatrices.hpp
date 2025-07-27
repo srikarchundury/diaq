@@ -16,15 +16,17 @@ class identityMatrix : public diaQMatrix {
 				valType *real = aligned_alloc_helper(s * sizeof(valType));
 				valType *imag = aligned_alloc_helper(s * sizeof(valType));
 			#endif
+
 			#pragma omp parallel for
 			for(unsigned int i = 0; i < s; i++) {
 				real[i] = (valType)1.0;
 				imag[i] = (valType)0.0;
 			}
+
 			std::shared_ptr<diagonal> d = std::make_shared<diagonal>(0, s, real, imag);
 			this->setDiagonal(0, d);
 		}
-};;
+};
 
 class permutationMatrix : public diaQMatrix {
 	public:
@@ -44,7 +46,7 @@ class permutationMatrix : public diaQMatrix {
 				}
 			}
 			std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(s, real);
-			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ(this->matrix_shape);
+			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ();
 			this->diagonalMap = qs->diagonalMap;
 			this->matrix_shape = qs->matrix_shape;
 			this->shape = qs->shape;

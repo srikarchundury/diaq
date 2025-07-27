@@ -21,7 +21,7 @@
 #include <functional>
 #include <random>
 
-// #include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/phmap.h>
 
 #ifdef PAPI_ON
 	#include <papi.h>
@@ -42,61 +42,54 @@ namespace diaq {
 
 
 // ------- Data type related ------- //
- // double or float
-using valType = double;
+using valType = double; // double or float
 // ------------------------------- //
 
 // ------- Vectorization related ------- //
-#define VECTORIZATION_TYPE 1 // 0 for SSE, 1 for AVX, 2 for AVX512, set -1 to run without vectorization
-#define NUM_BYTES_ALIGNED 64 // choose 32 for AVX, 64 for AVX512, 16 for SSE, -1 for no vectorization
-// //case 0: double, SSE
-// #if valType == double && VECTORIZATION_TYPE == 0
-// 	// #define SIMD_WIDTH 2
-// 	#define NUM_BYTES_ALIGNED 16
-// // ****** case 1: double, AVX ****** //
-// #elif valType == double && VECTORIZATION_TYPE == 1
-// 	#ifdef __AVX512F__
-// 		// #define SIMD_WIDTH 8
-// 		#define NUM_BYTES_ALIGNED 64
-// // **********************************
-// 	#elif defined(__AVX__)
-// 		// #define SIMD_WIDTH 4
-// 		#define NUM_BYTES_ALIGNED 32
-// 	#else
-// 		#define NUM_BYTES_ALIGNED 32 // it should never come to this!
-// 	#endif
-// //case 2: float, SSE
-// #elif valType == float && VECTORIZATION_TYPE == 0
-// 	// #define SIMD_WIDTH 4
-// 	#define NUM_BYTES_ALIGNED 16
-// //case 3: float, AVX
-// #elif valType == float && VECTORIZATION_TYPE == 1
-// 	#ifdef __AVX512F__
-// 		// #define SIMD_WIDTH 16
-// 		#define NUM_BYTES_ALIGNED 64
-// 	#elif defined(__AVX__)
-// 		// #define SIMD_WIDTH 8
-// 		#define NUM_BYTES_ALIGNED 32
-// 	#else
-// 		#define NUM_BYTES_ALIGNED 32 // it should never come to this!
-// 	#endif
-// //case 4: no vectorization
-// #else
-// 	#define NUM_BYTES_ALIGNED -1
 
-valType* aligned_alloc_helper(unsigned int size); // see config.cpp
+#if defined(CPU_SUPPORTS_AVX512F)
+	#define VEC_TYPE 2
+	#define NUM_BYTES_ALIGNED 64
+	#define VEC_WIDTH 8
+#elif defined(CPU_SUPPORTS_AVX2)
+	#define VEC_TYPE 1
+	#define NUM_BYTES_ALIGNED 32
+	#define VEC_WIDTH 4
+#elif defined(CPU_SUPPORTS_SSE2)
+	#define VEC_TYPE 0
+	#define NUM_BYTES_ALIGNED 16
+	#define VEC_WIDTH 2
+#else
+	#define VEC_TYPE -1
+	#define NUM_BYTES_ALIGNED -1
+	#define VEC_WIDTH 1
+#endif
+
+#define PREFETCH_DIST (2 * VEC_WIDTH)
+
+// ------- L1 Cache Auto-Detection or Override ------- //
+
+#ifndef L1_CACHE_SIZE_BYTES
+	// Fallback assumption: 32KB
+	#define L1_CACHE_SIZE_BYTES 32768
+#endif
+
+// utilization ratio
+#define CACHE_UTILIZATION 0.90
+#define NUM_ARRAYS_ACCESSED 6
+
+#define BLOCK_SIZE_RAW (int)((L1_CACHE_SIZE_BYTES * CACHE_UTILIZATION) / (NUM_ARRAYS_ACCESSED * sizeof(diaq::valType)))
+#define BLOCK_SIZE ((BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH > 0 ? (BLOCK_SIZE_RAW / VEC_WIDTH) * VEC_WIDTH : VEC_WIDTH)
+// Alloc helper
+valType* aligned_alloc_helper(unsigned int size);
+void print_simd_info();
+
 // ------------------------------- //
 
 
 // ------- Debugging related ------- //
 #define PRINT_WITH_LINE(fmt, ...) \
     printf("[File: %s, Line: %d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
-// ------------------------------- //
-
-
-// ------- Cache related ------- //
-#define TILE_SIZE 32
-#define BLOCK_SIZE 256
 // ------------------------------- //
 
 
@@ -117,6 +110,7 @@ class OMPInitializer {
 public:
     OMPInitializer() {
         omp_set_dynamic(1);
+		// omp_set_nested(1); // Enable nested parallelism // this is very bad!
         omp_set_num_threads(NUMBER_OF_OMP_THREADS);
 
 		// // testing

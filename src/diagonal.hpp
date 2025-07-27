@@ -19,7 +19,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         diagonal(int di, unsigned int dl) {
             dIndex = di;
             dLength = dl;
-            #if NUM_BYTES_ALIGNED == -1
+            #if VEC_TYPE == -1
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
             #else
@@ -43,15 +43,21 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
                 std::cout << "diagonal destructor called" << std::endl;
             #endif
             // needed because we allocate memory ourserlves unlike shared_ptr! This place and under vector.hpp & denseMatrix.cpp are the only places where we need to free memory manually!!!
-            std::free(realValues);
-            std::free(imagValues);
+            if(realValues != nullptr) std::free(realValues);
+            if(imagValues != nullptr) std::free(imagValues);
         }
         void setIndex(int newIndex) {
             dIndex = newIndex;
         }
         std::shared_ptr<diagonal> copy() {
-            valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
-            valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #if VEC_TYPE == -1
+                valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
+                valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
+            #else
+                valType *real_vals = aligned_alloc_helper(dLength * sizeof(valType));
+                valType *imag_vals = aligned_alloc_helper(dLength * sizeof(valType));
+            #endif
+
             #pragma omp parallel for
             for(unsigned int i = 0; i < dLength; i++) {
                 real_vals[i] = realValues[i];
@@ -107,8 +113,8 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             std::cout << "dIndex=" << dIndex << ", dLength=" << dLength << std::endl;
         }
         // returns the start (x, y) of diagonal of the matrix
-        unsigned int* getCoords(unsigned int matrixSize, int dIndex) {
-            static unsigned int c[2];
+        std::array<unsigned int, 2> getCoords(unsigned int matrixSize, int dIndex) {
+            std::array<unsigned int, 2> c;
             if(dIndex >= (int) matrixSize) {
                 c[0] = dIndex - matrixSize + 1; c[1] = matrixSize - 1;
             }
@@ -162,14 +168,55 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
             return newDiag;
         }
-        std::complex<valType>& operator[](unsigned int i) {
+
+        std::shared_ptr<diagonal> multiply(valType real, valType imag) {
+            #ifdef DEBUG
+                auto start = std::chrono::high_resolution_clock::now();
+            #endif
+
+            if (real == 0.0 && imag == 0.0) {
+                // return empty diagonal
+                return std::make_shared<diagonal>(dIndex, dLength);
+            }
+
+            std::shared_ptr<diagonal> C = std::make_shared<diagonal>(dIndex, dLength);
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < dLength; i++) {
+                C->realValues[i] = real * realValues[i] - imag * imagValues[i];
+                C->imagValues[i] = real * imagValues[i] + imag * realValues[i];
+            }
+
+            #ifdef DEBUG
+                auto end = std::chrono::high_resolution_clock::now();
+                std::cout << "multiply took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+            #endif
+
+            return C;
+        }
+
+        std::complex<valType> operator[](unsigned int i) const {
             if (i >= dLength) {
                 throw std::out_of_range("Index out of range");
             }
-            // Return a reference to a std::complex, constructed on the fly
-            // This does not create a temporary because we return a reference to the real and imag parts
-            return *(reinterpret_cast<std::complex<valType>*>(&realValues[i]));
+            return std::complex<valType>(realValues[i], imagValues[i]);
         }
+        void set(unsigned int i, const std::complex<valType>& val) {
+            if (i >= dLength) {
+                throw std::out_of_range("Index out of range");
+            }
+            realValues[i] = val.real();
+            imagValues[i] = val.imag();
+        }
+        void accumulate(const diagonal& other) {
+            const valType* real_other = other.realValues;
+            const valType* imag_other = other.imagValues;
+        
+            #pragma omp simd
+            for (unsigned int i = 0; i < dLength; ++i) {
+                realValues[i] += real_other[i];
+                imagValues[i] += imag_other[i];
+            }
+        }        
 };
 
 } // namespace diaq

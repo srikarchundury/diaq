@@ -1,5 +1,14 @@
+# macOS system files
 .DS_Store
 docs/.DS_Store
+
+# IDE settings
+.vscode/*
+
+# Documentation
+docs/.DS_Store/*
+
+# Analysis and benchmarks output
 analysis/metrics/*
 analysis/benchmarks/*
 analysis/metrics*/*
@@ -8,59 +17,51 @@ analysis/*metrics*/*
 benchmarks/bench
 benchmarks/tool/*
 
-cpu_build
-gpu_build
-cpu_build_sse
-cpu_build_avx
+# Build directories
+cpu_build/
+gpu_build/
+cpu_build_sse/
+cpu_build_avx/
 
+# CMake build artifacts (inside any build folder)
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile
 
-.vscode/*
-.DS_Store
-docs/.DS_Store
-docs/.DS_Store/*
-
-# exclude build
-cpu_build/*
-gpu_build/*
-
-diaq.egg-info/PKG-INFO
+# Python build artifacts
 diaq.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Created by https://www.toptal.com/developers/gitignore/api/c++
-# Edit at https://www.toptal.com/developers/gitignore?templates=c++
-
-### C++ ###
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
+# Compiled Objects & Libraries
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
 *.lib
+*.la
+*.lai
+*.slo
+*.lo
+
+# Precompiled headers
+*.gch
+*.pch
 
 # Executables
 *.exe
 *.out
 *.app
 
-# End of https://www.toptal.com/developers/gitignore/api/c++
+# Fortran module files
+*.mod
+*.smod
+
+# Dependencies folder: ignore loose files but keep submodules
+dependencies/*
+!dependencies/*/
