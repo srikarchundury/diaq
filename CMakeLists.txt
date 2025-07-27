@@ -16,7 +16,8 @@ message(STATUS "${BoldBlue}>>> Setting compiler flags and C++ standard${Reset}")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-c++17-extensions -Wno-pass-failed=transform-warning")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 include(CheckCXXCompilerFlag)
 
@@ -226,7 +227,14 @@ if(BUILD_PYTHON)
     pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
     target_link_libraries(diaq PRIVATE diaq_core)
 
+    # Try to pick up the Python executable from the environment first
+    if(DEFINED ENV{VIRTUAL_ENV})
+        set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+    elseif(DEFINED ENV{CONDA_PREFIX})
+        set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+    endif()
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
         OUTPUT_VARIABLE PYTHON_SITE_DIR
