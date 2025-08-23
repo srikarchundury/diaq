@@ -1602,8 +1602,8 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                   y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 1
-                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals,
-                               y_real_values, y_imag_values, dIndex, dLength);
+                run_spmv_avx_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 0
                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
@@ -1621,8 +1621,8 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                   y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 1
-                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals,
-                               y_real_values, y_imag_values, dIndex, dLength);
+                run_spmv_avx_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 0
                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
@@ -1640,8 +1640,8 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                   y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 1
-                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals,
-                               y_real_values, y_imag_values, dIndex, dLength);
+                run_spmv_avx_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 0
                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
