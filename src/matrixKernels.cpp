@@ -1167,6 +1167,9 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
     return y;
 }
 
+// ------------- START OF SPMV ------------- //
+
+// first version: has a critical section!!
 // void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
 //     #ifdef CUDA_ENABLED
 //         return spmv_cuda(A, x);
@@ -1339,464 +1342,353 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 //     #endif
 // }
 
-void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
-	#ifdef CUDA_ENABLED
-        return spmv_cuda(A, x);
-    #else
-		#ifdef DEEP_DEBUG
-			std::cout << " --- " << std::endl;
-			std::cout << " --- spMV --- " << std::endl;
-			std::cout << " --- " << std::endl;
-			A->print();
-			std::cout << " --- times --- " << std::endl;
-			x->print();
-			std::cout << " --- " << std::endl;
-			printf("Analyzing SpM\n");
-			A->print_meta();
-			printf("Analyzing V\n");
-			x->print_meta();
-			printf("Analyzing Y\n");
-			y->print_meta();
-		#endif
-
-		#ifdef DEBUG
-			auto start = std::chrono::high_resolution_clock::now();
-		#endif
-
-		const size_t total_diagonals = A->dIndices.size();
-		const size_t N = y->numRows;
-		const unsigned int num_batches = 5;
-
-        valType* x_real_values = x->realValues;
-		valType* x_imag_values = x->imagValues;
-
-		std::vector<std::shared_ptr<vector>> y_locals(num_batches);
-		y_locals[0] = y;
-		for (unsigned int i = 1; i < num_batches; ++i)
-			y_locals[i] = y->copy();
-
-        #ifdef DEBUG
-            auto allocate_end = std::chrono::high_resolution_clock::now();
-            auto allocate_duration = std::chrono::duration_cast<std::chrono::microseconds>(allocate_end - start);
-            printf("\t\t spMV allocation took %f milliseconds\n", allocate_duration.count()/1000.0);
-        #endif
-
-		#pragma omp parallel
-		{
-			#pragma omp single nowait
-			{
-				for (unsigned int batch_id = 0; batch_id < (total_diagonals + num_batches - 1) / num_batches; ++batch_id) {
-					#pragma omp task firstprivate(batch_id)
-					{
-						unsigned int tid = batch_id % num_batches;
-						valType* y_real_values = y_locals[tid]->realValues;
-						valType* y_imag_values = y_locals[tid]->imagValues;
-
-						unsigned int batch_start = batch_id * num_batches;
-						unsigned int batch_end = std::min(batch_start + num_batches, (unsigned int)total_diagonals);
-
-						for (unsigned int a = batch_start; a < batch_end; ++a) {
-							int dIndex = A->dIndices[a];
-							std::shared_ptr<diagonal> d = A->dPointers[a];
-							unsigned int dLength = d->dLength;
-
-							valType* real_vals = d->realValues;
-							valType* imag_vals = d->imagValues;
-
-							unsigned int simd_start = 0;
-							unsigned int simd_end = 0;
-
-							if (dIndex < 0) {
-								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-									if ((simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0)) break;
-								}
-								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-
-								#if VEC_TYPE == 2
-									run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 1
-                                    run_spmv_avx_1(simd_start, simd_end, x_real_values, x_imag_values,
-                                        real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 0
-									run_spmv_sse_1(x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#else
-									#pragma omp simd
-									for (unsigned int i = 0; i < dLength; ++i) {
-										unsigned int x_idx = i;
-										unsigned int y_idx = i - dIndex;
-										y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-										y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-									}
-								#endif
-							} else if (dIndex > 0) {
-								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-									if ((simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0)) break;
-								}
-								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-
-								#if VEC_TYPE == 2
-									run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 1
-                                    run_spmv_avx_2(simd_start, simd_end, x_real_values, x_imag_values,
-                                        real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 0
-									run_spmv_sse_2(x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#else
-									#pragma omp simd
-									for (unsigned int i = 0; i < dLength; ++i) {
-										unsigned int x_idx = dIndex + i;
-										unsigned int y_idx = i;
-										y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-										y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-									}
-								#endif
-							} else {
-								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-									if ((simd_start % VEC_WIDTH == 0) &&
-										((uintptr_t)&x_real_values[simd_start] % 64 == 0) &&
-										((uintptr_t)&y_real_values[simd_start] % 64 == 0)) break;
-								}
-								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-
-								#if VEC_TYPE == 2
-									run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 1
-                                    run_spmv_avx_0(simd_start, simd_end, x_real_values, x_imag_values,
-                                        real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#elif VEC_TYPE == 0
-									run_spmv_sse_0(x_real_values, x_imag_values,
-										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-								#else
-									#pragma omp simd
-									for (unsigned int i = 0; i < dLength; ++i) {
-										y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
-										y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
-									}
-								#endif
-							}
-						}
-					} // end task
-				}
-			} // end single
-		} // end parallel
-
-        #ifdef DEBUG
-            auto compute_end = std::chrono::high_resolution_clock::now();
-            auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end - start);
-            printf("\t\t spMV compute took %f milliseconds\n", compute_duration.count() / 1000.0);
-        #endif
-
-		// Merge results back
-		valType* y_real = y->realValues;
-		valType* y_imag = y->imagValues;
-
-		#pragma omp parallel for
-		for (size_t i = 0; i < N; ++i) {
-			for (unsigned int b = 1; b < num_batches; ++b) {
-				y_real[i] += y_locals[b]->realValues[i];
-				y_imag[i] += y_locals[b]->imagValues[i];
-			}
-		}
-
-        #ifdef DEBUG
-            auto merge_end = std::chrono::high_resolution_clock::now();
-            auto merge_duration = std::chrono::duration_cast<std::chrono::microseconds>(merge_end - compute_end);
-            printf("\t\t spMV merge took %f milliseconds\n", merge_duration.count() / 1000.0);
-        #endif
-
-		#ifdef DEEP_DEBUG
-			std::cout << " --- " << std::endl;
-			std::cout << " --- spMV result --- " << std::endl;
-			std::cout << " --- " << std::endl;
-			y->print();
-			std::cout << " --- " << std::endl;
-		#endif
-
-    #endif
-		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-			printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
-		#endif
-}
-
+// second version: no critical section, uses local y vectors and reduces at the end!
 // void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
-//     #ifdef CUDA_ENABLED
+// 	#ifdef CUDA_ENABLED
 //         return spmv_cuda(A, x);
 //     #else
-//     #ifdef DEEP_DEBUG
-//         std::cout << " --- spMV --- " << std::endl;
-//         A->print();
-//         x->print();
-//         A->print_meta();
-//         x->print_meta();
-//         y->print_meta();
-//     #endif
-    
-//     #ifdef DEBUG
-//         auto start = std::chrono::high_resolution_clock::now();
-//     #endif
-    
-//         valType *x_real_values = x->realValues;
-//         valType *x_imag_values = x->imagValues;
-    
-//         size_t total_diagonals = A->dIndices.size();
-//         size_t N = y->numRows;
-    
-//         // Use at most as many threads as there are diagonals
-//         int max_threads = omp_get_max_threads();
-//         int num_threads = std::min((int)total_diagonals, max_threads);
-    
-//         // Prepare thread-local y buffers outside parallel region
-//         std::vector<std::shared_ptr<vector>> y_locals(num_threads);
-//         for (int t = 0; t < num_threads; ++t)
-//             y_locals[t] = y->copy();  // uses aligned alloc
-    
-//     #pragma omp parallel num_threads(num_threads)
-//     {
-//         int tid = omp_get_thread_num();
-//         valType *y_real_values = y_locals[tid]->realValues;
-//         valType *y_imag_values = y_locals[tid]->imagValues;
-    
-//     #pragma omp for schedule(static)
-//         for (size_t a = 0; a < total_diagonals; ++a) {
-//             int dIndex = A->dIndices[a];
-//             std::shared_ptr<diagonal> d = A->dPointers[a];
-//             unsigned int dLength = d->dLength;
-    
-//             valType *real_vals = d->realValues;
-//             valType *imag_vals = d->imagValues;
-    
-//             // Find aligned SIMD region
-//             unsigned int simd_start = 0;
-//             for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-//                 bool aligned = false;
-//                 if (dIndex < 0)
-//                     aligned = (simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0);
-//                 else if (dIndex > 0)
-//                     aligned = (simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0);
-//                 else
-//                     aligned = (simd_start % VEC_WIDTH == 0);
-//                 if (aligned) break;
-//             }
-//             if (simd_start + VEC_WIDTH > dLength)
-//                 simd_start = dLength;
-//             unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-    
-//             // Select and call appropriate kernel
-//             if (dIndex < 0) {
-//     #if VEC_TYPE == 2
-//                 run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
-//                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 1
-//                 run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 0
-//                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #else
-//     #pragma omp simd
-//                 for (unsigned int i = 0; i < dLength; i++) {
-//                     unsigned int x_idx = i;
-//                     unsigned int y_idx = i - dIndex;
-//                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-//                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-//                 }
-//     #endif
-//             } else if (dIndex > 0) {
-//     #if VEC_TYPE == 2
-//                 run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
-//                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 1
-//                 run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 0
-//                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #else
-//     #pragma omp simd
-//                 for (unsigned int i = 0; i < dLength; i++) {
-//                     unsigned int x_idx = dIndex + i;
-//                     unsigned int y_idx = i;
-//                     y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-//                     y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-//                 }
-//     #endif
-//             } else {
-//     #if VEC_TYPE == 2
-//                 run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
-//                                   y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 1
-//                 run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #elif VEC_TYPE == 0
-//                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
-//                                y_real_values, y_imag_values, dIndex, dLength);
-//     #else
-//     #pragma omp simd
-//                 for (unsigned int i = 0; i < dLength; i++) {
-//                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
-//                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
-//                 }
-//     #endif
-//             }
-//         }
-//     } // end parallel region
-    
-//         // Final merge
-//         valType *y_real = y->realValues;
-//         valType *y_imag = y->imagValues;
-//         #pragma omp parallel for
-//     for (size_t i = 0; i < N; ++i) {
-//         valType sum_r = 0.0;
-//         valType sum_i = 0.0;
-//         #pragma omp simd
-//         for (int t = 0; t < num_threads; ++t) {
-//             sum_r += y_locals[t]->realValues[i];
-//             sum_i += y_locals[t]->imagValues[i];
-//         }
-//         y_real[i] = sum_r;
-//         y_imag[i] = sum_i;
-//     }
-    
-    
-//     #ifdef DEEP_DEBUG
-//         std::cout << " --- spMV result --- " << std::endl;
-//         y->print();
-//     #endif
-    
-//     #ifdef DEBUG
-//         auto end = std::chrono::high_resolution_clock::now();
-//         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-//         printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
-//     #endif
-//     #endif // not CUDA
-//     }
-    
+// 		#ifdef DEEP_DEBUG
+// 			std::cout << " --- " << std::endl;
+// 			std::cout << " --- spMV --- " << std::endl;
+// 			std::cout << " --- " << std::endl;
+// 			A->print();
+// 			std::cout << " --- times --- " << std::endl;
+// 			x->print();
+// 			std::cout << " --- " << std::endl;
+// 			printf("Analyzing SpM\n");
+// 			A->print_meta();
+// 			printf("Analyzing V\n");
+// 			x->print_meta();
+// 			printf("Analyzing Y\n");
+// 			y->print_meta();
+// 		#endif
 
+// 		#ifdef DEBUG
+// 			auto start = std::chrono::high_resolution_clock::now();
+// 		#endif
 
-// void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
-//     #ifdef CUDA_ENABLED
-//         return spmv_cuda(A, x);
-//     #else
-//     #ifdef DEBUG
-//         printf("starting spMV --");
-//         auto start = std::chrono::high_resolution_clock::now();
-//     #endif
-    
-//         valType *y_real_values = y->realValues;
-//         valType *y_imag_values = y->imagValues;
-//         valType *x_real_values = x->realValues;
-//         valType *x_imag_values = x->imagValues;
-    
-//         size_t total_diagonals = A->dIndices.size();
-    
-//         #pragma omp parallel
-//         {
-//             std::vector<size_t> my_diag_indices;
-//             #pragma omp for schedule(static)
-//             for (size_t i = 0; i < total_diagonals; ++i)
-//                 my_diag_indices.push_back(i);
-    
-//             for (size_t a : my_diag_indices) {
-//                 int dIndex = A->dIndices[a];
-//                 std::shared_ptr<diagonal> d = A->dPointers[a];
-//                 unsigned int dLength = d->dLength;
-    
-//                 valType *real_vals = d->realValues;
-//                 valType *imag_vals = d->imagValues;
-    
-//                 if(dIndex < 0) {
-//                     unsigned int simd_start = 0;
-//                     for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-//                         if ((simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0)) break;
-//                     }
-//                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-//                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-    
-//                     #if VEC_TYPE == 2
-//                         run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 1
-//                         run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 0
-//                         run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #else
-//                         #pragma omp simd
-//                         for (unsigned int i = 0; i < dLength; i++) {
-//                             unsigned int x_idx = i;
-//                             unsigned int y_idx = i - dIndex;
-//                             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-//                             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-//                         }
-//                     #endif
-//                 }
-//                 else if(dIndex > 0) {
-//                     unsigned int simd_start = 0;
-//                     for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-//                         if ((simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0)) break;
-//                     }
-//                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-//                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-    
-//                     #if VEC_TYPE == 2
-//                         run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 1
-//                         run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 0
-//                         run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #else
-//                         #pragma omp simd
-//                         for (unsigned int i = 0; i < dLength; i++) {
-//                             unsigned int x_idx = dIndex + i;
-//                             unsigned int y_idx = i;
-//                             y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
-//                             y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
-//                         }
-//                     #endif
-//                 }
-//                 else {
-//                     unsigned int simd_start = 0;
-//                     for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
-//                         if ((simd_start % VEC_WIDTH == 0) &&
-//                             ((x_real_values == nullptr || ((uintptr_t)&x_real_values[simd_start]) % 64 == 0)) &&
-//                             ((y_real_values == nullptr || ((uintptr_t)&y_real_values[simd_start]) % 64 == 0))) break;
-//                     }
-//                     if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
-//                     unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
-    
-//                     #if VEC_TYPE == 2
-//                         run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 1
-//                         run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #elif VEC_TYPE == 0
-//                         run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
-//                     #else
-//                         #pragma omp simd
-//                         for (unsigned int i = 0; i < dLength; i++) {
-//                             y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
-//                             y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
-//                         }
-//                     #endif
-//                 }
-//             }
-//         }
+// 		const size_t total_diagonals = A->dIndices.size();
+// 		const size_t N = y->numRows;
+// 		const unsigned int num_batches = 5;
+
+//         valType* x_real_values = x->realValues;
+// 		valType* x_imag_values = x->imagValues;
+
+// 		std::vector<std::shared_ptr<vector>> y_locals(num_batches);
+// 		y_locals[0] = y;
+// 		for (unsigned int i = 1; i < num_batches; ++i)
+// 			y_locals[i] = y->copy();
 
 //         #ifdef DEBUG
-//             auto end = std::chrono::high_resolution_clock::now();
-//             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-//             printf("\t\t spMV took %f milliseconds\n", duration.count()/1000.0);
+//             auto allocate_end = std::chrono::high_resolution_clock::now();
+//             auto allocate_duration = std::chrono::duration_cast<std::chrono::microseconds>(allocate_end - start);
+//             printf("\t\t spMV allocation took %f milliseconds\n", allocate_duration.count()/1000.0);
 //         #endif
 
+// 		#pragma omp parallel
+// 		{
+// 			#pragma omp single nowait
+// 			{
+// 				for (unsigned int batch_id = 0; batch_id < (total_diagonals + num_batches - 1) / num_batches; ++batch_id) {
+// 					#pragma omp task firstprivate(batch_id)
+// 					{
+// 						unsigned int tid = batch_id % num_batches;
+// 						valType* y_real_values = y_locals[tid]->realValues;
+// 						valType* y_imag_values = y_locals[tid]->imagValues;
+
+// 						unsigned int batch_start = batch_id * num_batches;
+// 						unsigned int batch_end = std::min(batch_start + num_batches, (unsigned int)total_diagonals);
+
+// 						for (unsigned int a = batch_start; a < batch_end; ++a) {
+// 							int dIndex = A->dIndices[a];
+// 							std::shared_ptr<diagonal> d = A->dPointers[a];
+// 							unsigned int dLength = d->dLength;
+
+// 							valType* real_vals = d->realValues;
+// 							valType* imag_vals = d->imagValues;
+
+// 							unsigned int simd_start = 0;
+// 							unsigned int simd_end = 0;
+
+// 							if (dIndex < 0) {
+// 								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+// 									if ((simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0)) break;
+// 								}
+// 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
+// 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
+// 								#if VEC_TYPE == 2
+// 									run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 1
+//                                     run_spmv_avx_1(simd_start, simd_end, x_real_values, x_imag_values,
+//                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 0
+// 									run_spmv_sse_1(x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#else
+// 									#pragma omp simd
+// 									for (unsigned int i = 0; i < dLength; ++i) {
+// 										unsigned int x_idx = i;
+// 										unsigned int y_idx = i - dIndex;
+// 										y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+// 										y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+// 									}
+// 								#endif
+// 							} else if (dIndex > 0) {
+// 								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+// 									if ((simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0)) break;
+// 								}
+// 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
+// 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
+// 								#if VEC_TYPE == 2
+// 									run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 1
+//                                     run_spmv_avx_2(simd_start, simd_end, x_real_values, x_imag_values,
+//                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 0
+// 									run_spmv_sse_2(x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#else
+// 									#pragma omp simd
+// 									for (unsigned int i = 0; i < dLength; ++i) {
+// 										unsigned int x_idx = dIndex + i;
+// 										unsigned int y_idx = i;
+// 										y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+// 										y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+// 									}
+// 								#endif
+// 							} else {
+// 								for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+// 									if ((simd_start % VEC_WIDTH == 0) &&
+// 										((uintptr_t)&x_real_values[simd_start] % 64 == 0) &&
+// 										((uintptr_t)&y_real_values[simd_start] % 64 == 0)) break;
+// 								}
+// 								if (simd_start + VEC_WIDTH > dLength) simd_start = dLength;
+// 								simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+
+// 								#if VEC_TYPE == 2
+// 									run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 1
+//                                     run_spmv_avx_0(simd_start, simd_end, x_real_values, x_imag_values,
+//                                         real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#elif VEC_TYPE == 0
+// 									run_spmv_sse_0(x_real_values, x_imag_values,
+// 										real_vals, imag_vals, y_real_values, y_imag_values, dIndex, dLength);
+// 								#else
+// 									#pragma omp simd
+// 									for (unsigned int i = 0; i < dLength; ++i) {
+// 										y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
+// 										y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
+// 									}
+// 								#endif
+// 							}
+// 						}
+// 					} // end task
+// 				}
+// 			} // end single
+// 		} // end parallel
+
+//         #ifdef DEBUG
+//             auto compute_end = std::chrono::high_resolution_clock::now();
+//             auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end - start);
+//             printf("\t\t spMV compute took %f milliseconds\n", compute_duration.count() / 1000.0);
+//         #endif
+
+// 		// Merge results back
+// 		valType* y_real = y->realValues;
+// 		valType* y_imag = y->imagValues;
+
+// 		#pragma omp parallel for
+// 		for (size_t i = 0; i < N; ++i) {
+// 			for (unsigned int b = 1; b < num_batches; ++b) {
+// 				y_real[i] += y_locals[b]->realValues[i];
+// 				y_imag[i] += y_locals[b]->imagValues[i];
+// 			}
+// 		}
+
+//         #ifdef DEBUG
+//             auto merge_end = std::chrono::high_resolution_clock::now();
+//             auto merge_duration = std::chrono::duration_cast<std::chrono::microseconds>(merge_end - compute_end);
+//             printf("\t\t spMV merge took %f milliseconds\n", merge_duration.count() / 1000.0);
+//         #endif
+
+// 		#ifdef DEEP_DEBUG
+// 			std::cout << " --- " << std::endl;
+// 			std::cout << " --- spMV result --- " << std::endl;
+// 			std::cout << " --- " << std::endl;
+// 			y->print();
+// 			std::cout << " --- " << std::endl;
+// 		#endif
+
 //     #endif
+// 		#ifdef DEBUG
+// 			auto end = std::chrono::high_resolution_clock::now();
+// 			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+// 			printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
+// 		#endif
 // }
+
+// third version: no critical section, does not use task parallelism...
+void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+    #ifdef CUDA_ENABLED
+        return spmv_cuda(A, x);
+    #else
+    #ifdef DEEP_DEBUG
+        std::cout << " --- spMV --- " << std::endl;
+        A->print();
+        x->print();
+        A->print_meta();
+        x->print_meta();
+        y->print_meta();
+    #endif
+    
+    #ifdef DEBUG
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
+    
+        valType *x_real_values = x->realValues;
+        valType *x_imag_values = x->imagValues;
+    
+        size_t total_diagonals = A->dIndices.size();
+        size_t N = y->numRows;
+    
+        // Use at most as many threads as there are diagonals
+        int max_threads = omp_get_max_threads();
+        int num_threads = std::min((int)total_diagonals, max_threads);
+    
+        // Prepare thread-local y buffers outside parallel region
+        std::vector<std::shared_ptr<vector>> y_locals(num_threads);
+        for (int t = 0; t < num_threads; ++t)
+            y_locals[t] = y->copy();  // uses aligned alloc
+    
+    #pragma omp parallel num_threads(num_threads)
+    {
+        int tid = omp_get_thread_num();
+        valType *y_real_values = y_locals[tid]->realValues;
+        valType *y_imag_values = y_locals[tid]->imagValues;
+    
+    #pragma omp for schedule(static)
+        for (size_t a = 0; a < total_diagonals; ++a) {
+            int dIndex = A->dIndices[a];
+            std::shared_ptr<diagonal> d = A->dPointers[a];
+            unsigned int dLength = d->dLength;
+    
+            valType *real_vals = d->realValues;
+            valType *imag_vals = d->imagValues;
+    
+            // Find aligned SIMD region
+            unsigned int simd_start = 0;
+            for (; simd_start + VEC_WIDTH <= dLength; ++simd_start) {
+                bool aligned = false;
+                if (dIndex < 0)
+                    aligned = (simd_start % VEC_WIDTH == 0) && ((simd_start - dIndex) % VEC_WIDTH == 0);
+                else if (dIndex > 0)
+                    aligned = (simd_start % VEC_WIDTH == 0) && ((simd_start + dIndex) % VEC_WIDTH == 0);
+                else
+                    aligned = (simd_start % VEC_WIDTH == 0);
+                if (aligned) break;
+            }
+            if (simd_start + VEC_WIDTH > dLength)
+                simd_start = dLength;
+            unsigned int simd_end = dLength - ((dLength - simd_start) % VEC_WIDTH);
+    
+            // Select and call appropriate kernel
+            if (dIndex < 0) {
+    #if VEC_TYPE == 2
+                run_spmv_avx512_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 1
+                run_spmv_avx_1(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 0
+                run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #else
+    #pragma omp simd
+                for (unsigned int i = 0; i < dLength; i++) {
+                    unsigned int x_idx = i;
+                    unsigned int y_idx = i - dIndex;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+    #endif
+            } else if (dIndex > 0) {
+    #if VEC_TYPE == 2
+                run_spmv_avx512_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 1
+                run_spmv_avx_2(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 0
+                run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #else
+    #pragma omp simd
+                for (unsigned int i = 0; i < dLength; i++) {
+                    unsigned int x_idx = dIndex + i;
+                    unsigned int y_idx = i;
+                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] - imag_vals[i] * x_imag_values[x_idx];
+                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] + imag_vals[i] * x_real_values[x_idx];
+                }
+    #endif
+            } else {
+    #if VEC_TYPE == 2
+                run_spmv_avx512_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                  y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 1
+                run_spmv_avx_0(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 0
+                run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #else
+    #pragma omp simd
+                for (unsigned int i = 0; i < dLength; i++) {
+                    y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
+                    y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
+                }
+    #endif
+            }
+        }
+    } // end parallel region
+    
+        // Final merge
+        valType *y_real = y->realValues;
+        valType *y_imag = y->imagValues;
+        #pragma omp parallel for
+    for (size_t i = 0; i < N; ++i) {
+        valType sum_r = 0.0;
+        valType sum_i = 0.0;
+        #pragma omp simd
+        for (int t = 0; t < num_threads; ++t) {
+            sum_r += y_locals[t]->realValues[i];
+            sum_i += y_locals[t]->imagValues[i];
+        }
+        y_real[i] = sum_r;
+        y_imag[i] = sum_i;
+    }
+    
+    
+    #ifdef DEEP_DEBUG
+        std::cout << " --- spMV result --- " << std::endl;
+        y->print();
+    #endif
+    
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
+    #endif // not CUDA
+}
+
+// ------------- END OF SPMV ------------- //
+
+
 
 std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
 
@@ -3906,7 +3798,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     #endif
 
     // Initialize result and create 0th diagonal
-    std::shared_ptr<identityMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
     if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
 
@@ -3959,11 +3851,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         // printf("X_power_i_whole_divided_by_i\n");
         // X_power_i_whole_divided_by_i->print();
 
+        result->add(X_power_i_whole_divided_by_i);
+
         // Check convergence
         // if (i % 5 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
         if (X_power_i_whole_divided_by_i->norm() < tolerance) break;
 
-        result->add(X_power_i_whole_divided_by_i);
     }
 
     if(i == max_iterations) {
@@ -3997,18 +3890,14 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
         return expm_negative_taylor(A, t, max_iterations, scale_cutoff);
     }
 
-	// Step 1: Estimate the 1-norm
+	// Step 1: Estimate the 1-norm and set tolerance!
 	valType norm_est = A->estimate_1norm();
-	valType scaled_norm = t * norm_est;
-
-	// Step 2: Determine scaling factor s
-	int s = 0;
-	if (scaled_norm > scale_cutoff) {
-		s = static_cast<int>(std::ceil(std::log2(scaled_norm / scale_cutoff)));
-	}
-
-    // valType tolerance = std::max(1e-7, std::min(1e-4, 1e-6 / (1 << s)));
-    valType tolerance = 1e-5;
+	const valType eps = (valType)1e-12;                 // small bias
+    valType scaled_norm = t * norm_est + eps;           // nudge away from knife-edge
+    int s = (scaled_norm > scale_cutoff)
+        ? (int)std::ceil(std::log2(scaled_norm / scale_cutoff))
+        : 0;
+    valType tolerance = std::max((valType)1e-9, (valType)(1e-5 / (1 << s)));
 
 	valType scaled_t = t / static_cast<valType>(1 << s); // t / 2^s
 

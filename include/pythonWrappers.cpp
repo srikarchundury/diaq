@@ -65,6 +65,8 @@ PYBIND11_MODULE(diaq, m) {
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::automatic)
         .def("multiplyVector", &diaq::diaQMatrix::multiplyVector, py::return_value_policy::automatic)
         .def("multiplyScalar", &diaq::diaQMatrix::multiplyScalar, py::return_value_policy::automatic)
+        .def("isEqualTo", &diaq::diaQMatrix::isEqualTo, py::return_value_policy::automatic)
+        .def("estimate_1norm", &diaq::diaQMatrix::estimate_1norm, py::return_value_policy::automatic)
         // operator bindings
         .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::product(a, b);
@@ -158,6 +160,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::automatic)
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::automatic)
         .def("copy", &diaq::vector::copy, py::return_value_policy::automatic)
+        .def("isEqualTo", &diaq::vector::isEqualTo, py::return_value_policy::automatic)
         ;
 
     // diaq::denseMatrix class
@@ -479,15 +482,13 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { 
-            // return diaq::expm_negative_taylor(A, t, max_iterations);
-            diaq::valType scale_cutoff = 1.0;
+        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
+            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
             return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
         },
-        // [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { return diaq::expm_negative_pade(A, t, max_iterations); },
-        py::arg(),
-        py::arg(),
+        py::arg("A"), py::arg("t"),
         py::arg("max_iterations") = 100,
+        py::arg("scale_cutoff")   = 1.0,
         py::return_value_policy::automatic
     );
 
