@@ -1676,7 +1676,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 			sr += y_locals[t]->realValues[i];
 			si += y_locals[t]->imagValues[i];
 		}
-		y_real[i] = sr;   // use '=' so result is exactly A*x; change to '+=' if you intend accumulate
+		y_real[i] = sr;
 		y_imag[i] = si;
 	}
 
