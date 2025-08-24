@@ -109,9 +109,23 @@ void print_simd_info();
 class OMPInitializer {
 public:
     OMPInitializer() {
-        // omp_set_dynamic(1);
+        omp_set_dynamic(0);
 		// omp_set_nested(1); // Enable nested parallelism // this is very bad!
-        omp_set_num_threads(NUMBER_OF_OMP_THREADS);
+        // omp_set_num_threads(NUMBER_OF_OMP_THREADS); // useless!
+
+		if (!std::getenv("OMP_NUM_THREADS")) {
+			// Fall back to how many CPUs we actually have in this cpuset.
+			#ifdef __linux__
+				cpu_set_t set; CPU_ZERO(&set);
+				if (sched_getaffinity(0, sizeof(set), &set) == 0) {
+					omp_set_num_threads(CPU_COUNT(&set));
+				} else {
+					omp_set_num_threads(std::max(1u, std::thread::hardware_concurrency()));
+				}
+			#else
+				omp_set_num_threads(std::max(1u, std::thread::hardware_concurrency()));
+			#endif
+		}
 
 		// // testing
         // std::cout << "OMP settings initialized with " << NUMBER_OF_OMP_THREADS 
