@@ -109,7 +109,7 @@ void print_simd_info();
 class OMPInitializer {
 public:
     OMPInitializer() {
-        omp_set_dynamic(1);
+        // omp_set_dynamic(1);
 		// omp_set_nested(1); // Enable nested parallelism // this is very bad!
         omp_set_num_threads(NUMBER_OF_OMP_THREADS);
 

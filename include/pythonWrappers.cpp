@@ -152,6 +152,7 @@ PYBIND11_MODULE(diaq, m) {
     // diaq::vector class
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
         .def(py::init<unsigned int>())
+        .def_readonly("numRows", &diaq::vector::numRows)
         .def("setValue", &diaq::vector::setValue, py::return_value_policy::automatic)
         .def("print", &diaq::vector::print, py::return_value_policy::automatic)
         .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::automatic)
