@@ -1838,9 +1838,13 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-
-        diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
-        diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #if VEC_TYPE == -1
+            diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+        #else
+            diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #endif
         x_real_vals[0] = 0.279931; x_real_vals[1] = 0.279931; x_real_vals[2] = 0; x_real_vals[3] = 0;
         x_real_vals[4] = 0; x_real_vals[5] = 0; x_real_vals[6] = 0.126182; x_real_vals[7] = 0.126182;
         x_imag_vals[0] = 0.085921; x_imag_vals[1] = 0.085921; x_imag_vals[2] = 0; x_imag_vals[3] = 0;
@@ -1906,8 +1910,13 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
-        diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #if VEC_TYPE == -1
+            diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+        #else
+            diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #endif
         x_real_vals[0] = 0.395882; x_real_vals[1] = 0.000000; x_real_vals[2] = 0.785682; x_real_vals[3] = 0.000000;
         x_real_vals[4] = 0.000000; x_real_vals[5] = 0.000000; x_real_vals[6] = 0.000000; x_real_vals[7] = 0.000000;
         x_imag_vals[0] = 0.121511; x_imag_vals[1] = 0.000000; x_imag_vals[2] = 0.459582; x_imag_vals[3] = 0.000000;
@@ -1963,8 +1972,13 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
-        diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #if VEC_TYPE == -1
+            diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+        #else
+            diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #endif
         x_real_vals[0] = 0.279931; x_real_vals[1] = 0.000000; x_real_vals[2] = 0.126182; x_real_vals[3] = 0.000000;
         x_real_vals[4] = 0.279931; x_real_vals[5] = 0.000000; x_real_vals[6] = 0.126182; x_real_vals[7] = 0.000000;
         x_imag_vals[0] = 0.085921; x_imag_vals[1] = 0.000000; x_imag_vals[2] = 0.631137; x_imag_vals[3] = 0.000000;
@@ -2012,7 +2026,11 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #if VEC_TYPE == -1
+            diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+        #else
+            diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #endif
         x_real_vals[0] = 1.000000; x_real_vals[1] = 0.000000; x_real_vals[2] = 0.000000; x_real_vals[3] = 0.000000;
         x_real_vals[4] = 0.000000; x_real_vals[5] = 0.000000; x_real_vals[6] = 0.000000; x_real_vals[7] = 0.000000;
         std::shared_ptr<diaq::vector> x = std::make_shared<diaq::vector>(8, x_real_vals);
@@ -2074,8 +2092,13 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
-        diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #if VEC_TYPE == -1
+            diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
+        #else
+            diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+            diaq::valType* x_imag_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
+        #endif
         x_real_vals[0] = 0.603145; x_real_vals[1] = 0.000000; x_real_vals[2] = 0.000000; x_real_vals[3] = 0.000000;
         x_real_vals[4] = 0.000000; x_real_vals[5] = 0.000000; x_real_vals[6] = 0.000000; x_real_vals[7] = 0.000000;
         x_imag_vals[0] = 0.000000; x_imag_vals[1] = 0.000000; x_imag_vals[2] = -0.797631; x_imag_vals[3] = 0.000000;
@@ -2103,7 +2126,7 @@ int main(int argc, char **argv) {
         // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         // -- current vector --
         // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
-        #if NUM_BYTES_ALIGNED == -1
+        #if VEC_TYPE == -1
             diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2118,7 +2141,7 @@ int main(int argc, char **argv) {
         for(int i = 0; i < 8; i++) imags[i] = 1;
         std::shared_ptr<diaq::diagonal> d1 = std::make_shared<diaq::diagonal>(-1, 15, reals, imags);
 
-        #if NUM_BYTES_ALIGNED == -1
+        #if VEC_TYPE == -1
             diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2141,7 +2164,7 @@ int main(int argc, char **argv) {
         q_mat->print();
 
         std::cout << " --x-- " << std::endl;
-        #if NUM_BYTES_ALIGNED == -1
+        #if VEC_TYPE == -1
             diaq::valType *x_real_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *x_imag_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else
@@ -2175,7 +2198,7 @@ int main(int argc, char **argv) {
         // tensor_shape (16,16)
         // (dIndex=0) (dLength=16) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
 
-        #if NUM_BYTES_ALIGNED == -1
+        #if VEC_TYPE == -1
             diaq::valType *reals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else

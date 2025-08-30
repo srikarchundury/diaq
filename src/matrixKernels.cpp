@@ -204,7 +204,7 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
                        real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
         #elif VEC_TYPE == -1
             run_without_vectorization(block_start, block_end, a_offset, b_offset,
-                                      real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final);
+                       real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
         #endif
     }
 
@@ -1769,7 +1769,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    #pragma omp simd
+    // #pragma omp simd
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = i;
                     unsigned int y_idx = i - dIndex;
@@ -1788,7 +1788,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    #pragma omp simd
+    // #pragma omp simd
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = dIndex + i;
                     unsigned int y_idx = i;
@@ -1807,7 +1807,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    #pragma omp simd
+    // #pragma omp simd
                 for (unsigned int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];

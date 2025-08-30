@@ -51,15 +51,17 @@ endif()
 option(DEBUG "Enable debugging mode" OFF)
 option(DEEP_DEBUG "Enable deep debugging mode" OFF)
 option(CUDA_ENABLED "Enable CUDA support" OFF)
+option(SIMD_ENABLED "Enable SIMD" ON)
 option(PAPI "Enable PAPI support" OFF)
 option(MAKE_TESTS "Enable building tests" OFF)
 option(MAKE_TEST_FOR_DISASSEMBLY "Enable building test_for_disassembly" OFF)
-option(BUILD_PYTHON "Build Python bindings using pybind11" OFF)
+option(BUILD_PYTHON "Build Python bindings using pybind11" ON)
 
 message(STATUS "${BoldYellow}>>> Build options:${Reset}")
 message(STATUS "  DEBUG = ${DEBUG}")
 message(STATUS "  DEEP_DEBUG = ${DEEP_DEBUG}")
 message(STATUS "  CUDA_ENABLED = ${CUDA_ENABLED}")
+message(STATUS "  SIMD_ENABLED = ${SIMD_ENABLED}")
 message(STATUS "  PAPI = ${PAPI}")
 message(STATUS "  MAKE_TESTS = ${MAKE_TESTS}")
 message(STATUS "  MAKE_TEST_FOR_DISASSEMBLY = ${MAKE_TEST_FOR_DISASSEMBLY}")
@@ -82,7 +84,7 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # ==============================================
-# Cache & SIMD detection (untouched, keeps AVX/SSE logic)
+# Cache detection
 # ==============================================
 file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
 string(REGEX MATCH "[0-9]+" L1_SIZE_NUM "${L1_SIZE_RAW}")
@@ -90,19 +92,34 @@ math(EXPR L1_SIZE_BYTES "${L1_SIZE_NUM} * 1024")
 add_compile_definitions(L1_CACHE_SIZE_BYTES=${L1_SIZE_BYTES})
 message(STATUS "${BoldBlue}>>> Detected L1 cache size: ${L1_SIZE_BYTES} bytes${Reset}")
 
-file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
-if (CPUINFO_CONTENTS MATCHES "avx512f")
-    add_definitions(-DCPU_SUPPORTS_AVX512F)
-    message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
-elseif (CPUINFO_CONTENTS MATCHES "avx2")
-    add_definitions(-DCPU_SUPPORTS_AVX2)
-    message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
-elseif (CPUINFO_CONTENTS MATCHES "sse2")
-    add_definitions(-DCPU_SUPPORTS_SSE2)
-    message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
+# ==============================================
+# SIMD option
+# ==============================================
+if(SIMD_ENABLED)
+    add_definitions(-DSIMD_ENABLED)
+    message(STATUS "${BoldGreen}>>> SIMD optimizations enabled${Reset}")
+endif()
+
+if(SIMD_ENABLED)
+    # ==============================================
+    # Auto-detect CPU SIMD capabilities
+    # ==============================================
+    file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
+    if (CPUINFO_CONTENTS MATCHES "avx512f")
+        add_definitions(-DCPU_SUPPORTS_AVX512F)
+        message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
+    elseif (CPUINFO_CONTENTS MATCHES "avx2")
+        add_definitions(-DCPU_SUPPORTS_AVX2)
+        message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
+    elseif (CPUINFO_CONTENTS MATCHES "sse2")
+        add_definitions(-DCPU_SUPPORTS_SSE2)
+        message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
+    else()
+        add_definitions(-DCPU_SUPPORTS_SCALAR)
+        message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
+    endif()
 else()
-    add_definitions(-DCPU_SUPPORTS_SCALAR)
-    message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
+    message(STATUS "${BoldYellow}>>> SIMD_ENABLED set to OFF, skipping CPU SIMD detection${Reset}")
 endif()
 
 # ==============================================

@@ -47,18 +47,24 @@ using valType = double; // double or float
 
 // ------- Vectorization related ------- //
 
-#if defined(CPU_SUPPORTS_AVX512F)
-	#define VEC_TYPE 2
-	#define NUM_BYTES_ALIGNED 64
-	#define VEC_WIDTH 8
-#elif defined(CPU_SUPPORTS_AVX2)
-	#define VEC_TYPE 1
-	#define NUM_BYTES_ALIGNED 32
-	#define VEC_WIDTH 4
-#elif defined(CPU_SUPPORTS_SSE2)
-	#define VEC_TYPE 0
-	#define NUM_BYTES_ALIGNED 16
-	#define VEC_WIDTH 2
+#if defined(SIMD_ENABLED)
+	#if defined(CPU_SUPPORTS_AVX512F)
+		#define VEC_TYPE 2
+		#define NUM_BYTES_ALIGNED 64
+		#define VEC_WIDTH 8
+	#elif defined(CPU_SUPPORTS_AVX2)
+		#define VEC_TYPE 1
+		#define NUM_BYTES_ALIGNED 32
+		#define VEC_WIDTH 4
+	#elif defined(CPU_SUPPORTS_SSE2)
+		#define VEC_TYPE 0
+		#define NUM_BYTES_ALIGNED 16
+		#define VEC_WIDTH 2
+	#else
+		#define VEC_TYPE -1
+		#define NUM_BYTES_ALIGNED -1
+		#define VEC_WIDTH 1
+	#endif
 #else
 	#define VEC_TYPE -1
 	#define NUM_BYTES_ALIGNED -1

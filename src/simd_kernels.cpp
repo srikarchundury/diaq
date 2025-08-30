@@ -3,29 +3,63 @@
 
 namespace diaq {
 
-void run_without_vectorization(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
-    valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final) {
-    #ifdef DEEP_DEBUG
-        std::cout << "Starting run_without_vectorization -- " << std::endl;
-        auto time_start = std::chrono::high_resolution_clock::now();
-    #endif
-    #pragma omp parallel for schedule(static)
-    for (unsigned int k = start; k < end; ++k) {
-		valType real_a = real_vals_a[k + a_offset];
-        valType imag_a = imag_vals_a[k + a_offset];
-        valType real_b = real_vals_b[k + b_offset];
-        valType imag_b = imag_vals_b[k + b_offset];
-		real_vals_final[k] = (valType)((valType)(real_a * real_b) - (valType)(imag_a * imag_b));
-		imag_vals_final[k] = (valType)((valType)(real_a * imag_b) + (valType)(imag_a * real_b));
+    template<>
+    void run_without_vectorization<float>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+            float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final, bool overwrite) {
+            #ifdef DEEP_DEBUG
+            std::cout << "Starting run_without_vectorization -- " << std::endl;
+            auto time_start = std::chrono::high_resolution_clock::now();
+        #endif
+
+        for (unsigned int k = start; k < end; ++k) {
+            valType real_a = real_vals_a[k + a_offset];
+            valType imag_a = imag_vals_a[k + a_offset];
+            valType real_b = real_vals_b[k + b_offset];
+            valType imag_b = imag_vals_b[k + b_offset];
+            if (overwrite) {
+                real_vals_final[k] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[k] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[k] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[k] += (real_a * imag_b) + (imag_a * real_b);
+            }
+        }
+
+        #ifdef DEEP_DEBUG
+            auto time_end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
+            printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
+        #endif
     }
 
-    #ifdef DEEP_DEBUG
-        auto time_end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
-        printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
-    #endif
-}
+    template<>
+    void run_without_vectorization<double>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+            double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final, bool overwrite) {
+        #ifdef DEEP_DEBUG
+            std::cout << "Starting run_without_vectorization -- " << std::endl;
+            auto time_start = std::chrono::high_resolution_clock::now();
+        #endif
 
+        for (unsigned int k = start; k < end; ++k) {
+            valType real_a = real_vals_a[k + a_offset];
+            valType imag_a = imag_vals_a[k + a_offset];
+            valType real_b = real_vals_b[k + b_offset];
+            valType imag_b = imag_vals_b[k + b_offset];
+            if (overwrite) {
+                real_vals_final[k] = (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[k] = (real_a * imag_b) + (imag_a * real_b);
+            } else {
+                real_vals_final[k] += (real_a * real_b) - (imag_a * imag_b);
+                imag_vals_final[k] += (real_a * imag_b) + (imag_a * real_b);
+            }
+        }
+
+        #ifdef DEEP_DEBUG
+            auto time_end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(time_end - time_start);
+            printf("\t\trun_without_vectorization took %f milliseconds\n", duration.count()/1000.0);
+        #endif
+    }
 // ----------------------------------------------------------------
 //
 // SIMD - SSE for valType = float, AVX for valType = double

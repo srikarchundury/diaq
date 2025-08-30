@@ -18,8 +18,16 @@
 
 namespace diaq {
 
+	// Template for general implementation without vectorization
+	template<typename valType>
 	void run_without_vectorization(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
-		valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final);
+		valType *real_vals_a, valType *imag_vals_a, valType *real_vals_b, valType *imag_vals_b, valType *real_vals_final, valType *imag_vals_final, bool overwrite);
+	template<>
+	void run_without_vectorization<double>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+		double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final, bool overwrite);
+	template<>
+	void run_without_vectorization<float>(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+		float *real_vals_a, float *imag_vals_a, float *real_vals_b, float *imag_vals_b, float *real_vals_final, float *imag_vals_final, bool overwrite);
 
 #ifdef __AVX2__
 	
