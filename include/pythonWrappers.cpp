@@ -599,4 +599,47 @@ PYBIND11_MODULE(diaq, m) {
         py::return_value_policy::automatic
     );
 
+    // Expose preprocessor #define values (if available) as Python dict
+    m.def("install_info", []() {
+        py::dict info;
+#ifdef VEC_TYPE
+        info["VEC_TYPE"] = static_cast<int>(VEC_TYPE);
+#endif
+#ifdef NUM_BYTES_ALIGNED
+        info["NUM_BYTES_ALIGNED"] = static_cast<int>(NUM_BYTES_ALIGNED);
+#endif
+#ifdef VEC_WIDTH
+        info["VEC_WIDTH"] = static_cast<int>(VEC_WIDTH);
+#endif
+#ifdef PREFETCH_DIST
+        info["PREFETCH_DIST"] = static_cast<int>(PREFETCH_DIST);
+#endif
+#ifdef L1_CACHE_SIZE_BYTES
+        info["L1_CACHE_SIZE_BYTES"] = static_cast<int>(L1_CACHE_SIZE_BYTES);
+#endif
+#ifdef CACHE_UTILIZATION
+        info["CACHE_UTILIZATION"] = static_cast<double>(CACHE_UTILIZATION);
+#endif
+#ifdef NUM_ARRAYS_ACCESSED
+        info["NUM_ARRAYS_ACCESSED"] = static_cast<int>(NUM_ARRAYS_ACCESSED);
+#endif
+#ifdef BLOCK_SIZE_RAW
+        info["BLOCK_SIZE_RAW"] = static_cast<int>(BLOCK_SIZE_RAW);
+#endif
+#ifdef BLOCK_SIZE
+        info["BLOCK_SIZE"] = static_cast<int>(BLOCK_SIZE);
+#endif
+#ifdef NUMBER_OF_OMP_THREADS
+        info["NUMBER_OF_OMP_THREADS"] = static_cast<int>(NUMBER_OF_OMP_THREADS);
+#endif
+#ifdef PAPI_ON
+        info["PAPI_ON"] = true;
+#else
+        info["PAPI_ON"] = false;
+#endif
+        // Data type info
+        info["valType"] = py::str(typeid(diaq::valType).name());
+        return info;
+    }, "Returns SIMD and install configuration info as a dict");
+
 } // end of PYBIND11_MODULE
