@@ -405,7 +405,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                     valType *dC_real_vals = dC->realValues;
                     valType *dC_imag_vals = dC->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for (unsigned int j = 0; j < dA->dLength; j++) {
                         dC_real_vals[j] = dA_real_vals[j] + dB_real_vals[j];
                         dC_imag_vals[j] = dA_imag_vals[j] + dB_imag_vals[j];
@@ -791,7 +793,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     valType *dA_imag_vals = dA->imagValues;
                     valType *dB_real_vals = dB->realValues;
                     valType *dB_imag_vals = dB->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for(unsigned int i = 0; i < dA->dLength; i++) {
                         valType a = dA_real_vals[i];
                         valType b = dA_imag_vals[i];
@@ -882,7 +886,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
+                #if defined(SIMD_ENABLED)
                 #pragma omp simd
+                #endif
                 for (unsigned int j = 0; j < d->dLength; j++) {
                     real_vals[j] = (std::abs(real_vals[j]) > min_threshold * val) ? real_vals[j] * reciprocal : 0.0;
                     imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * val) ? imag_vals[j] * reciprocal : 0.0;
@@ -942,7 +948,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *new_real_vals = newDiag->realValues;
                 valType *new_imag_vals = newDiag->imagValues;
 
+                #if defined(SIMD_ENABLED)
                 #pragma omp simd
+                #endif
                 for (unsigned int j = 0; j < d->dLength; j++) {
                     new_real_vals[j] = -1.0 * imag_vals[j] * imag;
                     new_imag_vals[j] = real_vals[j] * imag;
@@ -988,7 +996,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                     valType *dC_real_vals = dC->realValues;
                     valType *dC_imag_vals = dC->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for (unsigned int j = 0; j < dA->dLength; j++) {
                         dC_real_vals[j] = dA_real_vals[j] - dB_real_vals[j];
                         dC_imag_vals[j] = dA_imag_vals[j] - dB_imag_vals[j];

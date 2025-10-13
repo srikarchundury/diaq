@@ -1769,7 +1769,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    // #pragma omp simd
+                #if defined(SIMD_ENABLED)
+                #pragma omp simd
+                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = i;
                     unsigned int y_idx = i - dIndex;
@@ -1788,7 +1790,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    // #pragma omp simd
+                #if defined(SIMD_ENABLED)
+                #pragma omp simd
+                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = dIndex + i;
                     unsigned int y_idx = i;
@@ -1807,7 +1811,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-    // #pragma omp simd
+                #if defined(SIMD_ENABLED)
+                #pragma omp simd
+                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
@@ -1824,7 +1830,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     for (size_t i = 0; i < N; ++i) {
         valType sum_r = 0.0;
         valType sum_i = 0.0;
+        #if defined(SIMD_ENABLED)
         #pragma omp simd
+        #endif
         for (int t = 0; t < num_threads; ++t) {
             sum_r += y_locals[t]->realValues[i];
             sum_i += y_locals[t]->imagValues[i];
@@ -2063,7 +2071,9 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
         valType *real_valsC = newDiag->realValues;
         valType *imag_valsC = newDiag->imagValues;
 
+        #if defined(SIMD_ENABLED)
         #pragma omp simd
+        #endif
         for (unsigned int i = 0; i < dLength; i++) {
             real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
             imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
@@ -2378,7 +2388,9 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
                 #pragma omp parallel for
                 for(unsigned int rep = 0; rep < n; rep++) {
                     unsigned int skip_places = rep * (dLength - dIndex);
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for(unsigned int i = 0; i < dLength; i++) {
                         if(i % 2 == 0) {
                             unsigned int x_idx = i + skip_places;
@@ -2396,7 +2408,9 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
                 #pragma omp parallel for
                 for(unsigned int rep = 0; rep < n; rep++) {
                     unsigned int skip_places = rep * (dLength - dIndex);
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for(unsigned int i = 0; i < dLength/2; i++) {
                         unsigned int x_idx = i + skip_places;
                         unsigned int y_idx = i + skip_places - dIndex;
@@ -2507,7 +2521,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
                 unsigned int x_offset = (dIndex < 0 ? skip_places : after_N * dIndex + skip_places);
                 unsigned int y_offset = (dIndex < 0 ? skip_places - after_N * dIndex : skip_places);
 
+                #if defined(SIMD_ENABLED)
                 #pragma omp simd
+                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = x_offset + i * after_N + j;
                     unsigned int y_idx = y_offset + i * after_N + j;
@@ -3727,7 +3743,9 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
                 valType each_imag = imag_vals[i];
                 if(each_real != 0 || each_imag != 0) {
 
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for(unsigned int j = 0; j < after_N; j++) {
                         unsigned int new_idx = skip_places + i * after_N + j;
                         newDiag_real_vals[new_idx] = each_real;

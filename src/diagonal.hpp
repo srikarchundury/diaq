@@ -211,7 +211,9 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             const valType* real_other = other.realValues;
             const valType* imag_other = other.imagValues;
         
+            #if defined(SIMD_ENABLED)
             #pragma omp simd
+            #endif
             for (unsigned int i = 0; i < dLength; ++i) {
                 realValues[i] += real_other[i];
                 imagValues[i] += imag_other[i];
