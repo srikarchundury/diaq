@@ -213,7 +213,7 @@ else()
     message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
     # On macOS, using Apple Clang, OpenMP isn't built-in.
     if(APPLE)
-        message(STATUS "${BoldYellow}>>> macOS detected. If OpenMP fails, use Homebrew LLVM (see build instructions below).${Reset}")
+        message(STATUS "${BoldYellow}>>> macOS detected. If OpenMP fails, use Homebrew LLVM.${Reset}")
     endif()
     add_library(diaq_core SHARED ${SOURCES})
 

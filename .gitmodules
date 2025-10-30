@@ -5,3 +5,4 @@
 [submodule "dependencies/parallel-hashmap"]
     path = dependencies/parallel-hashmap
     url = https://github.com/greg7mdp/parallel-hashmap.git
+    branch = main
