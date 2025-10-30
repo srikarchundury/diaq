@@ -1,5 +1,12 @@
-cmake_minimum_required(VERSION 3.0)
+# cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.14)
 project(diaq)
+
+# macOS specifics
+if(APPLE)
+  # Enable modern rpath handling on macOS
+  set(CMAKE_MACOSX_RPATH ON)
+endif()
 
 # ==============================================
 # Colors for messages
@@ -86,9 +93,23 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 # ==============================================
 # Cache detection
 # ==============================================
-file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
-string(REGEX MATCH "[0-9]+" L1_SIZE_NUM "${L1_SIZE_RAW}")
-math(EXPR L1_SIZE_BYTES "${L1_SIZE_NUM} * 1024")
+set(L1_SIZE_BYTES 32768) # safe default 32 KiB
+
+if(UNIX AND NOT APPLE)
+  if(EXISTS "/sys/devices/system/cpu/cpu0/cache/index0/size")
+    file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
+    string(REGEX MATCH "[0-9]+" L1_SIZE_NUM "${L1_SIZE_RAW}")
+    if(L1_SIZE_NUM)
+      math(EXPR L1_SIZE_BYTES "${L1_SIZE_NUM} * 1024")
+    endif()
+  endif()
+elseif(APPLE)
+  # Try a few common L1 sizes; keep default if detection fails
+  # Apple Silicon M1/M2/M3 typically 128 KiB L1I + 64 KiB L1D per core;
+  # using 64 KiB is a reasonable conservative choice for data cache hints.
+  set(L1_SIZE_BYTES 65536)
+endif()
+
 add_compile_definitions(L1_CACHE_SIZE_BYTES=${L1_SIZE_BYTES})
 message(STATUS "${BoldBlue}>>> Detected L1 cache size: ${L1_SIZE_BYTES} bytes${Reset}")
 
@@ -96,30 +117,48 @@ message(STATUS "${BoldBlue}>>> Detected L1 cache size: ${L1_SIZE_BYTES} bytes${R
 # SIMD option
 # ==============================================
 if(SIMD_ENABLED)
-    add_definitions(-DSIMD_ENABLED)
-    message(STATUS "${BoldGreen}>>> SIMD optimizations enabled${Reset}")
-endif()
+  add_definitions(-DSIMD_ENABLED)
+  message(STATUS "${BoldGreen}>>> SIMD optimizations enabled${Reset}")
 
-if(SIMD_ENABLED)
-    # ==============================================
-    # Auto-detect CPU SIMD capabilities
-    # ==============================================
+  # ==============================================
+  # Auto-detect CPU SIMD capabilities (portable)
+  # We avoid parsing /proc on macOS. Instead, infer by arch and compiler flags.
+  # If you pass explicit flags (e.g., -mavx2), the compiler will set the macros.
+  # We set *hints* for your code via compile definitions.
+  # ==============================================
+  if(APPLE)
+    # Apple Silicon: use NEON/AdvSIMD
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+      add_definitions(-DCPU_SUPPORTS_NEON)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: NEON/AdvSIMD (Apple Silicon) assumed${Reset}")
+    else()
+      # Intel mac: prefer AVX2 if user compiles with -mavx2 or -march=native supports it.
+      # We can't reliably probe here; leave scalar hint off and rely on compiler flags.
+      message(STATUS "${BoldYellow}>>> On Intel macOS: pass -mavx2 if available to enable AVX2 code paths${Reset}")
+    endif()
+  elseif(UNIX AND NOT APPLE)
     file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
     if (CPUINFO_CONTENTS MATCHES "avx512f")
-        add_definitions(-DCPU_SUPPORTS_AVX512F)
-        message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
+      add_definitions(-DCPU_SUPPORTS_AVX512F)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
     elseif (CPUINFO_CONTENTS MATCHES "avx2")
-        add_definitions(-DCPU_SUPPORTS_AVX2)
-        message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
+      add_definitions(-DCPU_SUPPORTS_AVX2)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
     elseif (CPUINFO_CONTENTS MATCHES "sse2")
-        add_definitions(-DCPU_SUPPORTS_SSE2)
-        message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
+      add_definitions(-DCPU_SUPPORTS_SSE2)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
     else()
-        add_definitions(-DCPU_SUPPORTS_SCALAR)
-        message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
+      add_definitions(-DCPU_SUPPORTS_SCALAR)
+      message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
     endif()
+  else()
+    # Fallback for other platforms
+    add_definitions(-DCPU_SUPPORTS_SCALAR)
+    message(STATUS "${BoldYellow}>>> Unknown platform; defaulting to SCALAR fallback${Reset}")
+  endif()
+
 else()
-    message(STATUS "${BoldYellow}>>> SIMD_ENABLED set to OFF, skipping CPU SIMD detection${Reset}")
+  message(STATUS "${BoldYellow}>>> SIMD_ENABLED set to OFF, skipping CPU SIMD detection${Reset}")
 endif()
 
 # ==============================================
@@ -172,6 +211,10 @@ if(CUDA_ENABLED)
 
 else()
     message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
+    # On macOS, using Apple Clang, OpenMP isn't built-in.
+    if(APPLE)
+        message(STATUS "${BoldYellow}>>> macOS detected. If OpenMP fails, use Homebrew LLVM (see build instructions below).${Reset}")
+    endif()
     add_library(diaq_core SHARED ${SOURCES})
 
     # ==============================================
@@ -250,11 +293,26 @@ if(BUILD_PYTHON)
     pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
     target_link_libraries(diaq PRIVATE diaq_core)
 
-    # RPATH fix: ensure Python module can find libdiaq_core.so
-    set_target_properties(diaq PROPERTIES
-        BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
-        INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
-    )
+    # # RPATH fix: ensure Python module can find libdiaq_core.so
+    # set_target_properties(diaq PROPERTIES
+    #     BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+    #     INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
+    # )
+
+    # RPATH for Python extension to find libdiaq_core
+    if(APPLE)
+        # Use @loader_path so the extension can find the sibling lib in ../lib
+        set_target_properties(diaq PROPERTIES
+            BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+            INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
+            MACOSX_RPATH ON
+        )
+    else()
+        set_target_properties(diaq PROPERTIES
+            BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+            INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
+        )
+    endif()
 
     # Find Python installation path
     if(DEFINED ENV{VIRTUAL_ENV})
