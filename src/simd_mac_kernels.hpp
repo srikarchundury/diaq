@@ -4,6 +4,8 @@
 #include "config.hpp"
 #include <arm_neon.h>
 
+namespace diaq {
+
 template<typename valTypeTemplate>
 void run_mac(unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset, valTypeTemplate *real_vals_a, valTypeTemplate *imag_vals_a, valTypeTemplate *real_vals_b, valTypeTemplate *imag_vals_b, valTypeTemplate *real_vals_final, valTypeTemplate *imag_vals_final, bool overwrite);
 
@@ -41,5 +43,7 @@ template<>
 void run_spmv_mac_2<float>(unsigned int start, unsigned int end, float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, int dIndex, unsigned int dLength);
 template<>
 void run_spmv_mac_0<float>(unsigned int start, unsigned int end, float *x_real_values, float *x_imag_values, float *real_vals, float *imag_vals, float *y_real_values, float *y_imag_values, int dIndex, unsigned int dLength);
+
+} // namespace diaq
 
 #endif // SIMD_MAC_KERNELS_HPP

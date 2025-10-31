@@ -1,10 +1,8 @@
-# cmake_minimum_required(VERSION 3.0)
 cmake_minimum_required(VERSION 3.14)
 project(diaq)
 
 # macOS specifics
 if(APPLE)
-  # Enable modern rpath handling on macOS
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
@@ -26,7 +24,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-sign-compare -fPIC")
-
 include(CheckCXXCompilerFlag)
 
 # ==============================================
@@ -47,9 +44,9 @@ include_directories(${INC_DIR} ${PHMAP_DIR})
 # ==============================================
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
-    message(STATUS "${BoldGreen}>>> OpenMP found! Flags: ${OpenMP_CXX_FLAGS}${Reset}")
+  message(STATUS "${BoldGreen}>>> OpenMP found! Flags: ${OpenMP_CXX_FLAGS}${Reset}")
 else()
-    message(FATAL_ERROR "${BoldRed}OpenMP not found!${Reset}")
+  message(FATAL_ERROR "${BoldRed}OpenMP not found!${Reset}")
 endif()
 
 # ==============================================
@@ -75,17 +72,17 @@ message(STATUS "  MAKE_TEST_FOR_DISASSEMBLY = ${MAKE_TEST_FOR_DISASSEMBLY}")
 message(STATUS "  BUILD_PYTHON = ${BUILD_PYTHON}")
 
 if(DEBUG)
-    set(CMAKE_BUILD_TYPE Debug)
-    add_definitions(-DDEBUG)
+  set(CMAKE_BUILD_TYPE Debug)
+  add_definitions(-DDEBUG)
 endif()
 
 if(DEEP_DEBUG)
-    set(CMAKE_BUILD_TYPE Debug)
-    add_definitions(-DDEEP_DEBUG)
+  set(CMAKE_BUILD_TYPE Debug)
+  add_definitions(-DDEEP_DEBUG)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -93,8 +90,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 # ==============================================
 # Cache detection
 # ==============================================
-set(L1_SIZE_BYTES 32768) # safe default 32 KiB
-
+set(L1_SIZE_BYTES 32768) # default 32 KiB
 if(UNIX AND NOT APPLE)
   if(EXISTS "/sys/devices/system/cpu/cpu0/cache/index0/size")
     file(READ "/sys/devices/system/cpu/cpu0/cache/index0/size" L1_SIZE_RAW)
@@ -104,176 +100,204 @@ if(UNIX AND NOT APPLE)
     endif()
   endif()
 elseif(APPLE)
-  # Try a few common L1 sizes; keep default if detection fails
-  # Apple Silicon M1/M2/M3 typically 128 KiB L1I + 64 KiB L1D per core;
-  # using 64 KiB is a reasonable conservative choice for data cache hints.
   set(L1_SIZE_BYTES 65536)
 endif()
-
 add_compile_definitions(L1_CACHE_SIZE_BYTES=${L1_SIZE_BYTES})
 message(STATUS "${BoldBlue}>>> Detected L1 cache size: ${L1_SIZE_BYTES} bytes${Reset}")
 
 # ==============================================
-# SIMD option
+# Arch detection (do this BEFORE selecting sources)
 # ==============================================
-if(SIMD_ENABLED)
-  add_definitions(-DSIMD_ENABLED)
-  message(STATUS "${BoldGreen}>>> SIMD optimizations enabled${Reset}")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+  set(DIAQ_ARCH_ARM64 ON)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|i386|i686")
+  set(DIAQ_ARCH_X86 ON)
+endif()
 
-  # ==============================================
-  # Auto-detect CPU SIMD capabilities (portable)
-  # We avoid parsing /proc on macOS. Instead, infer by arch and compiler flags.
-  # If you pass explicit flags (e.g., -mavx2), the compiler will set the macros.
-  # We set *hints* for your code via compile definitions.
-  # ==============================================
-  if(APPLE)
-    # Apple Silicon: use NEON/AdvSIMD
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-      add_definitions(-DCPU_SUPPORTS_NEON)
-      message(STATUS "${BoldGreen}>>> CPU SIMD: NEON/AdvSIMD (Apple Silicon) assumed${Reset}")
-    else()
-      # Intel mac: prefer AVX2 if user compiles with -mavx2 or -march=native supports it.
-      # We can't reliably probe here; leave scalar hint off and rely on compiler flags.
-      message(STATUS "${BoldYellow}>>> On Intel macOS: pass -mavx2 if available to enable AVX2 code paths${Reset}")
-    endif()
-  elseif(UNIX AND NOT APPLE)
-    file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
-    if (CPUINFO_CONTENTS MATCHES "avx512f")
-      add_definitions(-DCPU_SUPPORTS_AVX512F)
-      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
-    elseif (CPUINFO_CONTENTS MATCHES "avx2")
-      add_definitions(-DCPU_SUPPORTS_AVX2)
-      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
-    elseif (CPUINFO_CONTENTS MATCHES "sse2")
-      add_definitions(-DCPU_SUPPORTS_SSE2)
-      message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
-    else()
-      add_definitions(-DCPU_SUPPORTS_SCALAR)
-      message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
-    endif()
-  else()
-    # Fallback for other platforms
-    add_definitions(-DCPU_SUPPORTS_SCALAR)
-    message(STATUS "${BoldYellow}>>> Unknown platform; defaulting to SCALAR fallback${Reset}")
-  endif()
-
-else()
-  message(STATUS "${BoldYellow}>>> SIMD_ENABLED set to OFF, skipping CPU SIMD detection${Reset}")
+# On macOS/Apple Silicon, ensure we actually compile for arm64
+if(APPLE AND DIAQ_ARCH_ARM64)
+  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "" FORCE)
 endif()
 
 # ==============================================
-# Sources
+# SIMD hint macros (stored to apply to target later)
+# ==============================================
+set(DIAQ_COMPILE_DEFS "")
+if(SIMD_ENABLED)
+  list(APPEND DIAQ_COMPILE_DEFS SIMD_ENABLED)
+  if(APPLE AND DIAQ_ARCH_ARM64)
+    list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_NEON)
+    set(DIAQ_VEC_TYPE_VALUE 3) # NEON/AdvSIMD
+    message(STATUS "${BoldGreen}>>> CPU SIMD: NEON/AdvSIMD (Apple Silicon) assumed${Reset}")
+  elseif(UNIX AND NOT APPLE)
+    # Parse /proc/cpuinfo for hints (optional)
+    file(READ "/proc/cpuinfo" CPUINFO_CONTENTS)
+    if (CPUINFO_CONTENTS MATCHES "avx512f")
+      list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX512F)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX-512 detected${Reset}")
+    elseif (CPUINFO_CONTENTS MATCHES "avx2")
+      list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX2)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: AVX2 detected${Reset}")
+    elseif (CPUINFO_CONTENTS MATCHES "sse2")
+      list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SSE2)
+      message(STATUS "${BoldGreen}>>> CPU SIMD: SSE2 detected${Reset}")
+    else()
+      list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
+      set(DIAQ_VEC_TYPE_VALUE -1)
+      message(STATUS "${BoldRed}>>> No SIMD detected, using SCALAR fallback${Reset}")
+    endif()
+  else()
+    list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
+    set(DIAQ_VEC_TYPE_VALUE -1)
+    message(STATUS "${BoldYellow}>>> Unknown platform; defaulting to SCALAR fallback${Reset}")
+  endif()
+else()
+  message(STATUS "${BoldYellow}>>> SIMD_ENABLED set to OFF, skipping CPU SIMD detection${Reset}")
+  set(DIAQ_VEC_TYPE_VALUE -1)
+endif()
+
+# ==============================================
+# Common sources
 # ==============================================
 set(SOURCES
-    ${SRC_DIR}/config.hpp
-    ${SRC_DIR}/config.cpp
-    ${SRC_DIR}/denseMatrix.hpp
-    ${SRC_DIR}/diagonal.hpp
-    ${SRC_DIR}/diaQMatrix.hpp
-    ${SRC_DIR}/specialMatrices.hpp
-    ${SRC_DIR}/vector.hpp
-    ${SRC_DIR}/conversions.hpp
-    ${SRC_DIR}/conversions.cpp
-    ${SRC_DIR}/kernels.hpp
-    ${SRC_DIR}/simd_kernels.hpp
-    ${SRC_DIR}/simd_kernels.cpp
-    ${SRC_DIR}/matrixKernels.hpp
-    ${SRC_DIR}/matrixKernels.cpp
-    ${SRC_DIR}/norms.hpp
-    ${SRC_DIR}/norms.cpp
-    ${SRC_DIR}/vectorKernels.hpp
-    ${SRC_DIR}/vectorKernels.cpp
-    ${SRC_DIR}/helpers.hpp
-    ${SRC_DIR}/helpers.cpp
+  ${SRC_DIR}/config.hpp
+  ${SRC_DIR}/config.cpp
+  ${SRC_DIR}/denseMatrix.hpp
+  ${SRC_DIR}/diagonal.hpp
+  ${SRC_DIR}/diaQMatrix.hpp
+  ${SRC_DIR}/specialMatrices.hpp
+  ${SRC_DIR}/vector.hpp
+  ${SRC_DIR}/conversions.hpp
+  ${SRC_DIR}/conversions.cpp
+  ${SRC_DIR}/kernels.hpp
+  ${SRC_DIR}/simd_kernels.hpp
+  ${SRC_DIR}/simd_kernels.cpp
+  ${SRC_DIR}/matrixKernels.hpp
+  ${SRC_DIR}/matrixKernels.cpp
+  ${SRC_DIR}/norms.hpp
+  ${SRC_DIR}/norms.cpp
+  ${SRC_DIR}/vectorKernels.hpp
+  ${SRC_DIR}/vectorKernels.cpp
+  ${SRC_DIR}/helpers.hpp
+  ${SRC_DIR}/helpers.cpp
 )
 
+# ==============================================
+# SIMD backend sources (compile ONLY the active backend)
+# ==============================================
+if(DIAQ_ARCH_ARM64)
+  list(APPEND SOURCES
+    ${SRC_DIR}/simd_mac_kernels.hpp
+    ${SRC_DIR}/simd_mac_kernels.cpp
+  )
+  # We will pass VEC_TYPE=3 to the target below
+elseif(DIAQ_ARCH_X86)
+  list(APPEND SOURCES
+    ${SRC_DIR}/simd_sse_kernels.hpp
+    ${SRC_DIR}/simd_sse_kernels.cpp
+    ${SRC_DIR}/simd_avx2_kernels.hpp
+    ${SRC_DIR}/simd_avx2_kernels.cpp
+    ${SRC_DIR}/simd_avx512_kernels.hpp
+    ${SRC_DIR}/simd_avx512_kernels.cpp
+  )
+  # Optional: you can set DIAQ_VEC_TYPE_VALUE here if you want to force one
+else()
+  list(APPEND SOURCES
+    ${SRC_DIR}/simd_nosimd_kernels.hpp
+    ${SRC_DIR}/simd_nosimd_kernels.cpp
+  )
+  set(DIAQ_VEC_TYPE_VALUE -1)
+endif()
+
+# ==============================================
+# CUDA sources (kept as-is)
+# ==============================================
 set(CUDA_SOURCES
-    ${SRC_DIR}/conversions_gpu.hpp
-    ${SRC_DIR}/conversions_gpu.cu
-    ${SRC_DIR}/matrixKernels_gpu.hpp
-    ${SRC_DIR}/matrixKernels_gpu.cu
+  ${SRC_DIR}/conversions_gpu.hpp
+  ${SRC_DIR}/conversions_gpu.cu
+  ${SRC_DIR}/matrixKernels_gpu.hpp
+  ${SRC_DIR}/matrixKernels_gpu.cu
 )
 
 # ==============================================
 # CPU / GPU core library
+# (create target FIRST, then set target_* properties)
 # ==============================================
 if(CUDA_ENABLED)
-    message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
-    find_package(CUDA REQUIRED)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
+  message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
+  find_package(CUDA REQUIRED)
+  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
 
-    cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
-    add_definitions(-DCUDA_ENABLED)
-    target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})
-    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
-    set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
-    set(BUILD_TYPE "gpu_build")
-
+  cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
+  target_compile_options(diaq_core PRIVATE -march=native -O3 ${OpenMP_CXX_FLAGS})
+  target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+  set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set(BUILD_TYPE "gpu_build")
+  target_compile_definitions(diaq_core PRIVATE CUDA_ENABLED)
 else()
-    message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
-    # On macOS, using Apple Clang, OpenMP isn't built-in.
-    if(APPLE)
-        message(STATUS "${BoldYellow}>>> macOS detected. If OpenMP fails, use Homebrew LLVM.${Reset}")
+  message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
+  if(APPLE)
+    message(STATUS "${BoldYellow}>>> macOS detected. If OpenMP fails, use Homebrew LLVM.${Reset}")
+  endif()
+
+  add_library(diaq_core SHARED ${SOURCES})
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Cray")
+    message(STATUS "${BoldYellow}>>> Cray compiler detected: adding libsci and preload fix${Reset}")
+    target_compile_options(diaq_core PRIVATE -O3 -h aggressive --std=c++17 -fopenmp)
+    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+    find_library(LIBSCI NAMES sci_cray_mp PATHS /opt/cray/pe/lib64)
+    if(LIBSCI)
+      target_link_libraries(diaq_core PRIVATE ${LIBSCI})
     endif()
-    add_library(diaq_core SHARED ${SOURCES})
+    set_property(TARGET diaq_core APPEND PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+  else()
+    message(STATUS "${BoldYellow}>>> GNU/Clang path: applying OpenMP flags globally${Reset}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -fopenmp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp")
+    target_compile_options(diaq_core PRIVATE -march=native -O3)
+    target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
+  endif()
 
-    # ==============================================
-    # Compiler-specific tuning
-    # ==============================================
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Cray")
-        message(STATUS "${BoldYellow}>>> Cray compiler detected: adding libsci and preload fix${Reset}")
-        target_compile_options(diaq_core PRIVATE -O3 -h aggressive --std=c++17 -fopenmp)
-        target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
-        # Link libsci (Cray optimized math)
-        find_library(LIBSCI NAMES sci_cray_mp PATHS /opt/cray/pe/lib64)
-        if(LIBSCI)
-            target_link_libraries(diaq_core PRIVATE ${LIBSCI})
-        endif()
-        # Export LD_PRELOAD automatically
-        set_property(TARGET diaq_core APPEND PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-    else()
-        # GNU or other compilers
-        message(STATUS "${BoldYellow}>>> GNU compiler detected: applying OpenMP flags globally${Reset}")
+  set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+  set(BUILD_TYPE "cpu_build")
+endif()
 
-        # Apply flags globally to avoid ignored pragmas in headers
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -fopenmp")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp")
-
-        target_compile_options(diaq_core PRIVATE -march=native -O3)
-        target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
-    endif()
-
-    set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
-    set(BUILD_TYPE "cpu_build")
+# ===== Apply compile definitions to the TARGET (after it exists) =====
+if(SIMD_ENABLED)
+  target_compile_definitions(diaq_core PRIVATE ${DIAQ_COMPILE_DEFS})
+endif()
+if(DEFINED DIAQ_VEC_TYPE_VALUE)
+  target_compile_definitions(diaq_core PRIVATE VEC_TYPE=${DIAQ_VEC_TYPE_VALUE})
 endif()
 
 # ==============================================
 # Optional PAPI
 # ==============================================
 if(PAPI)
-    include_directories($ENV{PAPI_DIR}/include)
-    add_definitions(-DPAPI_ON)
-    if(EXISTS "$ENV{PAPI_DIR}/lib/libpapi.so")
-        target_link_libraries(diaq_core $ENV{PAPI_DIR}/lib/libpapi.so)
-    else()
-        message(FATAL_ERROR "${BoldRed}PAPI library not found at $ENV{PAPI_DIR}/lib/libpapi.so${Reset}")
-    endif()
+  include_directories($ENV{PAPI_DIR}/include)
+  target_compile_definitions(diaq_core PRIVATE PAPI_ON)
+  if(EXISTS "$ENV{PAPI_DIR}/lib/libpapi.so")
+    target_link_libraries(diaq_core PRIVATE $ENV{PAPI_DIR}/lib/libpapi.so)
+  else()
+    message(FATAL_ERROR "${BoldRed}PAPI library not found at $ENV{PAPI_DIR}/lib/libpapi.so${Reset}")
+  endif()
 endif()
 
 # ==============================================
 # Tests
 # ==============================================
 if(MAKE_TESTS)
-    add_executable(tests ${TESTS_DIR}/tests.cpp)
-    target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
+  add_executable(tests ${TESTS_DIR}/tests.cpp)
+  target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
 endif()
 
 if(MAKE_TEST_FOR_DISASSEMBLY)
-    add_library(test_for_disassembly_obj OBJECT ${TESTS_DIR}/test_for_disassembly.cpp)
-    target_compile_options(test_for_disassembly_obj PRIVATE -O0)
-    add_library(test_for_disassembly_static STATIC $<TARGET_OBJECTS:test_for_disassembly_obj>)
-    set_target_properties(test_for_disassembly_static PROPERTIES OUTPUT_NAME test_for_disassembly)
-    target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
+  add_library(test_for_disassembly_obj OBJECT ${TESTS_DIR}/test_for_disassembly.cpp)
+  target_compile_options(test_for_disassembly_obj PRIVATE -O0)
+  add_library(test_for_disassembly_static STATIC $<TARGET_OBJECTS:test_for_disassembly_obj>)
+  set_target_properties(test_for_disassembly_static PROPERTIES OUTPUT_NAME test_for_disassembly)
+  target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
 endif()
 
 # ==============================================
@@ -288,45 +312,36 @@ message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 # Python bindings with RPATH fix
 # ==============================================
 if(BUILD_PYTHON)
-    message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
-    add_subdirectory(${PYBIND11_DIR})
-    pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
-    target_link_libraries(diaq PRIVATE diaq_core)
+  message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
+  add_subdirectory(${PYBIND11_DIR})
+  pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
+  target_link_libraries(diaq PRIVATE diaq_core)
 
-    # # RPATH fix: ensure Python module can find libdiaq_core.so
-    # set_target_properties(diaq PROPERTIES
-    #     BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
-    #     INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
-    # )
-
-    # RPATH for Python extension to find libdiaq_core
-    if(APPLE)
-        # Use @loader_path so the extension can find the sibling lib in ../lib
-        set_target_properties(diaq PROPERTIES
-            BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
-            INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
-            MACOSX_RPATH ON
-        )
-    else()
-        set_target_properties(diaq PROPERTIES
-            BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
-            INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
-        )
-    endif()
-
-    # Find Python installation path
-    if(DEFINED ENV{VIRTUAL_ENV})
-        set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
-    elseif(DEFINED ENV{CONDA_PREFIX})
-        set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
-    endif()
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
-        OUTPUT_VARIABLE PYTHON_SITE_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
+  if(APPLE)
+    set_target_properties(diaq PROPERTIES
+      BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+      INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
+      MACOSX_RPATH ON
     )
-    message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
-    install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  else()
+    set_target_properties(diaq PROPERTIES
+      BUILD_RPATH "${LIBRARY_OUTPUT_PATH}"
+      INSTALL_RPATH "${LIBRARY_OUTPUT_PATH}"
+    )
+  endif()
+
+  if(DEFINED ENV{VIRTUAL_ENV})
+    set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+  elseif(DEFINED ENV{CONDA_PREFIX})
+    set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+  endif()
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
+    OUTPUT_VARIABLE PYTHON_SITE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
+  install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
 endif()
