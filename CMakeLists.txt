@@ -234,7 +234,7 @@ else()
   message(STATUS "${BoldYellow}>>> SIMD disabled: SCALAR (VEC_TYPE=-1)${Reset}")
 endif()
 
-# ===== CUDA (unchanged, optional) =====
+# ===== CUDA (optional) =====
 set(CUDA_SOURCES
   ${SRC_DIR}/conversions_gpu.hpp
   ${SRC_DIR}/conversions_gpu.cu
@@ -248,7 +248,7 @@ if(CUDA_ENABLED)
   find_package(CUDA REQUIRED)
   set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
   cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
-  target_compile_options(diaq_core PRIVATE ${OpenMP_CXX_FLAGS} -O3)
+  target_compile_options(diaq_core PRIVATE -O3)
   target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
   target_compile_definitions(diaq_core PRIVATE CUDA_ENABLED)
   set(BUILD_TYPE "gpu_build")
@@ -262,6 +262,18 @@ else()
   endif()
   target_link_libraries(diaq_core PRIVATE OpenMP::OpenMP_CXX)
   set(BUILD_TYPE "cpu_build")
+endif()
+
+# Ensure OpenMP compile flags are visible to all TUs (Linux Clang/GCC safety net)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(diaq_core PRIVATE -fopenmp)
+  target_link_options(diaq_core PRIVATE -fopenmp)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(diaq_core PRIVATE -fopenmp)
+  target_link_options(diaq_core PRIVATE -fopenmp)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+  target_compile_options(diaq_core PRIVATE -qopenmp)
+  target_link_options(diaq_core PRIVATE -qopenmp)
 endif()
 
 set_property(TARGET diaq_core PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -289,6 +301,17 @@ endif()
 if(MAKE_TESTS)
   add_executable(tests ${TESTS_DIR}/tests.cpp)
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
+  # mirror OpenMP compile flags for tests too (header pragmas)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(tests PRIVATE -fopenmp)
+    target_link_options(tests PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(tests PRIVATE -fopenmp)
+    target_link_options(tests PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    target_compile_options(tests PRIVATE -qopenmp)
+    target_link_options(tests PRIVATE -qopenmp)
+  endif()
 endif()
 
 if(MAKE_TEST_FOR_DISASSEMBLY)
@@ -312,6 +335,18 @@ if(BUILD_PYTHON)
   pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
   target_link_libraries(diaq PRIVATE diaq_core)
 
+  # Ensure the module also compiles with OpenMP flags (its TUs include your headers)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(diaq PRIVATE -fopenmp)
+    target_link_options(diaq PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(diaq PRIVATE -fopenmp)
+    target_link_options(diaq PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    target_compile_options(diaq PRIVATE -qopenmp)
+    target_link_options(diaq PRIVATE -qopenmp)
+  endif()
+
   if(APPLE)
     set_target_properties(diaq PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
@@ -319,7 +354,6 @@ if(BUILD_PYTHON)
       MACOSX_RPATH  ON
     )
   else()
-    # On Linux, keep the core next to the module during install
     set_target_properties(diaq PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
