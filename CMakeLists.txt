@@ -1,5 +1,34 @@
 cmake_minimum_required(VERSION 3.14)
 project(diaq)
+# ===== macOS header/runtime consistency when using Homebrew clang =====
+if(APPLE)
+  # Set a sane minimum so Python & system libc++ agree
+  if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "" FORCE)
+  endif()
+
+  # If we're using Homebrew LLVM clang, force SDK libc++ headers (avoid HB libc++ headers)
+  if(CMAKE_CXX_COMPILER MATCHES "/opt/homebrew/.*/llvm/.*/bin/clang\\+\\+"
+     OR CMAKE_CXX_COMPILER MATCHES "/opt/homebrew/opt/llvm/bin/clang\\+\\+")
+    message(WARNING "Building with Homebrew clang: forcing SDK libc++ headers to match /usr/lib/libc++.1.dylib")
+
+    # Ensure we have an SDK path
+    if(NOT CMAKE_OSX_SYSROOT)
+      execute_process(COMMAND xcrun --show-sdk-path
+                      OUTPUT_VARIABLE _SDKROOT
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
+      set(CMAKE_OSX_SYSROOT "${_SDKROOT}" CACHE PATH "" FORCE)
+    endif()
+
+    # Use SDK libc++ headers and hide HB's libc++ headers
+    set(_SDK_LIBCXX "${CMAKE_OSX_SYSROOT}/usr/include/c++/v1")
+    add_compile_options(-nostdinc++)
+    include_directories(SYSTEM "${_SDK_LIBCXX}")
+
+    # Link explicitly to system libc++ (normal on macOS; this is just explicit)
+    add_link_options(-lc++)
+  endif()
+endif()
 
 if(APPLE)
   set(CMAKE_MACOSX_RPATH ON)
