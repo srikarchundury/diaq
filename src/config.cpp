@@ -54,7 +54,9 @@ namespace diaq {
     // }
 
     void print_simd_info() {
-        #if VEC_TYPE == 2
+        #if VEC_TYPE == 3
+            std::cout << "[SIMD Info] NEON/AdvSIMD detected\n";
+        #elif VEC_TYPE == 2
             std::cout << "[SIMD Info] AVX512F detected\n";
         #elif VEC_TYPE == 1
             std::cout << "[SIMD Info] AVX2 detected\n";

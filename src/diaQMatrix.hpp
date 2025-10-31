@@ -405,7 +405,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                     valType *dC_real_vals = dC->realValues;
                     valType *dC_imag_vals = dC->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for (unsigned int j = 0; j < dA->dLength; j++) {
                         dC_real_vals[j] = dA_real_vals[j] + dB_real_vals[j];
                         dC_imag_vals[j] = dA_imag_vals[j] + dB_imag_vals[j];
@@ -791,7 +793,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     valType *dA_imag_vals = dA->imagValues;
                     valType *dB_real_vals = dB->realValues;
                     valType *dB_imag_vals = dB->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for(unsigned int i = 0; i < dA->dLength; i++) {
                         valType a = dA_real_vals[i];
                         valType b = dA_imag_vals[i];
@@ -882,7 +886,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 std::shared_ptr<diagonal> d = dPointers[i];
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
+                #if defined(SIMD_ENABLED)
                 #pragma omp simd
+                #endif
                 for (unsigned int j = 0; j < d->dLength; j++) {
                     real_vals[j] = (std::abs(real_vals[j]) > min_threshold * val) ? real_vals[j] * reciprocal : 0.0;
                     imag_vals[j] = (std::abs(imag_vals[j]) > min_threshold * val) ? imag_vals[j] * reciprocal : 0.0;
@@ -937,11 +943,14 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 valType *real_vals = d->realValues;
                 valType *imag_vals = d->imagValues;
 
-                std::shared_ptr<diagonal> newDiag = C->diagonalMap.find(dIndex)->second;
+                // std::shared_ptr<diagonal> newDiag = C->diagonalMap.find(dIndex)->second;
+                std::shared_ptr<diagonal> newDiag = C->dPointers[i];
                 valType *new_real_vals = newDiag->realValues;
                 valType *new_imag_vals = newDiag->imagValues;
 
+                #if defined(SIMD_ENABLED)
                 #pragma omp simd
+                #endif
                 for (unsigned int j = 0; j < d->dLength; j++) {
                     new_real_vals[j] = -1.0 * imag_vals[j] * imag;
                     new_imag_vals[j] = real_vals[j] * imag;
@@ -987,7 +996,9 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
                     valType *dC_real_vals = dC->realValues;
                     valType *dC_imag_vals = dC->imagValues;
+                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
+                    #endif
                     for (unsigned int j = 0; j < dA->dLength; j++) {
                         dC_real_vals[j] = dA_real_vals[j] - dB_real_vals[j];
                         dC_imag_vals[j] = dA_imag_vals[j] - dB_imag_vals[j];
@@ -1514,6 +1525,39 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             valType z_val = (valType) z;
             valType size_val = (valType) matrix_shape[0] * matrix_shape[1];
             return 1.0 - z_val / size_val;
+        }
+
+        bool isEqualTo(std::shared_ptr<diaQMatrix> B, valType tol=1e-6) {
+            if(this->matrix_shape != B->matrix_shape) {
+                return false;
+            }
+            if(this->num_diags() != B->num_diags()) {
+                return false;
+            }
+            for(size_t i = 0; i < dIndices.size(); i++) {
+                int dIndex = dIndices[i];
+                auto itB = B->diagonalMap.find(dIndex);
+                if(itB == B->diagonalMap.end()) {
+                    return false;
+                }
+                std::shared_ptr<diagonal> dA = dPointers[i];
+                std::shared_ptr<diagonal> dB = itB->second;
+                if(dA->dLength != dB->dLength) {
+                    return false;
+                }
+                valType *realA = dA->realValues;
+                valType *imagA = dA->imagValues;
+                valType *realB = dB->realValues;
+                valType *imagB = dB->imagValues;
+
+                for(unsigned int j = 0; j < dA->dLength; j++) {
+                    if(std::abs(realA[j] - realB[j]) > tol || std::abs(imagA[j] - imagB[j]) > tol) {
+                        printf("not equal at diagonal %d position %d: (%f,%f) vs (%f,%f)\n", dIndex, j, realA[j], imagA[j], realB[j], imagB[j]);
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         void pruneMatrix() {

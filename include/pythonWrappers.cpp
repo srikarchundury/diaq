@@ -65,6 +65,8 @@ PYBIND11_MODULE(diaq, m) {
         .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::automatic)
         .def("multiplyVector", &diaq::diaQMatrix::multiplyVector, py::return_value_policy::automatic)
         .def("multiplyScalar", &diaq::diaQMatrix::multiplyScalar, py::return_value_policy::automatic)
+        .def("isEqualTo", &diaq::diaQMatrix::isEqualTo, py::return_value_policy::automatic)
+        .def("estimate_1norm", &diaq::diaQMatrix::estimate_1norm, py::return_value_policy::automatic)
         // operator bindings
         .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
             return diaq::product(a, b);
@@ -150,6 +152,7 @@ PYBIND11_MODULE(diaq, m) {
     // diaq::vector class
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
         .def(py::init<unsigned int>())
+        .def_readonly("numRows", &diaq::vector::numRows)
         .def("setValue", &diaq::vector::setValue, py::return_value_policy::automatic)
         .def("print", &diaq::vector::print, py::return_value_policy::automatic)
         .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::automatic)
@@ -158,6 +161,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("multiply", &diaq::vector::multiply, py::return_value_policy::automatic)
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::automatic)
         .def("copy", &diaq::vector::copy, py::return_value_policy::automatic)
+        .def("isEqualTo", &diaq::vector::isEqualTo, py::return_value_policy::automatic)
         ;
 
     // diaq::denseMatrix class
@@ -479,15 +483,13 @@ PYBIND11_MODULE(diaq, m) {
 
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { 
-            // return diaq::expm_negative_taylor(A, t, max_iterations);
-            diaq::valType scale_cutoff = 1.0;
+        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
+            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
             return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
         },
-        // [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t, int max_iterations = 100) { return diaq::expm_negative_pade(A, t, max_iterations); },
-        py::arg(),
-        py::arg(),
+        py::arg("A"), py::arg("t"),
         py::arg("max_iterations") = 100,
+        py::arg("scale_cutoff")   = 1.0,
         py::return_value_policy::automatic
     );
 
@@ -508,11 +510,12 @@ PYBIND11_MODULE(diaq, m) {
                 for (size_t k = 0; k < cols_B; k++) {
                     std::complex<diaq::valType> sum(0, 0);
 
-                    // Prefetch the array row
-                    #pragma omp parallel for
-                    for (size_t j = 0; j < cols_B; j++) {
-                        _mm_prefetch(reinterpret_cast<const char*>(&arr_ptr[j * cols_B + k]), _MM_HINT_T0); // Prefetch arr[k][j]
-                    }
+                    // // Prefetch the array row
+                    // #pragma omp parallel for
+                    // for (size_t j = 0; j < cols_B; j++) {
+                    //     // _mm_prefetch(reinterpret_cast<const char*>(&arr_ptr[j * cols_B + k]), _MM_HINT_T0); // Prefetch arr[k][j], this is for x86 based systems.
+                    //     DIAQ_PREFETCH_T0(&arr_ptr[j * cols_B + k]);
+                    // }
     
                     // Prefetch diagonal values (we'll assume the diagonals are relatively small)
                     for (const auto& diag_pair : A->diagonalMap) {
@@ -596,5 +599,48 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::return_value_policy::automatic
     );
+
+    // Expose preprocessor #define values (if available) as Python dict
+    m.def("install_info", []() {
+        py::dict info;
+#ifdef VEC_TYPE
+        info["VEC_TYPE"] = static_cast<int>(VEC_TYPE);
+#endif
+#ifdef NUM_BYTES_ALIGNED
+        info["NUM_BYTES_ALIGNED"] = static_cast<int>(NUM_BYTES_ALIGNED);
+#endif
+#ifdef VEC_WIDTH
+        info["VEC_WIDTH"] = static_cast<int>(VEC_WIDTH);
+#endif
+#ifdef PREFETCH_DIST
+        info["PREFETCH_DIST"] = static_cast<int>(PREFETCH_DIST);
+#endif
+#ifdef L1_CACHE_SIZE_BYTES
+        info["L1_CACHE_SIZE_BYTES"] = static_cast<int>(L1_CACHE_SIZE_BYTES);
+#endif
+#ifdef CACHE_UTILIZATION
+        info["CACHE_UTILIZATION"] = static_cast<double>(CACHE_UTILIZATION);
+#endif
+#ifdef NUM_ARRAYS_ACCESSED
+        info["NUM_ARRAYS_ACCESSED"] = static_cast<int>(NUM_ARRAYS_ACCESSED);
+#endif
+#ifdef BLOCK_SIZE_RAW
+        info["BLOCK_SIZE_RAW"] = static_cast<int>(BLOCK_SIZE_RAW);
+#endif
+#ifdef BLOCK_SIZE
+        info["BLOCK_SIZE"] = static_cast<int>(BLOCK_SIZE);
+#endif
+#ifdef NUMBER_OF_OMP_THREADS
+        info["NUMBER_OF_OMP_THREADS"] = static_cast<int>(NUMBER_OF_OMP_THREADS);
+#endif
+#ifdef PAPI_ON
+        info["PAPI_ON"] = true;
+#else
+        info["PAPI_ON"] = false;
+#endif
+        // Data type info
+        info["valType"] = py::str(typeid(diaq::valType).name());
+        return info;
+    }, "Returns SIMD and install configuration info as a dict");
 
 } // end of PYBIND11_MODULE

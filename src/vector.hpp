@@ -95,6 +95,21 @@ class vector : public std::enable_shared_from_this<vector> {
             }
         }
 
+        bool isEqualTo(std::shared_ptr<vector> v, valType tol=1e-6) {
+            if (numRows != v->numRows) {
+                return false;
+            }
+            bool result = true;
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                if (std::abs(realValues[i] - v->realValues[i]) > tol || std::abs(imagValues[i] - v->imagValues[i]) > tol) {
+                    // printf("Vectors differ at index %u: (%.6f, %.6f) vs (%.6f, %.6f)\n", i, realValues[i], imagValues[i], v->realValues[i], v->imagValues[i]);
+                    result = false;
+                }
+            }
+            return result;
+        }
+
         std::complex<valType> operator[](unsigned int i) {
             return std::complex<valType>(realValues[i], imagValues[i]);
         }
