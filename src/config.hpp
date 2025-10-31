@@ -45,36 +45,50 @@ namespace diaq {
 using valType = double; // double or float
 // ------------------------------- //
 
-// ------- Vectorization related ------- //
 
-#if defined(SIMD_ENABLED)
-	#if defined(CPU_SUPPORTS_AVX512F)
-		#define VEC_TYPE 2
-		#define NUM_BYTES_ALIGNED 64
-		#define VEC_WIDTH 8
-	#elif defined(CPU_SUPPORTS_AVX2)
-		#define VEC_TYPE 1
-		#define NUM_BYTES_ALIGNED 32
-		#define VEC_WIDTH 4
-	#elif defined(CPU_SUPPORTS_SSE2)
-		#define VEC_TYPE 0
-		#define NUM_BYTES_ALIGNED 16
-		#define VEC_WIDTH 2
-	#else
-		#define VEC_TYPE -1
-		#define NUM_BYTES_ALIGNED -1
-		#define VEC_WIDTH 1
-	#endif
+// ------- Vectorization related ------- //
+#if defined(SIMD_ENABLED)                // order of checks matters! TODO: refine detection later..
+  #if defined(__aarch64__) || defined(__ARM_NEON)
+      #define VEC_TYPE 3 // NEON
+      #define NUM_BYTES_ALIGNED 16
+      #define VEC_WIDTH 2
+  #elif defined(CPU_SUPPORTS_AVX512F)
+    #define VEC_TYPE 2 // AVX-512
+    #define NUM_BYTES_ALIGNED 64
+    #define VEC_WIDTH 8
+  #elif defined(CPU_SUPPORTS_AVX2)
+    #define VEC_TYPE 1 // AVX2
+    #define NUM_BYTES_ALIGNED 32
+    #define VEC_WIDTH 4
+  #elif defined(CPU_SUPPORTS_SSE2)
+    #define VEC_TYPE 0 // SSE2
+    #define NUM_BYTES_ALIGNED 16
+    #define VEC_WIDTH 2
+  #else
+    #define VEC_TYPE -1
+    #define NUM_BYTES_ALIGNED -1
+    #define VEC_WIDTH 1
+  #endif
 #else
-	#define VEC_TYPE -1
-	#define NUM_BYTES_ALIGNED -1
-	#define VEC_WIDTH 1
+  #define VEC_TYPE -1
+  #define NUM_BYTES_ALIGNED -1
+  #define VEC_WIDTH 1
 #endif
 
 #define PREFETCH_DIST (2 * VEC_WIDTH)
 
-// ------- L1 Cache Auto-Detection or Override ------- //
+/*
+#if defined(__x86_64__) || defined(_M_X64)
+  #include <immintrin.h>
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) _mm_prefetch(reinterpret_cast<const char*>((baseptr) + (dist_elems)), _MM_HINT_T0)
+#elif defined(__aarch64__) || defined(__ARM_NEON)
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) __builtin_prefetch(((baseptr) + (dist_elems)), 0, DIAQ_PREFETCH_LOCALITY)
+#else
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) ((void)0)
+#endif
+*/
 
+// ------- L1 Cache Auto-Detection or Override ------- //
 #ifndef L1_CACHE_SIZE_BYTES
 	// Fallback assumption: 32KB
 	#define L1_CACHE_SIZE_BYTES 32768
@@ -89,7 +103,6 @@ using valType = double; // double or float
 // Alloc helper
 valType* aligned_alloc_helper(unsigned int size);
 void print_simd_info();
-
 // ------------------------------- //
 
 
@@ -111,6 +124,7 @@ void print_simd_info();
 	void cleanupPAPI();
 #endif
 // ------------------------------- //
+
 
 class OMPInitializer {
 public:

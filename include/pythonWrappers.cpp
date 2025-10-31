@@ -510,11 +510,12 @@ PYBIND11_MODULE(diaq, m) {
                 for (size_t k = 0; k < cols_B; k++) {
                     std::complex<diaq::valType> sum(0, 0);
 
-                    // Prefetch the array row
-                    #pragma omp parallel for
-                    for (size_t j = 0; j < cols_B; j++) {
-                        _mm_prefetch(reinterpret_cast<const char*>(&arr_ptr[j * cols_B + k]), _MM_HINT_T0); // Prefetch arr[k][j]
-                    }
+                    // // Prefetch the array row
+                    // #pragma omp parallel for
+                    // for (size_t j = 0; j < cols_B; j++) {
+                    //     // _mm_prefetch(reinterpret_cast<const char*>(&arr_ptr[j * cols_B + k]), _MM_HINT_T0); // Prefetch arr[k][j], this is for x86 based systems.
+                    //     DIAQ_PREFETCH_T0(&arr_ptr[j * cols_B + k]);
+                    // }
     
                     // Prefetch diagonal values (we'll assume the diagonals are relatively small)
                     for (const auto& diag_pair : A->diagonalMap) {

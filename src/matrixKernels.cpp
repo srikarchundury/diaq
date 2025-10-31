@@ -202,6 +202,9 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
         #elif VEC_TYPE == 2
             run_avx512(block_start, block_end, a_offset, b_offset,
                        real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
+        #elif VEC_TYPE == 3
+            run_mac(block_start, block_end, a_offset, b_offset,
+                     real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
         #elif VEC_TYPE == -1
             run_without_vectorization(block_start, block_end, a_offset, b_offset,
                        real_vals_a, imag_vals_a, real_vals_b, imag_vals_b, real_vals_final, imag_vals_final, overwrite);
@@ -1768,6 +1771,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     #elif VEC_TYPE == 0
                 run_spmv_sse_1(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 3
+                run_spmv_mac_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                                y_real_values, y_imag_values, dIndex, dLength);
     #else
                 #if defined(SIMD_ENABLED)
                 #pragma omp simd
@@ -1789,6 +1795,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     #elif VEC_TYPE == 0
                 run_spmv_sse_2(x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 3
+                run_spmv_mac_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
     #else
                 #if defined(SIMD_ENABLED)
                 #pragma omp simd
@@ -1809,6 +1818,9 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                                   y_real_values, y_imag_values, dIndex, dLength);
     #elif VEC_TYPE == 0
                 run_spmv_sse_0(x_real_values, x_imag_values, real_vals, imag_vals,
+                               y_real_values, y_imag_values, dIndex, dLength);
+    #elif VEC_TYPE == 3
+                run_spmv_mac_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
                 #if defined(SIMD_ENABLED)

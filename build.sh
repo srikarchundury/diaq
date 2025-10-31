@@ -1,59 +1,66 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# --- Help / Usage ---
-if [[ $# -lt 1 || "$1" == "help" || "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: ./build.sh <cpu|gpu|all> [cmake-options]"
-    echo
-    echo "Build Targets:"
-    echo "  cpu        Build CPU-only version"
-    echo "  gpu        Build GPU (CUDA) version"
-    echo "  all        Build both CPU and GPU versions"
-    echo
-    echo "Available CMake Options (defaults in brackets):"
-    echo "  -DDEBUG=ON                      Enable debugging mode [OFF]"
-    echo "  -DDEEP_DEBUG=ON                 Enable deep debugging mode [OFF]"
-    echo "  -DCUDA_ENABLED=ON               Enable CUDA support (auto-set if you use 'gpu') [OFF]"
-    echo "  -DPAPI=ON                       Enable PAPI performance counters [OFF]"
-    echo "  -DMAKE_TESTS=ON                 Build tests [OFF]"
-    echo "  -DSIMD_ENABLED=ON               Enable SIMD optimizations (CPU only) [ON]"
-    echo "  -DMAKE_TEST_FOR_DISASSEMBLY=ON  Build disassembly test [OFF]"
-    echo "  -DBUILD_PYTHON=ON               Build Python bindings (pybind11) [ON]"
-    echo
-    echo "Examples:"
-    echo "  ./build.sh cpu"
-    echo "  ./build.sh cpu -DBUILD_PYTHON=ON -DSIMD_ENABLED=ON"
-    echo "  ./build.sh gpu -DDEBUG=ON"
-    echo "  ./build.sh all -DPAPI=ON -DBUILD_PYTHON=ON"
-    echo
-    exit 0
-fi
+usage() {
+  cat <<'USAGE'
+Usage: ./build.sh [cpu|gpu|all] [cmake-options]
 
-target="$1"
-shift || true  # remaining args are CMake overrides
+Targets (default = cpu):
+  cpu   Build CPU-only
+  gpu   Build CUDA (Linux only)
+  all   Build both
 
+Common CMake options:
+  -DDEBUG=ON                      (default OFF)
+  -DDEEP_DEBUG=ON                 (default OFF)
+  -DCUDA_ENABLED=ON               (auto for 'gpu')
+  -DPAPI=ON                       (default OFF)
+  -DMAKE_TESTS=ON                 (default OFF)
+  -DSIMD_ENABLED=ON               (default ON)
+  -DMAKE_TEST_FOR_DISASSEMBLY=ON  (default OFF)
+  -DBUILD_PYTHON=ON               (default ON)
+  -DPython3_EXECUTABLE=/path/python3
+USAGE
+}
+
+# --- Parse target (default cpu) ---
+target="${1:-cpu}"
+case "$target" in
+  -h|--help|help) usage; exit 0 ;;
+  cpu|gpu|all) shift || true ;;
+  *) echo "Unknown target: $target"; echo; usage; exit 1 ;;
+esac
+
+echo "=== Target: $target ==="
 echo "CMake overrides:"
-for arg in "$@"; do echo "  $arg"; done
+for arg in "${@:-}"; do echo "  $arg"; done
 echo
 
-# --- macOS convenience: compiler + OpenMP hints ---
 uname_s="$(uname -s)"
-cmake_omp_args=()
 
+# Parallelism
+cores=1
+if command -v nproc >/dev/null 2>&1; then
+  cores="$(nproc)"
+elif [[ "$uname_s" == "Darwin" ]]; then
+  cores="$(sysctl -n hw.ncpu)"
+fi
+
+# Arrays (init BEFORE set -u usage)
+cmake_omp_args=()
+cmake_py_args=()
+
+# macOS: prefer Homebrew LLVM, wire up OpenMP for AppleClang
 if [[ "$uname_s" == "Darwin" ]]; then
-  # Prefer Homebrew LLVM if present (so OpenMP “just works”)
   if command -v brew >/dev/null 2>&1; then
     llvm_prefix="$(brew --prefix llvm 2>/dev/null || true)"
-    if [[ -n "$llvm_prefix" && -z "$CC" && -z "$CXX" ]]; then
+    if [[ -n "${llvm_prefix:-}" && -z "${CC:-}" && -z "${CXX:-}" ]]; then
       export CC="$llvm_prefix/bin/clang"
       export CXX="$llvm_prefix/bin/clang++"
       echo "Using Homebrew LLVM: CC=$CC, CXX=$CXX"
     fi
   fi
-
-  # If we’re still on Apple Clang, add libomp flags so find_package(OpenMP) resolves
-  # (Safe to pass even if using LLVM; CMake will ignore duplicates)
-  if "$CXX" --version 2>/dev/null | grep -qi "apple clang"; then
+  if [[ -n "${CXX:-}" ]] && "$CXX" --version 2>/dev/null | grep -qi "apple clang"; then
     omp_prefix="$(brew --prefix libomp 2>/dev/null || echo /opt/homebrew/opt/libomp)"
     cmake_omp_args+=(
       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I${omp_prefix}/include"
@@ -69,10 +76,14 @@ if [[ "$uname_s" == "Darwin" ]]; then
   fi
 fi
 
-# Helper to decide if BUILD_PYTHON ended up ON in the build dir
-should_install_python () {
+# Prefer a concrete Python3 unless user overrides via -DPython3_EXECUTABLE
+if command -v python3 >/dev/null 2>&1; then
+  cmake_py_args+=(-DPython3_EXECUTABLE="$(command -v python3)")
+fi
+
+should_install_python() {
   local bdir="$1"
-  if cmake -LA -N "$bdir" 2>/dev/null | grep -q "^BUILD_PYTHON:BOOL=ON$"; then
+  if cmake -LA -N "$bdir" 2>/dev/null | grep -q '^BUILD_PYTHON:BOOL=ON$'; then
     return 0
   fi
   return 1
@@ -80,27 +91,36 @@ should_install_python () {
 
 # --- CPU build ---
 if [[ "$target" == "cpu" || "$target" == "all" ]]; then
-  rm -rf cpu_build
-  mkdir cpu_build
-  cmake -S . -B cpu_build -DSIMD_ENABLED=ON -DBUILD_PYTHON=ON "${cmake_omp_args[@]}" "$@"
-  cmake --build cpu_build -j
+  rm -rf cpu_build && mkdir cpu_build
+  cmake_args=( -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLED=ON -DBUILD_PYTHON=ON )
+  (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
+  (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
+  (( $# )) && cmake_args+=( "$@" )
 
+  cmake "${cmake_args[@]}"
+  cmake --build cpu_build -j "$cores"
   if should_install_python "cpu_build"; then
     cmake --install cpu_build
   fi
 fi
 
-# --- GPU build ---
+# --- GPU build (Linux only) ---
 if [[ "$target" == "gpu" || "$target" == "all" ]]; then
   if [[ "$uname_s" == "Darwin" ]]; then
     echo "Note: CUDA is not supported on macOS. Skipping GPU build."
   else
-    rm -rf gpu_build
-    mkdir gpu_build
-    cmake -S . -B gpu_build -DCUDA_ENABLED=ON "${cmake_omp_args[@]}" "$@"
-    cmake --build gpu_build -j
+    rm -rf gpu_build && mkdir gpu_build
+    cmake_args=( -S . -B gpu_build -DCMAKE_BUILD_TYPE=Release -DCUDA_ENABLED=ON )
+    (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
+    (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
+    (( $# )) && cmake_args+=( "$@" )
+
+    cmake "${cmake_args[@]}"
+    cmake --build gpu_build -j "$cores"
     if should_install_python "gpu_build"; then
       cmake --install gpu_build
     fi
   fi
 fi
+
+echo "Done."
