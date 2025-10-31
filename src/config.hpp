@@ -77,16 +77,16 @@ using valType = double; // double or float
 
 #define PREFETCH_DIST (2 * VEC_WIDTH)
 
-// #if defined(__x86_64__) || defined(_M_X64)
-//   #include <immintrin.h>
-//   #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) \
-//       _mm_prefetch(reinterpret_cast<const char*>((baseptr) + (dist_elems)), _MM_HINT_T0)
-// #elif defined(__aarch64__) || defined(__ARM_NEON)
-//   #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) \
-//       __builtin_prefetch(((baseptr) + (dist_elems)), 0, DIAQ_PREFETCH_LOCALITY)
-// #else
-//   #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) ((void)0)
-// #endif
+/*
+#if defined(__x86_64__) || defined(_M_X64)
+  #include <immintrin.h>
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) _mm_prefetch(reinterpret_cast<const char*>((baseptr) + (dist_elems)), _MM_HINT_T0)
+#elif defined(__aarch64__) || defined(__ARM_NEON)
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) __builtin_prefetch(((baseptr) + (dist_elems)), 0, DIAQ_PREFETCH_LOCALITY)
+#else
+  #define DIAQ_PREFETCH_T0_AT(baseptr, dist_elems) ((void)0)
+#endif
+*/
 
 // ------- L1 Cache Auto-Detection or Override ------- //
 #ifndef L1_CACHE_SIZE_BYTES
