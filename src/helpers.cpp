@@ -12,18 +12,18 @@ std::string compare(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B
 		std::cout << "Size mismatch: A has " << A->diagonalMap.size()
 		          << ", B has " << B->diagonalMap.size() << std::endl;
 
-		std::set<int> keysA, keysB;
-		for (const auto& [k, _] : A->diagonalMap) keysA.insert(k);
-		for (const auto& [k, _] : B->diagonalMap) keysB.insert(k);
+	std::set<int> keysA, keysB;
+	for (const auto& kv : A->diagonalMap) keysA.insert(kv.first);
+	for (const auto& kv : B->diagonalMap) keysB.insert(kv.first);
 
 		std::vector<int> only_in_A, only_in_B;
 		std::set_difference(keysA.begin(), keysA.end(), keysB.begin(), keysB.end(), std::back_inserter(only_in_A));
 		std::set_difference(keysB.begin(), keysB.end(), keysA.begin(), keysA.end(), std::back_inserter(only_in_B));
 
-		std::cout << "Diagonal indices only in A: ";
-		for (auto d : only_in_A) std::cout << d << " ";
+	std::cout << "Diagonal indices only in A: ";
+	for (int d : only_in_A) std::cout << d << " ";
 		std::cout << "\nDiagonal indices only in B: ";
-		for (auto d : only_in_B) std::cout << d << " ";
+	for (int d : only_in_B) std::cout << d << " ";
 		std::cout << std::endl;
 
 		// A->print();
@@ -33,14 +33,16 @@ std::string compare(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B
 
 	const valType epsilon = 0.00002;
 
-	for (const auto& [dIdx, diagA] : A->diagonalMap) {
-		auto itB = B->diagonalMap.find(dIdx);
+	for (const phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::value_type & kv : A->diagonalMap) {
+		int dIdx = kv.first;
+		std::shared_ptr<diagonal> diagA = kv.second;
+		phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator itB = B->diagonalMap.find(dIdx);
 		if (itB == B->diagonalMap.end()) {
 			std::cout << "Missing diagonal index in B: " << dIdx << std::endl;
 			return "false - dIndex mis-match";
 		}
 
-		auto diagB = itB->second;
+		std::shared_ptr<diagonal> diagB = itB->second;
 		if (diagA->dLength != diagB->dLength) {
 			std::cout << "Length mismatch at dIndex = " << dIdx << ": "
 			          << diagA->dLength << " vs " << diagB->dLength << std::endl;

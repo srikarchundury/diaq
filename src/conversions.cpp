@@ -61,7 +61,7 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::vector<unsigned int>
 
 std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 2> new_shape) {
     #ifdef CUDA_ENABLED
-        return convertToDiaQ_cuda(this, new_shape);
+        return convertToDiaQ_cuda(shared_from_this(), new_shape);
     #else
     // counting the number of diagonals in a matrix that isn't a perfect square.
     // int s = 0;
@@ -103,7 +103,7 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
     qm->dPointers.resize(qm->diagonalMap.size());
     #pragma omp parallel for
     for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
-        auto it = std::next(qm->diagonalMap.begin(), a);
+        decltype(qm->diagonalMap.begin()) it = std::next(qm->diagonalMap.begin(), a);
         int dIndex = it->first;
         std::shared_ptr<diagonal> d = it->second;
         qm->dIndices[a] = dIndex;
@@ -122,7 +122,7 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 
     #ifdef DEBUG
         std::cout << "starting to_numpy -- ";
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     std::array<unsigned int, 2> matrix_shape = A->matrix_shape;
@@ -149,9 +149,9 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
     }
 
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\t to_numpy took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        printf("\t\t to_numpy took %f milliseconds\n", duration / 1000.0);
     #endif
 
     return vals;
@@ -161,7 +161,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 
     #ifdef DEBUG
         printf(" starting from_numpy -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
 
@@ -241,7 +241,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
                 // Merge results into the matrix in parallel
                 #pragma omp critical
                 {
-                    for (const auto& update : local_updates) {
+                    for (const std::tuple<int, unsigned int, valType, valType> & update : local_updates) {
                         qm->setDiagonalElement(std::get<0>(update), std::get<1>(update), qm->getDiagonalLength(std::get<0>(update)), std::get<2>(update), std::get<3>(update));
                     }
                 }
@@ -253,7 +253,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 
             #pragma omp parallel for
             for (size_t a = 0; a < qm->diagonalMap.size(); a++) {
-                auto it = std::next(qm->diagonalMap.begin(), a);
+                decltype(qm->diagonalMap.begin()) it = std::next(qm->diagonalMap.begin(), a);
                 int dIndex = it->first;
                 std::shared_ptr<diagonal> d = it->second;
                 qm->dIndices[a] = dIndex;
@@ -269,9 +269,9 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
             #endif
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-                printf("\t\t from_numpy took %f milliseconds\n", duration.count() / 1000.0);
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+                long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+                printf("\t\t from_numpy took %f milliseconds\n", duration / 1000.0);
             #endif
 
             return qm;

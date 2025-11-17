@@ -39,7 +39,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             matrix_shape = dimens;
             shape = {dimens[0], dimens[1]};
         }
-    
+
         // From array and shape
         diaQMatrix(std::array<unsigned int, 2> dimens, std::vector<unsigned int> ts) {
             // reserveDiagonalMap();
@@ -56,7 +56,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             dPointers.resize(diagonalMap.size());
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); ++i) {
-                auto it = std::next(diagonalMap.begin(), i);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = std::next(diagonalMap.begin(), i);
                 dIndices[i] = it->first;
                 dPointers[i] = it->second;
             }
@@ -72,7 +72,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             dPointers.resize(diagonalMap.size());
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); ++i) {
-                auto it = std::next(diagonalMap.begin(), i);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = std::next(diagonalMap.begin(), i);
                 dIndices[i] = it->first;
                 dPointers[i] = it->second;
             }
@@ -90,7 +90,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             dPointers.resize(diagonalMap.size());
             #pragma omp parallel for
             for (size_t i = 0; i < diagonalMap.size(); ++i) {
-                auto it = std::next(diagonalMap.begin(), i);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = std::next(diagonalMap.begin(), i);
                 dIndices[i] = it->first;
                 dPointers[i] = it->second;
             }
@@ -112,7 +112,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         void delete_diagonal(int dIndex) {
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it != diagonalMap.end()) {
                 diagonalMap.erase(it);
                 dIndices.erase(std::remove(dIndices.begin(), dIndices.end(), dIndex), dIndices.end());
@@ -122,7 +122,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
         valType getItem_real(unsigned int flat_index) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
-            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return 0.0;
             }
@@ -131,7 +131,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         valType getItem_real(int d_idx, unsigned int d_pos) {
-            auto it = diagonalMap.find(d_idx);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_idx);
             if(it == diagonalMap.end()) {
                 return 0.0;
             }
@@ -140,7 +140,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         valType getItem_imag(int d_idx, unsigned int d_pos) {
-            auto it = diagonalMap.find(d_idx);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_idx);
             if(it == diagonalMap.end()) {
                 return 0.0;
             }
@@ -150,7 +150,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         void getTensorItem(std::vector<unsigned int> ten_pos, valType *real_val, valType *imag_val) {
             std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 *real_val = 0.0;
                 *imag_val = 0.0;
@@ -162,7 +162,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         valType getItem_imag(unsigned int flat_index) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
-            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return 0.0;
             }
@@ -172,7 +172,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         std::complex<valType> getItem(unsigned int flat_index) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(flat_index);
-            auto it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(mat_pos[1] - mat_pos[0]);
             if(it == diagonalMap.end()) {
                 return std::complex<valType>(0.0, 0.0);
             }
@@ -182,7 +182,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         std::complex<valType> getItem(std::array<unsigned int, 2> mat_pos) {
             std::array<int, 2> d_pos = getDiagonalPosition(mat_pos);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 // throw std::length_error("out of bounds");
                 return std::complex<valType>(0.0, 0.0);
@@ -193,7 +193,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         std::complex<valType> getItem(std::vector<unsigned int> ten_pos) {
             std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 return std::complex<valType>(0.0, 0.0);
             }
@@ -203,7 +203,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         void set(unsigned int flatindex, valType real_val, valType imag_val) {
             std::array<int, 2> d_pos = getDiagonalPositionByFlatIndex(flatindex);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 createDiagonal(d_pos[0]);
                 it = diagonalMap.find(d_pos[0]);
@@ -212,7 +212,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         void set(unsigned int x, unsigned int y, valType real_val, valType imag_val) {
             std::array<int, 2> d_pos = getDiagonalPosition(x, y);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 createDiagonal(d_pos[0]);
                 it = diagonalMap.find(d_pos[0]);
@@ -223,7 +223,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // printf("setItem called\n");
             std::array<int, 2> d_pos = getDiagonalPosition(ten_pos);
             // printf("got d_pos = (%ld,%ld)\n", d_pos[0], d_pos[1]);
-            auto it = diagonalMap.find(d_pos[0]);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(d_pos[0]);
             if(it == diagonalMap.end()) {
                 createDiagonal(d_pos[0]);
                 it = diagonalMap.find(d_pos[0]);
@@ -266,7 +266,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             this->diagonalMap.insert({dIndex, newDiag});
         }
         std::shared_ptr<diagonal> getDiagonal_orCreateIt(int dIndex) {
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 createDiagonal(dIndex);
                 return getDiagonal(dIndex);
@@ -277,7 +277,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         }
         std::shared_ptr<diagonal> getDiagonal(int dIndex) {
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 return nullptr;
             }
@@ -287,7 +287,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
         void setDiagonalElement(int dIndex, unsigned int dPos, unsigned int dLen, valType real_val, valType imag_val) {
             // std::cout << "setDiagonalElement called " << dIndex << " " << dPos << std::endl;
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 // #ifndef CUDA_ENABLED
                     #if NUM_BYTES_ALIGNED == -1
@@ -336,10 +336,10 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         }
 
         void addDiagonal(int dIndex, std::shared_ptr<diagonal> diagNew) {
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 #ifdef DEBUG
-                    auto start = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
                 #endif
 
                 diagonalMap.insert({dIndex, diagNew});
@@ -347,13 +347,13 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 dPointers.push_back(diagNew);
 
                 #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                     std::cout << "\t\t addDiagonal insert took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
             }
             else {
                 #ifdef DEBUG
-                    auto start = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
                 #endif
 
                 #pragma omp parallel for
@@ -363,7 +363,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 }
 
                 #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                     std::cout << "\t\t addDiagonal atomic took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
                 // diagNew->free();
@@ -373,7 +373,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         std::shared_ptr<diaQMatrix> addMatrix(std::shared_ptr<diaQMatrix> B) {
             #ifdef DEBUG
                 printf("starting addMatrix -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
@@ -382,7 +382,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             for (size_t i = 0; i < B->dIndices.size(); i++) {
                 int dIndex = B->dIndices[i];
                 std::shared_ptr<diagonal> dB = B->dPointers[i];
-                auto itA = diagonalMap.find(dIndex);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator itA = diagonalMap.find(dIndex);
 
                 if(itA == diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
@@ -416,7 +416,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t addMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -502,7 +502,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void add(std::shared_ptr<diaQMatrix> B) {
             #ifdef DEBUG
                 printf("starting add -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             int num_threads = omp_get_max_threads();
@@ -511,7 +511,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #pragma omp parallel
             {
                 int tid = omp_get_thread_num();
-                auto& local_map = thread_local_maps[tid];
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>& local_map = thread_local_maps[tid];
 
                 #pragma omp for
                 for (size_t i = 0; i < B->dIndices.size(); i++) {
@@ -522,7 +522,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     valType *dB_i = dB->imagValues;
 
                     if (local_map.count(dIndex)) {
-                        auto dLocal = local_map[dIndex];
+                        std::shared_ptr<diagonal> dLocal = local_map[dIndex];
                         valType *dLocal_r = dLocal->realValues;
                         valType *dLocal_i = dLocal->imagValues;
                         for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
@@ -538,15 +538,17 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 }
             }
 
-            for (auto& local_map : thread_local_maps) {
-                for (auto& [dIndex, dDiag] : local_map) {
-                    auto it = diagonalMap.find(dIndex);
+            for (phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>& local_map : thread_local_maps) {
+                for (phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::value_type & kv : local_map) {
+                    int dIndex = kv.first;
+                    std::shared_ptr<diagonal> dDiag = kv.second;
+                    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
                     if (it == diagonalMap.end()) {
                         diagonalMap.insert({dIndex, dDiag});
                         dIndices.push_back(dIndex);
                         dPointers.push_back(dDiag);
                     } else {
-                        auto dA = it->second;
+                        std::shared_ptr<diagonal> dA = it->second;
                         valType *dA_r = dA->realValues;
                         valType *dA_i = dA->imagValues;
                         valType *dB_r = dDiag->realValues;
@@ -565,8 +567,8 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+                std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
                 printf("\t\t add took %f milliseconds\n", duration.count() / 1000.0);
             #endif
         }
@@ -595,7 +597,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         valType determinant() {
             #ifdef DEBUG
                 printf("starting determinant -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             // Compute the determinant of the matrix
@@ -621,7 +623,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 #endif
 
                 #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                     std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
 
@@ -641,7 +643,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 #endif
 
                 #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                     std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
                 return det;
@@ -659,7 +661,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 #endif
 
                 #ifdef DEBUG
-                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                     std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
                 #endif
                 return det;
@@ -688,7 +690,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #endif
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t determinant took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -701,7 +703,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 printf("starting minor -- row = %d, col = %d\n", row, col);
-                auto start = std::chrono::high_resolution_clock::now();
+                    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             // Create the minor matrix
@@ -735,7 +737,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #endif
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t minor took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -746,7 +748,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // this = this * scale_factor (complex multiplication)
             #ifdef DEBUG
                 printf("starting multiplyScalar -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             for(size_t i = 0; i < dIndices.size(); i++) {
@@ -764,7 +766,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t multiplyScalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
@@ -773,13 +775,13 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             // this = this + B * scale_factor
             #ifdef DEBUG
                 printf("starting addMatrixScaled -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             for(size_t i = 0; i < B->dIndices.size(); i++) {
                 int dIndex = B->dIndices[i];
                 std::shared_ptr<diagonal> dB = B->dPointers[i];
-                auto itA = diagonalMap.find(dIndex);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator itA = diagonalMap.find(dIndex);
                 if(itA == diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
                     std::shared_ptr<diagonal> dNew = dB->multiply(real_scale_factor, imag_scale_factor);
@@ -794,11 +796,11 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                     valType *dB_real_vals = dB->realValues;
                     valType *dB_imag_vals = dB->imagValues;
                     #if defined(SIMD_ENABLED)
-                    #pragma omp simd
+                        #pragma omp simd
                     #endif
                     for(unsigned int i = 0; i < dA->dLength; i++) {
-                        valType a = dA_real_vals[i];
-                        valType b = dA_imag_vals[i];
+                        // valType a = dA_real_vals[i];
+                        // valType b = dA_imag_vals[i]; // in place update below...
                         valType c = dB_real_vals[i];
                         valType d = dB_imag_vals[i];
                         // (a + ib) + (real_scale_factor + i*imag_scale_factor) * (c + id)
@@ -810,7 +812,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t addMatrixScaled took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
@@ -823,7 +825,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 printf("starting adjugate --");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             // Create the adjugate matrix
@@ -857,7 +859,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::shared_ptr<diaQMatrix> adjugate_transpose = adjugate->transpose();
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t adjugate took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -867,7 +869,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         void divide_by_scalar(valType val) {
             #ifdef DEBUG
                 printf("starting divide_by_scalar -- val = %f\n", val);
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             if (val == 0) {
@@ -896,7 +898,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t divide_by_scalar took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
         }
@@ -904,7 +906,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         std::shared_ptr<diaQMatrix> copy_and_scale_by_imag(valType imag) {
             #ifdef DEBUG
                 printf("starting copy_and_scale_by_imag -- imag = %f\n", imag);
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             if (imag == 0.0) {
@@ -958,7 +960,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "copy_and_scale_by_imag took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -969,7 +971,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
 
             #ifdef DEBUG
                 printf("starting subtractMatrix -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
@@ -978,7 +980,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             for (size_t i = 0; i < B->dIndices.size(); i++) {
                 int dIndex = B->dIndices[i];
                 std::shared_ptr<diagonal> dB = B->dPointers[i];
-                auto itA = this->diagonalMap.find(B->dIndices[i]);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator itA = this->diagonalMap.find(B->dIndices[i]);
 
                 if(itA == this->diagonalMap.end()) {
                     // If the diagonal does not exist in the current matrix, add it
@@ -1007,7 +1009,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t subtractMatrix took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -1049,7 +1051,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         valType norm() {
             #ifdef DEBUG
                 printf("starting norm -- ");
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             valType norm = 0.0;
@@ -1075,7 +1077,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "\t\t norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms\n";
             #endif
 
@@ -1085,7 +1087,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
         valType estimate_1norm() {
             #ifdef DEBUG
             printf("starting 1-norm -- ");
-            auto start = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
         
             unsigned int nCols = matrix_shape[1];
@@ -1096,7 +1098,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             #pragma omp parallel
             {
                 int tid = omp_get_thread_num();
-                auto& localSums = threadLocalSums[tid];
+                std::vector<valType> & localSums = threadLocalSums[tid];
         
                 #pragma omp for
                 for (size_t k = 0; k < dIndices.size(); k++) {
@@ -1136,7 +1138,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
         
             #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             std::cout << "\t\t 1-norm took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " ms\n";
             #endif
         
@@ -1200,7 +1202,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             std::vector<unsigned int> ten_pos(ndim);
             unsigned int prod = 1;
             // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
-            #pragma GCC unroll 8
+            // #pragma GCC unroll 8
             for (unsigned int i = 0; i < ndim; i++) {
                 prod *= shape[i];
                 // std::cout << "flat_index = " << flat_index << " prod = " << prod << std::endl;
@@ -1273,7 +1275,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             (*cum_diagonal_lengths) = (unsigned int *)calloc(*n_diags, sizeof(unsigned int));
             *num_elements = 0;
             unsigned int k = 0;
-            for (auto x : diagonalMap) {
+            for (phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::value_type & x : diagonalMap) {
                 // std::cout << "for k = " << k << " x.first = " << x.first << std::endl;
                 (*diagonal_indices)[k] = x.first;
                 // std::cout << "set! (*cum_diagonal_lengths)[" << k << "] = " << (*cum_diagonal_lengths)[k] << std::endl;
@@ -1316,7 +1318,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 (*real_data) = (valType *)calloc(*num_elements, sizeof(valType));
                 (*imag_data) = (valType *)calloc(*num_elements, sizeof(valType));
             #endif
-            for (auto x : diagonalMap) {
+            for (phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::value_type & x : diagonalMap) {
                 valType *real_vals = x.second->realValues;
                 valType *imag_vals = x.second->imagValues;
                 #pragma omp parallel for
@@ -1387,7 +1389,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
                 total_elements = total_elements * shape[i];
             unsigned int flat_index = 0;
             unsigned int prod = 1;
-            #pragma GCC unroll 8
+            // #pragma GCC unroll 8
             for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (total_elements / prod) * ten_pos[i];
@@ -1536,7 +1538,7 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             }
             for(size_t i = 0; i < dIndices.size(); i++) {
                 int dIndex = dIndices[i];
-                auto itB = B->diagonalMap.find(dIndex);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator itB = B->diagonalMap.find(dIndex);
                 if(itB == B->diagonalMap.end()) {
                     return false;
                 }
@@ -1591,13 +1593,13 @@ class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
             dPointers.resize(dPointers.size() - toDelete.size());
             #pragma omp parallel for
             for(size_t i = 0; i < diagonalMap.size(); i++) {
-                auto it = std::next(diagonalMap.begin(), i);
+                phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = std::next(diagonalMap.begin(), i);
                 dIndices[i] = it->first;
                 dPointers[i] = it->second;
             }
         }
         std::shared_ptr<diagonal> operator[](int dIndex) {
-            auto it = diagonalMap.find(dIndex);
+            phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::iterator it = diagonalMap.find(dIndex);
             if(it == diagonalMap.end()) {
                 throw std::out_of_range("diagonal index not found");
             }

@@ -30,7 +30,7 @@ void run_avx<double>(
     double *real_vals_final, double *imag_vals_final, bool overwrite
 ) {
     #ifdef DEEP_DEBUG
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // Find first aligned SIMD index
@@ -125,8 +125,8 @@ void run_avx<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         printf("\t\trun_avx - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
     #endif
 }
@@ -160,7 +160,7 @@ void run_avx<float>(
 ) {
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_avx float -- " << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // Find first aligned SIMD index
@@ -238,8 +238,8 @@ void run_avx<float>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         printf("\t\trun_avx - Float took %f milliseconds\n", duration.count() / 1000.0);
     #endif
 }
@@ -265,7 +265,7 @@ void run_spmv_avx_1<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_avx_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -325,9 +325,9 @@ void run_spmv_avx_1<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx_1 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx_1 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 template<>
@@ -340,7 +340,7 @@ void run_spmv_avx_2<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_avx_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -400,9 +400,9 @@ void run_spmv_avx_2<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx_2 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx_2 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 
@@ -416,7 +416,7 @@ void run_spmv_avx_0<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_avx_0 - SIMD aligned version --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -469,9 +469,9 @@ void run_spmv_avx_0<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx_0 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx_0 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 

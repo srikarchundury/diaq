@@ -171,7 +171,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
 
         std::shared_ptr<diagonal> multiply(valType real, valType imag) {
             #ifdef DEBUG
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             if (real == 0.0 && imag == 0.0) {
@@ -187,7 +187,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "multiply took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 

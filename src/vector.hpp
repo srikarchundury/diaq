@@ -121,8 +121,8 @@ class vector : public std::enable_shared_from_this<vector> {
         std::shared_ptr<vector> subtract(std::shared_ptr<vector> v) {
             assert(numRows == v->numRows);
             std::shared_ptr<vector> result = std::make_shared<vector>(numRows);
-            auto realValues = result->realValues;
-            auto imagValues = result->imagValues;
+            valType *realValues = result->realValues;
+            valType *imagValues = result->imagValues;
 
             #pragma omp parallel for
             for (unsigned int i = 0; i < numRows; ++i) {
@@ -138,8 +138,8 @@ class vector : public std::enable_shared_from_this<vector> {
 
         valType dot(const std::shared_ptr<vector> v) {
             valType result = 0.0;
-            auto realValues = v->realValues;
-            auto imagValues = v->imagValues;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:result)
             for (unsigned int i = 0; i < numRows; ++i) {
@@ -172,8 +172,8 @@ class vector : public std::enable_shared_from_this<vector> {
 
         std::shared_ptr<vector> dagger() {
             std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
-            auto realValues = v->realValues;
-            auto imagValues = v->imagValues;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for
             for (unsigned int i = 0; i < numRows; ++i) {
@@ -186,8 +186,8 @@ class vector : public std::enable_shared_from_this<vector> {
         std::complex<valType> multiply(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
             valType imag_res = 0.0;
-            auto realValues = v->realValues;
-            auto imagValues = v->imagValues;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res,imag_res)
             for (unsigned int i = 0; i < numRows; ++i) {
@@ -199,8 +199,8 @@ class vector : public std::enable_shared_from_this<vector> {
 
         valType daggerMultiplyReal(std::shared_ptr<vector> v) {
             valType real_res = 0.0;
-            auto realValues = v->realValues;
-            auto imagValues = v->imagValues;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for reduction(+:real_res)
             for (unsigned int i = 0; i < numRows; ++i) {
@@ -217,8 +217,8 @@ class vector : public std::enable_shared_from_this<vector> {
 
         std::shared_ptr<vector> copy() {
             std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
-            auto realValues = v->realValues;
-            auto imagValues = v->imagValues;
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
 
             #pragma omp parallel for
             for (unsigned int i = 0; i < numRows; ++i) {

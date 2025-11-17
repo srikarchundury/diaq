@@ -15,9 +15,9 @@ std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<dia
 	if (A->diagonalMap.size() != B->diagonalMap.size()) {
 		std::cout << "Size mismatch: A has " << A->diagonalMap.size() << ", B has " << B->diagonalMap.size() << std::endl;
 
-		std::set<int> keysA, keysB;
-		for (const auto& [k, _] : A->diagonalMap) keysA.insert(k);
-		for (const auto& [k, _] : B->diagonalMap) keysB.insert(k);
+    std::set<int> keysA, keysB;
+    for (const auto& kv : A->diagonalMap) keysA.insert(kv.first);
+    for (const auto& kv : B->diagonalMap) keysB.insert(kv.first);
 
 		std::vector<int> only_in_A, only_in_B;
 		std::set_difference(keysA.begin(), keysA.end(), keysB.begin(), keysB.end(), std::back_inserter(only_in_A));
@@ -36,8 +36,10 @@ std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<dia
 
 	const diaq::valType epsilon = 0.00002;
 
-	for (const auto& [dIdx, diagA] : A->diagonalMap) {
-		auto itB = B->diagonalMap.find(dIdx);
+    for (const auto& kv : A->diagonalMap) {
+        int dIdx = kv.first;
+        auto diagA = kv.second;
+        auto itB = B->diagonalMap.find(dIdx);
 		if (itB == B->diagonalMap.end()) {
 			std::cout << "Missing diagonal index in B: " << dIdx << std::endl;
 			return "false - dIndex mis-match";

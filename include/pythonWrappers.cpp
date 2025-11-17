@@ -99,7 +99,7 @@ PYBIND11_MODULE(diaq, m) {
         .def(
             "matrix_reshape",
             [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
-                auto shape_info = shape.request();
+                py::buffer_info shape_info = shape.request();
                 std::array<unsigned int, 2> shape_ptr;
                 std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
                 return self->matrix_reshape(shape_ptr);
@@ -176,8 +176,7 @@ PYBIND11_MODULE(diaq, m) {
         .def("print", &diaq::denseMatrix::print, py::return_value_policy::automatic)
         .def("isPartOf", &diaq::denseMatrix::isPartOf, py::return_value_policy::automatic)
         .def("sparsity", &diaq::denseMatrix::sparsity, py::return_value_policy::automatic)
-        .def("getTargetDiagIndex", &diaq::denseMatrix::getTargetDiagIndex, py::return_value_policy::automatic)
-        .def("getTargetDiagIndex_onlydiags", &diaq::denseMatrix::getTargetDiagIndex_onlydiags, py::return_value_policy::automatic)
+        
         .def(
             "convertToDiaQ",
             [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned int> shape) { return self->convertToDiaQ(shape); },
@@ -202,9 +201,9 @@ PYBIND11_MODULE(diaq, m) {
         // m.def("from_numpy", &diaq::from_numpy, py::return_value_policy::automatic);
         m.def(
         "from_numpy",
-        [](py::array_t<std::complex<diaq::valType>> vals, std::vector<unsigned int> shape) {
+            [](py::array_t<std::complex<diaq::valType>> vals, std::vector<unsigned int> shape) {
             // Access the buffer_info of the NumPy arrays
-            auto vals_info = vals.request();
+            py::buffer_info vals_info = vals.request();
             // Check if the input arrays have the correct dimensions
             if (vals_info.ndim != 1) {
                 throw std::runtime_error("Input arrays must be 1-dimensional.");
@@ -221,9 +220,9 @@ PYBIND11_MODULE(diaq, m) {
     
         m.def(
         "from_numpy",
-        [](py::array_t<std::complex<diaq::valType>> vals) {
+            [](py::array_t<std::complex<diaq::valType>> vals) {
             // Access the buffer_info of the NumPy arrays
-            auto vals_info = vals.request();
+            py::buffer_info vals_info = vals.request();
             // make shape
             std::vector<unsigned int> shape;
             for (int i = 0; i < vals_info.ndim; i++) {
@@ -252,7 +251,7 @@ PYBIND11_MODULE(diaq, m) {
         m.def(
         "from_numpy_vector",
         [](py::array_t<std::complex<diaq::valType>> vals) {
-            auto vals_info = vals.request();
+            py::buffer_info vals_info = vals.request();
             // Get pointers to the data
             std::complex<diaq::valType> *vals_ptr = static_cast<std::complex<diaq::valType> *>(vals_info.ptr);
             std::shared_ptr<diaq::vector> res = diaq::from_numpy_vector(vals_ptr, (unsigned int) vals.size());

@@ -1,4 +1,5 @@
 #include "vectorKernels.hpp"
+#include <functional>
 // ----------------------------------------------------------------
 //
 // vector arithmetic
@@ -41,8 +42,8 @@ void randomize(std::shared_ptr<vector> x, valType scale, valType mean) {
     std::uniform_real_distribution<valType> distribution(mean - scale, mean + scale);
 
     // dice needs to be regenerated each time, otherwise distribution will not be updated correctly
-    for (unsigned int i = 0; i < x->numRows; ++i) {
-        auto dice = std::bind(distribution, generator);
+        for (unsigned int i = 0; i < x->numRows; ++i) {
+        std::function<valType()> dice = std::bind(distribution, generator);
         (*x)[i] = std::complex<valType>(dice(), dice());
     }
 }
@@ -106,7 +107,7 @@ std::shared_ptr<vector> operator+(const std::shared_ptr<vector> x, const std::sh
 std::shared_ptr<vector> operator-(const std::shared_ptr<vector> &x, const std::shared_ptr<vector> &y)
 {
     assert(x->numRows == y->numRows);
-    auto z = std::make_shared<vector>(x->numRows);
+    std::shared_ptr<vector> z = std::make_shared<vector>(x->numRows);
     #pragma omp parallel for
     for (unsigned int i = 0; i < z->numRows; ++i)
     {

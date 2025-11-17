@@ -158,35 +158,6 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             }
             return ((valType)z/(valType)size) * 100;
         }
-        // currently un-used!
-        // given a point in nxn matrix, returns the diagonalIndex (-n,..,0,..n,..,2n-2) that it should belong to.
-        int getTargetDiagIndex(std::shared_ptr<diaQMatrix> qm, unsigned int i, unsigned int j) {
-            unsigned int size = matrix_shape[0] * matrix_shape[1];
-            // every element will be part of 2 diagonals?? We choose one of them based on sparsity in each.
-            // get diagonal index, based on distance or number of elements.
-            int targetDiagIndex_1 = 2 * size, targetDiagIndex_2 = 2 * size;
-            // loop through all possible diagonals (principal and anti)
-            for(int k = -1 * size + 1; k <= static_cast<int>(2 * size - 2); k++) {
-                std::shared_ptr<diagonal> kDiag = qm->getDiagonal_orCreateIt(k);
-                std::array<unsigned int, 2> kCoords = kDiag->getCoords(size, k);
-                if(isPartOf(k, kCoords[0], kCoords[1], i, j)) {
-                    // std::cout << i << "," << j << "=" << k << std::endl;
-                    if(targetDiagIndex_1 == static_cast<int>(2 * size)) {
-                        targetDiagIndex_1 = k;
-                    }
-                    else if(targetDiagIndex_2 == static_cast<int>(2 * size)) {
-                        targetDiagIndex_2 = k;
-                    }
-                }
-            }
-            if(targetDiagIndex_2 != static_cast<int>(2 * size)) {
-                return (qm->getDiagonal_orCreateIt(targetDiagIndex_1)->numNonZeros() > qm->getDiagonal_orCreateIt(targetDiagIndex_2)->numNonZeros())?targetDiagIndex_1:targetDiagIndex_2;
-            }
-            return targetDiagIndex_1;
-        }
-        int getTargetDiagIndex_onlydiags(int i, int j) {
-            return j-i;
-        }
         std::shared_ptr<diaQMatrix> convertToDiaQ(std::vector<unsigned int> new_shape);
         std::shared_ptr<diaQMatrix> convertToDiaQ(std::array<unsigned int, 2> new_matrix_shape);
         std::shared_ptr<diaQMatrix> convertToDiaQ();

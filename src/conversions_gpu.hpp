@@ -16,7 +16,7 @@ namespace diaq {
 
 // declarations
 std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType> *values, std::vector<unsigned int> shape);
-std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d, unsigned int *new_shape);
+std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d, std::array<unsigned int, 2> new_shape);
 
 } // namespace diaq
 

@@ -223,13 +223,13 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 
 // newer version of product function
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
-	#ifdef DEBUG
-	std::cout << "starting product -- ";
-	auto start = std::chrono::high_resolution_clock::now();
-	#endif
+    #ifdef DEBUG
+        std::cout << "starting product -- ";
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    #endif
 
 	#ifdef CUDA_ENABLED
-	return product_cuda(A, B);
+    	return product_cuda(A, B);
 	#else
 
 	std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
@@ -256,7 +256,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     }
     std::vector<std::pair<int, std::vector<std::pair<int, int>>>> res_index_sources_vec;
     res_index_sources_vec.reserve(res_index_sources.size());
-    for (auto& kv : res_index_sources) {
+    for (std::unordered_map<int, std::vector<std::pair<int, int>>>::value_type & kv : res_index_sources) {
         res_index_sources_vec.emplace_back(kv.first, std::move(kv.second));
     }
 
@@ -295,15 +295,19 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
         for (size_t i = 0; i < res_index_sources_vec.size(); ++i)
             my_work.push_back(res_index_sources_vec[i]);
 
-        for (auto& [res_idx, sources] : my_work) {
+        for (std::pair<int, std::vector<std::pair<int, int>>> & work_item : my_work) {
+            int res_idx = work_item.first;
+            std::vector<std::pair<int, int>> & sources = work_item.second;
             std::shared_ptr<diagonal> res_diag = res_diags[res_idx];
             if (!res_diag) continue;
 
             bool overwrite = sources.size() == 1;
             for (size_t s = 0; s < sources.size(); ++s) {
-                const auto& [dA, dB] = sources[s];
-                auto diagA = A->diagonalMap[dA];
-                auto diagB = B->diagonalMap[dB];
+                const std::pair<int,int> & pairAB = sources[s];
+                int dA = pairAB.first;
+                int dB = pairAB.second;
+                std::shared_ptr<diagonal> diagA = A->diagonalMap[dA];
+                std::shared_ptr<diagonal> diagB = B->diagonalMap[dB];
 
                 multiplyDiagonals(A->matrix_shape, B->matrix_shape, dA, dB, diagA, diagB, res_idx, res_diag, overwrite && (s == 0));
             }
@@ -317,13 +321,15 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     // #endif
 
 	// Step 3: Insert final non-empty result diagonals
-	for (const auto& [res_idx, res_diag] : res_diags) {
-		if (res_diag && !res_diag->isEmpty()) {
-			result->diagonalMap.insert({res_idx, res_diag});
+    for (phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>>::value_type & kv : res_diags) {
+        int res_idx = kv.first;
+        std::shared_ptr<diagonal> res_diag = kv.second;
+        if (res_diag && !res_diag->isEmpty()) {
+            result->diagonalMap.insert({res_idx, res_diag});
             result->dIndices.push_back(res_idx);
             result->dPointers.push_back(res_diag);
-		}
-	}
+        }
+    }
 
     // #ifdef DEBUG
     //     auto insert_end = std::chrono::high_resolution_clock::now();
@@ -331,11 +337,11 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
     //     printf("\t\t insert took %f milliseconds\n", insert_duration.count() / 1000.0);
     // #endif
 
-	#ifdef DEBUG
-	auto end = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	printf("\t\t product took %f milliseconds\n", duration.count() / 1000.0);
-	#endif
+    #ifdef DEBUG
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t product took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
 
 	return result;
 
@@ -346,7 +352,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 // std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
 // 	#ifdef DEBUG
 //         std::cout << "starting product -- ";
-//         auto start = std::chrono::high_resolution_clock::now();
+//         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 // 	#endif
 
 // 	#ifdef CUDA_ENABLED
@@ -461,7 +467,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_p
 // 	}
 
 //     #ifdef DEBUG
-//         auto end = std::chrono::high_resolution_clock::now();
+//         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 //         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 //         printf("\t\t product took %f milliseconds\n", duration.count()/1000.0);
 // 	#endif
@@ -581,7 +587,7 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
     // start time
     #ifdef DEBUG
         printf("starting matrix_reshape -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     // this is matrix_reshape.
@@ -614,7 +620,7 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
     }
 
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t matrix_reshape took %f milliseconds\n", duration.count()/1000.0);
     #endif
@@ -624,10 +630,10 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
 
 std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_tensor_shape) {
     unsigned int old_product = 1;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i=0; i < A->shape.size(); i++) old_product *= A->shape[i];
     unsigned int new_product = 1;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i=0; i < new_tensor_shape.size(); i++) new_product *= new_tensor_shape[i];
     if(old_product != new_product) {
         std::cout << old_product << "!=" << new_product << std::endl;
@@ -710,7 +716,7 @@ std::vector<unsigned int> modifyTensorShape(std::vector<unsigned int> tShape, st
 
 std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_order) {
     // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
     if(new_order.size() == 0) {
         new_order.resize(A->shape.size(), 1);
@@ -756,11 +762,11 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     new_shape[0] = 1;
     new_shape[1] = 1;
     unsigned int i = l / 2;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int r = 0; r<i ; r++) {
         new_shape[0] = new_shape[0] * new_tensor_shape[r];
     }
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int r = i; r<l ; r++) {
         new_shape[1] = new_shape[1] * new_tensor_shape[r];
     }
@@ -838,7 +844,7 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A) {
 
 std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) {
     // // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
     A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
     B->balance(); // to make sure x and y dims are balanced in the underlying matrix format
@@ -862,7 +868,7 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // move axes
     std::vector<unsigned int> order_A;
     std::vector<unsigned int> order_B;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i = 0; i < axes[1].size(); i++)
         order_B.push_back(axes[1][i]);
     for(unsigned int i = 0; i < A->shape.size(); i++) {
@@ -887,7 +893,7 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
             order_B.push_back(i);
         }
     }
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i = 0; i < axes[0].size(); i++)
         order_A.push_back(axes[0][i]);
     // std::cout << "with order_A (";
@@ -900,10 +906,10 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // std::cout << order_B[order_B.size()-1] << ")" << std::endl;
 
     unsigned int axes_0_product = 1;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i=0;i<axes[0].size();i++) axes_0_product *= A->shape[axes[0][i]];
     unsigned int axes_1_product = 1;
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(unsigned int i=0;i<axes[1].size();i++) axes_1_product *= B->shape[axes[1][i]];
 
     A = transpose(A, order_A);
@@ -1015,7 +1021,7 @@ std::vector<unsigned int> getTenPos(const std::vector<unsigned int>& ten_pos_A,
 
 std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) {
     // start timer
-    // auto start = std::chrono::high_resolution_clock::now();
+    // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
     // std::cout << "--" << std::endl;
     // std::cout << "tensordot called for A - " << std::endl;
@@ -1197,7 +1203,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 //     #ifdef DEBUG
 //         // measure start timer
 //         printf("starting spMV --");
-//         auto start = std::chrono::high_resolution_clock::now();
+//         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 //     #endif
 
 //     valType *y_real_values = y->realValues;
@@ -1336,7 +1342,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 
 //     #ifdef DEBUG
 //         // measure end time
-//         auto end = std::chrono::high_resolution_clock::now();
+//         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 //         // calculate duration
 //         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 //         // log duration
@@ -1369,7 +1375,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 // 		#endif
 
 // 		#ifdef DEBUG
-// 			auto start = std::chrono::high_resolution_clock::now();
+// 			std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 // 		#endif
 
 // 		const size_t total_diagonals = A->dIndices.size();
@@ -1531,7 +1537,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 
 //     #endif
 // 		#ifdef DEBUG
-// 			auto end = std::chrono::high_resolution_clock::now();
+// 			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 // 			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 // 			printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
 // 		#endif
@@ -1545,7 +1551,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 // 		return spmv_cuda(A, x);
 // 	#else
 // 	#ifdef DEBUG
-// 		auto start = std::chrono::high_resolution_clock::now();
+// 		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 // 	#endif
 
 // 	const size_t total_diagonals = A->dIndices.size();
@@ -1687,7 +1693,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 // 	}
 
 // 	#ifdef DEBUG
-// 		auto end = std::chrono::high_resolution_clock::now();
+// 		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 // 		printf("\t\t spMV total took %f ms\n",
 // 			std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0);
 // 	#endif
@@ -1699,7 +1705,19 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 // // Thread local buffers + reduction
 void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
     #ifdef CUDA_ENABLED
-        return spmv_cuda(A, x);
+        {
+            std::shared_ptr<vector> tmp = spmv_cuda(A, x);
+            if (tmp) {
+                unsigned int M = y->num_rows();
+                // copy tmp into y
+                #pragma omp parallel for
+                for (unsigned int i = 0; i < M; ++i) {
+                    y->realValues[i] = tmp->realValues[i];
+                    y->imagValues[i] = tmp->imagValues[i];
+                }
+            }
+            return;
+        }
     #else
     #ifdef DEEP_DEBUG
         std::cout << " --- spMV --- " << std::endl;
@@ -1711,7 +1729,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     #endif
     
     #ifdef DEBUG
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
     
         valType *x_real_values = x->realValues;
@@ -1860,7 +1878,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     #endif
     
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t spMV took %f milliseconds\n", duration.count() / 1000.0);
     #endif
@@ -1879,7 +1897,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
     #ifdef DEBUG
         // measure start timer
         printf("starting spMV --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     unsigned int q_diff_exp = 1L << (qubit_larger - qubit_smaller);
@@ -1956,7 +1974,7 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2118,7 +2136,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
     #ifdef DEBUG
         // measure start timer
         printf("starting kron_product --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     std::array<unsigned int, 2> shape_a = A->matrix_shape;
@@ -2217,7 +2235,7 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
 
     #ifdef DEBUG
         // measure end timer
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2238,7 +2256,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
     #ifdef DEBUG
         // measure start timer
         printf("starting identity_kron_matrix --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     unsigned int N = 1L << n;
@@ -2285,7 +2303,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2302,7 +2320,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     #ifdef DEBUG
         // start timer
         printf("starting identity_kron_matrix_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     unsigned int N = 1L << n;
@@ -2357,7 +2375,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2371,7 +2389,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     #ifdef DEBUG
         // start timer
         printf("starting identity_kron_matrix_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     n = 1L << n;
@@ -2474,7 +2492,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2489,7 +2507,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     #ifdef DEBUG
         // start timer
         printf("starting identity_kron_matrix_kron_identity_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     #ifdef DEEP_DEBUG
@@ -2548,7 +2566,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
 
     #ifdef DEBUG
         // // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2562,7 +2580,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     #ifdef DEBUG
         // start timer
         printf("starting identity_kron_matrix_kron_identity_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     after = 1L << after;
@@ -2932,7 +2950,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -2947,7 +2965,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned i
     #ifdef DEBUG
         //start timer
         printf("starting matrix_kron_identity_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     #ifdef DEEP_DEBUG
@@ -3010,7 +3028,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned i
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -3031,7 +3049,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
     #ifdef DEBUG
         //start timer
         printf("starting matrix_kron_identity_times_vector --");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     after = 1L << after;
@@ -3603,7 +3621,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -3617,7 +3635,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
     #ifdef DEBUG
         // start timer
         printf("starting matrix_kron_identity -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     n = 1L << n;
@@ -3661,7 +3679,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -3676,7 +3694,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
 std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int before, std::shared_ptr<diaQMatrix> A, unsigned int after) {
     #ifdef DEBUG
         printf("starting identity_kron_matrix_kron_identity -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     #ifdef DEEP_DEBUG
@@ -3777,7 +3795,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
     }
 
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         printf("\t\t identity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
     #endif
@@ -3803,7 +3821,7 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
 
     #ifdef DEBUG
         // start timer
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     std::array<unsigned int, 2> shape_a = A->matrix_shape;
@@ -3948,7 +3966,7 @@ std::shared_ptr<diaQMatrix> kron_product_old(std::shared_ptr<diaQMatrix> A, std:
 
     #ifdef DEBUG
         // measure end time
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         // log duration
@@ -3985,7 +4003,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 
     #ifdef DEBUG
         printf("starting expm_negative_taylor -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     // Initialize result and create 0th diagonal
@@ -4020,7 +4038,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
         }
 
         #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_negative_taylors took %f milliseconds\n", duration.count() / 1000.0);
         #endif
@@ -4057,7 +4075,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     // printf("Taylor converged at iteration %d with norm %.2e\n", i, X_power_i_whole_divided_by_i->norm());
 
     #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
     #endif
@@ -4068,12 +4086,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
 std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0) {
 	#ifdef DEBUG
 		printf("starting expm_negative_taylor_scaled -- ");
-		auto start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
     if (A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
         #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_negative_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
         #endif
@@ -4105,7 +4123,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 	}
 
 	#ifdef DEBUG
-		auto end = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("\t\t expm_negative_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
 	#endif
@@ -4116,7 +4134,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations) {
     #ifdef DEBUG
         printf("starting expm_negative_pade -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0]);
@@ -4148,7 +4166,7 @@ std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, va
         }
 
         #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             printf("\t\t expm_negative_pade took %f milliseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
         #endif
 
@@ -4223,7 +4241,7 @@ std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, va
     }
 
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         printf("\t\t expm_negative_pade took %f milliseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
     #endif
 
@@ -4305,7 +4323,7 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
 
     #ifdef DEBUG
         printf("starting inverse -- ");
-        auto start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
@@ -4340,7 +4358,7 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
         }
 
         #ifdef DEBUG
-            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             std::cout << "\t\t inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
         #endif
 
@@ -4366,7 +4384,7 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
     #endif
 
     #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         std::cout << "\t\t inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
     #endif
 
