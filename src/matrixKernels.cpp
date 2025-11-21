@@ -223,16 +223,16 @@ std::shared_ptr<diagonal> multiplyDiagonals(std::array<unsigned int, 2> shapeA, 
 
 // newer version of product function
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
+	#ifdef CUDA_ENABLED
+    	return product_cuda(A, B);
+	#else
+
     #ifdef DEBUG
         std::cout << "starting product -- ";
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
-	#ifdef CUDA_ENABLED
-    	return product_cuda(A, B);
-	#else
-
-	std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
+    std::array<unsigned int, 2> res_dims = {A->matrix_shape[0], B->matrix_shape[1]};
 	std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(res_dims);
 
 	phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal>> res_diags;

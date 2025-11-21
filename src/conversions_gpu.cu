@@ -218,8 +218,9 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
     }
 
     #ifdef DEBUG
-        printf(" starting from_numpy -- ");
-        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        printf("from_numpy_cuda done in %ld ms \n", duration);
     #endif
 
     return diaq_res;

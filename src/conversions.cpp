@@ -158,16 +158,13 @@ std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A) {
 }
 
 std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned int> shape) {
-
-    #ifdef DEBUG
-        printf(" starting from_numpy -- ");
-        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-    #endif
-
-
     #ifdef CUDA_ENABLED
         return from_numpy_cuda(vals, shape);
     #else
+        #ifdef DEBUG
+            printf(" starting from_numpy -- ");
+            std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        #endif
         long unsigned int vals_len = 1;
         for (unsigned int val : shape) {
             vals_len *= val;
