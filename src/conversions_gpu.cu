@@ -53,24 +53,26 @@ __global__ void convert_to_dq(
 std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::vector<unsigned int> shape) {
 
     #ifdef DEBUG
+        std::cout << "Using CUDA from_numpy_cuda path" << std::endl;
         printf(" starting from_numpy_cuda -- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
+
     // ----- Compute total number of elements -----
     unsigned int product = 1;
     for (std::size_t s = 0; s < shape.size(); ++s) {
         product *= shape[s];
     }
+    #ifdef DEBUG
+        printf("DEBUG: product=%u, shape.size()=%zu\n", product, shape.size());
+    #endif
 
     int rank = static_cast<int>(shape.size());
     unsigned int x;
     unsigned int y;
 
     if (rank > 2) {
-        // For higher-order tensors, choose a "nice" matrix shape (x, y)
-        unsigned int sqrtProduct = static_cast<unsigned int>(
-            std::sqrt(static_cast<double>(product))
-        );
+        unsigned int sqrtProduct = static_cast<unsigned int>(std::sqrt(static_cast<double>(product)));
         x = 1;
         y = product;
         for (unsigned int i = sqrtProduct; i > 0; --i) {
@@ -81,13 +83,14 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
             }
         }
     } else {
-        // Matrix case
         x = shape[0];
         y = shape[1];
     }
+    #ifdef DEBUG
+        printf("DEBUG: matrix_shape=(%u,%u)\n", x, y);
+    #endif
 
     std::array<unsigned int, 2> matrix_shape = {x, y};
-
     unsigned int matrix_size_x = matrix_shape[0];
     unsigned int matrix_size_y = matrix_shape[1];
 
@@ -95,54 +98,74 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
     int* device_diagonal_idx = NULL;
     unsigned int* device_diagonal_pos = NULL;
 
-    cudaMalloc(
-        &device_diagonal_idx,
-        static_cast<std::size_t>(product) * sizeof(int)
-    );
-    cudaMalloc(
-        &device_diagonal_pos,
-        static_cast<std::size_t>(product) * sizeof(unsigned int)
-    );
+    cudaError_t err;
+    err = cudaMalloc(&device_diagonal_idx, static_cast<std::size_t>(product) * sizeof(int));
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+        printf("cudaMalloc device_diagonal_idx failed: %s\n", cudaGetErrorString(err));
+        #endif
+        return nullptr;
+    }
+    err = cudaMalloc(&device_diagonal_pos, static_cast<std::size_t>(product) * sizeof(unsigned int));
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+        printf("cudaMalloc device_diagonal_pos failed: %s\n", cudaGetErrorString(err));
+        #endif
+        cudaFree(device_diagonal_idx);
+        return nullptr;
+    }
 
     // Launch kernel (1D)
     unsigned int totalDataSize = product;
     int threadsPerBlock = 256;
-    int numBlocks = static_cast<int>(
-        (totalDataSize + static_cast<unsigned int>(threadsPerBlock) - 1) /
-        static_cast<unsigned int>(threadsPerBlock)
-    );
+    int numBlocks = static_cast<int>((totalDataSize + static_cast<unsigned int>(threadsPerBlock) - 1) / static_cast<unsigned int>(threadsPerBlock));
 
-    convert_to_dq<<<numBlocks, threadsPerBlock>>>(
-        product,
-        matrix_size_x,
-        matrix_size_y,
-        device_diagonal_idx,
-        device_diagonal_pos
-    );
-    cudaDeviceSynchronize();
+    #ifdef DEBUG
+        printf("DEBUG: Launching kernel with numBlocks=%d, threadsPerBlock=%d\n", numBlocks, threadsPerBlock);
+    #endif
+
+    convert_to_dq<<<numBlocks, threadsPerBlock>>>(product, matrix_size_x, matrix_size_y, device_diagonal_idx, device_diagonal_pos);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+            printf("Kernel launch failed: %s\n", cudaGetErrorString(err));
+        #endif
+        cudaFree(device_diagonal_idx);
+        cudaFree(device_diagonal_pos);
+        return nullptr;
+    }
+    err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+            printf("cudaDeviceSynchronize failed: %s\n", cudaGetErrorString(err));
+        #endif
+        cudaFree(device_diagonal_idx);
+        cudaFree(device_diagonal_pos);
+        return nullptr;
+    }
 
     // ----- Host copies (use shared_ptr for arrays) -----
-    std::shared_ptr<int[]> host_diagonal_idx(
-        new int[static_cast<std::size_t>(product)],
-        std::default_delete<int[]>()
-    );
-    std::shared_ptr<unsigned int[]> host_diagonal_pos(
-        new unsigned int[static_cast<std::size_t>(product)],
-        std::default_delete<unsigned int[]>()
-    );
+    std::shared_ptr<int[]> host_diagonal_idx(new int[static_cast<std::size_t>(product)], std::default_delete<int[]>());
+    std::shared_ptr<unsigned int[]> host_diagonal_pos(new unsigned int[static_cast<std::size_t>(product)], std::default_delete<unsigned int[]>());
 
-    cudaMemcpy(
-        host_diagonal_idx.get(),
-        device_diagonal_idx,
-        static_cast<std::size_t>(product) * sizeof(int),
-        cudaMemcpyDeviceToHost
-    );
-    cudaMemcpy(
-        host_diagonal_pos.get(),
-        device_diagonal_pos,
-        static_cast<std::size_t>(product) * sizeof(unsigned int),
-        cudaMemcpyDeviceToHost
-    );
+    err = cudaMemcpy(host_diagonal_idx.get(), device_diagonal_idx, static_cast<std::size_t>(product) * sizeof(int), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+            printf("cudaMemcpy device_diagonal_idx failed: %s\n", cudaGetErrorString(err));
+        #endif
+        cudaFree(device_diagonal_idx);
+        cudaFree(device_diagonal_pos);
+        return nullptr;
+    }
+    err = cudaMemcpy(host_diagonal_pos.get(), device_diagonal_pos, static_cast<std::size_t>(product) * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        #ifdef DEBUG
+            printf("cudaMemcpy device_diagonal_pos failed: %s\n", cudaGetErrorString(err));
+        #endif
+        cudaFree(device_diagonal_idx);
+        cudaFree(device_diagonal_pos);
+        return nullptr;
+    }
 
     cudaFree(device_diagonal_idx);
     cudaFree(device_diagonal_pos);

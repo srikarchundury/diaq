@@ -2550,8 +2550,31 @@ int main(int argc, char **argv) {
         std::cout << "Testing Format Conversion" << std::endl;
         std::complex<diaq::valType> *values = new std::complex<diaq::valType>[18]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
         std::vector<unsigned int> shape{3,3,2};
+        #ifdef DEBUG
+            std::cout << "Original Values: " << std::endl;
+            for(int i = 0; i < 18; i++) {
+                std::cout << values[i] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << " -- " << std::endl;
+            std::cout << "shape: ";
+            for(auto s : shape) {
+                std::cout << s << " ";
+            }
+            std::cout << std::endl;
+            std::cout << " -- " << std::endl;
+        #endif
         std::shared_ptr<diaq::diaQMatrix> result = diaq::from_numpy(values, shape);
+        #ifdef DEBUG
+            std::cout << "Matrix from Numpy: " << std::endl;
+            result->print();
+            std::cout << " -- " << std::endl;
+        #endif
         result->print();
+        #ifdef DEBUG
+            std::cout << " -- " << std::endl;
+            std::cout << "Converting to Dense Matrix: " << std::endl;
+        #endif
         std::cout << " -- " << std::endl;
         std::cout << " -- From Numpy Done -- " << std::endl;
         std::cout << " -- " << std::endl;
@@ -2579,13 +2602,13 @@ int main(int argc, char **argv) {
             0,0,0,1,0,0,0,0,
         };
         std::vector<unsigned int> b_shape{8, 8};
-
         std::shared_ptr<diaq::diaQMatrix> A =  diaq::from_numpy(a, a_shape);
-        std::shared_ptr<diaq::diaQMatrix> B =  diaq::from_numpy(b, b_shape);
-        std::shared_ptr<diaq::diaQMatrix> C = (A) * (B);
-        C->print();
+        std::cout << "Matrix A: " << std::endl;
+        A->print();
         std::cout << " -- " << std::endl;
-        std::cout << " -- Multiplication Done -- " << std::endl;
+        std::shared_ptr<diaq::diaQMatrix> B =  diaq::from_numpy(b, b_shape);
+        std::cout << "Matrix B: " << std::endl;
+        B->print();
         std::cout << " -- " << std::endl;
     }
     else if (strcmp(argv[1], "kron_1") == 0 ) {

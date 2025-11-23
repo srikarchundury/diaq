@@ -391,10 +391,10 @@ __global__ void product_kernel(unsigned int num_diags_A,
 */
 std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
                                          std::shared_ptr<diaQMatrix> B) {
-    // logger.log("Using CUDA to calculate product of two matrices");
-    if (A->matrix_shape[1] != B->matrix_shape[0]) {
-        throw std::invalid_argument("Not multiplyable");
-    }
+    #ifdef DEBUG
+        std::cout << "starting product_cuda" << std::endl;
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    #endif
 
     // let's convert to diagonal indices, cumulative lengths and flattened
     // realData and flattened imagData to be able to send to GPU later
@@ -712,6 +712,12 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     free(C_cum_diagonal_lengths);
     free(C_real_data);
     free(C_imag_data);
+
+    #ifdef DEBUG
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> duration = end - start;
+        std::cout << "finished product_cuda in " << duration.count() << " ms" << std::endl;
+    #endif
 
     return C;
 }

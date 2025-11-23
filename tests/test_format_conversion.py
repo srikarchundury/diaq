@@ -12,7 +12,7 @@ from qiskit.circuit.library import PauliEvolutionGate
 from time import perf_counter
 
 # sys.path.insert(0, '/ccs/home/schundu3/qsparse/ham_benchmarks')
-sys.path.insert(0, '/mnt/beegfs/schundu3/thesis/ham_benchmarks')
+sys.path.insert(0, '/mnt/beegfs/schundu3/thesis/qsparse/ham_benchmarks')
 from hamlib_functions.hamlib.hamlib_snippets import *
 
 statevector_simulator = AerSimulator(method='statevector')
@@ -93,7 +93,7 @@ if len(sys.argv) > 2:
 	HDF5_FILE = sys.argv[1]
 	HDF5_KEY = sys.argv[2]
 else:
-	HDF5_FILE = '/mnt/beegfs/schundu3/thesis/ham_benchmarks/hamlib_zip_files/condensedmatter/heisenberg/heis.hdf5'
+	HDF5_FILE = '/mnt/beegfs/schundu3/thesis/qsparse/ham_benchmarks/hamlib_zip_files/condensedmatter/heisenberg/heis.hdf5'
 	HDF5_KEY = 'graph-2D-grid-pbc-qubitnodes_Lx-4_Ly-4_h-3'
 
 ITRS = 1
