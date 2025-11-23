@@ -133,25 +133,36 @@ endif()
 
 # ===== Common sources =====
 set(SOURCES
+  # --- .hpp files ---
   ${SRC_DIR}/config.hpp
-  ${SRC_DIR}/config.cpp
   ${SRC_DIR}/denseMatrix.hpp
   ${SRC_DIR}/diagonal.hpp
   ${SRC_DIR}/diaQMatrix.hpp
   ${SRC_DIR}/specialMatrices.hpp
   ${SRC_DIR}/vector.hpp
   ${SRC_DIR}/conversions.hpp
-  ${SRC_DIR}/conversions.cpp
   ${SRC_DIR}/kernels.hpp
   ${SRC_DIR}/simd_kernels.hpp
-  ${SRC_DIR}/simd_kernels.cpp
   ${SRC_DIR}/matrixKernels.hpp
-  ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/norms.hpp
-  ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.hpp
-  ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.hpp
+  # --- .cpp files ---
+  ${SRC_DIR}/config.cpp
+  ${SRC_DIR}/conversions.cpp
+  ${SRC_DIR}/simd_kernels.cpp
+  ${SRC_DIR}/matrixKernels.cpp
+  ${SRC_DIR}/diaQspGEMM.cpp
+  ${SRC_DIR}/diaQspME.cpp
+  ${SRC_DIR}/diaQkron.cpp
+  ${SRC_DIR}/denseKernels.cpp
+  ${SRC_DIR}/additionKernels.cpp
+  ${SRC_DIR}/reshapeKernels.cpp
+  ${SRC_DIR}/transposeKernels.cpp
+  ${SRC_DIR}/tensordotKernels.cpp
+  ${SRC_DIR}/spmvKernels.cpp
+  ${SRC_DIR}/norms.cpp
+  ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.cpp
 )
 
