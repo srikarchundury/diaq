@@ -34,19 +34,12 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
 
     // tranpose of the diagonals
     if(A->shape.size() == 2) {
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagMap = A->diagonalMap;
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
-
-        std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(A->matrix_shape[1], A->matrix_shape[0]);
-
+        // just change order of dIndices so that x points to -x. without touching realData and imagData, inplace!
+        std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(*A);
         #pragma omp parallel for
-        for(unsigned int i = 0; i < diagMap.size(); i++) {
-            auto it = std::next(diagMap.begin(), i);
-            std::shared_ptr<diagonal> newDiag = it->second->copy();
-            res->addDiagonal(-1 * it->second->dIndex, newDiag);
+        for(size_t d = 0; d < A->dIndices.size(); d++) {
+            res->dIndices[d] = -A->dIndices[d];
         }
-
-        return res;
     }
     // otherwise, we have to do a lot of work
     // shape of result
@@ -73,67 +66,26 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > newDiagMap;
-    // TODO: allocate for all possible diaognal indices and it's lengths. To paralleize later.
-    // std::shared_ptr<diaQMatrix> res = new diaQMatrix(newDiagMap, &new_shape, new_tensor_shape);
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(newDiagMap, new_shape, new_tensor_shape);
-    // iterate over all diagonals
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > diagonalMap = A->diagonalMap;
-
-    // #pragma omp parallel for
-    // for(int i = -1 * res->matrix_shape[0]; i < res->matrix_shape[1]; i++) {
-    //     res->createDiagonal(i);
-    // }
-
-    #pragma omp parallel
-    {
-        #pragma omp single
-        for (it = diagonalMap.begin(); it != diagonalMap.end(); it++) {
-
-            #pragma omp task
-            {
-                valType *real_vals = it->second->realValues;
-                valType *imag_vals = it->second->imagValues;
-
-                #pragma omp parallel for
-                for(unsigned int i = 0; i < it->second->dLength; i++) {
-                    // std::cout << "(diagonal_idx, diagonal_pos) = (" << it->first << ", " << i << ")" << std::endl;
-                    // std::cout << "element = " << vals[i] << std::endl;
-                    std::vector<unsigned int> ten_pos = A->getTensorPosition(it->first, i);
-                    // std::cout << "tensor index = (";
-                    // for(unsigned int i = 0; i < ten_pos.size()-1; i++) {
-                    //     std::cout << ten_pos[i] << ",";
-                    // }
-                    // std::cout << ten_pos[ten_pos.size()-1] << ")" << std::endl;
-
-                    // modify ten_pos to perform the transposition using the new_order
-                    std::vector<unsigned int> new_ten_pos(new_order.size(), 1);
-                    #pragma omp parallel for
-                    for(unsigned int i=0; i < new_order.size(); i++) {
-                        new_ten_pos[i] = ten_pos[new_order[i]];
-                    }
-
-                    std::array<int, 2> d_pos = res->getDiagonalPosition(new_ten_pos);
-                    // std::cout << "(new_diagonal_idx, new_diagonal_pos) = (" << d_pos[0] << ", " << d_pos[1] << ")" << std::endl;
-                    unsigned int d_len = getDiagonalLength(d_pos[0], new_shape);
-                    if(real_vals[i] != 0.0 || imag_vals[i] != 0.0) { // to avoid pruning later.
-                        res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
-                    }
-                    // std::cout << " -- " << std::endl;
-                }
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(new_shape, new_tensor_shape);
+    #pragma omp parallel for
+    for (size_t d = 0; d < A->dIndices.size(); ++d) {
+        int dIdx = A->dIndices[d];
+        unsigned int len = A->getDiagonalLengthInternal(dIdx);
+        valType* realA = A->realData + A->diagOffsets[d];
+        valType* imagA = A->imagData + A->diagOffsets[d];
+        for (unsigned int i = 0; i < len; i++) {
+            std::vector<unsigned int> ten_pos = A->getTensorPosition(dIdx, i);
+            std::vector<unsigned int> new_ten_pos(new_order.size(), 1);
+            for(unsigned int j=0; j < new_order.size(); j++) {
+                new_ten_pos[j] = ten_pos[new_order[j]];
+            }
+            std::array<int, 2> d_pos = res->getDiagonalPosition(new_ten_pos);
+            unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
+            if(realA[i] != 0.0 || imagA[i] != 0.0) {
+                std::array<unsigned int, 2> mat_pos = res->getMatrixPosition(d_pos[0], d_pos[1]);
+                res->set(mat_pos[0], mat_pos[1], realA[i], imagA[i]);
             }
         }
-    }
-
-    // setting dIndices and dPointers
-    res->dIndices.resize(res->diagonalMap.size());
-    res->dPointers.resize(res->diagonalMap.size());
-    #pragma omp parallel for
-    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
-        auto it = std::next(res->diagonalMap.begin(), i);
-        res->dIndices[i] = it->first;
-        res->dPointers[i] = it->second;
     }
 
     return res;

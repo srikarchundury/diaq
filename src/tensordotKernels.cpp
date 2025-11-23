@@ -7,7 +7,6 @@
 namespace diaq {
 
 std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) {
-    // start timer
     // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
     // std::cout << "--" << std::endl;
@@ -36,87 +35,61 @@ std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared
     // printf("res matrix shape\n");
     // res->print_shape();
 
-    // element by element tensordot multiplication, inspired from COO format
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapB = B->diagonalMap;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA, itB;
-    #pragma omp parallel
-    {
-        #pragma omp single
-        {
-            for (itA = mapA.begin(); itA != mapA.end(); itA++) {
-                #pragma omp task
-                {
-                    std::shared_ptr<diagonal> diagA = itA->second;
-                    valType *real_vals_A = diagA->realValues;
-                    valType *imag_vals_A = diagA->imagValues;
-                    // #pragma omp parallel for
-                    for(unsigned int diagA_pos = 0; diagA_pos < diagA->dLength; diagA_pos++) {
-                        std::vector<unsigned int> ten_pos_A = A->getTensorPosition(itA->first, diagA_pos);
-                        // #pragma omp single
-                        // {
-                            for (itB = mapB.begin(); itB != mapB.end(); itB++) {
-                                #pragma omp task
-                                {
-                                    std::shared_ptr<diagonal> diagB = itB->second;
-                                    valType *real_vals_B = diagB->realValues;
-                                    valType *imag_vals_B = diagB->imagValues;
-                                    #pragma omp parallel for
-                                    for(unsigned int diagB_pos = 0; diagB_pos < diagB->dLength; diagB_pos++) {
-                                        std::vector<unsigned int> ten_pos_B = B->getTensorPosition(itB->first, diagB_pos);
-                                        // if the common axes
-                                        if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
-                                            // print ten_pos_A and ten_pos_B
-                                            // printf("ten_pos_A = (");
-                                            // for (int i = 0; i < ten_pos_A.size() - 1; i++) {
-                                            //     printf("%ld, ", ten_pos_A[i]);
-                                            // }
-                                            // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
-                                            // printf("ten_pos_B = (");
-                                            // for (int i = 0; i < ten_pos_B.size() - 1; i++) {
-                                            //     printf("%ld, ", ten_pos_B[i]);
-                                            // }
-                                            // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
-                                            // Calculate resulting coordinates after contraction
-                                            std::vector<unsigned int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
-                                            // printing result_coords
-                                            // printf("result_coords = (");
-                                            // for (unsigned int i = 0; i < result_coords.size() - 1; i++) {
-                                            //     printf("%ld, ", result_coords[i]);
-                                            // }
-                                            // printf("%ld)\n", result_coords[result_coords.size() - 1]);
-
-                                            // get the diagonal position and length
-                                            std::array<int, 2> res_diag_pos = res->getDiagonalPosition(result_coords);
-                                            unsigned int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
-                                            valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
-                                            valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
-                                            if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
-                                                valType new_real_val = res->getItem_real(res_diag_pos[0], res_diag_pos[1]) + real_val;
-                                                valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
-                                                res->setDiagonalElement(res_diag_pos[0], res_diag_pos[1], res_diag_len, new_real_val, new_imag_val);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+    // Iterate over all diagonals in A and B using new contiguous API
+    for (size_t a = 0; a < A->dIndices.size(); ++a) {
+        int dIndexA = A->dIndices[a];
+        unsigned int offsetA = A->diagOffsets[a];
+        unsigned int dLengthA = A->getDiagonalLengthInternal(dIndexA);
+        valType* real_vals_A = A->realData + offsetA;
+        valType* imag_vals_A = A->imagData + offsetA;
+        for (unsigned int diagA_pos = 0; diagA_pos < dLengthA; ++diagA_pos) {
+            std::vector<unsigned int> ten_pos_A = A->getTensorPosition(dIndexA, diagA_pos);
+            for (size_t b = 0; b < B->dIndices.size(); ++b) {
+                int dIndexB = B->dIndices[b];
+                unsigned int offsetB = B->diagOffsets[b];
+                unsigned int dLengthB = B->getDiagonalLengthInternal(dIndexB);
+                valType* real_vals_B = B->realData + offsetB;
+                valType* imag_vals_B = B->imagData + offsetB;
+                for (unsigned int diagB_pos = 0; diagB_pos < dLengthB; ++diagB_pos) {
+                    std::vector<unsigned int> ten_pos_B = B->getTensorPosition(dIndexB, diagB_pos);
+                    // if the common axes
+                    if (ten_pos_A[axes[0][0]] == ten_pos_B[axes[1][0]]) {
+                        // print ten_pos_A and ten_pos_B
+                        // printf("ten_pos_A = (");
+                        // for (int i = 0; i < ten_pos_A.size() - 1; i++) {
+                        //     printf("%ld, ", ten_pos_A[i]);
                         // }
+                        // printf("%ld)\n", ten_pos_A[ten_pos_A.size() - 1]);
+                        // printf("ten_pos_B = (");
+                        // for (int i = 0; i < ten_pos_B.size() - 1; i++) {
+                        //     printf("%ld, ", ten_pos_B[i]);
+                        // }
+                        // printf("%ld)\n", ten_pos_B[ten_pos_B.size() - 1]);
+                        // Calculate resulting coordinates after contraction
+                        std::vector<unsigned int> result_coords = getTenPos(ten_pos_A, ten_pos_B, axes[0], axes[1], A->shape, B->shape);
+                        // printing result_coords
+                        // printf("result_coords = (");
+                        // for (unsigned int i = 0; i < result_coords.size() - 1; i++) {
+                        //     printf("%ld, ", result_coords[i]);
+                        // }
+                        // printf("%ld)\n", result_coords[result_coords.size() - 1]);
+
+                        // get the diagonal position and length
+                        std::array<int, 2> res_diag_pos = res->getDiagonalPosition(result_coords);
+                        unsigned int res_diag_len = res->getDiagonalLength(res_diag_pos[0]);
+                        valType real_val = real_vals_A[diagA_pos] * real_vals_B[diagB_pos] - imag_vals_A[diagA_pos] * imag_vals_B[diagB_pos];
+                        valType imag_val = real_vals_A[diagA_pos] * imag_vals_B[diagB_pos] + imag_vals_A[diagA_pos] * real_vals_B[diagB_pos];
+                        if(real_val != 0.0 || imag_val != 0.0) { // to avoid pruning later.
+                            valType new_real_val = res->getItem_real(res_diag_pos[0], res_diag_pos[1]) + real_val;
+                            valType new_imag_val = res->getItem_imag(res_diag_pos[0], res_diag_pos[1]) + imag_val;
+                            res->set(res_diag_pos[0], res_diag_pos[1], new_real_val, new_imag_val);
+                        }
                     }
                 }
             }
         }
     }
-
-    // setting dIndices and dPointers
-    res->dIndices.resize(res->diagonalMap.size());
-    res->dPointers.resize(res->diagonalMap.size());
-    #pragma omp parallel for
-    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
-        auto it = std::next(res->diagonalMap.begin(), i);
-        res->dIndices[i] = it->first;
-        res->dPointers[i] = it->second;
-    }
-
+    // No need to set dIndices or dPointers manually; res uses contiguous API
     return res;
 }
 
@@ -124,8 +97,6 @@ std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::share
     // // start timer
     // std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 
-    A->balance(); // to make sure x and y dims are balanced in the underlying matrix format
-    B->balance(); // to make sure x and y dims are balanced in the underlying matrix format
 
     std::cout << "--" << std::endl;
     std::cout << "tensordot called for A - " << std::endl;

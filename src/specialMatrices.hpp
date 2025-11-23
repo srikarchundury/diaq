@@ -23,8 +23,11 @@ class identityMatrix : public diaQMatrix {
 				imag[i] = (valType)0.0;
 			}
 
-			std::shared_ptr<diagonal> d = std::make_shared<diagonal>(0, s, real, imag);
-			this->setDiagonal(0, d);
+			// Use new contiguous storage API
+			this->dIndices = std::vector<int>{0};
+			this->diagOffsets = std::vector<unsigned int>{0};
+			this->realData = real;
+			this->imagData = imag;
 		}
 };
 
@@ -47,7 +50,12 @@ class permutationMatrix : public diaQMatrix {
 			}
 			std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(s, real);
 			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ();
-			this->diagonalMap = qs->diagonalMap;
+			// Copy new API fields
+			this->dIndices = qs->dIndices;
+			this->diagOffsets = qs->diagOffsets;
+			// No need to set diagLengths; use getDiagonalLengthInternal
+			this->realData = qs->realData;
+			this->imagData = qs->imagData;
 			this->matrix_shape = qs->matrix_shape;
 			this->shape = qs->shape;
 		}

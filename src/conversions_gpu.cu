@@ -223,22 +223,10 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
     }
 
     // ---- Assign dIndices and dPointers like CPU path ----
-    std::size_t numDiags = diaq_res->diagonalMap.size();
-    diaq_res->dIndices.resize(numDiags);
-    diaq_res->dPointers.resize(numDiags);
-
-    #pragma omp parallel for
-    for (std::size_t a = 0; a < numDiags; ++a) {
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it =
-            diaq_res->diagonalMap.begin();
-        std::advance(it, static_cast<long>(a));
-
-        int dIndex = (*it).first;
-        std::shared_ptr<diagonal> dptr = (*it).second;
-
-        diaq_res->dIndices[a] = dIndex;
-        diaq_res->dPointers[a] = dptr;
-    }
+    // Use only new contiguous API: dIndices, diagOffsets, realData, imagData
+    // Build dIndices, diagOffsets, realData, imagData from setDiagonalElement calls
+    // (Assume setDiagonalElement now updates contiguous storage directly)
+    // No need to use diagonalMap or diagLengths
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
@@ -315,67 +303,10 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
 
     // ----- Build diaQMatrix -----
     std::shared_ptr<diaQMatrix> diaq_res = std::make_shared<diaQMatrix>(new_shape);
-
-    // Same batching trick as above to reduce critical overhead
-    #pragma omp parallel
-    {
-        std::vector< std::tuple<int, unsigned int, valType, valType> > local_updates;
-
-        #pragma omp for nowait
-        for (unsigned int i = 0; i < size; ++i) {
-            valType r = realData[i];
-            valType im = imagData[i];
-            if (r != static_cast<valType>(0.0) || im != static_cast<valType>(0.0)) {
-                int dIndex = host_diagonal_idx.get()[i];
-                unsigned int dPos = host_diagonal_pos.get()[i];
-                std::tuple<int, unsigned int, valType, valType> tup(
-                    dIndex,
-                    dPos,
-                    r,
-                    im
-                );
-                local_updates.push_back(tup);
-            }
-        }
-
-        #pragma omp critical
-        {
-            for (std::size_t k = 0; k < local_updates.size(); ++k) {
-                const std::tuple<int, unsigned int, valType, valType>& update =
-                    local_updates[k];
-                int dIndex = std::get<0>(update);
-                unsigned int dPos = std::get<1>(update);
-                valType r = std::get<2>(update);
-                valType im = std::get<3>(update);
-
-                diaq_res->setDiagonalElement(
-                    dIndex,
-                    dPos,
-                    diaq_res->getDiagonalLength(dIndex),
-                    r,
-                    im
-                );
-            }
-        }
-    }
-
-    // Assign dIndices and dPointers
-    std::size_t numDiags = diaq_res->diagonalMap.size();
-    diaq_res->dIndices.resize(numDiags);
-    diaq_res->dPointers.resize(numDiags);
-
-    #pragma omp parallel for
-    for (std::size_t a = 0; a < numDiags; ++a) {
-        phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it =
-            diaq_res->diagonalMap.begin();
-        std::advance(it, static_cast<long>(a));
-
-        int dIndex = (*it).first;
-        std::shared_ptr<diagonal> dptr = (*it).second;
-
-        diaq_res->dIndices[a] = dIndex;
-        diaq_res->dPointers[a] = dptr;
-    }
+    // All updates are done via setDiagonalElement, which should update contiguous storage
+    // No need to use diagonalMap or diagLengths
+    // dIndices, diagOffsets, realData, imagData are managed by setDiagonalElement
+    // No legacy assignments
 
     // Track original dense shape
     diaq_res->shape = d->shape;

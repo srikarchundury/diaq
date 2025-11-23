@@ -57,6 +57,7 @@ include(CheckCXXCompilerFlag)
 set(SRC_DIR   ${CMAKE_SOURCE_DIR}/src)
 set(INC_DIR   ${CMAKE_SOURCE_DIR}/include)
 set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
+set(CPP_TESTS_DIR ${CMAKE_SOURCE_DIR}/cpp_tests)
 
 set(PHMAP_DIR   ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
 add_subdirectory(${PHMAP_DIR}) # header-only but fine to add; keep consistent
@@ -338,7 +339,19 @@ endif()
 
 # ===== Tests (optional) =====
 if(MAKE_TESTS)
-  add_executable(tests ${TESTS_DIR}/tests.cpp)
+  file(GLOB CPP_TEST_SOURCES
+      ${CPP_TESTS_DIR}/*.cpp
+  )
+  add_executable(tests
+      ${CPP_TEST_SOURCES}
+  )
+  # Set output directory based on build type
+  if(CUDA_ENABLED)
+    set(TEST_BIN_DIR ${CMAKE_SOURCE_DIR}/gpu_build/bin)
+  else()
+    set(TEST_BIN_DIR ${CMAKE_SOURCE_DIR}/cpu_build/bin)
+  endif()
+  set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN_DIR})
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
   # mirror OpenMP compile flags for tests too (header pragmas)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

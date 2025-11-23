@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script is used to list all the tests in the tests.cpp file, something for my convenience, later I shall write a testing framework to automate this process
 
-file = "tests/tests.cpp"
+file = "./test_main.cpp"
 print("\n-- List of Tests --\n")
 
 # read this file
@@ -15,7 +15,7 @@ with open(file, 'r') as f:
 			try:
 				deets = line.split('"')
 				test_name = deets[1]
-				print(f"./cpu_build/bin/tests {test_name}")
+				print(f"./bin/tests {test_name}")
 			except:
 				continue
 

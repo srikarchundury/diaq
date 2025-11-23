@@ -20,122 +20,34 @@ PYBIND11_MODULE(diaq, m) {
     m.doc() = "get C++ version"; // optional module docstring
     m.def("version", &version, "function returns the underneath C++ version");
 
-    // diaq::diagonal class and its routines
-    py::class_<diaq::diagonal, std::shared_ptr<diaq::diagonal>>(m, "diagonal")
-        .def(py::init<unsigned int>())
-        .def_readwrite("dIndex", &diaq::diagonal::dIndex)
-        .def_readwrite("dLength", &diaq::diagonal::dLength)
-        .def("setValue", &diaq::diagonal::setValue, py::return_value_policy::automatic)
-        .def("getValue", &diaq::diagonal::getValue, py::return_value_policy::automatic)
-        .def("print", &diaq::diagonal::print, py::return_value_policy::automatic)
-        .def("getCoords", &diaq::diagonal::getCoords, py::return_value_policy::automatic)
-        .def("getDIndex", &diaq::diagonal::getDIndex, py::return_value_policy::automatic)
-        .def("numNonZeros", &diaq::diagonal::numNonZeros, py::return_value_policy::automatic)
-		.def("__getitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos) -> std::complex<diaq::valType> {
-            if (d_pos >= self->dLength)
-                throw std::out_of_range("Index out of range");
-            return std::complex<diaq::valType>(self->realValues[d_pos], self->imagValues[d_pos]);
-        }, py::return_value_policy::automatic)
-        .def("__setitem__", [](std::shared_ptr<diaq::diagonal> self, unsigned int d_pos, const std::complex<diaq::valType>& val) {
-            if (d_pos >= self->dLength)
-                throw std::out_of_range("Index out of range");
-            self->realValues[d_pos] = val.real();
-            self->imagValues[d_pos] = val.imag();
-        })
-		.def("scale_by_imag", &diaq::diagonal::scale_by_imag, py::return_value_policy::automatic)
-		.def("scale_by_real", &diaq::diagonal::scale_by_real, py::return_value_policy::automatic)
-	;
 
-    // diaq::diaQMatrix class
     py::class_<diaq::diaQMatrix, std::shared_ptr<diaq::diaQMatrix>>(m, "diaQMatrix")
-        .def(py::init<phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal>>, unsigned int>())
-        .def_readwrite("matrix_shape", &diaq::diaQMatrix::matrix_shape)
-        .def_readwrite("shape", &diaq::diaQMatrix::shape)
-        .def("createDiagonal", &diaq::diaQMatrix::createDiagonal, py::return_value_policy::automatic)
-        .def("print", &diaq::diaQMatrix::print, py::return_value_policy::automatic)
-        .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::automatic)
-        .def("getDiagonal", &diaq::diaQMatrix::getDiagonal, py::return_value_policy::automatic)
-        .def("setDiagonal", &diaq::diaQMatrix::setDiagonal, py::return_value_policy::automatic)
-        .def("setDiagonalElement", &diaq::diaQMatrix::setDiagonalElement, py::return_value_policy::automatic) 
-        .def("addDiagonal", &diaq::diaQMatrix::addDiagonal, py::return_value_policy::automatic)
-        .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::automatic)
-        .def("delete_diagonal", &diaq::diaQMatrix::delete_diagonal, py::return_value_policy::automatic)
-        .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::automatic)
-        .def("flatten", &diaq::diaQMatrix::flatten, py::return_value_policy::automatic)
-        .def("num_diags", &diaq::diaQMatrix::num_diags, py::return_value_policy::automatic)
-        .def("multiplyVector", &diaq::diaQMatrix::multiplyVector, py::return_value_policy::automatic)
-        .def("multiplyScalar", &diaq::diaQMatrix::multiplyScalar, py::return_value_policy::automatic)
-        .def("isEqualTo", &diaq::diaQMatrix::isEqualTo, py::return_value_policy::automatic)
-        .def("estimate_1norm", &diaq::diaQMatrix::estimate_1norm, py::return_value_policy::automatic)
-        // operator bindings
-        .def("__mul__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
-            return diaq::product(a, b);
-        }, py::is_operator())
-        .def("__add__", [](std::shared_ptr<diaq::diaQMatrix> a, std::shared_ptr<diaq::diaQMatrix> b){
-            return diaq::add(a, b);
-		}, py::is_operator())
-		.def("__getitem__", [](std::shared_ptr<diaq::diaQMatrix> self, int dIndex) -> std::shared_ptr<diaq::diagonal> {
-			return (*self)[dIndex];
-		}, py::return_value_policy::automatic)
-
-        .def(
-            "get_diagonals",
-            [](std::shared_ptr<diaq::diaQMatrix> self) { return self->getDiagonals(); },
-            py::return_value_policy::automatic
-        )
-		// .def("convertToDenseMatrix", &diaq::diaQMatrix::convertToDenseMatrix, py::return_value_policy::automatic)
-        .def(
-            "convertToDenseMatrix",
-            [](std::shared_ptr<diaq::diaQMatrix> self) { return self->convertToDenseMatrix(); },
-            py::return_value_policy::automatic
-        )
-        .def( // overload
-            "convertToDenseMatrix",
-            [](std::shared_ptr<diaq::diaQMatrix> self, std::array<unsigned int, 2> matrix_shape) { return self->convertToDenseMatrix(matrix_shape); },
-            py::arg(),
-            py::return_value_policy::automatic
-        )
-        .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::automatic)
-        .def(
-            "matrix_reshape",
-            [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
-                py::buffer_info shape_info = shape.request();
-                std::array<unsigned int, 2> shape_ptr;
-                std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
-                return self->matrix_reshape(shape_ptr);
-            },
-            py::arg(),
-            py::return_value_policy::automatic
-        )
-        .def(
-            "transpose",
-            [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); },
-            py::arg(),
-            py::return_value_policy::automatic
-        )
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int)>(&diaq::diaQMatrix::getItem), py::return_value_policy::automatic)
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::array<unsigned int, 2>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::automatic)
-        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::vector<unsigned int>)>(&diaq::diaQMatrix::getItem), py::return_value_policy::automatic)
-        .def(
-            "getMatrixPosition",
-            [](std::shared_ptr<diaq::diaQMatrix> self, int diagonal_idx, unsigned int diagonal_pos) {
-                return self->getMatrixPosition(diagonal_idx, diagonal_pos);
-            },
-            py::arg("diagonal_idx"),
-            py::arg("diagonal_pos"),
-            py::return_value_policy::automatic
-        )
-        .def(
-            "addMatrixScaled",
-            [](std::shared_ptr<diaq::diaQMatrix> self, std::shared_ptr<diaq::diaQMatrix> B, diaq::valType real_scale_factor, diaq::valType imag_scale_factor) {
-                return self->addMatrixScaled(B, real_scale_factor, imag_scale_factor);
-            },
-            py::arg("B"),
-            py::arg("real_scale_factor"),
-            py::arg("imag_scale_factor"),
-            py::return_value_policy::automatic
-        )
-        ;
+        .def(py::init<unsigned int>())
+        .def(py::init<unsigned int, unsigned int>())
+        .def(py::init<std::array<unsigned int, 2>>())
+        .def(py::init<std::array<unsigned int, 2>, const std::vector<int>&>())
+        .def(py::init<std::array<unsigned int, 2>, const std::vector<int>&, std::vector<unsigned int>>())
+        .def("get_diagonals", &diaq::diaQMatrix::getDiagonals, py::return_value_policy::reference)
+        .def("convertToDenseMatrix", py::overload_cast<>(&diaq::diaQMatrix::convertToDenseMatrix), py::return_value_policy::reference)
+        .def("convertToDenseMatrix", py::overload_cast<std::array<unsigned int, 2>>(&diaq::diaQMatrix::convertToDenseMatrix), py::arg(), py::return_value_policy::reference)
+        .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
+        .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
+            py::buffer_info shape_info = shape.request();
+            std::array<unsigned int, 2> shape_ptr;
+            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
+            return self->matrix_reshape(shape_ptr);
+        }, py::arg(), py::return_value_policy::reference)
+        .def("transpose", [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); }, py::arg(), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int) const>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(std::array<unsigned int, 2>) const>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(const std::vector<unsigned int>&) const>(&diaq::diaQMatrix::getItem), py::return_value_policy::reference)
+        .def("getMatrixPosition", [](std::shared_ptr<diaq::diaQMatrix> self, int diagonal_idx, unsigned int diagonal_pos) {
+            return self->getMatrixPosition(diagonal_idx, diagonal_pos);
+        }, py::arg("diagonal_idx"), py::arg("diagonal_pos"), py::return_value_policy::reference)
+        .def("addMatrixScaled", [](std::shared_ptr<diaq::diaQMatrix> self, std::shared_ptr<diaq::diaQMatrix> B, diaq::valType real_scale_factor, diaq::valType imag_scale_factor) {
+            return self->addMatrixScaled(B, real_scale_factor, imag_scale_factor);
+        }, py::arg("B"), py::arg("real_scale_factor"), py::arg("imag_scale_factor"), py::return_value_policy::reference)
+    ;
 
     // // diaq::zeroMatrix class
     // py::class_<diaq::zeroMatrix, diaq::diaQMatrix, std::shared_ptr<diaq::zeroMatrix>>(m, "zeroMatrix")
@@ -153,15 +65,15 @@ PYBIND11_MODULE(diaq, m) {
     py::class_<diaq::vector, std::shared_ptr<diaq::vector>>(m, "vector")
         .def(py::init<unsigned int>())
         .def_readonly("numRows", &diaq::vector::numRows)
-        .def("setValue", &diaq::vector::setValue, py::return_value_policy::automatic)
-        .def("print", &diaq::vector::print, py::return_value_policy::automatic)
-        .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::automatic)
-        .def("dagger", &diaq::vector::dagger, py::return_value_policy::automatic)
-        .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::automatic)
-        .def("multiply", &diaq::vector::multiply, py::return_value_policy::automatic)
-        .def("getArray", &diaq::vector::getArray, py::return_value_policy::automatic)
-        .def("copy", &diaq::vector::copy, py::return_value_policy::automatic)
-        .def("isEqualTo", &diaq::vector::isEqualTo, py::return_value_policy::automatic)
+        .def("setValue", &diaq::vector::setValue, py::return_value_policy::reference)
+        .def("print", &diaq::vector::print, py::return_value_policy::reference)
+        .def("print_meta", &diaq::vector::print_meta, py::return_value_policy::reference)
+        .def("dagger", &diaq::vector::dagger, py::return_value_policy::reference)
+        .def("daggerMultiplyReal", &diaq::vector::daggerMultiplyReal, py::return_value_policy::reference)
+        .def("multiply", &diaq::vector::multiply, py::return_value_policy::reference)
+        .def("getArray", &diaq::vector::getArray, py::return_value_policy::reference)
+        .def("copy", &diaq::vector::copy, py::return_value_policy::reference)
+        .def("isEqualTo", &diaq::vector::isEqualTo, py::return_value_policy::reference)
         ;
 
     // diaq::denseMatrix class
@@ -170,35 +82,35 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<unsigned int, diaq::valType *, diaq::valType *>())
         .def_readwrite("matrix_shape", &diaq::denseMatrix::matrix_shape)
         .def_readwrite("shape", &diaq::denseMatrix::shape)
-        .def("getItem", &diaq::denseMatrix::getItem, py::return_value_policy::automatic)
-        .def("set", &diaq::denseMatrix::set, py::return_value_policy::automatic)
-        .def("get", &diaq::denseMatrix::get, py::return_value_policy::automatic)
-        .def("print", &diaq::denseMatrix::print, py::return_value_policy::automatic)
-        .def("isPartOf", &diaq::denseMatrix::isPartOf, py::return_value_policy::automatic)
-        .def("sparsity", &diaq::denseMatrix::sparsity, py::return_value_policy::automatic)
+        .def("getItem", &diaq::denseMatrix::getItem, py::return_value_policy::reference)
+        .def("set", &diaq::denseMatrix::set, py::return_value_policy::reference)
+        .def("get", &diaq::denseMatrix::get, py::return_value_policy::reference)
+        .def("print", &diaq::denseMatrix::print, py::return_value_policy::reference)
+        .def("isPartOf", &diaq::denseMatrix::isPartOf, py::return_value_policy::reference)
+        .def("sparsity", &diaq::denseMatrix::sparsity, py::return_value_policy::reference)
         
         .def(
             "convertToDiaQ",
             [](std::shared_ptr<diaq::denseMatrix> self, std::vector<unsigned int> shape) { return self->convertToDiaQ(shape); },
             py::arg(),
-            py::return_value_policy::automatic
+            py::return_value_policy::reference
         )
         .def(
             "convertToDiaQ",
             [](std::shared_ptr<diaq::denseMatrix> self, std::array<unsigned int, 2> matrix_shape) { return self->convertToDiaQ(matrix_shape); },
             py::arg(),
-            py::return_value_policy::automatic
+            py::return_value_policy::reference
         )
         .def( // overload
             "convertToDiaQ",
             [](std::shared_ptr<diaq::denseMatrix> self) { return self->convertToDiaQ(); },
-            py::return_value_policy::automatic
+            py::return_value_policy::reference
         )
         ;
     
         // Functions
         // conversion from numpy
-        // m.def("from_numpy", &diaq::from_numpy, py::return_value_policy::automatic);
+        // m.def("from_numpy", &diaq::from_numpy, py::return_value_policy::reference);
         m.def(
         "from_numpy",
             [](py::array_t<std::complex<diaq::valType>> vals, std::vector<unsigned int> shape) {
@@ -215,7 +127,7 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
     
         m.def(
@@ -235,7 +147,7 @@ PYBIND11_MODULE(diaq, m) {
             return res;
         },
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
 
         // m.def(
@@ -245,7 +157,7 @@ PYBIND11_MODULE(diaq, m) {
         //         return diaq::from_sparse_pauli_op(sparse_pauli_op);
         //     },
         //     py::arg(),
-        //     py::return_value_policy::automatic
+        //     py::return_value_policy::reference
         // );
 
         m.def(
@@ -258,7 +170,7 @@ PYBIND11_MODULE(diaq, m) {
             return res;
         },
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
 
         m.def(
@@ -270,7 +182,7 @@ PYBIND11_MODULE(diaq, m) {
                     res.data()
                 );
             },
-            py::return_value_policy::automatic
+            py::return_value_policy::reference
         );
 
         m.def(
@@ -280,35 +192,35 @@ PYBIND11_MODULE(diaq, m) {
             return py::array_t<std::complex<diaq::valType>>(v->numRows, res.data());
         },
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
     
         // kernel functions
-        m.def("product", &diaq::product, py::return_value_policy::automatic);
-        m.def("denseProduct", &diaq::denseProduct, py::return_value_policy::automatic);
-        m.def("add", &diaq::add, py::return_value_policy::automatic);
-        m.def("trace", &diaq::trace, py::return_value_policy::automatic);
-        m.def("reshape", &diaq::reshape, py::return_value_policy::automatic);
+        m.def("product", &diaq::product, py::return_value_policy::reference);
+        m.def("denseProduct", &diaq::denseProduct, py::return_value_policy::reference);
+        m.def("add", &diaq::add, py::return_value_policy::reference);
+        m.def("trace", &diaq::trace, py::return_value_policy::reference);
+        m.def("reshape", &diaq::reshape, py::return_value_policy::reference);
         m.def(
         "matrix_reshape",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned int> shape) {
-            auto shape_info = shape.request();
+            py::buffer_info shape_info = shape.request();
             std::array<unsigned int, 2> shape_ptr;
             std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
             return diaq::matrix_reshape(A, shape_ptr);
         },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
-        m.def("array", &diaq::array, py::return_value_policy::automatic);
+        m.def("array", &diaq::array, py::return_value_policy::reference);
         m.def(
         "tensordot",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B, std::vector<std::vector<unsigned int> > axes) { return diaq::tensordot(A, B, axes); },
         py::arg(),
         py::arg(),
         py::arg("axes") = std::vector<unsigned int>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
         );
 
     // overloading tensordot for quimb to work with contegra (seems like opt_einsum is not called now, with latest quimb)
@@ -316,13 +228,13 @@ PYBIND11_MODULE(diaq, m) {
         "tensordot",
         [](py::array_t<std::complex<diaq::valType>> arr1, py::array_t<std::complex<diaq::valType>> arr2, std::vector<std::vector<unsigned int>> axes) {
             // Convert arr1 to diaq::diaQMatrix
-            auto arr1_info = arr1.request();
+            py::buffer_info arr1_info = arr1.request();
             std::vector<unsigned int> shape1(arr1_info.shape.begin(), arr1_info.shape.end());
             std::complex<diaq::valType>* arr1_ptr = static_cast<std::complex<diaq::valType>*>(arr1_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat1 = diaq::from_numpy(arr1_ptr, shape1);
 
             // Convert arr2 to diaq::diaQMatrix
-            auto arr2_info = arr2.request();
+            py::buffer_info arr2_info = arr2.request();
             std::vector<unsigned int> shape2(arr2_info.shape.begin(), arr2_info.shape.end());
             std::complex<diaq::valType>* arr2_ptr = static_cast<std::complex<diaq::valType>*>(arr2_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat2 = diaq::from_numpy(arr2_ptr, shape2);
@@ -335,7 +247,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("arr1"),
         py::arg("arr2"),
         py::arg("axes") = std::vector<std::vector<unsigned int>>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     // Overload for tensordot where first argument is diaQMatrix and second is NumPy array
@@ -343,7 +255,7 @@ PYBIND11_MODULE(diaq, m) {
         "tensordot",
         [](std::shared_ptr<diaq::diaQMatrix> mat, py::array_t<std::complex<diaq::valType>> arr, std::vector<std::vector<unsigned int>> axes) {
             // Convert the NumPy array to diaQMatrix
-            auto arr_info = arr.request();
+            py::buffer_info arr_info = arr.request();
             std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat_arr = diaq::from_numpy(arr_ptr, shape);
@@ -356,7 +268,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("mat"),
         py::arg("arr"),
         py::arg("axes") = std::vector<std::vector<unsigned int>>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     // Overload for tensordot where first argument is NumPy array and second is diaQMatrix
@@ -364,7 +276,7 @@ PYBIND11_MODULE(diaq, m) {
         "tensordot",
         [](py::array_t<std::complex<diaq::valType>> arr, std::shared_ptr<diaq::diaQMatrix> mat, std::vector<std::vector<unsigned int>> axes) {
             // Convert the NumPy array to diaQMatrix
-            auto arr_info = arr.request();
+            py::buffer_info arr_info = arr.request();
             std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat_arr = diaq::from_numpy(arr_ptr, shape);
@@ -377,7 +289,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("arr"),
         py::arg("mat"),
         py::arg("axes") = std::vector<std::vector<unsigned int>>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -385,7 +297,7 @@ PYBIND11_MODULE(diaq, m) {
         [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned int> new_order) { return diaq::transpose(A, new_order); },
         py::arg(),
         py::arg("axes") = std::vector<unsigned int>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     // New overload for transpose with NumPy array as input
@@ -393,7 +305,7 @@ PYBIND11_MODULE(diaq, m) {
         "transpose",
         [](py::array_t<std::complex<diaq::valType>> arr, std::vector<unsigned int> new_order) {
             // Convert the NumPy array to diaQMatrix
-            auto arr_info = arr.request();
+            py::buffer_info arr_info = arr.request();
             std::vector<unsigned int> shape(arr_info.shape.begin(), arr_info.shape.end());
             std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
             std::shared_ptr<diaq::diaQMatrix> mat = diaq::from_numpy(arr_ptr, shape);
@@ -405,7 +317,7 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg("arr"),
         py::arg("axes") = std::vector<unsigned int>{},
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -413,7 +325,7 @@ PYBIND11_MODULE(diaq, m) {
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B) { return diaq::kron_product(A, B); },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -421,7 +333,7 @@ PYBIND11_MODULE(diaq, m) {
         [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int size) { return diaq::matrix_kron_identity(A, size); },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -429,7 +341,7 @@ PYBIND11_MODULE(diaq, m) {
         [](unsigned int size, std::shared_ptr<diaq::diaQMatrix> A) { return diaq::identity_kron_matrix(size, A); },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -438,7 +350,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -448,7 +360,7 @@ PYBIND11_MODULE(diaq, m) {
         },
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
     
     m.def(
@@ -460,7 +372,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
     
     // m.def(
@@ -468,7 +380,7 @@ PYBIND11_MODULE(diaq, m) {
     //     [](std::shared_ptr<diaq::diaQMatrix> A, std::vector<unsigned int> axes) { return diaq::einsum(A, axes); },
     //     py::arg(),
     //     py::arg("axes"),
-    //     py::return_value_policy::automatic
+    //     py::return_value_policy::reference
     // );
     
     m.def(
@@ -477,7 +389,7 @@ PYBIND11_MODULE(diaq, m) {
         py::arg(),
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     m.def(
@@ -489,19 +401,19 @@ PYBIND11_MODULE(diaq, m) {
         py::arg("A"), py::arg("t"),
         py::arg("max_iterations") = 100,
         py::arg("scale_cutoff")   = 1.0,
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     // mixed kernels! dense times sparse and sparse times dense
     m.def(
         "dq_times_np",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<std::complex<diaq::valType>> arr) {
-            auto arr_info = arr.request();
+            py::buffer_info arr_info = arr.request();
             size_t rows_B = arr_info.shape[0], cols_B = arr_info.shape[1];
-            auto arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
     
             py::array_t<std::complex<diaq::valType>> result({rows_B, cols_B});
-            auto result_ptr = static_cast<std::complex<diaq::valType>*>(result.request().ptr);
+            std::complex<diaq::valType>* result_ptr = static_cast<std::complex<diaq::valType>*>(result.request().ptr);
             std::fill(result_ptr, result_ptr + (rows_B * cols_B), std::complex<diaq::valType>(0, 0));
     
             #pragma omp parallel for collapse(2)
@@ -517,23 +429,19 @@ PYBIND11_MODULE(diaq, m) {
                     // }
     
                     // Prefetch diagonal values (we'll assume the diagonals are relatively small)
-                    for (const auto& diag_pair : A->diagonalMap) {
-                        int diag_index = diag_pair.first;
-                        auto diag = diag_pair.second;
-                        
-                        #pragma omp parallel for
-                        for (unsigned int j = 0; j < diag->dLength; j++) {
-                            // _mm_prefetch(reinterpret_cast<const char*>(&diag->realValues[j]), _MM_HINT_T0); // Prefetch diagonal real values
-                            // _mm_prefetch(reinterpret_cast<const char*>(&diag->imagValues[j]), _MM_HINT_T0); // Prefetch diagonal imag values
-    
-                            auto mat_coords = A->getMatrixPosition(diag_index, j);
+                    for (size_t a = 0; a < A->dIndices.size(); a++) {
+                        int diag_index = A->dIndices[a];
+                        unsigned int offset = A->diagOffsets[a];
+                        unsigned int dLength = A->getDiagonalLengthInternal(diag_index);
+                        #pragma omp simd
+                        for (unsigned int j = 0; j < dLength; j++) {
+                            std::array<unsigned int, 2> mat_coords = A->getMatrixPosition(diag_index, j);
                             unsigned int src_row = mat_coords[0], col = mat_coords[1];
-    
                             if (row == src_row) {
-                                std::complex<diaq::valType> arr_val = arr_ptr[col * cols_B + k];                                
+                                std::complex<diaq::valType> arr_val = arr_ptr[col * cols_B + k];
                                 sum += std::complex<diaq::valType>(
-                                    arr_val.real() * diag->realValues[j] - arr_val.imag() * diag->imagValues[j],
-                                    arr_val.real() * diag->imagValues[j] + arr_val.imag() * diag->realValues[j]
+                                    arr_val.real() * A->realData[offset + j] - arr_val.imag() * A->imagData[offset + j],
+                                    arr_val.real() * A->imagData[offset + j] + arr_val.imag() * A->realData[offset + j]
                                 );
                             }
                         }
@@ -543,18 +451,18 @@ PYBIND11_MODULE(diaq, m) {
             }
             return result;
         },
-        py::arg(), py::arg(), py::return_value_policy::automatic
+        py::arg(), py::arg(), py::return_value_policy::reference
     );
     
     m.def(
         "np_times_dq",
         [](py::array_t<std::complex<diaq::valType>> A, std::shared_ptr<diaq::diaQMatrix> B) {
-            auto arr_info = A.request();
+            py::buffer_info arr_info = A.request();
             size_t rows_A = arr_info.shape[0], cols_A = arr_info.shape[1];
-            auto arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
+            std::complex<diaq::valType>* arr_ptr = static_cast<std::complex<diaq::valType>*>(arr_info.ptr);
     
             py::array_t<std::complex<diaq::valType>> result({rows_A, (size_t) B->matrix_shape[1]});
-            auto result_ptr = static_cast<std::complex<diaq::valType>*>(result.request().ptr);
+            std::complex<diaq::valType>* result_ptr = static_cast<std::complex<diaq::valType>*>(result.request().ptr);
             std::fill(result_ptr, result_ptr + (rows_A * B->matrix_shape[1]), std::complex<diaq::valType>(0, 0));
     
             #pragma omp parallel for collapse(2)
@@ -562,24 +470,19 @@ PYBIND11_MODULE(diaq, m) {
                 for (size_t j = 0; j < cols_A; j++) {
                     std::complex<diaq::valType> A_val = arr_ptr[i * cols_A + j];
     
-                    for (const auto& diag_pair : B->diagonalMap) {
-                        int diag_index = diag_pair.first;
-                        auto diag = diag_pair.second;
-
-                        #pragma omp parallel for
-                        for (unsigned int m = 0; m < diag->dLength; m++) {
-                            // Prefetch diagonal values
-                            // _mm_prefetch(reinterpret_cast<const char*>(&diag->realValues[m]), _MM_HINT_T0);
-                            // _mm_prefetch(reinterpret_cast<const char*>(&diag->imagValues[m]), _MM_HINT_T0);
-    
-                            auto mat_coords = B->getMatrixPosition(diag_index, m);
+                    for (size_t b = 0; b < B->dIndices.size(); b++) {
+                        int diag_index = B->dIndices[b];
+                        unsigned int offset = B->diagOffsets[b];
+                        unsigned int dLength = B->getDiagonalLengthInternal(diag_index);
+                        #pragma omp simd
+                        for (unsigned int m = 0; m < dLength; m++) {
+                            std::array<unsigned int, 2> mat_coords = B->getMatrixPosition(diag_index, m);
                             unsigned int sparse_j = mat_coords[0], sparse_k = mat_coords[1];
-    
                             if (j == sparse_j) {
-                                #pragma omp critical
+                                // Atomic pragma removed: not valid inside lambda
                                 result_ptr[i * B->matrix_shape[1] + sparse_k] += std::complex<diaq::valType>(
-                                    A_val.real() * diag->realValues[m] - A_val.imag() * diag->imagValues[m],
-                                    A_val.real() * diag->imagValues[m] + A_val.imag() * diag->realValues[m]
+                                    A_val.real() * B->realData[offset + m] - A_val.imag() * B->imagData[offset + m],
+                                    A_val.real() * B->imagData[offset + m] + A_val.imag() * B->realData[offset + m]
                                 );
                             }
                         }
@@ -588,7 +491,7 @@ PYBIND11_MODULE(diaq, m) {
             }
             return result;
         },
-        py::arg(), py::arg(), py::return_value_policy::automatic
+        py::arg(), py::arg(), py::return_value_policy::reference
     );
 
     m.def(
@@ -596,7 +499,7 @@ PYBIND11_MODULE(diaq, m) {
         &diaq::compare,
         py::arg(),
         py::arg(),
-        py::return_value_policy::automatic
+        py::return_value_policy::reference
     );
 
     // Expose preprocessor #define values (if available) as Python dict

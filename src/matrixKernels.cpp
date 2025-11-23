@@ -6,16 +6,41 @@
 
 namespace diaq {
 
+unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> mat_shape) {
+    unsigned int lenRes;
+    if (dIndex < 0) {
+        lenRes = mat_shape[0] + dIndex;
+    } else if (dIndex > 0) {
+        lenRes = mat_shape[1] - dIndex;
+    } else {
+        if (mat_shape[0] > mat_shape[1]) {
+            lenRes = mat_shape[1];
+        } else {
+            lenRes = mat_shape[0];
+        }
+    }
+    if (lenRes > mat_shape[0]) {
+        lenRes = mat_shape[0];
+    } else if (lenRes > mat_shape[1]) {
+        lenRes = mat_shape[1];
+    }
+    return lenRes;
+}
+
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    itA = mapA.find(0);
-    if(itA == mapA.end()) {
-        return t;
-    }
-    for(unsigned int i=0; i < itA->second->dLength; i++) {
-        t += itA->second->getValue(i);
+    // iterate over diagonal Index 0 only
+    for (size_t d = 0; d < A->dIndices.size(); ++d) {
+        if (A->dIndices[d] == 0) {
+            unsigned int len = A->getDiagonalLengthInternal(0);
+            valType* realA = A->realData + A->diagOffsets[d];
+            valType* imagA = A->imagData + A->diagOffsets[d];
+            #pragma omp parallel for shared(t)
+            for (unsigned int i = 0; i < len; i++) {
+                t += std::complex<valType>(realA[i], imagA[i]);
+            }
+            break;
+        }
     }
     return t;
 }
@@ -192,29 +217,19 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
     result->matrix_shape = A->matrix_shape;
     result->shape = A->shape;
 
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
-
     #pragma omp parallel for
-    for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
-        auto it = std::next(A->diagonalMap.begin(), a);
-        int dIndex = it->first;
-        unsigned int dLength = it->second->dLength;
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
-        // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, dLength);
-        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLength);
-        valType *real_valsC = newDiag->realValues;
-        valType *imag_valsC = newDiag->imagValues;
-
-        #if defined(SIMD_ENABLED)
-        #pragma omp simd
-        #endif
-        for (unsigned int i = 0; i < dLength; i++) {
-            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
-            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+    for (size_t k = 0; k < A->dIndices.size(); ++k) {
+        int dIndex = A->dIndices[k];
+        unsigned int dLength = A->getDiagonalLengthInternal(dIndex);
+        unsigned int offset = A->diagOffsets[k];
+        for (unsigned int i = 0; i < dLength; ++i) {
+            valType real_val = A->realData[offset + i];
+            valType imag_val = A->imagData[offset + i];
+            valType new_real = real_val * scalar_real - imag_val * scalar_imag;
+            valType new_imag = real_val * scalar_imag + imag_val * scalar_real;
+            std::array<unsigned int, 2> mat_pos = result->getMatrixPosition(dIndex, i);
+            result->set(mat_pos[0], mat_pos[1], new_real, new_imag);
         }
-        
-        result->setDiagonal(dIndex, newDiag);
     }
 
     #ifdef DEEP_DEBUG
