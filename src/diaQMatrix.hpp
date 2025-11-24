@@ -786,55 +786,105 @@ public:
 		return C;
 	}
 
-	// In-place A += B (blocked).
+	// In-place A += B (works even if B has diagonals A doesn't).
 	void add(const std::shared_ptr<diaQMatrix> &B) {
-#ifdef DEBUG
-		std::printf("starting add -- ");
-		std::chrono::high_resolution_clock::time_point start =
-			std::chrono::high_resolution_clock::now();
-#endif
-		if (matrix_shape != B->matrix_shape) {
-			throw std::runtime_error("add: matrix shapes do not match");
-		}
-		if (dIndices != B->dIndices) {
-			throw std::runtime_error("add: diagonal index sets do not match");
+		// 1. Sanity check: shapes must match
+		if (matrix_shape[0] != B->matrix_shape[0] ||
+			matrix_shape[1] != B->matrix_shape[1]) {
+			throw std::runtime_error("diaQMatrix::add: shape mismatch");
 		}
 
-#pragma omp parallel for
-		for (size_t k = 0; k < dIndices.size(); k++) {
-			unsigned int len  = getDiagonalLengthInternal(dIndices[k]);
-			unsigned int offA = diagOffsets[k];
-			unsigned int offB = B->diagOffsets[k];
+		#ifdef DEBUG
+			std::printf("starting add -- ");
+			auto start = std::chrono::high_resolution_clock::now();
+		#endif
 
+		// 2. Build the union of diagonal indices from A and B
+		std::vector<int> union_indices;
+		union_indices.reserve(dIndices.size() + B->dIndices.size());
+
+		for (int d : dIndices) {
+			union_indices.push_back(d);
+		}
+		for (int d : B->dIndices) {
+			union_indices.push_back(d);
+		}
+
+		std::sort(union_indices.begin(), union_indices.end());
+		union_indices.erase(std::unique(union_indices.begin(), union_indices.end()),
+							union_indices.end());
+
+		// 3. Create a new matrix C that will hold A + B with all diagonals
+		diaQMatrix C(matrix_shape, union_indices);  // calls initStorage()
+
+		// 4. For each diagonal d in the union, add A(d) + B(d) into C(d)
+		//    (blocked over elements for cache friendliness)
+		std::size_t num_diags = union_indices.size();
+
+		#pragma omp parallel for
+		for (std::size_t k = 0; k < num_diags; ++k) {
+			int d = union_indices[k];
+
+			unsigned int len = C.getDiagonalLengthInternal(d);
+			unsigned int offC = C.diagOffsets[k];
+
+			// Find slots in A and B (may be -1 if diagonal is absent)
+			int slotA = this->findDiagonalSlot(d);
+			int slotB = B->findDiagonalSlot(d);
+
+			valType *aReal = nullptr;
+			valType *aImag = nullptr;
+			valType *bReal = nullptr;
+			valType *bImag = nullptr;
+
+			if (slotA >= 0) {
+				unsigned int offA = this->diagOffsets[slotA];
+				aReal = this->realData + offA;
+				aImag = this->imagData + offA;
+			}
+			if (slotB >= 0) {
+				unsigned int offB = B->diagOffsets[slotB];
+				bReal = B->realData + offB;
+				bImag = B->imagData + offB;
+			}
+
+			// Block over diagonal elements
 			for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
 				unsigned int end_j = j + BLOCK_SIZE;
-				if (end_j > len) {
-					end_j = len;
-				}
-				for (unsigned int t = j; t < end_j; t++) {
-					realData[offA + t] += B->realData[offB + t];
-					imagData[offA + t] += B->imagData[offB + t];
+				if (end_j > len) end_j = len;
+
+				for (unsigned int t = j; t < end_j; ++t) {
+					valType ar = 0.0, ai = 0.0;
+					valType br = 0.0, bi = 0.0;
+
+					if (aReal) { ar = aReal[t]; ai = aImag[t]; }
+					if (bReal) { br = bReal[t]; bi = bImag[t]; }
+
+					C.realData[offC + t] = ar + br;
+					C.imagData[offC + t] = ai + bi;
 				}
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t add took "
-		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-		          << " ms" << std::endl;
-#endif
+		// 5. Move result C back into *this (in-place A = A + B)
+		*this = std::move(C);
+
+		#ifdef DEBUG
+			auto end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t add took "
+					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+					<< " ms" << std::endl;
+		#endif
 	}
 
 	// this *= i * imag
 	std::shared_ptr<diaQMatrix> scale_by_imag(valType imag) {
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int off = diagOffsets[k];
 
-#pragma omp parallel for
+			#pragma omp parallel for
 			for (unsigned int j = 0; j < len; j++) {
 				valType r       = realData[off + j];
 				valType im      = imagData[off + j];
@@ -847,12 +897,12 @@ public:
 
 	// this *= real
 	std::shared_ptr<diaQMatrix> scale_by_real(valType real) {
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int off = diagOffsets[k];
 
-#pragma omp parallel for
+			#pragma omp parallel for
 			for (unsigned int j = 0; j < len; j++) {
 				realData[off + j] *= real;
 				imagData[off + j] *= real;
@@ -863,7 +913,7 @@ public:
 
 	// Divide by integer (blocked).
 	void divide_by_int(int x) {
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int off = diagOffsets[k];
