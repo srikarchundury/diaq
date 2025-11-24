@@ -378,7 +378,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
     // Tile sizes in diagonal-space and element-space.
     // These can be tuned later.
     const unsigned int RES_BLOCK  = 4;      // number of diagonals per tile
-    const unsigned int ELEM_BLOCK = 1024;   // number of elements per tile
+    const unsigned int ELEM_BLOCK = 2048;   // number of elements per tile
 
     unsigned int numResTiles =
         (numRes + RES_BLOCK - 1) / RES_BLOCK;
