@@ -125,19 +125,20 @@ public:
 				imagData(NULL)
 	{
 		if (totalLength > 0) {
-#if VEC_TYPE == -1
-			realData = (valType *)calloc(totalLength, sizeof(valType));
-			imagData = (valType *)calloc(totalLength, sizeof(valType));
-#else
-			realData = aligned_alloc_helper(totalLength * sizeof(valType));
-			imagData = aligned_alloc_helper(totalLength * sizeof(valType));
-#pragma omp parallel for
-			for (unsigned int i = 0; i < totalLength; i++) {
-				realData[i] = 0.0;
-				imagData[i] = 0.0;
-			}
-#endif
-#pragma omp parallel for
+			#if VEC_TYPE == -1
+				realData = (valType *)calloc(totalLength, sizeof(valType));
+				imagData = (valType *)calloc(totalLength, sizeof(valType));
+			#else
+				realData = aligned_alloc_helper(totalLength * sizeof(valType));
+				imagData = aligned_alloc_helper(totalLength * sizeof(valType));
+				// #pragma omp parallel for
+				// for (unsigned int i = 0; i < totalLength; i++) {
+				// 	realData[i] = 0.0;
+				// 	imagData[i] = 0.0;
+				// }
+			#endif
+
+			#pragma omp parallel for
 			for (unsigned int i = 0; i < totalLength; i++) {
 				realData[i] = other.realData[i];
 				imagData[i] = other.imagData[i];
@@ -180,19 +181,20 @@ public:
 		imagData     = NULL;
 
 		if (totalLength > 0) {
-#if VEC_TYPE == -1
-			realData = (valType *)calloc(totalLength, sizeof(valType));
-			imagData = (valType *)calloc(totalLength, sizeof(valType));
-#else
-			realData = aligned_alloc_helper(totalLength * sizeof(valType));
-			imagData = aligned_alloc_helper(totalLength * sizeof(valType));
-#pragma omp parallel for
-			for (unsigned int i = 0; i < totalLength; i++) {
-				realData[i] = 0.0;
-				imagData[i] = 0.0;
-			}
-#endif
-#pragma omp parallel for
+			#if VEC_TYPE == -1
+				realData = (valType *)calloc(totalLength, sizeof(valType));
+				imagData = (valType *)calloc(totalLength, sizeof(valType));
+			#else
+				realData = aligned_alloc_helper(totalLength * sizeof(valType));
+				imagData = aligned_alloc_helper(totalLength * sizeof(valType));
+				// #pragma omp parallel for
+				// for (unsigned int i = 0; i < totalLength; i++) {
+				// 	realData[i] = 0.0;
+				// 	imagData[i] = 0.0;
+				// }
+			#endif
+			
+			#pragma omp parallel for
 			for (unsigned int i = 0; i < totalLength; i++) {
 				realData[i] = other.realData[i];
 				imagData[i] = other.imagData[i];
@@ -228,9 +230,9 @@ public:
 	}
 
 	virtual ~diaQMatrix() {
-#ifdef DEEP_DEBUG
-		std::cout << "diaQMatrix destructor called" << std::endl;
-#endif
+		#ifdef DEEP_DEBUG
+			std::cout << "diaQMatrix destructor called" << std::endl;
+		#endif
 		freeStorage();
 	}
 
@@ -251,36 +253,36 @@ public:
 		// diagonal) and the padded storage length we actually allocate.
 		unsigned int paddedTotal = 0;
 
-#if VEC_TYPE == -1
-		// -------------------- No SIMD: pack diagonals back-to-back --------------------
-		for (size_t k = 0; k < dIndices.size(); k++) {
-			diagOffsets[k] = paddedTotal;
-			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
-			paddedTotal += len;
-		}
-#else
-		// -------------------- SIMD enabled: pad each diagonal start --------------------
-		// VEC_WIDTH is the number of valType's in a SIMD register (e.g., 8 doubles).
-		const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
-
-		for (size_t k = 0; k < dIndices.size(); k++) {
-
-			// Align current paddedTotal to vecWidth elements so that
-			// realData + diagOffsets[k] is NUM_BYTES_ALIGNED-aligned.
-			if (vecWidth > 1U) {
-				unsigned int mod = paddedTotal % vecWidth;
-				if (mod != 0U) {
-					unsigned int padding = vecWidth - mod;
-					paddedTotal += padding;
-				}
+		#if VEC_TYPE == -1
+			// -------------------- No SIMD: pack diagonals back-to-back --------------------
+			for (size_t k = 0; k < dIndices.size(); k++) {
+				diagOffsets[k] = paddedTotal;
+				unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+				paddedTotal += len;
 			}
+		#else
+				// -------------------- SIMD enabled: pad each diagonal start --------------------
+				// VEC_WIDTH is the number of valType's in a SIMD register (e.g., 8 doubles).
+				const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
 
-			diagOffsets[k] = paddedTotal;
+				for (size_t k = 0; k < dIndices.size(); k++) {
 
-			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
-			paddedTotal += len;
-		}
-#endif
+					// Align current paddedTotal to vecWidth elements so that
+					// realData + diagOffsets[k] is NUM_BYTES_ALIGNED-aligned.
+					if (vecWidth > 1U) {
+						unsigned int mod = paddedTotal % vecWidth;
+						if (mod != 0U) {
+							unsigned int padding = vecWidth - mod;
+							paddedTotal += padding;
+						}
+					}
+
+					diagOffsets[k] = paddedTotal;
+
+					unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+					paddedTotal += len;
+				}
+		#endif
 
 		totalLength = paddedTotal;
 
@@ -290,19 +292,19 @@ public:
 			return;
 		}
 
-#if VEC_TYPE == -1
-		realData = (valType *)calloc(totalLength, sizeof(valType));
-		imagData = (valType *)calloc(totalLength, sizeof(valType));
-#else
-		realData = aligned_alloc_helper(totalLength * sizeof(valType));
-		imagData = aligned_alloc_helper(totalLength * sizeof(valType));
+		#if VEC_TYPE == -1
+			realData = (valType *)calloc(totalLength, sizeof(valType));
+			imagData = (valType *)calloc(totalLength, sizeof(valType));
+		#else
+			realData = aligned_alloc_helper(totalLength * sizeof(valType));
+			imagData = aligned_alloc_helper(totalLength * sizeof(valType));
 
-#pragma omp parallel for
-		for (unsigned int i = 0; i < totalLength; i++) {
-			realData[i] = 0.0;
-			imagData[i] = 0.0;
-		}
-#endif
+			#pragma omp parallel for
+			for (unsigned int i = 0; i < totalLength; i++) {
+				realData[i] = 0.0;
+				imagData[i] = 0.0;
+			}
+		#endif
 	}
 
 	void freeStorage() {
@@ -745,11 +747,11 @@ public:
 
 	// A + B -> new matrix (same diag layout).
 	std::shared_ptr<diaQMatrix> addMatrix(const std::shared_ptr<diaQMatrix> &B) const {
-#ifdef DEBUG
-		std::printf("starting addMatrix -- ");
-		std::chrono::high_resolution_clock::time_point start =
+		#ifdef DEBUG
+			std::printf("starting addMatrix -- ");
+			std::chrono::high_resolution_clock::time_point start =
 			std::chrono::high_resolution_clock::now();
-#endif
+		#endif
 		if (matrix_shape != B->matrix_shape) {
 			throw std::runtime_error("addMatrix: matrix shapes do not match");
 		}
@@ -757,36 +759,33 @@ public:
 			throw std::runtime_error("addMatrix: diagonal index sets do not match");
 		}
 
-		std::shared_ptr<diaQMatrix> C =
-			std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
+		std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
 
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len  = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int offA = diagOffsets[k];
 			unsigned int offB = B->diagOffsets[k];
 			unsigned int offC = C->diagOffsets[k];
 
-#if defined(SIMD_ENABLED)
-#pragma omp simd
-#endif
+			#pragma omp simd
 			for (unsigned int j = 0; j < len; j++) {
 				C->realData[offC + j] = realData[offA + j] + B->realData[offB + j];
 				C->imagData[offC + j] = imagData[offA + j] + B->imagData[offB + j];
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t addMatrix took "
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t addMatrix took "
 		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
 		          << " ms" << std::endl;
-#endif
+		#endif
+		
 		return C;
 	}
 
-	// In-place A += B (works even if B has diagonals A doesn't).
+	// A += B
 	void add(const std::shared_ptr<diaQMatrix> &B) {
 		// 1. Sanity check: shapes must match
 		if (matrix_shape[0] != B->matrix_shape[0] ||
@@ -933,11 +932,11 @@ public:
 
 	// Divide by scalar with underflow guard.
 	void divide_by_scalar(valType val) {
-#ifdef DEBUG
-		std::printf("starting divide_by_scalar -- val = %f\n", val);
-		std::chrono::high_resolution_clock::time_point start =
+		#ifdef DEBUG
+			std::printf("starting divide_by_scalar -- val = %f\n", val);
+			std::chrono::high_resolution_clock::time_point start =
 			std::chrono::high_resolution_clock::now();
-#endif
+		#endif
 		if (val == 0.0) {
 			throw std::runtime_error("Division by zero error.");
 		}
@@ -964,13 +963,12 @@ public:
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t divide_by_scalar took "
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t divide_by_scalar took "
 		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
 		          << " ms" << std::endl;
-#endif
+		#endif
 	}
 
 	std::vector<int> getDiagonals() const {
@@ -1053,11 +1051,11 @@ public:
 
 	// C = (i * imag) * this (copy + scale).
 	std::shared_ptr<diaQMatrix> copy_and_scale_by_imag(valType imag) const {
-#ifdef DEBUG
-		std::printf("starting copy_and_scale_by_imag -- imag = %f\n", imag);
-		std::chrono::high_resolution_clock::time_point start =
+		#ifdef DEBUG
+			std::printf("starting copy_and_scale_by_imag -- imag = %f\n", imag);
+			std::chrono::high_resolution_clock::time_point start =
 			std::chrono::high_resolution_clock::now();
-#endif
+		#endif
 		if (imag == 0.0) {
 			return std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
 		}
@@ -1073,23 +1071,24 @@ public:
 			C->imagData[idx] = r * imag;
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "copy_and_scale_by_imag took "
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "copy_and_scale_by_imag took "
 		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
 		          << " ms" << std::endl;
-#endif
+		#endif
+		
 		return C;
 	}
 
 	// A - B (same diag layout).
 	std::shared_ptr<diaQMatrix> subtractMatrix(const std::shared_ptr<diaQMatrix> &B) const {
-#ifdef DEBUG
-		std::printf("starting subtractMatrix -- ");
-		std::chrono::high_resolution_clock::time_point start =
+		#ifdef DEBUG
+			std::printf("starting subtractMatrix -- ");
+			std::chrono::high_resolution_clock::time_point start =
 			std::chrono::high_resolution_clock::now();
-#endif
+		#endif
 		if (matrix_shape != B->matrix_shape) {
 			throw std::runtime_error("subtractMatrix: matrix shapes do not match");
 		}
@@ -1097,74 +1096,72 @@ public:
 			throw std::runtime_error("subtractMatrix: diagonal index sets do not match");
 		}
 
-		std::shared_ptr<diaQMatrix> C =
-			std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
+		std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
 
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len  = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int offA = diagOffsets[k];
 			unsigned int offB = B->diagOffsets[k];
 			unsigned int offC = C->diagOffsets[k];
 
-#if defined(SIMD_ENABLED)
-#pragma omp simd
-#endif
+			#pragma omp simd
 			for (unsigned int j = 0; j < len; j++) {
 				C->realData[offC + j] = realData[offA + j] - B->realData[offB + j];
 				C->imagData[offC + j] = imagData[offA + j] - B->imagData[offB + j];
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t subtractMatrix took "
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t subtractMatrix took "
 		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
 		          << " ms" << std::endl;
-#endif
+		#endif
+		
 		return C;
 	}
 
 	// Frobenius norm.
 	valType norm() const {
-#ifdef DEBUG
-		std::printf("starting norm -- ");
-		std::chrono::high_resolution_clock::time_point start =
-			std::chrono::high_resolution_clock::now();
-#endif
+		#ifdef DEBUG
+			std::printf("starting norm -- ");
+			std::chrono::high_resolution_clock::time_point start =
+					std::chrono::high_resolution_clock::now();
+		#endif
 		valType res = 0.0;
 
-#pragma omp parallel
+		#pragma omp parallel
 		{
 			valType local = 0.0;
-#pragma omp for
+			#pragma omp for
 			for (unsigned int idx = 0; idx < totalLength; idx++) {
 				valType r  = realData[idx];
 				valType im = imagData[idx];
 				local += r * r + im * im;
 			}
-#pragma omp atomic
+			#pragma omp atomic
 			res += local;
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t norm took "
-		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-		          << " ms" << std::endl;
-#endif
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t norm took "
+					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+						<< " ms" << std::endl;
+		#endif
 		return std::sqrt(res);
 	}
 
 	// 1-norm estimate (max column sum of absolute values).
 	valType estimate_1norm() const {
-#ifdef DEBUG
-		std::printf("starting 1-norm -- ");
-		std::chrono::high_resolution_clock::time_point start =
-			std::chrono::high_resolution_clock::now();
-#endif
+		#ifdef DEBUG
+			std::printf("starting 1-norm -- ");
+			std::chrono::high_resolution_clock::time_point start =
+					std::chrono::high_resolution_clock::now();
+		#endif
 		unsigned int nCols      = matrix_shape[1];
 		int          max_threads = omp_get_max_threads();
 
@@ -1174,12 +1171,12 @@ public:
 			threadLocalSums[static_cast<size_t>(t)].resize(nCols, 0.0);
 		}
 
-#pragma omp parallel
+		#pragma omp parallel
 		{
 			int tid = omp_get_thread_num();
 			std::vector<valType> &localSums = threadLocalSums[static_cast<size_t>(tid)];
 
-#pragma omp for
+			#pragma omp for
 			for (size_t k = 0; k < dIndices.size(); k++) {
 				int          offsetDiag = dIndices[k];
 				unsigned int len        = getDiagonalLengthInternal(offsetDiag);
@@ -1215,20 +1212,20 @@ public:
 		}
 
 		valType maxColSum = 0.0;
-#pragma omp parallel for reduction(max : maxColSum)
+		#pragma omp parallel for reduction(max : maxColSum)
 		for (unsigned int j = 0; j < nCols; j++) {
 			if (colSums[j] > maxColSum) {
 				maxColSum = colSums[j];
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t 1-norm took "
-		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-		          << " ms" << std::endl;
-#endif
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t 1-norm took "
+					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+					<< " ms" << std::endl;
+		#endif
 		return maxColSum;
 	}
 
@@ -1236,7 +1233,7 @@ public:
 	valType sparsity() const {
 		unsigned int nnz = 0;
 
-#pragma omp parallel for reduction(+ : nnz)
+		#pragma omp parallel for reduction(+ : nnz)
 		for (unsigned int idx = 0; idx < totalLength; idx++) {
 			if (realData[idx] != 0.0 || imagData[idx] != 0.0) {
 				nnz++;
@@ -1275,7 +1272,7 @@ public:
 		std::complex<valType> *res =
 			new std::complex<valType>[static_cast<size_t>(nRows) * nCols];
 
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (unsigned int idx = 0; idx < nRows * nCols; idx++) {
 			res[idx] = std::complex<valType>(0.0, 0.0);
 		}
@@ -1285,7 +1282,7 @@ public:
 			unsigned int len    = getDiagonalLengthInternal(dIndex);
 			unsigned int off    = diagOffsets[k];
 
-#pragma omp parallel for
+			#pragma omp parallel for
 			for (unsigned int j = 0; j < len; j++) {
 				std::array<unsigned int, 2> mat_pos = getMatrixPosition(dIndex, j);
 				unsigned int fi = mat_pos[0] * matrix_shape[1] + mat_pos[1];
@@ -1333,20 +1330,20 @@ public:
 			return;
 		}
 
-#if VEC_TYPE == -1
-		realData = (valType *)calloc(totalLength, sizeof(valType));
-		imagData = (valType *)calloc(totalLength, sizeof(valType));
-#else
-		realData = aligned_alloc_helper(totalLength * sizeof(valType));
-		imagData = aligned_alloc_helper(totalLength * sizeof(valType));
-#pragma omp parallel for
-		for (unsigned int i = 0; i < totalLength; i++) {
-			realData[i] = 0.0;
-			imagData[i] = 0.0;
-		}
-#endif
+		#if VEC_TYPE == -1
+			realData = (valType *)calloc(totalLength, sizeof(valType));
+			imagData = (valType *)calloc(totalLength, sizeof(valType));
+		#else
+			realData = aligned_alloc_helper(totalLength * sizeof(valType));
+			imagData = aligned_alloc_helper(totalLength * sizeof(valType));
+				#pragma omp parallel for
+				for (unsigned int i = 0; i < totalLength; i++) {
+					realData[i] = 0.0;
+					imagData[i] = 0.0;
+				}
+		#endif
 
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (unsigned int i = 0; i < totalLength; i++) {
 			realData[i] = real_data[i];
 			imagData[i] = imag_data[i];
@@ -1382,20 +1379,20 @@ public:
 			(*cum_diagonal_lengths)[k] = running;
 		}
 
-#if VEC_TYPE == -1
-		*real_data = (valType *)calloc(totalLength, sizeof(valType));
-		*imag_data = (valType *)calloc(totalLength, sizeof(valType));
-#else
-		*real_data = aligned_alloc_helper(totalLength * sizeof(valType));
-		*imag_data = aligned_alloc_helper(totalLength * sizeof(valType));
-#pragma omp parallel for
-		for (unsigned int i = 0; i < totalLength; i++) {
-			(*real_data)[i] = 0.0;
-			(*imag_data)[i] = 0.0;
-		}
-#endif
+		#if VEC_TYPE == -1
+			*real_data = (valType *)calloc(totalLength, sizeof(valType));
+			*imag_data = (valType *)calloc(totalLength, sizeof(valType));
+		#else
+			*real_data = aligned_alloc_helper(totalLength * sizeof(valType));
+			*imag_data = aligned_alloc_helper(totalLength * sizeof(valType));
+			#pragma omp parallel for
+			for (unsigned int i = 0; i < totalLength; i++) {
+				(*real_data)[i] = 0.0;
+				(*imag_data)[i] = 0.0;
+			}
+		#endif
 
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (unsigned int i = 0; i < totalLength; i++) {
 			(*real_data)[i] = realData[i];
 			(*imag_data)[i] = imagData[i];
