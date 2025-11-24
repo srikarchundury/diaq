@@ -56,18 +56,10 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
     std::vector<int> diag_indices;
     int min_diag = -static_cast<int>(new_shape[0]) + 1;
     int max_diag = static_cast<int>(new_shape[1]) - 1;
-    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    // Fastest: sequential diagonal order
     std::vector<int> diag_order;
-    for (int k = 0; ; ++k) {
-        int neg = -k;
-        int pos = k;
-        if (k == 0) {
-            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
-        } else {
-            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
-            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
-        }
-        if (neg < min_diag && pos > max_diag) break;
+    for (int d = min_diag; d <= max_diag; ++d) {
+        diag_order.push_back(d);
     }
     std::vector<int> nonzero_diags;
     std::vector<std::vector<valType>> real_diags;
@@ -99,7 +91,8 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
     }
     std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(new_shape, nonzero_diags, shape);
 
-    // Fill only nonzero diagonals
+    // Fill only nonzero diagonals (parallelized)
+    #pragma omp parallel for schedule(static)
     for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
         int d = nonzero_diags[idx];
         unsigned int len = qm->getDiagonalLength(d);
@@ -212,18 +205,10 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
         // Collect only nonzero diagonals
         int min_diag = -static_cast<int>(shape[0]) + 1;
         int max_diag = static_cast<int>(shape[1]) - 1;
-        // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+        // Fastest: sequential diagonal order
         std::vector<int> diag_order;
-        for (int k = 0; ; ++k) {
-            int neg = -k;
-            int pos = k;
-            if (k == 0) {
-                if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
-            } else {
-                if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
-                if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
-            }
-            if (neg < min_diag && pos > max_diag) break;
+        for (int d = min_diag; d <= max_diag; ++d) {
+            diag_order.push_back(d);
         }
         std::vector<int> nonzero_diags;
         std::vector<std::vector<valType>> real_diags;
@@ -254,7 +239,8 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
             }
         }
         std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(std::array<unsigned int,2>{shape[0], shape[1]}, nonzero_diags, shape);
-        // Fill only nonzero diagonals
+        // Fill only nonzero diagonals (parallelized)
+        #pragma omp parallel for schedule(static)
         for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
             int d = nonzero_diags[idx];
             unsigned int len = qm->getDiagonalLength(d);

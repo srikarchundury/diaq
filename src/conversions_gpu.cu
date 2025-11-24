@@ -171,20 +171,12 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
     cudaFree(device_diagonal_pos);
 
     // ----- Build diaQMatrix, skipping all-zero diagonals -----
-    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    // Fastest: sequential diagonal order
     int min_diag = -static_cast<int>(matrix_shape[0]) + 1;
     int max_diag = static_cast<int>(matrix_shape[1]) - 1;
     std::vector<int> diag_order;
-    for (int k = 0; ; ++k) {
-        int neg = -k;
-        int pos = k;
-        if (k == 0) {
-            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
-        } else {
-            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
-            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
-        }
-        if (neg < min_diag && pos > max_diag) break;
+    for (int d = min_diag; d <= max_diag; ++d) {
+        diag_order.push_back(d);
     }
     // For each diagonal, check if all elements are zero
     std::vector<int> nonzero_diags;
@@ -298,20 +290,12 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
     cudaFree(device_diagonal_idx);
     cudaFree(device_diagonal_pos);
 
-    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    // Fastest: sequential diagonal order
     int min_diag = -static_cast<int>(new_shape[0]) + 1;
     int max_diag = static_cast<int>(new_shape[1]) - 1;
     std::vector<int> diag_order;
-    for (int k = 0; ; ++k) {
-        int neg = -k;
-        int pos = k;
-        if (k == 0) {
-            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
-        } else {
-            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
-            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
-        }
-        if (neg < min_diag && pos > max_diag) break;
+    for (int d = min_diag; d <= max_diag; ++d) {
+        diag_order.push_back(d);
     }
     // Build diaQMatrix using zig-zag order
     std::vector<int> nonzero_diags;

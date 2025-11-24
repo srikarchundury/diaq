@@ -246,12 +246,43 @@ public:
 		}
 
 		diagOffsets.resize(dIndices.size());
-		totalLength = 0;
+
+		// We distinguish between "logical" diagonal length (nnz along that
+		// diagonal) and the padded storage length we actually allocate.
+		unsigned int paddedTotal = 0;
+
+#if VEC_TYPE == -1
+		// -------------------- No SIMD: pack diagonals back-to-back --------------------
+		for (size_t k = 0; k < dIndices.size(); k++) {
+			diagOffsets[k] = paddedTotal;
+			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+			paddedTotal += len;
+		}
+#else
+		// -------------------- SIMD enabled: pad each diagonal start --------------------
+		// VEC_WIDTH is the number of valType's in a SIMD register (e.g., 8 doubles).
+		const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
 
 		for (size_t k = 0; k < dIndices.size(); k++) {
-			diagOffsets[k] = totalLength;
-			totalLength   += getDiagonalLengthInternal(dIndices[k]);
+
+			// Align current paddedTotal to vecWidth elements so that
+			// realData + diagOffsets[k] is NUM_BYTES_ALIGNED-aligned.
+			if (vecWidth > 1U) {
+				unsigned int mod = paddedTotal % vecWidth;
+				if (mod != 0U) {
+					unsigned int padding = vecWidth - mod;
+					paddedTotal += padding;
+				}
+			}
+
+			diagOffsets[k] = paddedTotal;
+
+			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+			paddedTotal += len;
 		}
+#endif
+
+		totalLength = paddedTotal;
 
 		if (totalLength == 0) {
 			realData = NULL;
@@ -265,6 +296,7 @@ public:
 #else
 		realData = aligned_alloc_helper(totalLength * sizeof(valType));
 		imagData = aligned_alloc_helper(totalLength * sizeof(valType));
+
 #pragma omp parallel for
 		for (unsigned int i = 0; i < totalLength; i++) {
 			realData[i] = 0.0;
@@ -610,19 +642,30 @@ public:
 		std::cout << ")" << std::endl;
 
 		std::cout << "#Diagonals = " << dIndices.size() << std::endl;
+		std::cout << "dIndices: [";
+		for (size_t k = 0; k < dIndices.size(); ++k) {
+			std::cout << dIndices[k];
+			if (k + 1 < dIndices.size()) std::cout << ", ";
+		}
+		std::cout << "]\n";
+		std::cout << "diagOffsets: [";
+		for (size_t k = 0; k < diagOffsets.size(); ++k) {
+			std::cout << diagOffsets[k];
+			if (k + 1 < diagOffsets.size()) std::cout << ", ";
+		}
+		std::cout << "]\n";
+
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			int dIndex       = dIndices[k];
 			unsigned int len = getDiagonalLengthInternal(dIndex);
 			unsigned int off = diagOffsets[k];
-
-			std::cout << "(dIndex=" << dIndex << ") (dLength=" << len << ") [";
+			std::cout << "Diagonal " << dIndex << " (len=" << len << "): ";
 			if (len > 0) {
-				for (unsigned int j = 0; j < len - 1; j++) {
-					std::cout << "(" << realData[off + j] << "," << imagData[off + j] << "),";
+				for (unsigned int j = 0; j < len; ++j) {
+					std::cout << "(" << realData[off + j] << "," << imagData[off + j] << ") ";
 				}
-				std::cout << "(" << realData[off + len - 1] << "," << imagData[off + len - 1] << ")";
 			}
-			std::cout << "]" << std::endl;
+			std::cout << std::endl;
 		}
 	}
 
@@ -642,6 +685,18 @@ public:
 			std::cout << " (index = " << dIndices[0] << ")";
 		}
 		std::cout << std::endl;
+		std::cout << "dIndices: [";
+		for (size_t k = 0; k < dIndices.size(); ++k) {
+			std::cout << dIndices[k];
+			if (k + 1 < dIndices.size()) std::cout << ", ";
+		}
+		std::cout << "]\n";
+		std::cout << "diagOffsets: [";
+		for (size_t k = 0; k < diagOffsets.size(); ++k) {
+			std::cout << diagOffsets[k];
+			if (k + 1 < diagOffsets.size()) std::cout << ", ";
+		}
+		std::cout << "]\n";
 
 		std::cout << "Sparsity = " << sparsity() << std::endl;
 	}
@@ -1252,6 +1307,59 @@ public:
 		for (unsigned int i = 0; i < totalLength; i++) {
 			(*real_data)[i] = realData[i];
 			(*imag_data)[i] = imagData[i];
+		}
+	}
+
+	// -- prune all zero diags -- //
+	// Remove all-zero diagonals and compact storage
+	void pruneMatrix() {
+		std::vector<int> new_dIndices;
+		std::vector<unsigned int> new_diagOffsets;
+		std::vector<valType> new_realData;
+		std::vector<valType> new_imagData;
+		unsigned int offset = 0;
+		for (size_t k = 0; k < dIndices.size(); ++k) {
+			int dIndex = dIndices[k];
+			unsigned int len = getDiagonalLengthInternal(dIndex);
+			unsigned int off = diagOffsets[k];
+			bool all_zero = true;
+			for (unsigned int j = 0; j < len; ++j) {
+				if (realData[off + j] != 0.0 || imagData[off + j] != 0.0) {
+					all_zero = false;
+					break;
+				}
+			}
+			if (!all_zero) {
+				new_dIndices.push_back(dIndex);
+				new_diagOffsets.push_back(offset);
+				for (unsigned int j = 0; j < len; ++j) {
+					new_realData.push_back(realData[off + j]);
+					new_imagData.push_back(imagData[off + j]);
+				}
+				offset += len;
+			}
+		}
+		// Replace with compacted data
+		dIndices = new_dIndices;
+		diagOffsets = new_diagOffsets;
+		totalLength = offset;
+		if (realData) free(realData);
+		if (imagData) free(imagData);
+		if (offset > 0) {
+		#ifdef SIMD_ENABLED
+			realData = aligned_alloc_helper(offset * sizeof(valType));
+			imagData = aligned_alloc_helper(offset * sizeof(valType));
+		#else
+			realData = (valType *)calloc(offset, sizeof(valType));
+			imagData = (valType *)calloc(offset, sizeof(valType));
+		#endif
+			for (unsigned int i = 0; i < offset; ++i) {
+				realData[i] = new_realData[i];
+				imagData[i] = new_imagData[i];
+			}
+		} else {
+			realData = nullptr;
+			imagData = nullptr;
 		}
 	}
 

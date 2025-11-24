@@ -2499,6 +2499,37 @@ int main(int argc, char **argv) {
         B->print();
         std::cout << " -- " << std::endl;
     }
+	else if (strcmp(argv[1], "format_conversion_2") == 0) {
+		// test case 5 - GHZ 3 qubit unitary simulation
+		diaq::valType a5[64] = {
+			1,0,0,0,0,0,0,0,
+			0,0,0,1,0,0,0,0,
+			0,0,1,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,
+			0,0,0,0,1,0,0,0,
+			0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,1,0,
+			0,0,0,0,0,1,0,0,
+		};
+		std::shared_ptr<diaq::denseMatrix> A5 = std::make_shared<diaq::denseMatrix>(8, a5);
+		std::shared_ptr<diaq::diaQMatrix> qA5 = A5->convertToDiaQ();
+		qA5->print();
+		std::cout << " -- " << std::endl;
+		diaq::valType b5[64] = {
+			1,0,0,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,0,
+			0,0,0,0,0,0,0,1,
+			0,0,0,0,1,0,0,0,
+			0,0,0,0,0,1,0,0,
+			0,0,1,0,0,0,0,0,
+			0,0,0,1,0,0,0,0,
+		};
+		std::shared_ptr<diaq::denseMatrix> B5 = std::make_shared<diaq::denseMatrix>(8, b5);
+		std::shared_ptr<diaq::diaQMatrix> qB5 = B5->convertToDiaQ();
+		qB5->print();
+		std::cout << " -- " << std::endl;
+	}
     else if (strcmp(argv[1], "kron_1") == 0 ) {
         // testing kron_product here
         std::cout << " -- test -- " << std::endl;

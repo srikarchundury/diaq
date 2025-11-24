@@ -493,6 +493,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
             }
         }
     }
+    #ifdef AVOID_ZERO_DIAGS
+        result->pruneMatrix();
+    #endif
 
 #ifdef DEBUG
     std::chrono::high_resolution_clock::time_point end =
