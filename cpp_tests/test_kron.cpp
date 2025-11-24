@@ -3,6 +3,8 @@
 #include <memory>
 #include <chrono>
 
+std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B);
+
 void kron_test(std::shared_ptr<diaq::denseMatrix> A24, std::shared_ptr<diaq::denseMatrix> B24) {
     A24->print();
     std::cout << " -- " << std::endl;
@@ -34,5 +36,7 @@ void kron_test(std::shared_ptr<diaq::denseMatrix> A24, std::shared_ptr<diaq::den
     std::cout << " -- " << std::endl;
     std::cout << " -- Kron Product check -- " << std::endl;
     std::cout << " -- " << std::endl;
-    // You may want to call checkResult(dp, res) here if needed
+	std::cout << " -- Is Kron correct? -- " << std::endl;
+	std::cout << checkResult(dp, res) << std::endl;
+	std::cout << " -- " << std::endl;
 }

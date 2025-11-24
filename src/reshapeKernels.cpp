@@ -25,7 +25,11 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
 
     // this is matrix_reshape.
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape, A->shape);
+    std::vector<int> temp_dIndices;
+    std::vector<unsigned int> temp_diagLens;
+    std::vector<valType> temp_realData;
+    std::vector<valType> temp_imagData;
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape);
     #pragma omp parallel for
     for (size_t d = 0; d < A->dIndices.size(); ++d) {
         int dIdx = A->dIndices[d];
@@ -37,11 +41,16 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
             std::array<int, 2> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(pos));
             unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
             if(realA[i] != 0.0 || imagA[i] != 0.0) {
-                // std::array<unsigned int, 2> mat_pos = res->getMatrixPosition(d_pos[0], d_pos[1]);
-                res->set(d_pos[0], d_pos[1], realA[i], imagA[i]);
+                temp_dIndices.push_back(d_pos[0]);
+                temp_diagLens.push_back(d_len);
+                temp_realData.push_back(realA[i]);
+                temp_imagData.push_back(imagA[i]);
             }
         }
     }
+    // After loop: construct result using available API
+    res = std::make_shared<diaQMatrix>(matrix_shape, temp_dIndices);
+    res->setContiguousData(temp_realData, temp_imagData);
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

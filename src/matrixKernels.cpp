@@ -183,33 +183,45 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
     #endif
 
     if (scalar_real == 1.0 && scalar_imag == 0.0) {
-        return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
+        return A;
     }
 
-    // std::shared_ptr<diaQMatrix> result = new diaQMatrix((unsigned int)0);
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>((unsigned int)0);
-
+    // Handle zero scalar: return empty matrix
     if (scalar_real == 0.0 && scalar_imag == 0.0) {
-        return result;
+        return std::make_shared<diaQMatrix>((unsigned int)0);
     }
 
-    result->matrix_shape = A->matrix_shape;
-    result->shape = A->shape;
+    // Prepare temp buffers for result
+    size_t numDiags = A->dIndices.size();
+    std::vector<int> dIndices(A->dIndices);
+    std::vector<unsigned int> diagLens(numDiags);
+    std::vector<unsigned int> diagOffsets(numDiags);
+    unsigned int totalLen = 0;
+    for (size_t k = 0; k < numDiags; ++k) {
+        diagLens[k] = A->getDiagonalLengthInternal(A->dIndices[k]);
+        diagOffsets[k] = totalLen;
+        totalLen += diagLens[k];
+    }
+    std::vector<valType> realData(totalLen);
+    std::vector<valType> imagData(totalLen);
 
+    // Fill temp buffers
     #pragma omp parallel for
-    for (size_t k = 0; k < A->dIndices.size(); ++k) {
-        int dIndex = A->dIndices[k];
-        unsigned int dLength = A->getDiagonalLengthInternal(dIndex);
-        unsigned int offset = A->diagOffsets[k];
+    for (size_t k = 0; k < numDiags; ++k) {
+        unsigned int dLength = diagLens[k];
+        unsigned int offset = diagOffsets[k];
+        unsigned int srcOffset = A->diagOffsets[k];
         for (unsigned int i = 0; i < dLength; ++i) {
-            valType real_val = A->realData[offset + i];
-            valType imag_val = A->imagData[offset + i];
-            valType new_real = real_val * scalar_real - imag_val * scalar_imag;
-            valType new_imag = real_val * scalar_imag + imag_val * scalar_real;
-            std::array<unsigned int, 2> mat_pos = result->getMatrixPosition(dIndex, i);
-            result->set(mat_pos[0], mat_pos[1], new_real, new_imag);
+            valType real_val = A->realData[srcOffset + i];
+            valType imag_val = A->imagData[srcOffset + i];
+            realData[offset + i] = real_val * scalar_real - imag_val * scalar_imag;
+            imagData[offset + i] = real_val * scalar_imag + imag_val * scalar_real;
         }
     }
+
+    // Construct result using contiguous API
+    auto result = std::make_shared<diaQMatrix>(A->matrix_shape, dIndices);
+    result->setContiguousData(realData, imagData);
 
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;

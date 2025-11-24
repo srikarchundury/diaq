@@ -628,6 +628,46 @@ public:
 		imagData[offset + pos]   = imag_val;
 	}
 
+	// Set real and imaginary data from contiguous std::vector buffers
+	void setContiguousData(const std::vector<valType>& real, const std::vector<valType>& imag) {
+		// if (real.size() != imag.size()) {
+		// 	throw std::invalid_argument("setContiguousData: real/imag size mismatch");
+		// }
+		// // Compute expected logical length (unpadded)
+		// size_t logicalLen = 0;
+		// for (size_t k = 0; k < dIndices.size(); ++k) {
+		// 	logicalLen += getDiagonalLengthInternal(dIndices[k]);
+		// }
+		// if (real.size() != logicalLen) {
+		// 	throw std::invalid_argument("setContiguousData: input buffer size does not match logical diagonal length");
+		// }
+		// Copy into padded SIMD layout
+		size_t srcOffset = 0;
+		const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
+		for (size_t k = 0; k < dIndices.size(); ++k) {
+			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+			unsigned int dstOffset = diagOffsets[k];
+			// Copy values
+			for (unsigned int i = 0; i < len; ++i) {
+				realData[dstOffset + i] = real[srcOffset + i];
+				imagData[dstOffset + i] = imag[srcOffset + i];
+			}
+			// Zero any SIMD padding
+			if (vecWidth > 1U) {
+				unsigned int mod = len % vecWidth;
+				if (mod != 0U) {
+					unsigned int padStart = dstOffset + len;
+					unsigned int padEnd = dstOffset + len + (vecWidth - mod);
+					for (unsigned int p = padStart; p < padEnd && p < totalLength; ++p) {
+						realData[p] = 0.0;
+						imagData[p] = 0.0;
+					}
+				}
+			}
+			srcOffset += len;
+		}
+	}
+
 	// -------------------- Printing / meta --------------------
 
 	void print() const {
@@ -889,53 +929,54 @@ public:
 
 	// this *= (real_scale_factor + i * imag_scale_factor)
 	void multiplyScalar(valType real_scale_factor, valType imag_scale_factor) {
-#ifdef DEBUG
-		std::printf("starting multiplyScalar -- ");
-		std::chrono::high_resolution_clock::time_point start =
-			std::chrono::high_resolution_clock::now();
-#endif
-#pragma omp parallel for
+		#ifdef DEBUG
+			std::printf("starting multiplyScalar -- ");
+			std::chrono::high_resolution_clock::time_point start =
+					std::chrono::high_resolution_clock::now();
+		#endif
+
+		#pragma omp parallel for
 		for (unsigned int idx = 0; idx < totalLength; idx++) {
 			valType a = realData[idx];
 			valType b = imagData[idx];
 			realData[idx] = a * real_scale_factor - b * imag_scale_factor;
 			imagData[idx] = a * imag_scale_factor + b * real_scale_factor;
 		}
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t multiplyScalar took "
-		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-		          << " ms" << std::endl;
-#endif
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t multiplyScalar took "
+						<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+						<< " ms" << std::endl;
+		#endif
 	}
+
 
 	// this = this + (real_scale_factor + i*imag_scale_factor) * B
 	void addMatrixScaled(const std::shared_ptr<diaQMatrix> &B,
 	                     valType real_scale_factor,
 	                     valType imag_scale_factor)
 	{
-#ifdef DEBUG
-		std::printf("starting addMatrixScaled -- ");
-		std::chrono::high_resolution_clock::time_point start =
-			std::chrono::high_resolution_clock::now();
-#endif
-		if (matrix_shape != B->matrix_shape) {
-			throw std::runtime_error("addMatrixScaled: matrix shapes do not match");
-		}
-		if (dIndices != B->dIndices) {
-			throw std::runtime_error("addMatrixScaled: diagonal index sets do not match");
-		}
+		#ifdef DEBUG
+			std::printf("starting addMatrixScaled -- ");
+			std::chrono::high_resolution_clock::time_point start =
+				std::chrono::high_resolution_clock::now();
+		#endif
 
-#pragma omp parallel for
+		// if (matrix_shape != B->matrix_shape) {
+		// 	throw std::runtime_error("addMatrixScaled: matrix shapes do not match");
+		// }
+		// if (dIndices != B->dIndices) {
+		// 	throw std::runtime_error("addMatrixScaled: diagonal index sets do not match");
+		// }
+
+		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len  = getDiagonalLengthInternal(dIndices[k]);
 			unsigned int offA = diagOffsets[k];
 			unsigned int offB = B->diagOffsets[k];
 
-#if defined(SIMD_ENABLED)
-#pragma omp simd
-#endif
+			#pragma omp simd
 			for (unsigned int j = 0; j < len; j++) {
 				valType c = B->realData[offB + j];
 				valType d = B->imagData[offB + j];
@@ -945,14 +986,15 @@ public:
 			}
 		}
 
-#ifdef DEBUG
-		std::chrono::high_resolution_clock::time_point end =
-			std::chrono::high_resolution_clock::now();
-		std::cout << "\t\t addMatrixScaled took "
-		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-		          << " ms" << std::endl;
-#endif
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end =
+				std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t addMatrixScaled took "
+					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+						<< " ms" << std::endl;
+		#endif
 	}
+
 
 	// Deep copy as shared_ptr.
 	std::shared_ptr<diaQMatrix> copy() const {

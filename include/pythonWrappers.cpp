@@ -27,10 +27,23 @@ PYBIND11_MODULE(diaq, m) {
         .def(py::init<std::array<unsigned int, 2>>())
         .def(py::init<std::array<unsigned int, 2>, const std::vector<int>&>())
         .def(py::init<std::array<unsigned int, 2>, const std::vector<int>&, std::vector<unsigned int>>())
+        // attributes
+        .def_readonly("matrix_shape", &diaq::diaQMatrix::matrix_shape)
+        .def_readonly("shape", &diaq::diaQMatrix::shape)
+        .def_readonly("dIndices", &diaq::diaQMatrix::dIndices)
+        .def_readonly("diagOffsets", &diaq::diaQMatrix::diagOffsets)
+        .def_readonly("totalLength", &diaq::diaQMatrix::totalLength)
+        // methods
+        
         .def("get_diagonals", &diaq::diaQMatrix::getDiagonals, py::return_value_policy::reference)
         .def("convertToDenseMatrix", py::overload_cast<>(&diaq::diaQMatrix::convertToDenseMatrix), py::return_value_policy::reference)
+        .def("multiplyScalar", &diaq::diaQMatrix::multiplyScalar, py::arg("real_scale_factor"), py::arg("imag_scale_factor"), py::return_value_policy::reference)
         .def("convertToDenseMatrix", py::overload_cast<std::array<unsigned int, 2>>(&diaq::diaQMatrix::convertToDenseMatrix), py::arg(), py::return_value_policy::reference)
+        .def("sparsity", &diaq::diaQMatrix::sparsity, py::return_value_policy::reference)
+        .def("pruneMatrix", &diaq::diaQMatrix::pruneMatrix, py::return_value_policy::reference)
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::reference)
+        .def("print", &diaq::diaQMatrix::print, py::return_value_policy::reference)
+        .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::reference)
         .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
             py::buffer_info shape_info = shape.request();
             std::array<unsigned int, 2> shape_ptr;
@@ -44,9 +57,10 @@ PYBIND11_MODULE(diaq, m) {
         .def("getMatrixPosition", [](std::shared_ptr<diaq::diaQMatrix> self, int diagonal_idx, unsigned int diagonal_pos) {
             return self->getMatrixPosition(diagonal_idx, diagonal_pos);
         }, py::arg("diagonal_idx"), py::arg("diagonal_pos"), py::return_value_policy::reference)
-        .def("addMatrixScaled", [](std::shared_ptr<diaq::diaQMatrix> self, std::shared_ptr<diaq::diaQMatrix> B, diaq::valType real_scale_factor, diaq::valType imag_scale_factor) {
-            return self->addMatrixScaled(B, real_scale_factor, imag_scale_factor);
-        }, py::arg("B"), py::arg("real_scale_factor"), py::arg("imag_scale_factor"), py::return_value_policy::reference)
+        // .def("addMatrixScaled", [](std::shared_ptr<diaq::diaQMatrix> self, std::shared_ptr<diaq::diaQMatrix> B, diaq::valType real_scale_factor, diaq::valType imag_scale_factor) {
+        //     return self->addMatrixScaled(B, real_scale_factor, imag_scale_factor);
+        // }, py::arg("B"), py::arg("real_scale_factor"), py::arg("imag_scale_factor"), py::return_value_policy::reference)
+        .def("addMatrixScaled", &diaq::diaQMatrix::addMatrixScaled, py::arg("B"), py::arg("real_scale_factor"), py::arg("imag_scale_factor"), py::return_value_policy::reference)
     ;
 
     // // diaq::zeroMatrix class

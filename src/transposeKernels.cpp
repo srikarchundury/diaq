@@ -66,7 +66,11 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(new_shape, new_tensor_shape);
+    std::vector<int> temp_dIndices;
+    std::vector<unsigned int> temp_diagLens;
+    std::vector<valType> temp_realData;
+    std::vector<valType> temp_imagData;
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(new_shape);
     #pragma omp parallel for
     for (size_t d = 0; d < A->dIndices.size(); ++d) {
         int dIdx = A->dIndices[d];
@@ -82,12 +86,16 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
             std::array<int, 2> d_pos = res->getDiagonalPosition(new_ten_pos);
             unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
             if(realA[i] != 0.0 || imagA[i] != 0.0) {
-                std::array<unsigned int, 2> mat_pos = res->getMatrixPosition(d_pos[0], d_pos[1]);
-                res->set(mat_pos[0], mat_pos[1], realA[i], imagA[i]);
+                temp_dIndices.push_back(d_pos[0]);
+                temp_diagLens.push_back(d_len);
+                temp_realData.push_back(realA[i]);
+                temp_imagData.push_back(imagA[i]);
             }
         }
     }
-
+    // After loop: construct result using available API
+    res = std::make_shared<diaQMatrix>(new_shape, temp_dIndices);
+    res->setContiguousData(temp_realData, temp_imagData);
     return res;
 }
 

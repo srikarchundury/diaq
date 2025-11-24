@@ -71,7 +71,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     // Store vectorized length per diagonal to handle tails later
     std::vector<unsigned int> vec_len_per_diag(total_diagonals);
 
-    std::array<unsigned int, 2> mat_shape = A->matrix_shape;
+    // std::array<unsigned int, 2> mat_shape = A->matrix_shape;
 
     for (size_t a = 0; a < total_diagonals; ++a) {
         int dIndex = A->dIndices[a];

@@ -29,86 +29,85 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
     std::array<unsigned int, 2> result_shape = {shape_a[0] * shape_b[0], shape_a[1] * shape_b[1]};
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
 
-    // Prepare new API storage
-    std::vector<int> new_dIndices;
-    std::vector<unsigned int> new_diagOffsets;
-    // No need for new_diagLengths; use getDiagonalLengthInternal when needed
-    std::vector<valType> new_realData;
-    std::vector<valType> new_imagData;
-
-    unsigned int offset = 0;
-
-    // Map for unique kron blocks
+    // First pass: collect all result diagonal indices and their max lengths
+    std::map<int, unsigned int> diag_lengths;
     std::map<std::pair<valType, valType>, std::shared_ptr<diaQMatrix>> unique_kron_blocks;
-
-    // Loop over A's diagonals using new API
-    #pragma omp parallel for schedule(dynamic)
     for (size_t a = 0; a < A->dIndices.size(); a++) {
         int a_diag_index = A->dIndices[a];
-        unsigned int aIdx = std::distance(A->dIndices.begin(), std::find(A->dIndices.begin(), A->dIndices.end(), a_diag_index));
         unsigned int a_diag_length = A->getDiagonalLengthInternal(a_diag_index);
         valType* a_real_vals = A->realData + A->diagOffsets[a];
         valType* a_imag_vals = A->imagData + A->diagOffsets[a];
-
         for (unsigned int a_pos = 0; a_pos < a_diag_length; a_pos++) {
             valType real_a = a_real_vals[a_pos];
             valType imag_a = a_imag_vals[a_pos];
             if (real_a == 0.0 && imag_a == 0.0) continue;
-
             std::shared_ptr<diaQMatrix> kron_block;
-            // Dynamic programming for unique kron blocks
-            #pragma omp critical
-            {
-                auto key = std::make_pair(real_a, imag_a);
-                auto it = unique_kron_blocks.find(key);
-                if (it == unique_kron_blocks.end()) {
-                    kron_block = multiply_by_scalar(B, real_a, imag_a);
-                    unique_kron_blocks[key] = kron_block;
-                } else {
-                    kron_block = it->second;
-                }
+            auto key = std::make_pair(real_a, imag_a);
+            auto it = unique_kron_blocks.find(key);
+            if (it == unique_kron_blocks.end()) {
+                kron_block = multiply_by_scalar(B, real_a, imag_a);
+                unique_kron_blocks[key] = kron_block;
+            } else {
+                kron_block = it->second;
             }
-
-            // Loop over kron_block's diagonals using new API
             for (size_t b = 0; b < kron_block->dIndices.size(); b++) {
                 int b_diag_index = kron_block->dIndices[b];
-                unsigned int bIdx = std::distance(kron_block->dIndices.begin(), std::find(kron_block->dIndices.begin(), kron_block->dIndices.end(), b_diag_index));
                 unsigned int b_diag_length = kron_block->getDiagonalLengthInternal(b_diag_index);
-                valType* b_real_vals = kron_block->realData + kron_block->diagOffsets[b];
-                valType* b_imag_vals = kron_block->imagData + kron_block->diagOffsets[b];
-
-                // For each element in the kron block diagonal
                 for (unsigned int b_pos = 0; b_pos < b_diag_length; b_pos++) {
-                    valType real_b = b_real_vals[b_pos];
-                    valType imag_b = b_imag_vals[b_pos];
+                    valType real_b = kron_block->realData[kron_block->diagOffsets[b] + b_pos];
+                    valType imag_b = kron_block->imagData[kron_block->diagOffsets[b] + b_pos];
                     if (real_b == 0.0 && imag_b == 0.0) continue;
-
-                    // Compute matrix position in result
                     std::array<unsigned int, 2> A_mat_pos = A->getMatrixPosition(a_diag_index, a_pos);
                     std::array<unsigned int, 2> B_mat_pos = kron_block->getMatrixPosition(b_diag_index, b_pos);
                     std::array<unsigned int, 2> res_mat_pos = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
-
-                    // Compute result diagonal index and position
                     std::array<int, 2> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
                     int res_diag_index = res_diag_pos[0];
                     unsigned int res_diag_pos_in_diag = res_diag_pos[1];
-
-                    // Find or create diagonal in new API storage
+                    unsigned int diag_len = result->getDiagonalLengthInternal(res_diag_index);
+                    diag_lengths[res_diag_index] = std::max(diag_lengths[res_diag_index], diag_len);
+                }
+            }
+        }
+    }
+    // Allocate result matrix storage
+    std::vector<int> new_dIndices;
+    std::vector<unsigned int> new_diagOffsets;
+    unsigned int offset = 0;
+    for (const auto& kv : diag_lengths) {
+        new_dIndices.push_back(kv.first);
+        new_diagOffsets.push_back(offset);
+        offset += kv.second;
+    }
+    std::vector<valType> new_realData(offset, 0.0);
+    std::vector<valType> new_imagData(offset, 0.0);
+    // Second pass: fill values
+    for (size_t a = 0; a < A->dIndices.size(); a++) {
+        int a_diag_index = A->dIndices[a];
+        unsigned int a_diag_length = A->getDiagonalLengthInternal(a_diag_index);
+        valType* a_real_vals = A->realData + A->diagOffsets[a];
+        valType* a_imag_vals = A->imagData + A->diagOffsets[a];
+        for (unsigned int a_pos = 0; a_pos < a_diag_length; a_pos++) {
+            valType real_a = a_real_vals[a_pos];
+            valType imag_a = a_imag_vals[a_pos];
+            if (real_a == 0.0 && imag_a == 0.0) continue;
+            std::shared_ptr<diaQMatrix> kron_block;
+            auto key = std::make_pair(real_a, imag_a);
+            kron_block = unique_kron_blocks[key];
+            for (size_t b = 0; b < kron_block->dIndices.size(); b++) {
+                int b_diag_index = kron_block->dIndices[b];
+                unsigned int b_diag_length = kron_block->getDiagonalLengthInternal(b_diag_index);
+                for (unsigned int b_pos = 0; b_pos < b_diag_length; b_pos++) {
+                    valType real_b = kron_block->realData[kron_block->diagOffsets[b] + b_pos];
+                    valType imag_b = kron_block->imagData[kron_block->diagOffsets[b] + b_pos];
+                    if (real_b == 0.0 && imag_b == 0.0) continue;
+                    std::array<unsigned int, 2> A_mat_pos = A->getMatrixPosition(a_diag_index, a_pos);
+                    std::array<unsigned int, 2> B_mat_pos = kron_block->getMatrixPosition(b_diag_index, b_pos);
+                    std::array<unsigned int, 2> res_mat_pos = {A_mat_pos[0] * shape_b[0] + B_mat_pos[0], A_mat_pos[1] * shape_b[1] + B_mat_pos[1]};
+                    std::array<int, 2> res_diag_pos = result->getDiagonalPosition(res_mat_pos);
+                    int res_diag_index = res_diag_pos[0];
+                    unsigned int res_diag_pos_in_diag = res_diag_pos[1];
                     auto it_diag = std::find(new_dIndices.begin(), new_dIndices.end(), res_diag_index);
-                    unsigned int diag_vec_idx;
-                    if (it_diag == new_dIndices.end()) {
-                        // New diagonal
-                        new_dIndices.push_back(res_diag_index);
-                        new_diagOffsets.push_back(offset);
-                        unsigned int diag_len = result->getDiagonalLengthInternal(res_diag_index);
-                        // No need to push diag_len; use getDiagonalLengthInternal
-                        new_realData.resize(offset + diag_len, 0.0);
-                        new_imagData.resize(offset + diag_len, 0.0);
-                        diag_vec_idx = new_dIndices.size() - 1;
-                        offset += diag_len;
-                    } else {
-                        diag_vec_idx = std::distance(new_dIndices.begin(), it_diag);
-                    }
+                    unsigned int diag_vec_idx = std::distance(new_dIndices.begin(), it_diag);
                     unsigned int diag_offset = new_diagOffsets[diag_vec_idx];
                     new_realData[diag_offset + res_diag_pos_in_diag] += real_b;
                     new_imagData[diag_offset + res_diag_pos_in_diag] += imag_b;
@@ -116,13 +115,21 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A, std::sha
             }
         }
     }
-
     // Set result matrix data
     result->dIndices = new_dIndices;
     result->diagOffsets = new_diagOffsets;
-    // No need to assign diagLengths; contiguous API only
-    result->realData = new_realData.data();
-    result->imagData = new_imagData.data();
+    if (offset > 0) {
+        result->realData = aligned_alloc_helper(offset * sizeof(valType));
+        result->imagData = aligned_alloc_helper(offset * sizeof(valType));
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < offset; ++i) {
+            result->realData[i] = new_realData[i];
+            result->imagData[i] = new_imagData[i];
+        }
+    } else {
+        result->realData = nullptr;
+        result->imagData = nullptr;
+    }
 
     #ifdef DEEP_DEBUG
         printf("\tkron_product Result Meta:\n");
@@ -162,20 +169,70 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
     std::array<unsigned int, 2> result_shape = {N * A->matrix_shape[0], N * A->matrix_shape[1]};
     // std::shared_ptr<diaQMatrix> result = new diaQMatrix(&result_shape);
     std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
-    #pragma omp parallel for
+
+    // First pass: collect all diagonal indices and lengths
+    std::map<int, unsigned int> diag_lengths;
+    for (size_t k = 0; k < A->dIndices.size(); ++k) {
+        int dIndex = A->dIndices[k];
+        unsigned int dLength = A->getDiagonalLengthInternal(dIndex);
+        for(unsigned int rep = 0; rep < N; rep++) {
+            unsigned int skip_places = (rep) * (dLength + abs(dIndex));
+            for(unsigned int i = 0; i < dLength; i++) {
+                std::array<unsigned int, 2> mat_pos = result->getMatrixPosition(dIndex, i + skip_places);
+                std::array<int, 2> diag_pos = result->getDiagonalPosition(mat_pos);
+                int diag_idx = diag_pos[0];
+                unsigned int diag_pos_in_diag = diag_pos[1];
+                unsigned int diag_len = result->getDiagonalLengthInternal(diag_idx);
+                diag_lengths[diag_idx] = std::max(diag_lengths[diag_idx], diag_len);
+            }
+        }
+    }
+    // Allocate
+    std::vector<int> new_dIndices;
+    std::vector<unsigned int> new_diagOffsets;
+    unsigned int offset = 0;
+    for (const auto& kv : diag_lengths) {
+        new_dIndices.push_back(kv.first);
+        new_diagOffsets.push_back(offset);
+        offset += kv.second;
+    }
+    std::vector<valType> new_realData(offset, 0.0);
+    std::vector<valType> new_imagData(offset, 0.0);
+    // Second pass: fill values
     for (size_t k = 0; k < A->dIndices.size(); ++k) {
         int dIndex = A->dIndices[k];
         unsigned int dLength = A->getDiagonalLengthInternal(dIndex);
         valType* real_vals = A->realData + A->diagOffsets[k];
         valType* imag_vals = A->imagData + A->diagOffsets[k];
-        unsigned int new_dLength = result->getDiagonalLengthInternal(dIndex);
         for(unsigned int rep = 0; rep < N; rep++) {
             unsigned int skip_places = (rep) * (dLength + abs(dIndex));
             for(unsigned int i = 0; i < dLength; i++) {
                 std::array<unsigned int, 2> mat_pos = result->getMatrixPosition(dIndex, i + skip_places);
-                result->set(mat_pos[0], mat_pos[1], real_vals[i], imag_vals[i]);
+                std::array<int, 2> diag_pos = result->getDiagonalPosition(mat_pos);
+                int diag_idx = diag_pos[0];
+                unsigned int diag_pos_in_diag = diag_pos[1];
+                auto it_diag = std::find(new_dIndices.begin(), new_dIndices.end(), diag_idx);
+                unsigned int diag_vec_idx = std::distance(new_dIndices.begin(), it_diag);
+                unsigned int diag_offset = new_diagOffsets[diag_vec_idx];
+                new_realData[diag_offset + diag_pos_in_diag] += real_vals[i];
+                new_imagData[diag_offset + diag_pos_in_diag] += imag_vals[i];
             }
         }
+    }
+    // Set result matrix data
+    result->dIndices = new_dIndices;
+    result->diagOffsets = new_diagOffsets;
+    if (offset > 0) {
+        result->realData = aligned_alloc_helper(offset * sizeof(valType));
+        result->imagData = aligned_alloc_helper(offset * sizeof(valType));
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < offset; ++i) {
+            result->realData[i] = new_realData[i];
+            result->imagData[i] = new_imagData[i];
+        }
+    } else {
+        result->realData = nullptr;
+        result->imagData = nullptr;
     }
 
     #ifdef DEBUG
