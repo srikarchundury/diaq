@@ -7,10 +7,10 @@
 #include "vector.hpp"
 #include "config.hpp"
 #include "simd_kernels.hpp"
+#include "helpers.hpp"
 
 namespace diaq {
 
-unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
 std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
 std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);

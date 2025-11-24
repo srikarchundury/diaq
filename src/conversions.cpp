@@ -26,7 +26,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
     // Fill dense matrix from diagonals
     for (size_t k = 0; k < dIndices.size(); k++) {
         int dIndex = dIndices[k];
-        unsigned int len = getDiagonalLength(dIndex);
+        unsigned int len = diaq::getDiagonalLength(dIndex, new_shape);
         unsigned int offset = diagOffsets[k];
         for (unsigned int j = 0; j < len; j++) {
             std::array<unsigned int, 2> mat_pos = getMatrixPosition(dIndex, j);
@@ -56,22 +56,59 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
     std::vector<int> diag_indices;
     int min_diag = -static_cast<int>(new_shape[0]) + 1;
     int max_diag = static_cast<int>(new_shape[1]) - 1;
-    for (int d = min_diag; d <= max_diag; ++d) {
-        diag_indices.push_back(d);
+    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    std::vector<int> diag_order;
+    for (int k = 0; ; ++k) {
+        int neg = -k;
+        int pos = k;
+        if (k == 0) {
+            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
+        } else {
+            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
+            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
+        }
+        if (neg < min_diag && pos > max_diag) break;
     }
-    std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(new_shape, diag_indices, shape);
+    std::vector<int> nonzero_diags;
+    std::vector<std::vector<valType>> real_diags;
+    std::vector<std::vector<valType>> imag_diags;
+    #pragma omp parallel for schedule(static)
+    for (size_t idx = 0; idx < diag_order.size(); ++idx) {
+        int d = diag_order[idx];
+        unsigned int len = diaq::getDiagonalLength(d, new_shape);
+        std::vector<valType> real_diag(len, 0.0);
+        std::vector<valType> imag_diag(len, 0.0);
+        bool all_zero = true;
+        for (unsigned int j = 0; j < len; ++j) {
+            std::array<unsigned int, 2> mat_pos = diaQMatrix(new_shape, std::vector<int>{d}).getMatrixPosition(d, j);
+            unsigned int fi = mat_pos[0] * new_shape[1] + mat_pos[1];
+            real_diag[j] = realData[fi];
+            imag_diag[j] = imagData[fi];
+            if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
+                all_zero = false;
+            }
+        }
+        #pragma omp critical
+        {
+            if (!all_zero) {
+                nonzero_diags.push_back(d);
+                real_diags.push_back(real_diag);
+                imag_diags.push_back(imag_diag);
+            }
+        }
+    }
+    std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(new_shape, nonzero_diags, shape);
 
-    // Fill diagonals from dense data
-    for (int d = min_diag; d <= max_diag; ++d) {
+    // Fill only nonzero diagonals
+    for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
+        int d = nonzero_diags[idx];
         unsigned int len = qm->getDiagonalLength(d);
         int slot = qm->findDiagonalSlot(d);
         if (slot < 0) continue;
         unsigned int offset = qm->diagOffsets[slot];
         for (unsigned int j = 0; j < len; ++j) {
-            std::array<unsigned int, 2> mat_pos = qm->getMatrixPosition(d, j);
-            unsigned int fi = mat_pos[0] * new_shape[1] + mat_pos[1];
-            qm->realData[offset + j] = realData[fi];
-            qm->imagData[offset + j] = imagData[fi];
+            qm->realData[offset + j] = real_diags[idx][j];
+            qm->imagData[offset + j] = imag_diags[idx][j];
         }
     }
     qm->shape = shape;
@@ -172,26 +209,61 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
         return d->convertToDiaQ(new_shape);
 
     }  else { // matrix!
-        // Collect all possible diagonal indices
-        std::vector<int> diag_indices;
+        // Collect only nonzero diagonals
         int min_diag = -static_cast<int>(shape[0]) + 1;
         int max_diag = static_cast<int>(shape[1]) - 1;
-        for (int d = min_diag; d <= max_diag; ++d) {
-            diag_indices.push_back(d);
+        // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+        std::vector<int> diag_order;
+        for (int k = 0; ; ++k) {
+            int neg = -k;
+            int pos = k;
+            if (k == 0) {
+                if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
+            } else {
+                if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
+                if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
+            }
+            if (neg < min_diag && pos > max_diag) break;
         }
-        std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(std::array<unsigned int,2>{shape[0], shape[1]}, diag_indices, shape);
-
-        // Fill diagonals from flat data
-        for (int d = min_diag; d <= max_diag; ++d) {
+        std::vector<int> nonzero_diags;
+        std::vector<std::vector<valType>> real_diags;
+        std::vector<std::vector<valType>> imag_diags;
+        #pragma omp parallel for schedule(static)
+        for (size_t idx = 0; idx < diag_order.size(); ++idx) {
+            int d = diag_order[idx];
+            unsigned int len = diaq::getDiagonalLength(d, std::array<unsigned int,2>{shape[0], shape[1]});
+            std::vector<valType> real_diag(len, 0.0);
+            std::vector<valType> imag_diag(len, 0.0);
+            bool all_zero = true;
+            for (unsigned int j = 0; j < len; ++j) {
+                std::array<unsigned int, 2> mat_pos = diaQMatrix(std::array<unsigned int,2>{shape[0], shape[1]}, std::vector<int>{d}).getMatrixPosition(d, j);
+                unsigned int fi = mat_pos[0] * shape[1] + mat_pos[1];
+                real_diag[j] = vals[fi].real();
+                imag_diag[j] = vals[fi].imag();
+                if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
+                    all_zero = false;
+                }
+            }
+            #pragma omp critical
+            {
+                if (!all_zero) {
+                    nonzero_diags.push_back(d);
+                    real_diags.push_back(real_diag);
+                    imag_diags.push_back(imag_diag);
+                }
+            }
+        }
+        std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(std::array<unsigned int,2>{shape[0], shape[1]}, nonzero_diags, shape);
+        // Fill only nonzero diagonals
+        for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
+            int d = nonzero_diags[idx];
             unsigned int len = qm->getDiagonalLength(d);
             int slot = qm->findDiagonalSlot(d);
             if (slot < 0) continue;
             unsigned int offset = qm->diagOffsets[slot];
             for (unsigned int j = 0; j < len; ++j) {
-                std::array<unsigned int, 2> mat_pos = qm->getMatrixPosition(d, j);
-                unsigned int fi = mat_pos[0] * shape[1] + mat_pos[1];
-                qm->realData[offset + j] = vals[fi].real();
-                qm->imagData[offset + j] = vals[fi].imag();
+                qm->realData[offset + j] = real_diags[idx][j];
+                qm->imagData[offset + j] = imag_diags[idx][j];
             }
         }
 

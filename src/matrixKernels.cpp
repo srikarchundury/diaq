@@ -6,27 +6,6 @@
 
 namespace diaq {
 
-unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> mat_shape) {
-    unsigned int lenRes;
-    if (dIndex < 0) {
-        lenRes = mat_shape[0] + dIndex;
-    } else if (dIndex > 0) {
-        lenRes = mat_shape[1] - dIndex;
-    } else {
-        if (mat_shape[0] > mat_shape[1]) {
-            lenRes = mat_shape[1];
-        } else {
-            lenRes = mat_shape[0];
-        }
-    }
-    if (lenRes > mat_shape[0]) {
-        lenRes = mat_shape[0];
-    } else if (lenRes > mat_shape[1]) {
-        lenRes = mat_shape[1];
-    }
-    return lenRes;
-}
-
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
     // iterate over diagonal Index 0 only

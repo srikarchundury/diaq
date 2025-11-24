@@ -170,63 +170,60 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values, std::
     cudaFree(device_diagonal_idx);
     cudaFree(device_diagonal_pos);
 
-    // ----- Build diaQMatrix -----
-    std::shared_ptr<diaQMatrix> diaq_res =
-        std::make_shared<diaQMatrix>(matrix_shape);
-
-    // Track the original tensor shape (like CPU path)
-    diaq_res->shape = shape;
-
-    // We keep the heavy sparse structure operations on CPU, but:
-    // - use OpenMP
-    // - batch updates per thread to reduce critical-section overhead
-    #pragma omp parallel
-    {
-        std::vector< std::tuple<int, unsigned int, valType, valType> > local_updates;
-
-        #pragma omp for nowait
-        for (unsigned int i = 0; i < product; ++i) {
-            valType r = values[i].real();
-            valType im = values[i].imag();
-            if (r != static_cast<valType>(0.0) || im != static_cast<valType>(0.0)) {
-                int dIndex = host_diagonal_idx.get()[i];
-                unsigned int dPos = host_diagonal_pos.get()[i];
-                std::tuple<int, unsigned int, valType, valType> tup(
-                    dIndex,
-                    dPos,
-                    r,
-                    im
-                );
-                local_updates.push_back(tup);
+    // ----- Build diaQMatrix, skipping all-zero diagonals -----
+    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    int min_diag = -static_cast<int>(matrix_shape[0]) + 1;
+    int max_diag = static_cast<int>(matrix_shape[1]) - 1;
+    std::vector<int> diag_order;
+    for (int k = 0; ; ++k) {
+        int neg = -k;
+        int pos = k;
+        if (k == 0) {
+            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
+        } else {
+            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
+            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
+        }
+        if (neg < min_diag && pos > max_diag) break;
+    }
+    // For each diagonal, check if all elements are zero
+    std::vector<int> nonzero_diags;
+    std::vector<std::vector<valType>> real_diags;
+    std::vector<std::vector<valType>> imag_diags;
+    for (int d : diag_order) {
+        unsigned int len = diaQMatrix(matrix_shape, {d}).getDiagonalLength(d);
+        std::vector<valType> real_diag(len, 0.0);
+        std::vector<valType> imag_diag(len, 0.0);
+        bool all_zero = true;
+        for (unsigned int j = 0; j < len; ++j) {
+            std::array<unsigned int, 2> mat_pos = diaQMatrix(matrix_shape, {d}).getMatrixPosition(d, j);
+            unsigned int fi = mat_pos[0] * matrix_shape[1] + mat_pos[1];
+            real_diag[j] = values[fi].real();
+            imag_diag[j] = values[fi].imag();
+            if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
+                all_zero = false;
             }
         }
-
-        #pragma omp critical
-        {
-            for (std::size_t k = 0; k < local_updates.size(); ++k) {
-                const std::tuple<int, unsigned int, valType, valType>& update =
-                    local_updates[k];
-                int dIndex = std::get<0>(update);
-                unsigned int dPos = std::get<1>(update);
-                valType r = std::get<2>(update);
-                valType im = std::get<3>(update);
-
-                diaq_res->setDiagonalElement(
-                    dIndex,
-                    dPos,
-                    diaq_res->getDiagonalLength(dIndex),
-                    r,
-                    im
-                );
-            }
+        if (!all_zero) {
+            nonzero_diags.push_back(d);
+            real_diags.push_back(real_diag);
+            imag_diags.push_back(imag_diag);
         }
     }
-
-    // ---- Assign dIndices and dPointers like CPU path ----
-    // Use only new contiguous API: dIndices, diagOffsets, realData, imagData
-    // Build dIndices, diagOffsets, realData, imagData from setDiagonalElement calls
-    // (Assume setDiagonalElement now updates contiguous storage directly)
-    // No need to use diagonalMap or diagLengths
+    std::shared_ptr<diaQMatrix> diaq_res = std::make_shared<diaQMatrix>(matrix_shape, nonzero_diags, shape);
+    // Fill only nonzero diagonals
+    for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
+        int d = nonzero_diags[idx];
+        unsigned int len = diaq_res->getDiagonalLength(d);
+        int slot = diaq_res->findDiagonalSlot(d);
+        if (slot < 0) continue;
+        unsigned int offset = diaq_res->diagOffsets[slot];
+        for (unsigned int j = 0; j < len; ++j) {
+            diaq_res->realData[offset + j] = real_diags[idx][j];
+            diaq_res->imagData[offset + j] = imag_diags[idx][j];
+        }
+    }
+    diaq_res->shape = shape;
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
@@ -301,16 +298,59 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
     cudaFree(device_diagonal_idx);
     cudaFree(device_diagonal_pos);
 
-    // ----- Build diaQMatrix -----
-    std::shared_ptr<diaQMatrix> diaq_res = std::make_shared<diaQMatrix>(new_shape);
-    // All updates are done via setDiagonalElement, which should update contiguous storage
-    // No need to use diagonalMap or diagLengths
-    // dIndices, diagOffsets, realData, imagData are managed by setDiagonalElement
-    // No legacy assignments
-
-    // Track original dense shape
+    // Zig-zag diagonal order: 0, -1, +1, -2, +2, ...
+    int min_diag = -static_cast<int>(new_shape[0]) + 1;
+    int max_diag = static_cast<int>(new_shape[1]) - 1;
+    std::vector<int> diag_order;
+    for (int k = 0; ; ++k) {
+        int neg = -k;
+        int pos = k;
+        if (k == 0) {
+            if (0 >= min_diag && 0 <= max_diag) diag_order.push_back(0);
+        } else {
+            if (neg >= min_diag && neg <= max_diag) diag_order.push_back(neg);
+            if (pos >= min_diag && pos <= max_diag) diag_order.push_back(pos);
+        }
+        if (neg < min_diag && pos > max_diag) break;
+    }
+    // Build diaQMatrix using zig-zag order
+    std::vector<int> nonzero_diags;
+    std::vector<std::vector<valType>> real_diags;
+    std::vector<std::vector<valType>> imag_diags;
+    for (int d : diag_order) {
+        unsigned int len = diaQMatrix(new_shape, {d}).getDiagonalLength(d);
+        std::vector<valType> real_diag(len, 0.0);
+        std::vector<valType> imag_diag(len, 0.0);
+        bool all_zero = true;
+        for (unsigned int j = 0; j < len; ++j) {
+            std::array<unsigned int, 2> mat_pos = diaQMatrix(new_shape, {d}).getMatrixPosition(d, j);
+            unsigned int fi = mat_pos[0] * new_shape[1] + mat_pos[1];
+            real_diag[j] = realData[fi];
+            imag_diag[j] = imagData[fi];
+            if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
+                all_zero = false;
+            }
+        }
+        if (!all_zero) {
+            nonzero_diags.push_back(d);
+            real_diags.push_back(real_diag);
+            imag_diags.push_back(imag_diag);
+        }
+    }
+    std::shared_ptr<diaQMatrix> diaq_res = std::make_shared<diaQMatrix>(new_shape, nonzero_diags, d->shape);
+    // Fill only nonzero diagonals
+    for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
+        int d = nonzero_diags[idx];
+        unsigned int len = diaq_res->getDiagonalLength(d);
+        int slot = diaq_res->findDiagonalSlot(d);
+        if (slot < 0) continue;
+        unsigned int offset = diaq_res->diagOffsets[slot];
+        for (unsigned int j = 0; j < len; ++j) {
+            diaq_res->realData[offset + j] = real_diags[idx][j];
+            diaq_res->imagData[offset + j] = imag_diags[idx][j];
+        }
+    }
     diaq_res->shape = d->shape;
-
     return diaq_res;
 }
 

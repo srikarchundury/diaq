@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "diaQMatrix.hpp"
 #include "vector.hpp"
+#include "helpers.hpp"
 
 namespace diaq {
 
