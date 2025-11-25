@@ -2453,21 +2453,10 @@ int main(int argc, char **argv) {
             std::cout << " -- " << std::endl;
         #endif
         std::shared_ptr<diaq::diaQMatrix> result = diaq::from_numpy(values, shape);
-        #ifdef DEBUG
-            std::cout << "Matrix from Numpy: " << std::endl;
-            result->print();
-            std::cout << " -- " << std::endl;
-        #endif
+        std::cout << "Matrix from Numpy: " << std::endl;
         result->print();
-        #ifdef DEBUG
-            std::cout << " -- " << std::endl;
-            std::cout << "Converting to Dense Matrix: " << std::endl;
-        #endif
         std::cout << " -- " << std::endl;
-        std::cout << " -- From Numpy Done -- " << std::endl;
-        std::cout << " -- " << std::endl;
-        // test case 5 - GHZ 3 qubit unitary simulation
-        std::cout << " -- Testing Multiplication --" << std::endl;
+        std::cout << "Testing Format Conversion a and b" << std::endl;
         std::complex<diaq::valType> *a = new std::complex<diaq::valType>[64]{
             {1,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
             {0,0}, {0,1}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
