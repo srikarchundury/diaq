@@ -166,7 +166,8 @@ set(SOURCES
   ${SRC_DIR}/reshapeKernels.cpp
   ${SRC_DIR}/transposeKernels.cpp
   ${SRC_DIR}/tensordotKernels.cpp
-  ${SRC_DIR}/spmvKernels_blocked.cpp
+  # ${SRC_DIR}/spmvKernels_blocked.cpp
+  ${SRC_DIR}/spmvKernels.cpp
   ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.cpp

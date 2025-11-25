@@ -21,33 +21,33 @@ struct SpmvTask {
 };
 
 void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
-#ifdef CUDA_ENABLED
-    {
-        std::shared_ptr<vector> tmp = spmv_cuda(A, x);
-        if (tmp) {
-            unsigned int M = y->num_rows();
-            #pragma omp parallel for
-            for (unsigned int i = 0; i < M; ++i) {
-                y->realValues[i] = tmp->realValues[i];
-                y->imagValues[i] = tmp->imagValues[i];
+    #ifdef CUDA_ENABLED
+        {
+            std::shared_ptr<vector> tmp = spmv_cuda(A, x);
+            if (tmp) {
+                unsigned int M = y->num_rows();
+                #pragma omp parallel for
+                for (unsigned int i = 0; i < M; ++i) {
+                    y->realValues[i] = tmp->realValues[i];
+                    y->imagValues[i] = tmp->imagValues[i];
+                }
             }
+            return;
         }
-        return;
-    }
-#else
+    #else
 
-#ifdef DEEP_DEBUG
-    std::cout << " --- spMV --- " << std::endl;
-    A->print();
-    x->print();
-    A->print_meta();
-    x->print_meta();
-    y->print_meta();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << " --- spMV --- " << std::endl;
+        A->print();
+        x->print();
+        A->print_meta();
+        x->print_meta();
+        y->print_meta();
+    #endif
 
-#ifdef DEBUG
-    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEBUG
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     valType *x_real_values = x->realValues;
     valType *x_imag_values = x->imagValues;
@@ -142,11 +142,11 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
             }
         }
 
-#ifdef DEBUG
-        std::chrono::high_resolution_clock::time_point end_time_scalar = std::chrono::high_resolution_clock::now();
-        auto duration_scalar = std::chrono::duration_cast<std::chrono::microseconds>(end_time_scalar - start_time);
-        printf("\t\t spMV (scalar-only) took %f milliseconds\n", duration_scalar.count() / 1000.0);
-#endif
+        #ifdef DEBUG
+            std::chrono::high_resolution_clock::time_point end_time_scalar = std::chrono::high_resolution_clock::now();
+            auto duration_scalar = std::chrono::duration_cast<std::chrono::microseconds>(end_time_scalar - start_time);
+            printf("\t\t spMV (scalar-only) took %f milliseconds\n", duration_scalar.count() / 1000.0);
+        #endif
         return;
     }
 
@@ -160,13 +160,13 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     }
 
     // -------------------- Parallel 2D blocked SIMD over tasks --------------------
-#pragma omp parallel num_threads(num_threads)
+    #pragma omp parallel num_threads(num_threads)
     {
         int tid = omp_get_thread_num();
         valType *y_real_values = y_locals[tid]->realValues;
         valType *y_imag_values = y_locals[tid]->imagValues;
 
-#pragma omp for schedule(static)
+        #pragma omp for schedule(static)
         for (size_t ti = 0; ti < tasks.size(); ++ti) {
             SpmvTask task = tasks[ti];
             size_t a = task.diagIndex;
@@ -189,106 +189,108 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
 
             // Choose kernel based on diagonal index sign and VEC_TYPE
             if (dIndex < 0) {
-#if VEC_TYPE == 2
-                run_spmv_avx512_1(tile_start, tile_end,
+                #if VEC_TYPE == 2
+                    run_spmv_avx512_1(tile_start, tile_end,
                                   x_real_values, x_imag_values,
                                   real_vals, imag_vals,
                                   y_real_values, y_imag_values,
                                   dIndex, dLength);
-#elif VEC_TYPE == 1
-                run_spmv_avx_1(tile_start, tile_end,
+                #elif VEC_TYPE == 1
+                    run_spmv_avx_1(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 0
-                run_spmv_sse_1(x_real_values, x_imag_values,
+                #elif VEC_TYPE == 0
+                    run_spmv_sse_1(x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 3
-                run_spmv_mac_1(tile_start, tile_end,
+                #elif VEC_TYPE == 3
+                    run_spmv_mac_1(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#else
-                // Pure scalar in this build
-                for (unsigned int i = tile_start; i < tile_end; ++i) {
-                    unsigned int x_idx = i;
-                    unsigned int y_idx = i - dIndex;
-                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] -
-                                            imag_vals[i] * x_imag_values[x_idx];
-                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] +
-                                            imag_vals[i] * x_real_values[x_idx];
-                }
-#endif
-            } else if (dIndex > 0) {
-#if VEC_TYPE == 2
-                run_spmv_avx512_2(tile_start, tile_end,
+                #else
+                    // Pure scalar in this build
+                    for (unsigned int i = tile_start; i < tile_end; ++i) {
+                        unsigned int x_idx = i;
+                        unsigned int y_idx = i - dIndex;
+                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] -
+                                                imag_vals[i] * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] +
+                                                imag_vals[i] * x_real_values[x_idx];
+                    }
+                #endif
+            }
+            else if (dIndex > 0) {
+                #if VEC_TYPE == 2
+                    run_spmv_avx512_2(tile_start, tile_end,
                                   x_real_values, x_imag_values,
                                   real_vals, imag_vals,
                                   y_real_values, y_imag_values,
                                   dIndex, dLength);
-#elif VEC_TYPE == 1
-                run_spmv_avx_2(tile_start, tile_end,
+                #elif VEC_TYPE == 1
+                    run_spmv_avx_2(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 0
-                run_spmv_sse_2(x_real_values, x_imag_values,
+                #elif VEC_TYPE == 0
+                    run_spmv_sse_2(x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 3
-                run_spmv_mac_2(tile_start, tile_end,
+                #elif VEC_TYPE == 3
+                    run_spmv_mac_2(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#else
-                for (unsigned int i = tile_start; i < tile_end; ++i) {
-                    unsigned int x_idx = dIndex + i;
-                    unsigned int y_idx = i;
-                    y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] -
-                                            imag_vals[i] * x_imag_values[x_idx];
-                    y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] +
-                                            imag_vals[i] * x_real_values[x_idx];
-                }
-#endif
-            } else {
-#if VEC_TYPE == 2
-                run_spmv_avx512_0(tile_start, tile_end,
+                #else
+                    for (unsigned int i = tile_start; i < tile_end; ++i) {
+                        unsigned int x_idx = dIndex + i;
+                        unsigned int y_idx = i;
+                        y_real_values[y_idx] += real_vals[i] * x_real_values[x_idx] -
+                                                imag_vals[i] * x_imag_values[x_idx];
+                        y_imag_values[y_idx] += real_vals[i] * x_imag_values[x_idx] +
+                                                imag_vals[i] * x_real_values[x_idx];
+                    }
+                #endif
+            }
+            else {
+                #if VEC_TYPE == 2
+                    run_spmv_avx512_0(tile_start, tile_end,
                                   x_real_values, x_imag_values,
                                   real_vals, imag_vals,
                                   y_real_values, y_imag_values,
                                   dIndex, dLength);
-#elif VEC_TYPE == 1
-                run_spmv_avx_0(tile_start, tile_end,
+                #elif VEC_TYPE == 1
+                    run_spmv_avx_0(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 0
-                run_spmv_sse_0(x_real_values, x_imag_values,
+                #elif VEC_TYPE == 0
+                    run_spmv_sse_0(x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#elif VEC_TYPE == 3
-                run_spmv_mac_0(tile_start, tile_end,
+                #elif VEC_TYPE == 3
+                    run_spmv_mac_0(tile_start, tile_end,
                                x_real_values, x_imag_values,
                                real_vals, imag_vals,
                                y_real_values, y_imag_values,
                                dIndex, dLength);
-#else
-                for (unsigned int i = tile_start; i < tile_end; ++i) {
-                    y_real_values[i] += real_vals[i] * x_real_values[i] -
-                                        imag_vals[i] * x_imag_values[i];
-                    y_imag_values[i] += real_vals[i] * x_imag_values[i] +
-                                        imag_vals[i] * x_real_values[i];
-                }
-#endif
+                #else
+                    for (unsigned int i = tile_start; i < tile_end; ++i) {
+                        y_real_values[i] += real_vals[i] * x_real_values[i] -
+                                            imag_vals[i] * x_imag_values[i];
+                        y_imag_values[i] += real_vals[i] * x_imag_values[i] +
+                                            imag_vals[i] * x_real_values[i];
+                    }
+                #endif
             }
         } // end tasks loop
     } // end parallel region
@@ -344,13 +346,12 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     valType *y_real = y->realValues;
     valType *y_imag = y->imagValues;
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for (size_t i = 0; i < N; ++i) {
         valType sum_r = 0.0;
         valType sum_i = 0.0;
-#if defined(SIMD_ENABLED)
-#pragma omp simd
-#endif
+        
+        #pragma omp simd
         for (int t = 0; t < num_threads; ++t) {
             sum_r += y_locals[t]->realValues[i];
             sum_i += y_locals[t]->imagValues[i];
@@ -359,16 +360,16 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
         y_imag[i] = sum_i;
     }
 
-#ifdef DEEP_DEBUG
-    std::cout << " --- spMV result --- " << std::endl;
-    y->print();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << " --- spMV result --- " << std::endl;
+        y->print();
+    #endif
 
-#ifdef DEBUG
-    std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    printf("\t\t spMV (blocked) took %f milliseconds\n", duration.count() / 1000.0);
-#endif
+    #ifdef DEBUG
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        printf("\t\t spMV (blocked) took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
 
 #endif // !CUDA_ENABLED
 }
