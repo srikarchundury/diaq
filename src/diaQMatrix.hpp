@@ -125,7 +125,7 @@ public:
 				imagData(NULL)
 	{
 		if (totalLength > 0) {
-			#if VEC_TYPE == -1
+			#if NUM_BYTES_ALIGNED <= 0
 				realData = (valType *)calloc(totalLength, sizeof(valType));
 				imagData = (valType *)calloc(totalLength, sizeof(valType));
 			#else
@@ -181,7 +181,7 @@ public:
 		imagData     = NULL;
 
 		if (totalLength > 0) {
-			#if VEC_TYPE == -1
+			#if NUM_BYTES_ALIGNED <= 0
 				realData = (valType *)calloc(totalLength, sizeof(valType));
 				imagData = (valType *)calloc(totalLength, sizeof(valType));
 			#else
@@ -292,7 +292,7 @@ public:
 			return;
 		}
 
-		#if VEC_TYPE == -1
+		#if NUM_BYTES_ALIGNED <= 0
 			realData = (valType *)calloc(totalLength, sizeof(valType));
 			imagData = (valType *)calloc(totalLength, sizeof(valType));
 		#else
@@ -1399,8 +1399,13 @@ public:
 			return;
 		}
 
-		*diagonal_indices     = (int *)calloc(*n_diags, sizeof(int));
-		*cum_diagonal_lengths = (unsigned int *)calloc(*n_diags, sizeof(unsigned int));
+		#if NUM_BYTES_ALIGNED <= 0
+			*diagonal_indices     = (int *)calloc(*n_diags, sizeof(int));
+			*cum_diagonal_lengths = (unsigned int *)calloc(*n_diags, sizeof(unsigned int));
+		#else
+			*diagonal_indices     = (int *)aligned_alloc_helper((*n_diags) * sizeof(int));
+			*cum_diagonal_lengths = (unsigned int *)aligned_alloc_helper((*n_diags) * sizeof(unsigned int));
+		#endif
 
 		unsigned int running = 0;
 		for (unsigned int k = 0; k < *n_diags; k++) {
@@ -1409,7 +1414,7 @@ public:
 			(*cum_diagonal_lengths)[k] = running;
 		}
 
-		#if VEC_TYPE == -1
+		#if NUM_BYTES_ALIGNED <= 0
 			*real_data = (valType *)calloc(totalLength, sizeof(valType));
 			*imag_data = (valType *)calloc(totalLength, sizeof(valType));
 		#else

@@ -14,7 +14,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
 
         denseMatrix(const unsigned int s) {
             unsigned int size = s*s;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realData = (valType *)calloc(size, sizeof(valType));
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
@@ -30,7 +30,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         denseMatrix(const unsigned int s, valType *real_data) {
             unsigned int size = s*s;
             realData = real_data;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 imagData = (valType *)calloc(size, sizeof(valType));
             #else
                 imagData = aligned_alloc_helper(size * sizeof(valType));
@@ -101,9 +101,7 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
         unsigned int getFlatIndex(std::vector<unsigned int> ten_pos) {
             unsigned int flat_index = 0;
             unsigned int prod = 1;
-            #if defined(SIMD_ENABLED)
             #pragma omp simd reduction(+:flat_index)
-            #endif
             for(size_t i = 0; i < shape.size() ; i++) {
                 prod *= shape[i];
                 flat_index = flat_index + (matrix_shape[0] * matrix_shape[1] / prod) * ten_pos[i];

@@ -9,7 +9,7 @@ namespace diaq {
 class identityMatrix : public diaQMatrix {
 	public:
 		identityMatrix(unsigned int s) : diaQMatrix(s) {
-			#if NUM_BYTES_ALIGNED == -1
+			#if NUM_BYTES_ALIGNED <= 0
 				valType *real = (valType *)calloc(s, sizeof(valType));
 				valType *imag = (valType *)calloc(s, sizeof(valType));
 			#else
@@ -34,7 +34,7 @@ class identityMatrix : public diaQMatrix {
 class permutationMatrix : public diaQMatrix {
 	public:
 		permutationMatrix(unsigned int s, std::vector<unsigned int> row_order) : diaQMatrix(s) {
-			#if NUM_BYTES_ALIGNED == -1
+			#if NUM_BYTES_ALIGNED <= 0
 				valType *real = (valType *)calloc(s * s, sizeof(valType));
 			#else
 				valType *real = aligned_alloc_helper(s * s * sizeof(valType));

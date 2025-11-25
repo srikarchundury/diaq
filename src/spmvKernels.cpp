@@ -102,9 +102,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_mac_1(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                 y_real_values, y_imag_values, dIndex, dLength);
     #else
-                #if defined(SIMD_ENABLED)
                 #pragma omp simd
-                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = i;
                     unsigned int y_idx = i - dIndex;
@@ -126,9 +124,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_mac_2(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-                #if defined(SIMD_ENABLED)
                 #pragma omp simd
-                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = dIndex + i;
                     unsigned int y_idx = i;
@@ -150,9 +146,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
                 run_spmv_mac_0(simd_start, simd_end, x_real_values, x_imag_values, real_vals, imag_vals,
                                y_real_values, y_imag_values, dIndex, dLength);
     #else
-                #if defined(SIMD_ENABLED)
                 #pragma omp simd
-                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     y_real_values[i] += real_vals[i] * x_real_values[i] - imag_vals[i] * x_imag_values[i];
                     y_imag_values[i] += real_vals[i] * x_imag_values[i] + imag_vals[i] * x_real_values[i];
@@ -169,9 +163,7 @@ void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_
     for (size_t i = 0; i < N; ++i) {
         valType sum_r = 0.0;
         valType sum_i = 0.0;
-        #if defined(SIMD_ENABLED)
         #pragma omp simd
-        #endif
         for (int t = 0; t < num_threads; ++t) {
             sum_r += y_locals[t]->realValues[i];
             sum_i += y_locals[t]->imagValues[i];

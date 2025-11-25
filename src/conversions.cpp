@@ -15,7 +15,7 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
     unsigned int nCols = new_shape[1];
     valType *real_data;
     valType *imag_data;
-    #if NUM_BYTES_ALIGNED == -1
+    #if NUM_BYTES_ALIGNED <= 0
         real_data = (valType *)calloc(nRows * nCols, sizeof(valType));
         imag_data = (valType *)calloc(nRows * nCols, sizeof(valType));
     #else
@@ -171,7 +171,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 #endif
 
     if (rank > 2) { // higher-order tensor!
-        #if NUM_BYTES_ALIGNED == -1
+        #if NUM_BYTES_ALIGNED <= 0
             valType *real_vals = (valType *)calloc(vals_len, sizeof(valType));
             valType *imag_vals = (valType *)calloc(vals_len, sizeof(valType));
         #else
@@ -270,7 +270,7 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
 }
 
 std::shared_ptr<vector> from_numpy_vector(std::complex<valType> *vals, unsigned int M) {
-    #if NUM_BYTES_ALIGNED == -1
+    #if NUM_BYTES_ALIGNED <= 0
         valType *real_vals = (valType *)calloc(M, sizeof(valType));
         valType *imag_vals = (valType *)calloc(M, sizeof(valType));
     #else

@@ -376,9 +376,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
                 #pragma omp parallel for
                 for(unsigned int rep = 0; rep < n; rep++) {
                     unsigned int skip_places = rep * (dLength_local - dIndex_local);
-                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
-                    #endif
                     for(unsigned int i = 0; i < dLength_local; i++) {
                         if(i % 2 == 0) {
                             unsigned int x_idx = i + skip_places;
@@ -396,9 +394,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
                 #pragma omp parallel for
                 for(unsigned int rep = 0; rep < n; rep++) {
                     unsigned int skip_places = rep * (dLength_local - dIndex_local);
-                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
-                    #endif
                     for(unsigned int i = 0; i < dLength_local/2; i++) {
                         unsigned int x_idx = i + skip_places;
                         unsigned int y_idx = i + skip_places - dIndex_local;
@@ -493,9 +489,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
                 unsigned int x_offset = (dIndex < 0 ? skip_places : after_N * dIndex + skip_places);
                 unsigned int y_offset = (dIndex < 0 ? skip_places - after_N * dIndex : skip_places);
 
-                #if defined(SIMD_ENABLED)
                 #pragma omp simd
-                #endif
                 for (unsigned int i = 0; i < dLength; i++) {
                     unsigned int x_idx = x_offset + i * after_N + j;
                     unsigned int y_idx = y_offset + i * after_N + j;
@@ -1294,9 +1288,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
                 valType each_real = real_vals[i];
                 valType each_imag = imag_vals[i];
                 if(each_real != 0 || each_imag != 0) {
-                    #if defined(SIMD_ENABLED)
                     #pragma omp simd
-                    #endif
                     for(unsigned int j = 0; j < after_N; j++) {
                         unsigned int new_idx = skip_places + i * after_N + j;
                         temp_real[new_idx] = each_real;

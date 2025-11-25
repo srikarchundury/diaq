@@ -13,7 +13,7 @@ class vector : public std::enable_shared_from_this<vector> {
 
         vector(unsigned int M) {
             numRows = M;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realValues = (valType *)calloc(M, sizeof(valType));
                 imagValues = (valType *)calloc(M, sizeof(valType));
             #else
@@ -37,7 +37,7 @@ class vector : public std::enable_shared_from_this<vector> {
         vector(unsigned int M, valType *realVals) {
             numRows = M;
             realValues = realVals;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 imagValues = (valType *)calloc(M, sizeof(valType));
             #else
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
@@ -46,7 +46,7 @@ class vector : public std::enable_shared_from_this<vector> {
 
         vector(unsigned int M, valType init_real, valType init_imag) {
             numRows = M;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realValues = (valType *)calloc(M, sizeof(valType));
                 imagValues = (valType *)calloc(M, sizeof(valType));
                 for (unsigned int i = 0; i < M; ++i) {
@@ -66,7 +66,7 @@ class vector : public std::enable_shared_from_this<vector> {
 
         vector(unsigned int M, valType init_real) {
             numRows = M;
-            #if NUM_BYTES_ALIGNED == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realValues = (valType *)calloc(M, sizeof(valType));
                 imagValues = (valType *)calloc(M, sizeof(valType));
             #else

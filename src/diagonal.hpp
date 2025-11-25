@@ -19,7 +19,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         diagonal(int di, unsigned int dl) {
             dIndex = di;
             dLength = dl;
-            #if VEC_TYPE == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
             #else
@@ -50,7 +50,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dIndex = newIndex;
         }
         std::shared_ptr<diagonal> copy() {
-            #if VEC_TYPE == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                 valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
             #else
@@ -211,9 +211,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             const valType* real_other = other.realValues;
             const valType* imag_other = other.imagValues;
         
-            #if defined(SIMD_ENABLED)
             #pragma omp simd
-            #endif
             for (unsigned int i = 0; i < dLength; ++i) {
                 realValues[i] += real_other[i];
                 imagValues[i] += imag_other[i];

@@ -1727,7 +1727,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -1799,7 +1799,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -1861,7 +1861,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -1915,7 +1915,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
             diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
@@ -1981,7 +1981,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -2015,7 +2015,7 @@ int main(int argc, char **argv) {
         // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         // -- current vector --
         // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2030,7 +2030,7 @@ int main(int argc, char **argv) {
         for(int i = 0; i < 8; i++) imags[i] = 1;
         std::shared_ptr<diaq::diagonal> d1 = std::make_shared<diaq::diagonal>(-1, 15, reals, imags);
 
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2053,7 +2053,7 @@ int main(int argc, char **argv) {
         q_mat->print();
 
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *x_real_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *x_imag_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else
@@ -2087,7 +2087,7 @@ int main(int argc, char **argv) {
         // tensor_shape (16,16)
         // (dIndex=0) (dLength=16) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
 
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *reals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else

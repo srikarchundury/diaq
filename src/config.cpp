@@ -3,23 +3,33 @@
 
 namespace diaq {
 
-    valType* aligned_alloc_helper(unsigned int num_bytes) {
-        // Round UP to multiple of NUM_BYTES_ALIGNED
-        std::size_t aligned_size =
-            ((num_bytes + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED) * NUM_BYTES_ALIGNED;
+    valType* aligned_alloc_helper(size_t num_bytes) {
+        // Decide alignment: use NUM_BYTES_ALIGNED if positive, otherwise a safe default.
+        std::size_t alignment = (NUM_BYTES_ALIGNED > 0)
+                            ? static_cast<std::size_t>(NUM_BYTES_ALIGNED)
+                            : alignof(std::max_align_t);
 
-        void *alloced_ptr = nullptr;
+        // Avoid requesting 0 bytes; some allocators assert on that with aligned_alloc.
+        if (num_bytes == 0) {
+            num_bytes = alignment;
+        }
+
+        // Round UP to a multiple of `alignment`
+        std::size_t aligned_size =
+            ((num_bytes + alignment - 1) / alignment) * alignment;
+
+        void* alloced_ptr = nullptr;
 
         #if defined(__GNUC__) || defined(__clang__)
-            #if __cplusplus >= 201703L
-                alloced_ptr = std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
-            #else
-                alloced_ptr = aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
-            #endif
-        #elif defined(_MSC_VER)
-            alloced_ptr = _aligned_malloc(aligned_size, NUM_BYTES_ALIGNED);
+        #if __cplusplus >= 201703L
+            alloced_ptr = std::aligned_alloc(alignment, aligned_size);
         #else
-            alloced_ptr = aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+            alloced_ptr = aligned_alloc(alignment, aligned_size);
+        #endif
+        #elif defined(_MSC_VER)
+            alloced_ptr = _aligned_malloc(aligned_size, alignment);
+        #else
+            alloced_ptr = aligned_alloc(alignment, aligned_size);
         #endif
 
         if (!alloced_ptr) {
@@ -28,12 +38,46 @@ namespace diaq {
         }
 
         #ifdef DEEP_DEBUG
-            std::cout << "Allocated address: " << alloced_ptr << " size=" << aligned_size << std::endl;
-            assert(reinterpret_cast<std::uintptr_t>(alloced_ptr) % NUM_BYTES_ALIGNED == 0);
+            std::cout << "Allocated address: " << alloced_ptr
+                    << " size=" << aligned_size
+                    << " align=" << alignment << std::endl;
+            assert(reinterpret_cast<std::uintptr_t>(alloced_ptr) % alignment == 0);
         #endif
 
         return static_cast<valType*>(alloced_ptr);
     }
+
+    // valType* aligned_alloc_helper(size_t num_bytes) {
+    //     // Round UP to multiple of NUM_BYTES_ALIGNED
+    //     std::size_t aligned_size =
+    //         ((num_bytes + NUM_BYTES_ALIGNED - 1) / NUM_BYTES_ALIGNED) * NUM_BYTES_ALIGNED;
+
+    //     void *alloced_ptr = nullptr;
+
+    //     #if defined(__GNUC__) || defined(__clang__)
+    //         #if __cplusplus >= 201703L
+    //             alloced_ptr = std::aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+    //         #else
+    //             alloced_ptr = aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+    //         #endif
+    //     #elif defined(_MSC_VER)
+    //         alloced_ptr = _aligned_malloc(aligned_size, NUM_BYTES_ALIGNED);
+    //     #else
+    //         alloced_ptr = aligned_alloc(NUM_BYTES_ALIGNED, aligned_size);
+    //     #endif
+
+    //     if (!alloced_ptr) {
+    //         std::cerr << "Aligned memory allocation failed!" << std::endl;
+    //         std::abort();
+    //     }
+
+    //     #ifdef DEEP_DEBUG
+    //         std::cout << "Allocated address: " << alloced_ptr << " size=" << aligned_size << std::endl;
+    //         assert(reinterpret_cast<std::uintptr_t>(alloced_ptr) % NUM_BYTES_ALIGNED == 0);
+    //     #endif
+
+    //     return static_cast<valType*>(alloced_ptr);
+    // }
     // 19-qubit unitary sim failed with allocation error, likely some other kernel has a memory leak!! fixing with valgrind.
 
     // valType* aligned_alloc_helper(unsigned int size) {

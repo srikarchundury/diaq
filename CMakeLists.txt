@@ -78,7 +78,7 @@ endif()
 option(DEBUG                      "Enable debugging mode"                             OFF)
 option(DEEP_DEBUG                 "Enable deep debugging mode"                        OFF)
 option(CUDA_ENABLED               "Enable CUDA support"                               OFF)
-option(SIMD_ENABLED               "Enable SIMD"                                       ON)
+option(MANUAL_SIMD               "Enable SIMD"                                       ON)
 option(PAPI                       "Enable PAPI support"                               OFF)
 option(MAKE_TESTS                 "Enable building tests"                             OFF)
 option(MAKE_TEST_FOR_DISASSEMBLY  "Enable building test_for_disassembly"              OFF)
@@ -89,7 +89,7 @@ message(STATUS "${BoldYellow}>>> Build options:${Reset}")
 message(STATUS "  DEBUG = ${DEBUG}")
 message(STATUS "  DEEP_DEBUG = ${DEEP_DEBUG}")
 message(STATUS "  CUDA_ENABLED = ${CUDA_ENABLED}")
-message(STATUS "  SIMD_ENABLED = ${SIMD_ENABLED}")
+message(STATUS "  MANUAL_SIMD = ${MANUAL_SIMD}")
 message(STATUS "  PAPI = ${PAPI}")
 message(STATUS "  MAKE_TESTS = ${MAKE_TESTS}")
 message(STATUS "  MAKE_TEST_FOR_DISASSEMBLY = ${MAKE_TEST_FOR_DISASSEMBLY}")
@@ -178,9 +178,9 @@ set(DIAQ_COMPILE_DEFS "")
 unset(DIAQ_VEC_TYPE_VALUE)
 set(DIAQ_SIMD_COMPILE_OPTS "")
 
-if(SIMD_ENABLED)
-  list(APPEND DIAQ_COMPILE_DEFS SIMD_ENABLED)
-  if(DIAQ_ARCH_ARM64)
+if(MANUAL_SIMD)
+  list(APPEND DIAQ_COMPILE_DEFS MANUAL_SIMD)
+  if(DIAQ_ARCH_ARM64) # Apple
     list(APPEND SOURCES
       ${SRC_DIR}/simd_mac_kernels.hpp
       ${SRC_DIR}/simd_mac_kernels.cpp
@@ -189,22 +189,23 @@ if(SIMD_ENABLED)
     set(DIAQ_VEC_TYPE_VALUE 3)
     message(STATUS "${BoldGreen}>>> SIMD backend: NEON/AdvSIMD (VEC_TYPE=3)${Reset}")
 
-  elseif(DIAQ_ARCH_X86)
+  elseif(DIAQ_ARCH_X86) # x86_64
     check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
     check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
     check_cxx_compiler_flag("-msse2"    HAS_SSE2)
 
-    if(HAS_AVX512F)
+    if(HAS_AVX512F) # prioritize AVX-512 if available
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx512_kernels.hpp
         ${SRC_DIR}/simd_avx512_kernels.cpp
+        # ${SRC_DIR}/simd_avx512_kernels_blocked.cpp
       )
       set(DIAQ_VEC_TYPE_VALUE 2)
       list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX512F)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX-512 (VEC_TYPE=2)${Reset}")
 
-    elseif(HAS_AVX2)
+    elseif(HAS_AVX2) # next, try AVX2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx2_kernels.hpp
         ${SRC_DIR}/simd_avx2_kernels.cpp
@@ -214,7 +215,7 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX2)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX2 (VEC_TYPE=1)${Reset}")
 
-    elseif(HAS_SSE2)
+    elseif(HAS_SSE2) # finally, try SSE2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_sse_kernels.hpp
         ${SRC_DIR}/simd_sse_kernels.cpp
@@ -224,7 +225,7 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SSE2)
       message(STATUS "${BoldGreen}>>> SIMD backend: SSE2 (VEC_TYPE=0)${Reset}")
 
-    else()
+    else() # no SIMD support detected; fall back to auto vectorization of the compiler
       list(APPEND SOURCES
         ${SRC_DIR}/simd_nosimd_kernels.hpp
         ${SRC_DIR}/simd_nosimd_kernels.cpp
@@ -233,7 +234,11 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
       message(STATUS "${BoldYellow}>>> SIMD backend: SCALAR (VEC_TYPE=-1)${Reset}")
     endif()
-  else()
+
+  else() # unknown arch; fall back to auto vectorization again!
+    check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
+    check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
+    check_cxx_compiler_flag("-msse2"    HAS_SSE2)
     list(APPEND SOURCES
       ${SRC_DIR}/simd_nosimd_kernels.hpp
       ${SRC_DIR}/simd_nosimd_kernels.cpp
@@ -242,15 +247,32 @@ if(SIMD_ENABLED)
     list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
     message(STATUS "${BoldYellow}>>> SIMD backend: SCALAR (VEC_TYPE=-1)${Reset}")
   endif()
-else()
+else() # MANUAL_SIMD is OFF: rely on auto-vectorization, but still target best ISA
+  check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
+  check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
+  check_cxx_compiler_flag("-msse2"    HAS_SSE2)
+
   list(APPEND SOURCES
     ${SRC_DIR}/simd_nosimd_kernels.hpp
     ${SRC_DIR}/simd_nosimd_kernels.cpp
   )
   set(DIAQ_VEC_TYPE_VALUE -1)
   list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
-  message(STATUS "${BoldYellow}>>> SIMD disabled: SCALAR (VEC_TYPE=-1)${Reset}")
+
+  if(HAS_AVX512F)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX-512 (VEC_TYPE=-1)${Reset}")
+  elseif(HAS_AVX2)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx2 -mfma)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX2 (VEC_TYPE=-1)${Reset}")
+  elseif(HAS_SSE2)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -msse2)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target SSE2 (VEC_TYPE=-1)${Reset}")
+  else()
+    message(STATUS "${BoldYellow}>>> SIMD disabled: SCALAR only, no extra ISA flags (VEC_TYPE=-1)${Reset}")
+  endif()
 endif()
+
 if(AVOID_ZERO_DIAGS)
   list(APPEND DIAQ_COMPILE_DEFS AVOID_ZERO_DIAGS)
 endif()

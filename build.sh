@@ -16,7 +16,7 @@ Common CMake options:
   -DCUDA_ENABLED=ON               (auto for 'gpu')
   -DPAPI=ON                       (default OFF)
   -DMAKE_TESTS=ON                 (default OFF)
-  -DSIMD_ENABLED=ON               (default ON)
+  -DMANUAL_SIMD=ON               (default ON)
   -DMAKE_TEST_FOR_DISASSEMBLY=ON  (default OFF)
   -DBUILD_PYTHON=ON               (default ON)
   -DPython3_EXECUTABLE=/path/python3
@@ -92,7 +92,7 @@ should_install_python() {
 # --- CPU build ---
 if [[ "$target" == "cpu" || "$target" == "all" ]]; then
   rm -rf cpu_build && mkdir cpu_build
-  cmake_args=( -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLED=ON -DBUILD_PYTHON=ON )
+  cmake_args=( -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DMANUAL_SIMD=ON -DBUILD_PYTHON=ON )
   (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
   (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
   (( $# )) && cmake_args+=( "$@" )
