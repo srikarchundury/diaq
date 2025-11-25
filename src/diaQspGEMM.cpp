@@ -16,8 +16,8 @@
 
 namespace diaq {
 
-    std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A,
-                                      std::shared_ptr<diaQMatrix> &B) {
+std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A,
+                                    std::shared_ptr<diaQMatrix> &B) {
     return product(A, B);
 }
 

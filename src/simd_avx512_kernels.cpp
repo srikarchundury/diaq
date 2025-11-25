@@ -24,9 +24,9 @@ void run_avx512<double>(
     double *real_vals_b, double *imag_vals_b,
     double *real_vals_final, double *imag_vals_final, bool overwrite
 ) {
-#ifdef DEEP_DEBUG
-    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // Find first aligned SIMD index
     unsigned int simd_start = start;
@@ -244,10 +244,10 @@ void run_spmv_avx512_1<double>(
     double *y_real_values, double *y_imag_values,
     int dIndex, unsigned int dLength) {
 
-#ifdef DEEP_DEBUG
-    std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // --- Prologue ---
     #pragma omp parallel for
@@ -320,10 +320,10 @@ void run_spmv_avx512_2<double>(
     double *y_real_values, double *y_imag_values,
     int dIndex, unsigned int dLength) {
 
-#ifdef DEEP_DEBUG
-    std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-    std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // --- Prologue ---
     #pragma omp parallel for
