@@ -12,7 +12,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     // Stops when terms become negligibly small or reach a max iteration count.
 
     #ifdef DEBUG
-        printf("starting expm_negative_taylor -- ");
+        printf("starting <spME:expm_negative_taylor> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -395,7 +395,8 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        std::cout << "\t\t inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        printf("spME:expm_negative_taylor took %.3f ms\n", duration / 1000.0);
     #endif
 
     return inv_matrix;

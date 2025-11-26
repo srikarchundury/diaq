@@ -298,9 +298,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
     #else // !CUDA_ENABLED
 
         #ifdef DEBUG
-            std::cout << "starting product -- ";
-            std::chrono::high_resolution_clock::time_point start =
-                std::chrono::high_resolution_clock::now();
+            printf("starting <spGEMM> --- ");
+            std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
         #endif
 
         // Basic dimension check
@@ -499,12 +498,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
         } // end of parallel region
 
         #ifdef DEBUG
-            std::chrono::high_resolution_clock::time_point end =
-                std::chrono::high_resolution_clock::now();
-            std::chrono::microseconds duration =
-                std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\t product took %f milliseconds\n",
-                duration.count() / 1000.0);
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+            std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("spGEMM product took %.3f ms\n", duration.count() / 1000.0);
         #endif
 
     #endif // !CUDA_ENABLED

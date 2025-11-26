@@ -152,7 +152,7 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
                std::shared_ptr<vector> y) {
 
     #ifdef DEBUG
-        std::cout << "\t\t Starting spmv_cuda..." << std::endl;
+        printf("starting <spMV_gpu> --- ");
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -352,9 +352,9 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
     cudaFree(d_y_imag);
 
     #ifdef DEBUG
-        auto end      = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        std::cout << "\t\t spmv_cuda completed in " << duration << " ms." << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        printf("spMV_gpu completed in %.3f ms\n", duration / 1000.0);
     #endif
 }
 

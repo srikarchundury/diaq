@@ -78,12 +78,12 @@ endif()
 option(DEBUG                      "Enable debugging mode"                             OFF)
 option(DEEP_DEBUG                 "Enable deep debugging mode"                        OFF)
 option(CUDA_ENABLED               "Enable CUDA support"                               OFF)
-option(MANUAL_SIMD               "Enable SIMD"                                       ON)
+option(MANUAL_SIMD                "Enable manual SIMD kernel selection"               ON)
 option(PAPI                       "Enable PAPI support"                               OFF)
-option(MAKE_TESTS                 "Enable building tests"                             OFF)
+option(MAKE_TESTS                 "Enable building tests"                             ON)
 option(MAKE_TEST_FOR_DISASSEMBLY  "Enable building test_for_disassembly"              OFF)
 option(BUILD_PYTHON               "Build Python bindings using pybind11"              ON)
-option(AVOID_ZERO_DIAGS           "Avoid storing zero diagonals in sparse matrices"   OFF)
+option(AVOID_ZERO_DIAGS           "Avoid storing zero diagonals in sparse matrices"   ON)
 
 message(STATUS "${BoldYellow}>>> Build options:${Reset}")
 message(STATUS "  DEBUG = ${DEBUG}")
@@ -167,7 +167,7 @@ set(SOURCES
   ${SRC_DIR}/transposeKernels.cpp
   ${SRC_DIR}/tensordotKernels.cpp
   ${SRC_DIR}/spMV_blocked.cpp
-  # ${SRC_DIR}/spmvKernels.cpp
+  # ${SRC_DIR}/spMV.cpp
   ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.cpp
@@ -380,12 +380,8 @@ if(MAKE_TESTS)
   add_executable(tests
       ${CPP_TEST_SOURCES}
   )
-  # Set output directory based on build type
-  if(CUDA_ENABLED)
-    set(TEST_BIN_DIR ${CMAKE_SOURCE_DIR}/gpu_build/bin)
-  else()
-    set(TEST_BIN_DIR ${CMAKE_SOURCE_DIR}/cpu_build/bin)
-  endif()
+  # Set output directory based on the active binary dir
+  set(TEST_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
   set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN_DIR})
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
   # mirror OpenMP compile flags for tests too (header pragmas)
@@ -410,7 +406,7 @@ if(MAKE_TEST_FOR_DISASSEMBLY)
 endif()
 
 # ===== Output dirs =====
-set(CMAKE_BINARY_DIR        ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
+# Use the real build directory (cpu_build, gpu_build, or whatever -B specified)
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
@@ -462,4 +458,5 @@ if(BUILD_PYTHON)
   )
   message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
   install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  install(FILES ${LIBRARY_OUTPUT_PATH}/libdiaq_core.so DESTINATION ${PYTHON_SITE_DIR})
 endif()

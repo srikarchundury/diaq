@@ -9,18 +9,18 @@ namespace diaq {
 std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A,
                                          std::shared_ptr<diaQMatrix> B)
 {
-#ifdef DEEP_DEBUG
-    printf("\tdiaq::kron_product\n");
-    printf("\tA Meta:\n");
-    A->print_meta();
-    printf("\tB Meta:\n");
-    B->print_meta();
-#endif
+    #ifdef DEEP_DEBUG
+        printf("\tdiaq::kron_product\n");
+        printf("\tA Meta:\n");
+        A->print_meta();
+        printf("\tB Meta:\n");
+        B->print_meta();
+    #endif
 
-#ifdef DEBUG
-    printf("starting kron_product --");
-    auto start = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEBUG
+        printf("starting <spKron:kron_product> --- ");
+        auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     std::array<unsigned int, 2> shape_a = A->matrix_shape;
     std::array<unsigned int, 2> shape_b = B->matrix_shape;
@@ -172,17 +172,16 @@ std::shared_ptr<diaQMatrix> kron_product(std::shared_ptr<diaQMatrix> A,
         }
     }
 
-#ifdef DEEP_DEBUG
-    printf("\tkron_product Result Meta:\n");
-    result->print_meta();
-#endif
+    #ifdef DEEP_DEBUG
+        printf("\tkron_product Result Meta:\n");
+        result->print_meta();
+    #endif
 
-#ifdef DEBUG
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration =
-        std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    printf("\t\t kron_product took %f milliseconds\n", duration.count() / 1000.0);
-#endif
+    #ifdef DEBUG
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("spKron:kron_product took %.3f ms\n", duration.count() / 1000.0);
+    #endif
 
     return result;
 }
@@ -196,9 +195,8 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
     #endif
 
     #ifdef DEBUG
-        // measure start timer
-        printf("starting identity_kron_matrix --");
-        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+           printf("starting <spKron:identity_kron_matrix> --- ");
+           std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     unsigned int N = 1L << n;
@@ -275,12 +273,9 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
     }
 
     #ifdef DEBUG
-        // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t identity_kron_matrix took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:identity_kron_matrix took %.3f ms\n", duration.count()/1000.0);
     #endif
 
     // A->free();
@@ -291,8 +286,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix(unsigned int n, std::shared_ptr
 void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
 
     #ifdef DEBUG
-        // start timer
-        printf("starting identity_kron_matrix_times_vector --");
+        printf("starting <spKron:identity_kron_matrix_times_vector> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -334,12 +328,9 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     }
 
     #ifdef DEBUG
-        // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:identity_kron_matrix_times_vector took %.3f ms\n", duration.count()/1000.0);
     #endif
 }
 
@@ -347,8 +338,7 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
 void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, unsigned int qubit_smaller, unsigned int qubit_larger) {
 
     #ifdef DEBUG
-        // start timer
-        printf("starting identity_kron_matrix_times_vector --");
+        printf("starting <spKron:identity_kron_matrix_times_vector> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -433,12 +423,9 @@ void identity_kron_matrix_times_vector(unsigned int n, std::shared_ptr<diaQMatri
     }
 
     #ifdef DEBUG
-        // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t (non-adjacent) identity_kron_matrix_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:identity_kron_matrix_times_vector (non-adjacent) took %.3f ms\n", duration.count()/1000.0);
     #endif
 
 }
@@ -447,8 +434,7 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     // logically combine matrix_kron_identity and identity_kron_matrix_times_vector
 
     #ifdef DEBUG
-        // start timer
-        printf("starting identity_kron_matrix_kron_identity_times_vector --");
+        printf("starting <spKron:identity_kron_matrix_kron_identity_times_vector> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -501,12 +487,9 @@ void identity_kron_matrix_kron_identity_times_vector(unsigned int before, std::s
     }
 
     #ifdef DEBUG
-        // // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t identity_kron_matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:identity_kron_matrix_kron_identity_times_vector took %.3f ms\n", duration.count()/1000.0);
     #endif
 
 }
@@ -516,8 +499,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned i
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
-        //start timer
-        printf("starting matrix_kron_identity_times_vector --");
+        printf("starting <spKron:matrix_kron_identity_times_vector> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -575,12 +557,9 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> A, unsigned i
     }
 
     #ifdef DEBUG
-        // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:matrix_kron_identity_times_vector took %.3f ms\n", duration.count()/1000.0);
     #endif
 
     #ifdef DEEP_DEBUG
@@ -595,8 +574,7 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
     // logically combine matrix_kron_identity and spMV
 
     #ifdef DEBUG
-        //start timer
-        printf("starting matrix_kron_identity_times_vector --");
+        printf("starting <spKron:matrix_kron_identity_times_vector> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -1165,12 +1143,9 @@ void matrix_kron_identity_times_vector(std::shared_ptr<diaQMatrix> gate, unsigne
     }
 
     #ifdef DEBUG
-        // measure end time
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        // calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        // log duration
-        printf("\t\t (non-adjacent) matrix_kron_identity_times_vector took %f milliseconds\n", duration.count()/1000.0);
+        printf("spKron:matrix_kron_identity_times_vector (non-adjacent) took %.3f ms\n", duration.count()/1000.0);
     #endif
 
 }
@@ -1238,7 +1213,7 @@ std::shared_ptr<diaQMatrix> matrix_kron_identity(std::shared_ptr<diaQMatrix> A, 
 
 std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int before, std::shared_ptr<diaQMatrix> A, unsigned int after) {
     #ifdef DEBUG
-        printf("starting identity_kron_matrix_kron_identity -- ");
+        printf("starting <spKron:identity_kron_matrix_kron_identity> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -1320,7 +1295,7 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        printf("\t\t identity_kron_matrix_kron_identity took %.3f milliseconds\n", duration.count() / 1000.0);
+        printf("spKron:identity_kron_matrix_kron_identity took %.3f ms\n", duration.count() / 1000.0);
     #endif
 
     // A->free();

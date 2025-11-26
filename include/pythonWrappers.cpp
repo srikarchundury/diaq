@@ -555,6 +555,11 @@ PYBIND11_MODULE(diaq, m) {
 #else
         info["PAPI_ON"] = false;
 #endif
+#ifdef CUDA_ENABLED
+        info["CUDA_ENABLED"] = true;
+#else
+        info["CUDA_ENABLED"] = false;
+#endif
         // Data type info
         info["valType"] = py::str(typeid(diaq::valType).name());
         return info;
