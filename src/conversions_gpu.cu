@@ -91,7 +91,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     #endif
 
     // ----- Compute total number of elements -----
-    unsigned int product = 1;
+    long long unsigned int product = 1;
     for (std::size_t s = 0; s < shape.size(); ++s) {
         product *= shape[s];
     }
