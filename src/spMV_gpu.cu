@@ -11,7 +11,6 @@ namespace diaq {
 //   d < 0: x_idx = i;         y_idx = i - d
 //   d > 0: x_idx = d + i;     y_idx = i
 //   d = 0: x_idx = i;         y_idx = i
-// This matches the scalar CPU fallback semantics.
 // -----------------------------------------------------------------------------
 __global__ void spmv_single_diag_kernel(
     unsigned int len,
@@ -67,7 +66,7 @@ __global__ void spmv_single_diag_kernel(
 }
 
 // -----------------------------------------------------------------------------
-// Multi-diagonal row-parallel kernel (your original row logic).
+// Multi-diagonal row-parallel kernel
 // Each thread owns a set of rows, loops over all diagonals.
 // -----------------------------------------------------------------------------
 __global__ void spmv_row_kernel(
@@ -232,6 +231,25 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
     cudaMemset(d_y_real, 0, M * sizeof(valType));
     cudaMemset(d_y_imag, 0, M * sizeof(valType));
 
+    #ifdef DEBUG
+        std::cout << "Host A_real: ";
+        for (size_t i = 0; i < totalLength; ++i) std::cout << A->realData[i] << " ";
+        std::cout << std::endl;
+        std::cout << "Host A_imag: ";
+        for (size_t i = 0; i < totalLength; ++i) std::cout << A->imagData[i] << " ";
+        std::cout << std::endl;
+        std::cout << "Host x_real: ";
+        for (size_t i = 0; i < N; ++i) std::cout << x->realValues[i] << " ";
+        std::cout << std::endl;
+        std::cout << "Host x_imag: ";
+        for (size_t i = 0; i < N; ++i) std::cout << x->imagValues[i] << " ";
+        std::cout << std::endl;
+    #endif
+
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::cerr << "CUDA error after allocation/copy: " << cudaGetErrorString(err) << std::endl;
+    }
     int threadsPerBlock = 256;
     int maxBlocks       = 65535;
 
@@ -260,6 +278,21 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
             d_y_imag
         );
         cudaDeviceSynchronize();
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cerr << "CUDA error after kernel: " << cudaGetErrorString(err) << std::endl;
+        }
+        #ifdef DEEP_DEBUG
+            std::vector<valType> debug_y_real(M), debug_y_imag(M);
+            cudaMemcpy(debug_y_real.data(), d_y_real, M * sizeof(valType), cudaMemcpyDeviceToHost);
+            cudaMemcpy(debug_y_imag.data(), d_y_imag, M * sizeof(valType), cudaMemcpyDeviceToHost);
+            std::cout << "Device y_real: ";
+            for (size_t i = 0; i < M; ++i) std::cout << debug_y_real[i] << " ";
+            std::cout << std::endl;
+            std::cout << "Device y_imag: ";
+            for (size_t i = 0; i < M; ++i) std::cout << debug_y_imag[i] << " ";
+            std::cout << std::endl;
+        #endif
     }
     // -----------------------------------------------------------------
     // GENERAL CASE: multiple diagonals -> row-based kernel

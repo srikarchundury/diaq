@@ -369,6 +369,7 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
 
         std::shared_ptr<diaQMatrix> result =
             std::make_shared<diaQMatrix>(res_dims, resDiagIndices);
+        // Diagonal order is now symmetric: 0, -1, +1, -2, +2, ...
 
         // result->realData and result->imagData are assumed zero-initialized
         // and result->diagOffsets already set. diagLengths not used.
@@ -434,9 +435,9 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
                         int this_res_idx = resDiagIndices[rs];
 
                         valType *C_real =
-                            result->realData + result->diagOffsets[rs];
+                            result->getDiagonalRealPtr(rs);
                         valType *C_imag =
-                            result->imagData + result->diagOffsets[rs];
+                            result->getDiagonalImagPtr(rs);
 
                         std::vector< std::pair<int,int> > &sources = resSources[rs];
                         bool overwrite = (sources.size() == 1);
@@ -462,15 +463,15 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
                             unsigned int slotB = itB->second;
 
                             valType *A_real =
-                                A->realData + A->diagOffsets[slotA];
+                                A->getDiagonalRealPtr(slotA);
                             valType *A_imag =
-                                A->imagData + A->diagOffsets[slotA];
+                                A->getDiagonalImagPtr(slotA);
                             unsigned int lenA = A->getDiagonalLengthInternal(A->dIndices[slotA]);
 
                             valType *B_real =
-                                B->realData + B->diagOffsets[slotB];
+                                B->getDiagonalRealPtr(slotB);
                             valType *B_imag =
-                                B->imagData + B->diagOffsets[slotB];
+                                B->getDiagonalImagPtr(slotB);
                             unsigned int lenB = B->getDiagonalLengthInternal(B->dIndices[slotB]);
 
                             multiplyDiagonalsSegment(

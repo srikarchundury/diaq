@@ -8,26 +8,17 @@ namespace diaq {
 
 class identityMatrix : public diaQMatrix {
 	public:
-		identityMatrix(unsigned int s) : diaQMatrix(s) {
-			#if NUM_BYTES_ALIGNED <= 0
-				valType *real = (valType *)calloc(s, sizeof(valType));
-				valType *imag = (valType *)calloc(s, sizeof(valType));
-			#else
-				valType *real = aligned_alloc_helper(s * sizeof(valType));
-				valType *imag = aligned_alloc_helper(s * sizeof(valType));
-			#endif
-
-			#pragma omp parallel for
-			for(unsigned int i = 0; i < s; i++) {
-				real[i] = (valType)1.0;
-				imag[i] = (valType)0.0;
+		identityMatrix(unsigned int s)
+			: diaQMatrix({s, s}, std::vector<int>{0}) // set diagonal indices before base constructor
+		{
+			// Storage is now allocated by base constructor
+			if (realData && imagData) {
+				#pragma omp parallel for
+				for(unsigned int i = 0; i < s; i++) {
+					realData[i] = (valType)1.0;
+					imagData[i] = (valType)0.0;
+				}
 			}
-
-			// Use new contiguous storage API
-			this->dIndices = std::vector<int>{0};
-			this->diagOffsets = std::vector<unsigned int>{0};
-			this->realData = real;
-			this->imagData = imag;
 		}
 };
 

@@ -80,9 +80,9 @@ class vector : public std::enable_shared_from_this<vector> {
             }
         }
         ~vector() {
-            #ifdef DEEP_DEBUG
-                std::cout << "vector destructor called" << std::endl;
-            #endif
+            // #ifdef DEEP_DEBUG
+            //     std::cout << "vector destructor called" << std::endl;
+            // #endif
             std::free(realValues);
             std::free(imagValues); // needed because we allocate memory ourserlves unlike shared_ptr! This place and under diagonal.hpp & denseMatrix.hpp are the only places where we need to free memory manually!!!
         }

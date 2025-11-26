@@ -39,9 +39,9 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dLength = dl;
         }
         ~diagonal() {
-            #ifdef DEEP_DEBUG
-                std::cout << "diagonal destructor called" << std::endl;
-            #endif
+            // #ifdef DEEP_DEBUG
+            //     std::cout << "diagonal destructor called" << std::endl;
+            // #endif
             // needed because we allocate memory ourserlves unlike shared_ptr! This place and under vector.hpp & denseMatrix.cpp are the only places where we need to free memory manually!!!
             if(realValues != nullptr) std::free(realValues);
             if(imagValues != nullptr) std::free(imagValues);

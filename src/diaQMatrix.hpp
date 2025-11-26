@@ -20,6 +20,23 @@
 
 namespace diaq {
 
+// Helper: generate diagonal order [0, -1, +1, -2, +2, ...] for n diagonals
+inline std::vector<int> generateSymmetricDiagonalOrder(unsigned int numDiags) {
+	std::vector<int> order;
+	order.reserve(numDiags);
+	// int d = 0;
+	for (unsigned int i = 0; i < numDiags; ++i) {
+		if (i == 0) {
+			order.push_back(0);
+		} else if (i % 2 == 1) {
+			order.push_back(-((i + 1) / 2));
+		} else {
+			order.push_back((i) / 2);
+		}
+	}
+	return order;
+}
+
 class denseMatrix; // forward declaration
 
 class diaQMatrix : public std::enable_shared_from_this<diaQMatrix> {
@@ -30,10 +47,14 @@ public:
 	// Logical diagonal indices (e.g., 0, 1, -1, 2, -2, ...), in fixed order.
 	std::vector<int> dIndices;
 
-	// diagOffsets[k] = starting offset in realData/imagData for diagonal k.
+	// diagOffsets[k] = SIMD-padded starting offset in realData/imagData for diagonal k.
+	// This allows fast, aligned access for vectorized operations (SIMD).
+	// If SIMD is enabled, each diagonal's start is padded to VEC_WIDTH alignment.
 	std::vector<unsigned int> diagOffsets;
 
 	// Total number of stored elements across all diagonals.
+	// totalLength = total number of elements allocated for all diagonals (including SIMD padding).
+	// Used for memory allocation and iteration over all stored values.
 	unsigned int totalLength;
 
 	// Contiguous, aligned storage for all diagonal values (SoA layout).
@@ -42,8 +63,8 @@ public:
 
 	// -------------------- Constructors --------------------
 
-	// Square matrix with no diagonals yet.
-	diaQMatrix(unsigned int s)
+	// Square matrix with default symmetric diagonal order
+	diaQMatrix(unsigned int s, unsigned int numDiags = 0)
 		: matrix_shape(), shape(), dIndices(), diagOffsets(),
 		  totalLength(0), realData(NULL), imagData(NULL)
 	{
@@ -52,18 +73,26 @@ public:
 		shape.resize(2);
 		shape[0] = s;
 		shape[1] = s;
+		if (numDiags > 0) {
+			dIndices = generateSymmetricDiagonalOrder(numDiags);
+			initStorage();
+		}
 	}
 
-	// Rectangular matrix with no diagonals yet.
-	diaQMatrix(unsigned int x, unsigned int y)
+	// Rectangular matrix with default symmetric diagonal order
+	diaQMatrix(unsigned int x, unsigned int y, unsigned int numDiags)
 		: matrix_shape(), shape(), dIndices(), diagOffsets(),
-		  totalLength(0), realData(NULL), imagData(NULL)
+		totalLength(0), realData(NULL), imagData(NULL)
 	{
 		matrix_shape[0] = x;
 		matrix_shape[1] = y;
 		shape.resize(2);
 		shape[0] = x;
 		shape[1] = y;
+		if (numDiags > 0) {
+			dIndices = generateSymmetricDiagonalOrder(numDiags);
+			initStorage();
+		}
 	}
 
 	// From array dims.
@@ -230,11 +259,20 @@ public:
 	}
 
 	virtual ~diaQMatrix() {
-		#ifdef DEEP_DEBUG
-			std::cout << "diaQMatrix destructor called" << std::endl;
-		#endif
+		// #ifdef DEEP_DEBUG
+		// 	std::cout << "diaQMatrix destructor called" << std::endl;
+		// #endif
 		freeStorage();
 	}
+
+	// Pointer accessors for SIMD kernels / spGEMM
+    inline valType* getDiagonalRealPtr(std::size_t k) const {
+        return realData + diagOffsets[k];
+    }
+
+    inline valType* getDiagonalImagPtr(std::size_t k) const {
+        return imagData + diagOffsets[k];
+    }
 
 	// -------------------- Storage helpers --------------------
 
@@ -249,39 +287,33 @@ public:
 
 		diagOffsets.resize(dIndices.size());
 
-		// We distinguish between "logical" diagonal length (nnz along that
-		// diagonal) and the padded storage length we actually allocate.
+		// We distinguish between "logical" diagonal length (nnz along that diagonal)
+		// and the padded storage length we actually allocate for SIMD alignment.
 		unsigned int paddedTotal = 0;
 
 		#if VEC_TYPE == -1
-			// -------------------- No SIMD: pack diagonals back-to-back --------------------
+			// No SIMD: pack diagonals back-to-back
 			for (size_t k = 0; k < dIndices.size(); k++) {
 				diagOffsets[k] = paddedTotal;
 				unsigned int len = getDiagonalLengthInternal(dIndices[k]);
 				paddedTotal += len;
 			}
 		#else
-				// -------------------- SIMD enabled: pad each diagonal start --------------------
-				// VEC_WIDTH is the number of valType's in a SIMD register (e.g., 8 doubles).
-				const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
-
-				for (size_t k = 0; k < dIndices.size(); k++) {
-
-					// Align current paddedTotal to vecWidth elements so that
-					// realData + diagOffsets[k] is NUM_BYTES_ALIGNED-aligned.
-					if (vecWidth > 1U) {
-						unsigned int mod = paddedTotal % vecWidth;
-						if (mod != 0U) {
-							unsigned int padding = vecWidth - mod;
-							paddedTotal += padding;
-						}
+			// SIMD enabled: pad each diagonal start to VEC_WIDTH alignment
+			const unsigned int vecWidth = (VEC_WIDTH > 0) ? (unsigned int)VEC_WIDTH : 1U;
+			for (size_t k = 0; k < dIndices.size(); k++) {
+				// Align current paddedTotal to vecWidth elements
+				if (vecWidth > 1U) {
+					unsigned int mod = paddedTotal % vecWidth;
+					if (mod != 0U) {
+						unsigned int padding = vecWidth - mod;
+						paddedTotal += padding;
 					}
-
-					diagOffsets[k] = paddedTotal;
-
-					unsigned int len = getDiagonalLengthInternal(dIndices[k]);
-					paddedTotal += len;
 				}
+				diagOffsets[k] = paddedTotal;
+				unsigned int len = getDiagonalLengthInternal(dIndices[k]);
+				paddedTotal += len;
+			}
 		#endif
 
 		totalLength = paddedTotal;
@@ -701,6 +733,7 @@ public:
 			if (k + 1 < diagOffsets.size()) std::cout << ", ";
 		}
 		std::cout << "]\n";
+		std::cout << "Total stored elements = " << totalLength << std::endl;
 
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			int dIndex       = dIndices[k];
@@ -744,6 +777,7 @@ public:
 			if (k + 1 < diagOffsets.size()) std::cout << ", ";
 		}
 		std::cout << "]\n";
+		std::cout << "Total stored elements = " << totalLength << std::endl;
 
 		std::cout << "Sparsity = " << sparsity() << std::endl;
 	}

@@ -37,12 +37,12 @@ namespace diaq {
             std::abort();
         }
 
-        #ifdef DEEP_DEBUG
-            std::cout << "Allocated address: " << alloced_ptr
-                    << " size=" << aligned_size
-                    << " align=" << alignment << std::endl;
-            assert(reinterpret_cast<std::uintptr_t>(alloced_ptr) % alignment == 0);
-        #endif
+        // #ifdef DEEP_DEBUG
+        //     std::cout << "Allocated address: " << alloced_ptr
+        //             << " size=" << aligned_size
+        //             << " align=" << alignment << std::endl;
+        //     assert(reinterpret_cast<std::uintptr_t>(alloced_ptr) % alignment == 0);
+        // #endif
 
         return static_cast<valType*>(alloced_ptr);
     }

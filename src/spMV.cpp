@@ -14,20 +14,21 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 }
 
 void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+
+    #ifdef DEEP_DEBUG
+        std::cout << " --- spMV --- " << std::endl;
+        A->print();
+        x->print();
+        A->print_meta();
+        x->print_meta();
+        y->print_meta();
+    #endif
+
     #ifdef CUDA_ENABLED
 
         spmv_cuda(A, x, y);
 
     #else
-
-        #ifdef DEEP_DEBUG
-            std::cout << " --- spMV --- " << std::endl;
-            A->print();
-            x->print();
-            A->print_meta();
-            x->print_meta();
-            y->print_meta();
-        #endif
         
         #ifdef DEBUG
             std::cout << "\t\t Starting spMV -- ";
