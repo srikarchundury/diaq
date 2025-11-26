@@ -110,7 +110,7 @@ if [[ "$target" == "gpu" || "$target" == "all" ]]; then
     echo "Note: CUDA is not supported on macOS. Skipping GPU build."
   else
     rm -rf gpu_build && mkdir gpu_build
-    cmake_args=( -S . -B gpu_build -DCMAKE_BUILD_TYPE=Release -DCUDA_ENABLED=ON )
+    cmake_args=( -S . -B gpu_build -DCMAKE_BUILD_TYPE=Release -DCUDA_ENABLED=ON -DMANUAL_SIMD=ON -DBUILD_PYTHON=ON )
     (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
     (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
     (( $# )) && cmake_args+=( "$@" )

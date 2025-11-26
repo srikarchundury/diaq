@@ -279,10 +279,14 @@ endif()
 
 # ===== CUDA (optional) =====
 set(CUDA_SOURCES
+  # --- .hpp files ---
   ${SRC_DIR}/conversions_gpu.hpp
-  ${SRC_DIR}/conversions_gpu.cu
   ${SRC_DIR}/matrixKernels_gpu.hpp
+  # --- .cu files ---
+  ${SRC_DIR}/conversions_gpu.cu
   ${SRC_DIR}/matrixKernels_gpu.cu
+  ${SRC_DIR}/diaQspGEMM_gpu.cu
+  ${SRC_DIR}/spmvKernels_gpu.cu
 )
 
 # ===== Core library target =====

@@ -86,8 +86,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
                                             std::vector<unsigned int> shape)
 {
     #ifdef DEBUG
-        std::cout << "Using CUDA from_numpy_cuda path" << std::endl;
-        printf(" starting from_numpy_cuda -- ");
+        std::cout << "\t\t Starting from_numpy_cuda" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -97,7 +96,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         product *= shape[s];
     }
 
-    #ifdef DEBUG
+    #ifdef DEEP_DEBUG
         printf("DEBUG: product=%u, shape.size()=%zu\n", product, shape.size());
     #endif
 
@@ -121,7 +120,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         y = shape[1];
     }
 
-    #ifdef DEBUG
+    #ifdef DEEP_DEBUG
         printf("DEBUG: matrix_shape=(%u,%u)\n", x, y);
     #endif
 
@@ -306,7 +305,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     #ifdef DEBUG
         auto end      = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        printf("from_numpy_cuda done in %ld ms\n", static_cast<long>(duration));
+        printf("\t\t from_numpy_cuda done in %ld ms\n", static_cast<long>(duration));
     #endif
 
     return diaq_res;
@@ -319,7 +318,7 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
                                                std::array<unsigned int, 2> new_shape)
 {
     #ifdef DEBUG
-        std::cout << "Using CUDA convertToDiaQ_cuda path" << std::endl;
+        std::cout << "\t\t Using CUDA convertToDiaQ_cuda path" << std::endl;
         std::chrono::high_resolution_clock::time_point start =
             std::chrono::high_resolution_clock::now();
     #endif
@@ -442,7 +441,7 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
     #ifdef DEBUG
         auto end      = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        printf("convertToDiaQ_cuda done in %ld ms\n", static_cast<long>(duration));
+        printf("\t\t convertToDiaQ_cuda done in %ld ms\n", static_cast<long>(duration));
     #endif
 
     return diaq_res;
