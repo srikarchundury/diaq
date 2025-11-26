@@ -158,15 +158,15 @@ set(SOURCES
   ${SRC_DIR}/conversions.cpp
   ${SRC_DIR}/simd_kernels.cpp
   ${SRC_DIR}/matrixKernels.cpp
-  ${SRC_DIR}/diaQspGEMM.cpp
-  ${SRC_DIR}/diaQspME.cpp
-  ${SRC_DIR}/diaQkron.cpp
+  ${SRC_DIR}/spGEMM.cpp
+  ${SRC_DIR}/spME.cpp
+  ${SRC_DIR}/spKron.cpp
   ${SRC_DIR}/denseKernels.cpp
   ${SRC_DIR}/additionKernels.cpp
   ${SRC_DIR}/reshapeKernels.cpp
   ${SRC_DIR}/transposeKernels.cpp
   ${SRC_DIR}/tensordotKernels.cpp
-  ${SRC_DIR}/spmvKernels_blocked.cpp
+  ${SRC_DIR}/spMV_blocked.cpp
   # ${SRC_DIR}/spmvKernels.cpp
   ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.cpp
@@ -285,8 +285,8 @@ set(CUDA_SOURCES
   # --- .cu files ---
   ${SRC_DIR}/conversions_gpu.cu
   ${SRC_DIR}/matrixKernels_gpu.cu
-  ${SRC_DIR}/diaQspGEMM_gpu.cu
-  ${SRC_DIR}/spmvKernels_gpu.cu
+  ${SRC_DIR}/spGEMM_gpu.cu
+  ${SRC_DIR}/spMV_gpu.cu
 )
 
 # ===== Core library target =====

@@ -109,16 +109,19 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
     unsigned int M = A->matrix_shape[0];
     unsigned int N = A->matrix_shape[1];
 
-    if (x->numRows != N) {
-        throw std::runtime_error("spmv_cuda: dimension mismatch (x length vs A.cols)");
-    }
-    if (y->numRows != M) {
-        throw std::runtime_error("spmv_cuda: dimension mismatch (y length vs A.rows)");
-    }
+    // if (x->numRows != N) {
+    //     throw std::runtime_error("spmv_cuda: dimension mismatch (x length vs A.cols)");
+    // }
+    // if (y->numRows != M) {
+    //     throw std::runtime_error("spmv_cuda: dimension mismatch (y length vs A.rows)");
+    // }
 
-    int numDiags = static_cast<int>(A->dIndices.size());
-    if (numDiags == 0 || A->totalLength == 0) {
+    unsigned int numDiags = static_cast<unsigned int>(A->dIndices.size());
+    if (numDiags == 0) {
         // Just zero out y and return
+        #ifdef DEEP_DEBUG
+            std::cout << "spmv_cuda: empty matrix, zeroing out y." << std::endl;
+        #endif
         for (unsigned int i = 0; i < M; ++i) {
             y->realValues[i] = 0.0;
             y->imagValues[i] = 0.0;
@@ -137,6 +140,18 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
         h_diagOffsets[k] = A->diagOffsets[static_cast<std::size_t>(k)];
         h_diagLens[k]    = A->getDiagonalLengthInternal(d);
     }
+
+    #ifdef DEEP_DEBUG
+        std::cout << "GPU spmv meta:" << std::endl;
+        std::cout << "  M=" << M << ", N=" << N << ", numDiags=" << numDiags << std::endl;
+        for (int k = 0; k < numDiags; ++k) {
+            std::cout << "  k=" << k
+                    << " d=" << h_dIndices[k]
+                    << " offset=" << h_diagOffsets[k]
+                    << " len=" << h_diagLens[k]
+                    << std::endl;
+        }
+    #endif
 
     // ---------------- Device allocations ----------------
     valType *d_A_real = nullptr, *d_A_imag = nullptr;
