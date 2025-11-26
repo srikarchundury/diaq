@@ -5,12 +5,6 @@
 
 namespace diaq {
 
-// -----------------------------------------------------------------------------
-// Row-parallel spMV kernel
-// Each thread processes several rows of y:
-//    y[row] = sum_k A(row, col_k) * x[col_k]
-// No atomics, because each row is owned by a single thread.
-// -----------------------------------------------------------------------------
 __global__ void spmv_row_kernel(
     unsigned int numRows,
     unsigned int numCols,
