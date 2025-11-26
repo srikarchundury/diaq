@@ -5,6 +5,8 @@
 #include <cmath>
 
 std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B) {
+    A->pruneMatrix();
+    B->pruneMatrix();
     if (A->dIndices.size() != B->dIndices.size()) {
         std::cout << "Size mismatch: A has " << A->dIndices.size() << ", B has " << B->dIndices.size() << std::endl;
         std::set<int> keysA(A->dIndices.begin(), A->dIndices.end());
