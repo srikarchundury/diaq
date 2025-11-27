@@ -16,7 +16,12 @@ std::string version() {
     return DIAQ_VERSION;
 }
 
-PYBIND11_MODULE(diaq, m) {
+#ifdef CUDA_ENABLED
+    PYBIND11_MODULE(diaq_gpu, m)
+#else
+    PYBIND11_MODULE(diaq, m)
+#endif
+{
     m.doc() = "get C++ version"; // optional module docstring
     m.def("version", &version, "function returns the underneath C++ version");
 

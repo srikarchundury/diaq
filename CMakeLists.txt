@@ -404,32 +404,41 @@ set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 
 # ===== Python bindings (pybind11) =====
+# ===== Python bindings (pybind11) =====
 if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
   add_subdirectory(${PYBIND11_DIR})
-  pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
-  target_link_libraries(diaq PUBLIC diaq_core)
+
+  # Choose module name based on CUDA_ENABLED
+  if(CUDA_ENABLED)
+    set(PY_MODULE_NAME diaq_gpu)
+  else()
+    set(PY_MODULE_NAME diaq)
+  endif()
+
+  pybind11_add_module(${PY_MODULE_NAME} ${INC_DIR}/pythonWrappers.cpp)
+  target_link_libraries(${PY_MODULE_NAME} PUBLIC diaq_core)
 
   # Ensure the module also compiles with OpenMP flags
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    target_compile_options(diaq PRIVATE -qopenmp)
-    target_link_options(diaq PRIVATE -qopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
   endif()
 
   if(APPLE)
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
       MACOSX_RPATH  ON
     )
   else()
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
     )
@@ -450,7 +459,7 @@ if(BUILD_PYTHON)
   )
   message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
 
-  # IMPORTANT: use target-based install for BOTH diaq and diaq_core
-  install(TARGETS diaq      LIBRARY DESTINATION ${PYTHON_SITE_DIR})
-  install(TARGETS diaq_core LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  # IMPORTANT: install the *right* Python module and the shared core library
+  install(TARGETS ${PY_MODULE_NAME} LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  install(TARGETS diaq_core        LIBRARY DESTINATION ${PYTHON_SITE_DIR})
 endif()
