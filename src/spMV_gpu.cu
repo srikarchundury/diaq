@@ -231,7 +231,7 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
     cudaMemset(d_y_real, 0, M * sizeof(valType));
     cudaMemset(d_y_imag, 0, M * sizeof(valType));
 
-    #ifdef DEBUG
+    #ifdef DEEP_DEBUG
         std::cout << "Host A_real: ";
         for (size_t i = 0; i < totalLength; ++i) std::cout << A->realData[i] << " ";
         std::cout << std::endl;

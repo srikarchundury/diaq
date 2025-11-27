@@ -86,7 +86,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
                                             std::vector<unsigned int> shape)
 {
     #ifdef DEBUG
-        std::cout << "\t\t Starting from_numpy_cuda" << std::endl;
+        std::cout << "Starting from_numpy_cuda" << std::endl;
         auto start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -97,7 +97,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     }
 
     #ifdef DEEP_DEBUG
-        printf("DEBUG: product=%u, shape.size()=%zu\n", product, shape.size());
+        printf("\t\t DEBUG: product=%u, shape.size()=%zu\n", product, shape.size());
     #endif
 
     int rank = static_cast<int>(shape.size());
@@ -121,7 +121,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     }
 
     #ifdef DEEP_DEBUG
-        printf("DEBUG: matrix_shape=(%u,%u)\n", x, y);
+        printf("\t\t DEBUG: matrix_shape=(%u,%u)\n", x, y);
     #endif
 
     std::array<unsigned int, 2> matrix_shape = {x, y};
@@ -138,7 +138,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
                      static_cast<std::size_t>(product) * sizeof(int));
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("cudaMalloc device_diagonal_idx failed: %s\n",
+            printf("\t\t cudaMalloc device_diagonal_idx failed: %s\n",
                     cudaGetErrorString(err));
         #endif
         return nullptr;
@@ -148,7 +148,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
                      static_cast<std::size_t>(product) * sizeof(unsigned int));
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("cudaMalloc device_diagonal_pos failed: %s\n",
+            printf("\t\t cudaMalloc device_diagonal_pos failed: %s\n",
                     cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
@@ -162,7 +162,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         static_cast<unsigned int>(threadsPerBlock));
 
     #ifdef DEBUG
-        printf("DEBUG: Launching kernel with numBlocks=%d, threadsPerBlock=%d\n",
+        printf("\t\t DEBUG: Launching kernel with numBlocks=%d, threadsPerBlock=%d\n",
             numBlocks, threadsPerBlock);
     #endif
 
@@ -177,7 +177,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("Kernel launch failed: %s\n", cudaGetErrorString(err));
+            printf("\t\t Kernel launch failed: %s\n", cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
@@ -187,7 +187,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("cudaDeviceSynchronize failed: %s\n", cudaGetErrorString(err));
+            printf("\t\t cudaDeviceSynchronize failed: %s\n", cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
@@ -213,7 +213,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     );
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("cudaMemcpy device_diagonal_idx failed: %s\n",
+            printf("\t\t cudaMemcpy device_diagonal_idx failed: %s\n",
                     cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
@@ -229,7 +229,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
     );
     if (err != cudaSuccess) {
         #ifdef DEBUG
-            printf("cudaMemcpy device_diagonal_pos failed: %s\n",
+            printf("\t\t cudaMemcpy device_diagonal_pos failed: %s\n",
                     cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
@@ -318,7 +318,7 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
                                                std::array<unsigned int, 2> new_shape)
 {
     #ifdef DEBUG
-        std::cout << "\t\t Using CUDA convertToDiaQ_cuda path" << std::endl;
+        printf("Starting <conversions_gpu::convertToDiaQ_cuda> --- ");
         std::chrono::high_resolution_clock::time_point start =
             std::chrono::high_resolution_clock::now();
     #endif

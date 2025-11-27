@@ -158,7 +158,7 @@ __global__ void product_kernel(
 std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
                                          std::shared_ptr<diaQMatrix> B) {
     #ifdef DEBUG
-        std::cout << "\t\t Starting product_cuda..." << std::endl;
+        printf("starting <spGEMM:product_cuda> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
@@ -444,7 +444,7 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        std::cout << "\t\t product_cuda completed in " << duration << " ms." << std::endl;
+        printf("spGEMM:product_cuda took %.3f ms\n", duration / 1.0);
     #endif
 
     return result;

@@ -560,6 +560,21 @@ PYBIND11_MODULE(diaq, m) {
 #else
         info["CUDA_ENABLED"] = false;
 #endif
+#ifdef MANUAL_SIMD
+        info["MANUAL_SIMD"] = true;
+#else
+        info["MANUAL_SIMD"] = false;
+#endif
+#ifdef DEBUG
+        info["DEBUG"] = true;
+#else
+        info["DEBUG"] = false;
+#endif
+#ifdef DEEP_DEBUG
+        info["DEEP_DEBUG"] = true;
+#else
+        info["DEEP_DEBUG"] = false;
+#endif
         // Data type info
         info["valType"] = py::str(typeid(diaq::valType).name());
         return info;

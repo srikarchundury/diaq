@@ -1016,6 +1016,7 @@ public:
 
 	// this *= (real_scale_factor + i * imag_scale_factor)
 	void multiplyScalar(valType real_scale_factor, valType imag_scale_factor) {
+
 		#ifdef DEBUG
 			std::printf("starting multiplyScalar -- ");
 			std::chrono::high_resolution_clock::time_point start =

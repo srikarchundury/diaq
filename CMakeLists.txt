@@ -43,7 +43,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Keep warnings loud; don't hide useful ones
 add_compile_options(
   -Wall -Wextra
   -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
@@ -54,14 +53,14 @@ add_compile_options(
 include(CheckCXXCompilerFlag)
 
 # ===== Layout (dirs & deps) =====
-set(SRC_DIR   ${CMAKE_SOURCE_DIR}/src)
-set(INC_DIR   ${CMAKE_SOURCE_DIR}/include)
-set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
+set(SRC_DIR       ${CMAKE_SOURCE_DIR}/src)
+set(INC_DIR       ${CMAKE_SOURCE_DIR}/include)
+set(TESTS_DIR     ${CMAKE_SOURCE_DIR}/tests)
 set(CPP_TESTS_DIR ${CMAKE_SOURCE_DIR}/cpp_tests)
 
-set(PHMAP_DIR   ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
+set(PHMAP_DIR     ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
 add_subdirectory(${PHMAP_DIR}) # header-only but fine to add; keep consistent
-set(PYBIND11_DIR ${CMAKE_SOURCE_DIR}/dependencies/pybind11)
+set(PYBIND11_DIR  ${CMAKE_SOURCE_DIR}/dependencies/pybind11)
 
 # Headers for our code + phmap
 include_directories(${INC_DIR} ${PHMAP_DIR})
@@ -180,7 +179,7 @@ set(DIAQ_SIMD_COMPILE_OPTS "")
 
 if(MANUAL_SIMD)
   list(APPEND DIAQ_COMPILE_DEFS MANUAL_SIMD)
-  if(DIAQ_ARCH_ARM64) # Apple
+  if(DIAQ_ARCH_ARM64) # Apple / generic ARM64
     list(APPEND SOURCES
       ${SRC_DIR}/simd_mac_kernels.hpp
       ${SRC_DIR}/simd_mac_kernels.cpp
@@ -225,7 +224,7 @@ if(MANUAL_SIMD)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SSE2)
       message(STATUS "${BoldGreen}>>> SIMD backend: SSE2 (VEC_TYPE=0)${Reset}")
 
-    else() # no SIMD support detected; fall back to auto vectorization of the compiler
+    else() # no SIMD support detected; fall back to scalar kernels
       list(APPEND SOURCES
         ${SRC_DIR}/simd_nosimd_kernels.hpp
         ${SRC_DIR}/simd_nosimd_kernels.cpp
@@ -235,7 +234,7 @@ if(MANUAL_SIMD)
       message(STATUS "${BoldYellow}>>> SIMD backend: SCALAR (VEC_TYPE=-1)${Reset}")
     endif()
 
-  else() # unknown arch; fall back to auto vectorization again!
+  else() # unknown arch; fall back to scalar kernels
     check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
     check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
     check_cxx_compiler_flag("-msse2"    HAS_SSE2)
@@ -301,14 +300,12 @@ if(CUDA_ENABLED)
     endforeach()
   endif()
   cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
-  # Apply SIMD compile options to the target when present
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
   else()
     target_compile_options(diaq_core PUBLIC -O3)
   endif()
   target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
-  # Ensure CPU-specific compile defs (e.g., CPU_SUPPORTS_AVX512F) are visible to the target
   if(DIAQ_COMPILE_DEFS)
     target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED ${DIAQ_COMPILE_DEFS})
   else()
@@ -320,7 +317,6 @@ if(CUDA_ENABLED)
   if(DEEP_DEBUG)
     target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
   endif()
-  set(BUILD_TYPE "gpu_build")
 else()
   message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
   add_library(diaq_core SHARED ${SOURCES})
@@ -336,7 +332,6 @@ else()
     target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
   endif()
   target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX)
-  set(BUILD_TYPE "cpu_build")
 endif()
 
 # Ensure OpenMP compile flags are visible to all TUs (Linux Clang/GCC safety net)
@@ -375,16 +370,14 @@ endif()
 # ===== Tests (optional) =====
 if(MAKE_TESTS)
   file(GLOB CPP_TEST_SOURCES
-      ${CPP_TESTS_DIR}/*.cpp
+    ${CPP_TESTS_DIR}/*.cpp
   )
   add_executable(tests
-      ${CPP_TEST_SOURCES}
+    ${CPP_TEST_SOURCES}
   )
-  # Set output directory based on the active binary dir
   set(TEST_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
   set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN_DIR})
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
-  # mirror OpenMP compile flags for tests too (header pragmas)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(tests PRIVATE -fopenmp)
     target_link_options(tests PRIVATE -fopenmp)
@@ -405,8 +398,7 @@ if(MAKE_TEST_FOR_DISASSEMBLY)
   target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
 endif()
 
-# ===== Output dirs =====
-# Use the real build directory (cpu_build, gpu_build, or whatever -B specified)
+# ===== Output dirs (per build tree: cpu_build, gpu_build, etc.) =====
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
@@ -416,9 +408,9 @@ if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
   add_subdirectory(${PYBIND11_DIR})
   pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
-  target_link_libraries(diaq PRIVATE diaq_core)
+  target_link_libraries(diaq PUBLIC diaq_core)
 
-  # Ensure the module also compiles with OpenMP flags (its TUs include your headers)
+  # Ensure the module also compiles with OpenMP flags
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(diaq PRIVATE -fopenmp)
     target_link_options(diaq PRIVATE -fopenmp)
@@ -457,6 +449,8 @@ if(BUILD_PYTHON)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
-  install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
-  install(FILES ${LIBRARY_OUTPUT_PATH}/libdiaq_core.so DESTINATION ${PYTHON_SITE_DIR})
+
+  # IMPORTANT: use target-based install for BOTH diaq and diaq_core
+  install(TARGETS diaq      LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  install(TARGETS diaq_core LIBRARY DESTINATION ${PYTHON_SITE_DIR})
 endif()
