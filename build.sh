@@ -51,8 +51,9 @@ fi
 cmake_omp_args=()
 cmake_py_args=()
 
-# macOS: prefer Homebrew LLVM, wire up OpenMP for AppleClang
+# --- macOS: prefer Homebrew LLVM, wire up OpenMP for AppleClang ---
 if [[ "$uname_s" == "Darwin" ]]; then
+  # Prefer Homebrew LLVM if available and CC/CXX not set
   if command -v brew >/dev/null 2>&1; then
     llvm_prefix="$(brew --prefix llvm 2>/dev/null || true)"
     if [[ -n "${llvm_prefix:-}" && -z "${CC:-}" && -z "${CXX:-}" ]]; then
@@ -61,6 +62,8 @@ if [[ "$uname_s" == "Darwin" ]]; then
       echo "Using Homebrew LLVM: CC=$CC, CXX=$CXX"
     fi
   fi
+
+  # If using AppleClang, wire up libomp
   if [[ -n "${CXX:-}" ]] && "$CXX" --version 2>/dev/null | grep -qi "apple clang"; then
     omp_prefix="$(brew --prefix libomp 2>/dev/null || echo /opt/homebrew/opt/libomp)"
     cmake_omp_args+=(
@@ -69,7 +72,7 @@ if [[ "$uname_s" == "Darwin" ]]; then
       -DOpenMP_omp_LIBRARY="${omp_prefix}/lib/libomp.dylib"
       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I${omp_prefix}/include"
       -DOpenMP_CXX_LIB_NAMES="omp"
-      -DOpenMP_CXX_LIBRARY="${omp_prefix}/lib/libomp.dylylib"
+      -DOpenMP_CXX_LIBRARY="${omp_prefix}/lib/libomp.dylib"
       -DCMAKE_EXE_LINKER_FLAGS="-L${omp_prefix}/lib"
       -DCMAKE_SHARED_LINKER_FLAGS="-L${omp_prefix}/lib"
     )

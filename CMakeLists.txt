@@ -293,24 +293,30 @@ if(CUDA_ENABLED)
   message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
   find_package(CUDA REQUIRED)
   set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
+
   # If SIMD compile opts were chosen, forward them to nvcc's host compiler
   if(DIAQ_SIMD_COMPILE_OPTS)
     foreach(_opt IN LISTS DIAQ_SIMD_COMPILE_OPTS)
       list(APPEND CUDA_NVCC_FLAGS -Xcompiler ${_opt})
     endforeach()
   endif()
+
   cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
+
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
   else()
     target_compile_options(diaq_core PUBLIC -O3)
   endif()
+
   target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
+
   if(DIAQ_COMPILE_DEFS)
     target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED ${DIAQ_COMPILE_DEFS})
   else()
     target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED)
   endif()
+
   if(DEBUG)
     target_compile_definitions(diaq_core PUBLIC DEBUG)
   endif()
@@ -320,17 +326,20 @@ if(CUDA_ENABLED)
 else()
   message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
   add_library(diaq_core SHARED ${SOURCES})
+
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
   else()
     target_compile_options(diaq_core PUBLIC -O3)
   endif()
+
   if(DEBUG)
     target_compile_definitions(diaq_core PUBLIC DEBUG)
   endif()
   if(DEEP_DEBUG)
     target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
   endif()
+
   target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
@@ -378,6 +387,7 @@ if(MAKE_TESTS)
   set(TEST_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
   set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN_DIR})
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
+
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(tests PRIVATE -fopenmp)
     target_link_options(tests PRIVATE -fopenmp)
@@ -404,69 +414,56 @@ set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 
 # ===== Python bindings (pybind11) =====
-# ===== Python bindings (pybind11) =====
 if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
   add_subdirectory(${PYBIND11_DIR})
 
-  # Always build both Python modules if possible
-  pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
-  target_link_libraries(diaq PUBLIC diaq_core)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    target_compile_options(diaq PRIVATE -qopenmp)
-    target_link_options(diaq PRIVATE -qopenmp)
+  # Choose module name based on CUDA_ENABLED
+  if(CUDA_ENABLED)
+    set(PY_MODULE_NAME diaq_gpu)
+  else()
+    set(PY_MODULE_NAME diaq)
   endif()
+
+  pybind11_add_module(${PY_MODULE_NAME} ${INC_DIR}/pythonWrappers.cpp)
+  target_link_libraries(${PY_MODULE_NAME} PUBLIC diaq_core)
+
+  # Ensure the module also compiles with OpenMP flags
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+  endif()
+
+  # RPATH for the Python extension
   if(APPLE)
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
       MACOSX_RPATH  ON
     )
   else()
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
     )
   endif()
 
-  if(CUDA_ENABLED)
-    pybind11_add_module(diaq_gpu ${INC_DIR}/pythonWrappers.cpp)
-    target_link_libraries(diaq_gpu PUBLIC diaq_core)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      target_compile_options(diaq_gpu PRIVATE -fopenmp)
-      target_link_options(diaq_gpu PRIVATE -fopenmp)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      target_compile_options(diaq_gpu PRIVATE -fopenmp)
-      target_link_options(diaq_gpu PRIVATE -fopenmp)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-      target_compile_options(diaq_gpu PRIVATE -qopenmp)
-      target_link_options(diaq_gpu PRIVATE -qopenmp)
-    endif()
-    if(APPLE)
-      set_target_properties(diaq_gpu PROPERTIES
-        BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
-        INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
-        MACOSX_RPATH  ON
-      )
-    else()
-      set_target_properties(diaq_gpu PROPERTIES
-        BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
-        INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
-      )
+  # Install into the active env’s site-packages.
+  # Respect user-specified Python3_EXECUTABLE if already set.
+  if(NOT DEFINED Python3_EXECUTABLE)
+    if(DEFINED ENV{VIRTUAL_ENV})
+      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+    elseif(DEFINED ENV{CONDA_PREFIX})
+      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
     endif()
   endif()
 
-  if(DEFINED ENV{VIRTUAL_ENV})
-    set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
-  elseif(DEFINED ENV{CONDA_PREFIX})
-    set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
-  endif()
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
   execute_process(
@@ -474,12 +471,9 @@ if(BUILD_PYTHON)
     OUTPUT_VARIABLE PYTHON_SITE_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  message(STATUS "${BoldGreen}>>> Installing Python modules directly into: ${PYTHON_SITE_DIR}${Reset}")
+  message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
 
-  # Install both modules if they exist
-  install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
-  if(CUDA_ENABLED)
-    install(TARGETS diaq_gpu LIBRARY DESTINATION ${PYTHON_SITE_DIR})
-  endif()
-  install(TARGETS diaq_core LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  # Install the *right* Python module and the shared core library
+  install(TARGETS ${PY_MODULE_NAME} LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  install(TARGETS diaq_core        LIBRARY DESTINATION ${PYTHON_SITE_DIR})
 endif()
