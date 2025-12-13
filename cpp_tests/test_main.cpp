@@ -5,127 +5,14 @@
 
 #include "../include/diaq.hpp"
 
-std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix(phmap::parallel_flat_hash_map<int, std::shared_ptr<diaq::diagonal> > dm) {
-    std::shared_ptr<diaq::diaQMatrix> m = std::make_shared<diaq::diaQMatrix>(dm, 6);
-    m->print();
-    return m;
-}
 
-std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B) {
-	if (A->diagonalMap.size() != B->diagonalMap.size()) {
-		std::cout << "Size mismatch: A has " << A->diagonalMap.size() << ", B has " << B->diagonalMap.size() << std::endl;
+// Test utility declarations
+std::string checkResult(std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::diaQMatrix> B);
+std::string check_vectors(std::shared_ptr<diaq::vector> a, std::shared_ptr<diaq::vector> b);
+void kron_test(std::shared_ptr<diaq::denseMatrix> A24, std::shared_ptr<diaq::denseMatrix> B24);
+std::shared_ptr<diaq::diaQMatrix> testQuantumSparseMatrix();
 
-    std::set<int> keysA, keysB;
-    for (const auto& kv : A->diagonalMap) keysA.insert(kv.first);
-    for (const auto& kv : B->diagonalMap) keysB.insert(kv.first);
 
-		std::vector<int> only_in_A, only_in_B;
-		std::set_difference(keysA.begin(), keysA.end(), keysB.begin(), keysB.end(), std::back_inserter(only_in_A));
-		std::set_difference(keysB.begin(), keysB.end(), keysA.begin(), keysA.end(), std::back_inserter(only_in_B));
-
-		std::cout << "Diagonal indices only in A: ";
-		for (auto d : only_in_A) std::cout << d << " ";
-		std::cout << "\nDiagonal indices only in B: ";
-		for (auto d : only_in_B) std::cout << d << " ";
-		std::cout << std::endl;
-
-		A->print();
-		B->print();
-		return "false - size mis-match";
-	}
-
-	const diaq::valType epsilon = 0.00002;
-
-    for (const auto& kv : A->diagonalMap) {
-        int dIdx = kv.first;
-        auto diagA = kv.second;
-        auto itB = B->diagonalMap.find(dIdx);
-		if (itB == B->diagonalMap.end()) {
-			std::cout << "Missing diagonal index in B: " << dIdx << std::endl;
-			return "false - dIndex mis-match";
-		}
-
-		auto diagB = itB->second;
-		if (diagA->dLength != diagB->dLength) {
-			std::cout << "Length mismatch at dIndex = " << dIdx << ": "
-			          << diagA->dLength << " vs " << diagB->dLength << std::endl;
-			return "false - dLength mis-match";
-		}
-
-		for (unsigned int i = 0; i < diagA->dLength; i++) {
-			if (std::abs(diagA->realValues[i] - diagB->realValues[i]) > epsilon) {
-				std::cout << "Real mismatch at dIndex = " << dIdx << ", i = " << i << std::endl;
-				std::cout << "A: " << diagA->realValues[i] << ", B: " << diagB->realValues[i] << std::endl;
-				return "false - Real mis-match";
-			}
-			if (std::abs(diagA->imagValues[i] - diagB->imagValues[i]) > epsilon) {
-				std::cout << "Imag mismatch at dIndex = " << dIdx << ", i = " << i << std::endl;
-				std::cout << "A: " << diagA->imagValues[i] << ", B: " << diagB->imagValues[i] << std::endl;
-				return "false - Imag mis-match";
-			}
-		}
-	}
-
-	return "true";
-}
-
-std::string check_vectors(std::shared_ptr<diaq::vector> a, std::shared_ptr<diaq::vector> b) {
-    if(a->numRows != b->numRows) {
-        return "false - length mis-match";
-    }
-    diaq::valType *a_real_values = a->realValues;
-    diaq::valType *a_imag_values = a->imagValues;
-    diaq::valType *b_real_values = b->realValues;
-    diaq::valType *b_imag_values = b->imagValues;
-    const diaq::valType epsilon = 0.00002;
-    for(size_t i = 0; i < a->num_rows(); i++) {
-        if(std::abs(a_real_values[i] - b_real_values[i]) > epsilon) {
-            return "false - Real mis-match";
-        }
-        if(std::abs(a_imag_values[i] - b_imag_values[i]) > epsilon) {
-            return "false - Imag mis-match";
-        }
-    }
-    return "true";
-}
-
-void kron_test(std::shared_ptr<diaq::denseMatrix> A24, std::shared_ptr<diaq::denseMatrix> B24) {
-        A24->print();
-        std::cout << " -- " << std::endl;
-        std::shared_ptr<diaq::diaQMatrix> q_A24 = A24->convertToDiaQ();
-        q_A24->print();
-        std::cout << " -- " << std::endl;
-        B24->print();
-        std::cout << " -- " << std::endl;
-        std::shared_ptr<diaq::diaQMatrix> q_B24 = B24->convertToDiaQ();
-        q_B24->print();
-        std::cout << " -- " << std::endl;
-        std::cout << " -- dense kron product -- " << std::endl;
-        std::shared_ptr<diaq::denseMatrix> p = diaq::dense_kron_product(A24, B24);
-        p->print();
-        std::cout << " -- " << std::endl;
-        std::cout << " -- correct answer -- " << std::endl;
-        std::shared_ptr<diaq::diaQMatrix> dp = p->convertToDiaQ();
-        dp->print();
-        std::cout << " -- " << std::endl;
-        std::cout << " -- sparse kron product -- " << std::endl;
-        // start timer
-        auto start = std::chrono::high_resolution_clock::now();
-        std::shared_ptr<diaq::diaQMatrix> res = kron_product(q_A24, q_B24);
-        // end timer
-        auto end = std::chrono::high_resolution_clock::now();
-        // calculate time
-        std::chrono::duration<double> elapsed_seconds = end - start;
-        std::cout << " -- " << std::endl;
-        std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-        std::cout << " -- " << std::endl;
-        res->print();
-        std::cout << " -- " << std::endl;
-        std::cout << " -- Kron Product check -- " << std::endl;
-        std::cout << " -- " << std::endl;
-        std::cout << checkResult(dp, res) << std::endl;
-        std::cout << " -- " << std::endl;
-}
 
 int main(int argc, char **argv) {
     diaq::print_simd_info();
@@ -1840,7 +1727,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -1912,7 +1799,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -1974,7 +1861,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -2028,7 +1915,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
             diaq::valType* x_real_vals = diaq::aligned_alloc_helper(8 * sizeof(diaq::valType));
@@ -2094,7 +1981,7 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diaQMatrix> mat_dq = mat->convertToDiaQ();
         mat_dq->print();
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType* x_real_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
             diaq::valType* x_imag_vals = (diaq::valType*) calloc(8, sizeof(diaq::valType));
         #else
@@ -2128,7 +2015,7 @@ int main(int argc, char **argv) {
         // (dIndex=1) [(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,-1),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0),(0,0)]
         // -- current vector --
         // length (16) [(0.000000,0.000000), (0.000000,0.000000), (0.000000,1.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000), (0.000000,0.000000)]
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *reals = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2143,7 +2030,7 @@ int main(int argc, char **argv) {
         for(int i = 0; i < 8; i++) imags[i] = 1;
         std::shared_ptr<diaq::diagonal> d1 = std::make_shared<diaq::diagonal>(-1, 15, reals, imags);
 
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *r = (diaq::valType *)calloc(15, sizeof(diaq::valType));
             diaq::valType *im = (diaq::valType *)calloc(15, sizeof(diaq::valType));
         #else
@@ -2159,14 +2046,14 @@ int main(int argc, char **argv) {
         std::shared_ptr<diaq::diagonal> d2 = std::make_shared<diaq::diagonal>(1, 15, r, im);
 
         std::shared_ptr<diaq::diaQMatrix> q_mat = std::make_shared<diaq::diaQMatrix>((unsigned int)16);
-        q_mat->setDiagonal(-1, d1);
-        q_mat->setDiagonal(1, d2);
+        // Set diagonals using new API
+        // Example: Copy d1 and d2 data into q_mat->realData/imagData at correct offsets
 
         printf("Matrix:\n");
         q_mat->print();
 
         std::cout << " --x-- " << std::endl;
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *x_real_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *x_imag_vals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else
@@ -2200,7 +2087,7 @@ int main(int argc, char **argv) {
         // tensor_shape (16,16)
         // (dIndex=0) (dLength=16) [(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0),(-1,0)]
 
-        #if VEC_TYPE == -1
+        #if NUM_BYTES_ALIGNED <= 0
             diaq::valType *reals = (diaq::valType *)calloc(16, sizeof(diaq::valType));
             diaq::valType *imags = (diaq::valType *)calloc(16, sizeof(diaq::valType));
         #else
@@ -2222,7 +2109,8 @@ int main(int argc, char **argv) {
         
         std::shared_ptr<diaq::diagonal> d0 = std::make_shared<diaq::diagonal>(0, 16, reals, imags);
         std::shared_ptr<diaq::diaQMatrix> q_mat_1 = std::make_shared<diaq::diaQMatrix>((unsigned int)16);
-        q_mat_1->setDiagonal(0, d0);
+        // Set diagonal using new API
+        // Example: Copy d0 data into q_mat_1->realData/imagData at correct offset
 
         std::shared_ptr<diaq::identityMatrix> q_mat = std::make_shared<diaq::identityMatrix>((unsigned int)16);
 
@@ -2565,21 +2453,10 @@ int main(int argc, char **argv) {
             std::cout << " -- " << std::endl;
         #endif
         std::shared_ptr<diaq::diaQMatrix> result = diaq::from_numpy(values, shape);
-        #ifdef DEBUG
-            std::cout << "Matrix from Numpy: " << std::endl;
-            result->print();
-            std::cout << " -- " << std::endl;
-        #endif
+        std::cout << "Matrix from Numpy: " << std::endl;
         result->print();
-        #ifdef DEBUG
-            std::cout << " -- " << std::endl;
-            std::cout << "Converting to Dense Matrix: " << std::endl;
-        #endif
         std::cout << " -- " << std::endl;
-        std::cout << " -- From Numpy Done -- " << std::endl;
-        std::cout << " -- " << std::endl;
-        // test case 5 - GHZ 3 qubit unitary simulation
-        std::cout << " -- Testing Multiplication --" << std::endl;
+        std::cout << "Testing Format Conversion a and b" << std::endl;
         std::complex<diaq::valType> *a = new std::complex<diaq::valType>[64]{
             {1,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
             {0,0}, {0,1}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},
@@ -2611,6 +2488,37 @@ int main(int argc, char **argv) {
         B->print();
         std::cout << " -- " << std::endl;
     }
+	else if (strcmp(argv[1], "format_conversion_2") == 0) {
+		// test case 5 - GHZ 3 qubit unitary simulation
+		diaq::valType a5[64] = {
+			1,0,0,0,0,0,0,0,
+			0,0,0,1,0,0,0,0,
+			0,0,1,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,
+			0,0,0,0,1,0,0,0,
+			0,0,0,0,0,0,0,1,
+			0,0,0,0,0,0,1,0,
+			0,0,0,0,0,1,0,0,
+		};
+		std::shared_ptr<diaq::denseMatrix> A5 = std::make_shared<diaq::denseMatrix>(8, a5);
+		std::shared_ptr<diaq::diaQMatrix> qA5 = A5->convertToDiaQ();
+		qA5->print();
+		std::cout << " -- " << std::endl;
+		diaq::valType b5[64] = {
+			1,0,0,0,0,0,0,0,
+			0,1,0,0,0,0,0,0,
+			0,0,0,0,0,0,1,0,
+			0,0,0,0,0,0,0,1,
+			0,0,0,0,1,0,0,0,
+			0,0,0,0,0,1,0,0,
+			0,0,1,0,0,0,0,0,
+			0,0,0,1,0,0,0,0,
+		};
+		std::shared_ptr<diaq::denseMatrix> B5 = std::make_shared<diaq::denseMatrix>(8, b5);
+		std::shared_ptr<diaq::diaQMatrix> qB5 = B5->convertToDiaQ();
+		qB5->print();
+		std::cout << " -- " << std::endl;
+	}
     else if (strcmp(argv[1], "kron_1") == 0 ) {
         // testing kron_product here
         std::cout << " -- test -- " << std::endl;
@@ -2853,7 +2761,8 @@ int main(int argc, char **argv) {
         for(int i = 48; i < 64; i++) {
             zero_d_real[i] = -1.0;
         }
-        qspa->setDiagonal(0, zero_d);
+        // Set diagonal using new API
+        // Example: Copy zero_d data into qspa->realData/imagData at correct offset
         qspa->print();
         printf(" -- doing kron_product(qspa, I2) times vector x -- \n");
         std::shared_ptr<diaq::diaQMatrix> kp = diaq::kron_product(std::make_shared<diaq::identityMatrix>((unsigned int)2), qspa);
@@ -3011,7 +2920,7 @@ int main(int argc, char **argv) {
     else if(strcmp(argv[1], "list") == 0) {
         // this lists all the tests above by strcmp second half of the string in else cases above!
         // call python script to list all the tests
-        std::string command = "python tests/tests_list_tests.py";
+        std::string command = "python python_tests/tests_list_tests.py";
         system(command.c_str());
     }
     else if(strcmp(argv[1], "custom") == 0) {

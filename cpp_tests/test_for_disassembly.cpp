@@ -39,15 +39,14 @@ void test_diaQMatrix_product_validation() {
 
 	for (size_t idx = 0; idx < diag_positions_A.size(); ++idx) {
 		int dIndex = diag_positions_A[idx];
-		unsigned int dLength = A->getDiagonalLength(dIndex);
-		std::shared_ptr<diaq::diagonal> diag = std::make_shared<diaq::diagonal>(dIndex, dLength);
-		diaq::valType *real_vals = diag->realValues;
-		diaq::valType *imag_vals = diag->imagValues;
+		unsigned int aIdx = idx;
+		unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[aIdx]);
+		diaq::valType *real_vals = A->realData + A->diagOffsets[aIdx];
+		diaq::valType *imag_vals = A->imagData + A->diagOffsets[aIdx];
 		for (unsigned int i = 0; i < dLength; ++i) {
 			real_vals[i] = dist(rng);
 			imag_vals[i] = dist(rng);
 		}
-		A->addDiagonal(dIndex, diag);
 	}
 
 	printf("===== \n");
@@ -57,15 +56,14 @@ void test_diaQMatrix_product_validation() {
 
 	for (size_t idx = 0; idx < diag_positions_B.size(); ++idx) {
 		int dIndex = diag_positions_B[idx];
-		unsigned int dLength = B->getDiagonalLength(dIndex);
-		std::shared_ptr<diaq::diagonal> diag = std::make_shared<diaq::diagonal>(dIndex, dLength);
-		diaq::valType *real_vals = diag->realValues;
-		diaq::valType *imag_vals = diag->imagValues;
+		unsigned int bIdx = idx;
+		unsigned int dLength = B->getDiagonalLengthInternal(B->dIndices[bIdx]);
+		diaq::valType *real_vals = B->realData + B->diagOffsets[bIdx];
+		diaq::valType *imag_vals = B->imagData + B->diagOffsets[bIdx];
 		for (unsigned int i = 0; i < dLength; ++i) {
 			real_vals[i] = dist(rng);
 			imag_vals[i] = dist(rng);
 		}
-		B->addDiagonal(dIndex, diag);
 	}
 
 	printf("===== \n");
@@ -86,24 +84,28 @@ void test_diaQMatrix_product_validation() {
 	std::vector<std::complex<double>> denseC(size * size, {0.0, 0.0});
 
 	for (size_t idx = 0; idx < diag_positions_A.size(); ++idx) {
-		int offset = diag_positions_A[idx];
-		auto diag = A->getDiagonal(offset);
-		assert(diag);  // Safety check
-		for (unsigned int i = 0; i < diag->dLength; ++i) {
+		int aIdx = idx;
+		int offset = diag_positions_A[aIdx];
+		unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[aIdx]);
+		diaq::valType *real_vals = A->realData + A->diagOffsets[aIdx];
+		diaq::valType *imag_vals = A->imagData + A->diagOffsets[aIdx];
+		for (unsigned int i = 0; i < dLength; ++i) {
 			int row = (offset >= 0) ? i : i - offset;
 			int col = row + offset;
-			denseA[row * size + col] = (*diag)[i];
+			denseA[row * size + col] = std::complex<double>(real_vals[i], imag_vals[i]);
 		}
 	}
 
 	for (size_t idx = 0; idx < diag_positions_B.size(); ++idx) {
-		int offset = diag_positions_B[idx];
-		auto diag = B->getDiagonal(offset);
-		assert(diag);  // Safety check
-		for (unsigned int i = 0; i < diag->dLength; ++i) {
+		int bIdx = idx;
+		int offset = diag_positions_B[bIdx];
+		unsigned int dLength = B->getDiagonalLengthInternal(B->dIndices[bIdx]);
+		diaq::valType *real_vals = B->realData + B->diagOffsets[bIdx];
+		diaq::valType *imag_vals = B->imagData + B->diagOffsets[bIdx];
+		for (unsigned int i = 0; i < dLength; ++i) {
 			int row = (offset >= 0) ? i : i - offset;
 			int col = row + offset;
-			denseB[row * size + col] = (*diag)[i];
+			denseB[row * size + col] = std::complex<double>(real_vals[i], imag_vals[i]);
 		}
 	}
 
@@ -125,15 +127,4 @@ void test_diaQMatrix_product_validation() {
 	} else {
 		std::cout << "[FAILURE] diaQMatrix product does NOT match dense matrix product!" << std::endl;
 	}
-}
-
-int main() {
-	diaq::print_simd_info();
-	printf("VEC_WIDTH = %d\n", VEC_WIDTH);
-	printf("VEC_TYPE = %d\n", VEC_TYPE);
-	printf("NUM_BYTES_ALIGNED = %d\n", NUM_BYTES_ALIGNED);
-	printf("BLOCK_SIZE = %d\n", BLOCK_SIZE);
-	printf("NUMBER_OF_OMP_THREADS = %d\n", NUMBER_OF_OMP_THREADS);
-	test_diaQMatrix_product_validation();
-	return 0;
 }

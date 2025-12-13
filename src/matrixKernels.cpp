@@ -8,14 +8,18 @@ namespace diaq {
 
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
     std::complex<valType> t = 0;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator itA;
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> > mapA = A->diagonalMap;
-    itA = mapA.find(0);
-    if(itA == mapA.end()) {
-        return t;
-    }
-    for(unsigned int i=0; i < itA->second->dLength; i++) {
-        t += itA->second->getValue(i);
+    // iterate over diagonal Index 0 only
+    for (size_t d = 0; d < A->dIndices.size(); ++d) {
+        if (A->dIndices[d] == 0) {
+            unsigned int len = A->getDiagonalLengthInternal(0);
+            valType* realA = A->realData + A->diagOffsets[d];
+            valType* imagA = A->imagData + A->diagOffsets[d];
+            #pragma omp parallel for shared(t)
+            for (unsigned int i = 0; i < len; i++) {
+                t += std::complex<valType>(realA[i], imagA[i]);
+            }
+            break;
+        }
     }
     return t;
 }
@@ -179,43 +183,45 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
     #endif
 
     if (scalar_real == 1.0 && scalar_imag == 0.0) {
-        return A; // since we are not changing A, we should be ok returning it for now :( To-Do: think of a cleaner way to do this.
+        return A;
     }
 
-    // std::shared_ptr<diaQMatrix> result = new diaQMatrix((unsigned int)0);
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>((unsigned int)0);
-
+    // Handle zero scalar: return empty matrix
     if (scalar_real == 0.0 && scalar_imag == 0.0) {
-        return result;
+        return std::make_shared<diaQMatrix>((unsigned int)0);
     }
 
-    result->matrix_shape = A->matrix_shape;
-    result->shape = A->shape;
+    // Prepare temp buffers for result
+    size_t numDiags = A->dIndices.size();
+    std::vector<int> dIndices(A->dIndices);
+    std::vector<unsigned int> diagLens(numDiags);
+    std::vector<unsigned int> diagOffsets(numDiags);
+    unsigned int totalLen = 0;
+    for (size_t k = 0; k < numDiags; ++k) {
+        diagLens[k] = A->getDiagonalLengthInternal(A->dIndices[k]);
+        diagOffsets[k] = totalLen;
+        totalLen += diagLens[k];
+    }
+    std::vector<valType> realData(totalLen);
+    std::vector<valType> imagData(totalLen);
 
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
-
+    // Fill temp buffers
     #pragma omp parallel for
-    for (size_t a = 0; a < A->diagonalMap.size(); ++a) {
-        auto it = std::next(A->diagonalMap.begin(), a);
-        int dIndex = it->first;
-        unsigned int dLength = it->second->dLength;
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
-        // std::shared_ptr<diagonal> newDiag = new diagonal(dIndex, dLength);
-        std::shared_ptr<diagonal> newDiag = std::make_shared<diagonal>(dIndex, dLength);
-        valType *real_valsC = newDiag->realValues;
-        valType *imag_valsC = newDiag->imagValues;
-
-        #if defined(SIMD_ENABLED)
-        #pragma omp simd
-        #endif
-        for (unsigned int i = 0; i < dLength; i++) {
-            real_valsC[i] = real_vals[i] * scalar_real - imag_vals[i] * scalar_imag;
-            imag_valsC[i] = real_vals[i] * scalar_imag + imag_vals[i] * scalar_real;
+    for (size_t k = 0; k < numDiags; ++k) {
+        unsigned int dLength = diagLens[k];
+        unsigned int offset = diagOffsets[k];
+        unsigned int srcOffset = A->diagOffsets[k];
+        for (unsigned int i = 0; i < dLength; ++i) {
+            valType real_val = A->realData[srcOffset + i];
+            valType imag_val = A->imagData[srcOffset + i];
+            realData[offset + i] = real_val * scalar_real - imag_val * scalar_imag;
+            imagData[offset + i] = real_val * scalar_imag + imag_val * scalar_real;
         }
-        
-        result->setDiagonal(dIndex, newDiag);
     }
+
+    // Construct result using contiguous API
+    auto result = std::make_shared<diaQMatrix>(A->matrix_shape, dIndices);
+    result->setContiguousData(realData, imagData);
 
     #ifdef DEEP_DEBUG
         std::cout << " --- " << std::endl;

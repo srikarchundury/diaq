@@ -16,6 +16,8 @@ namespace diaq {
  */
 std::string compare(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
 
+unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
+
 } // namespace diaq
 
 #endif // DIAQ_HELPERS_HPP

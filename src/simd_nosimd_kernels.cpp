@@ -10,6 +10,7 @@ void run_without_vectorization<float>(unsigned int start, unsigned int end, unsi
 		std::chrono::high_resolution_clock::time_point time_start = std::chrono::high_resolution_clock::now();
 	#endif
 
+	#pragma omp simd
 	for (unsigned int k = start; k < end; ++k) {
 		valType real_a = real_vals_a[k + a_offset];
 		valType imag_a = imag_vals_a[k + a_offset];
@@ -39,6 +40,7 @@ void run_without_vectorization<double>(unsigned int start, unsigned int end, uns
 		std::chrono::high_resolution_clock::time_point time_start = std::chrono::high_resolution_clock::now();
 	#endif
 
+	#pragma omp simd
 	for (unsigned int k = start; k < end; ++k) {
 		valType real_a = real_vals_a[k + a_offset];
 		valType imag_a = imag_vals_a[k + a_offset];

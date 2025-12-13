@@ -18,7 +18,7 @@ std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, 
     std::array<unsigned int, 2> d;
     d[0] = shape_a[0] * shape_b[0];
     d[1] = shape_a[1] * shape_b[1];
-    #if NUM_BYTES_ALIGNED == -1
+    #if NUM_BYTES_ALIGNED <= 0
         valType *real_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
         valType *imag_res = (valType *)calloc(shape_a[0] * shape_a[1] * shape_b[0] * shape_b[1], sizeof(valType));
     #else
@@ -98,7 +98,7 @@ std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::s
     if(shape_a[1] != shape_b[0]) {
         throw std::invalid_argument("input matrices are not multiplyable");
     }
-    #if NUM_BYTES_ALIGNED == -1
+    #if NUM_BYTES_ALIGNED <= 0
         valType *real_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
         valType *imag_res = (valType *)calloc(shape_a[0] * shape_b[1], sizeof(valType));
     #else

@@ -25,32 +25,32 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
 
     // this is matrix_reshape.
     // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    // std::shared_ptr<diaQMatrix> res = new diaQMatrix(&matrix_shape, A->shape);
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape, A->shape);
-    phmap::parallel_flat_hash_map<int, std::shared_ptr<diagonal> >::iterator it;
-    for (it = A->diagonalMap.begin(); it != A->diagonalMap.end(); it++) {
-        valType *real_vals = it->second->realValues;
-        valType *imag_vals = it->second->imagValues;
-        #pragma omp parallel for
-        for(unsigned int i = 0; i < it->second->dLength; i++) {
-            // old_d_pos has (it->first, i) for A->matrix_shape
-            std::array<int, 2> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(it->first, i));
-            int d_len = getDiagonalLength(d_pos[0], matrix_shape);
-            if(real_vals[i] != 0 || imag_vals[i] != 0) { // doing this here to avoid pruning later below.
-                res->setDiagonalElement(d_pos[0], d_pos[1], d_len, real_vals[i], imag_vals[i]);
+    std::vector<int> temp_dIndices;
+    std::vector<unsigned int> temp_diagLens;
+    std::vector<valType> temp_realData;
+    std::vector<valType> temp_imagData;
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape);
+    #pragma omp parallel for
+    for (size_t d = 0; d < A->dIndices.size(); ++d) {
+        int dIdx = A->dIndices[d];
+        unsigned int len = A->getDiagonalLengthInternal(dIdx);
+        valType* realA = A->realData + A->diagOffsets[d];
+        valType* imagA = A->imagData + A->diagOffsets[d];
+        for(unsigned int i = 0; i < len; i++) {
+            std::array<unsigned int, 2> pos = {static_cast<unsigned int>(dIdx), i};
+            std::array<int, 2> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(pos));
+            unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
+            if(realA[i] != 0.0 || imagA[i] != 0.0) {
+                temp_dIndices.push_back(d_pos[0]);
+                temp_diagLens.push_back(d_len);
+                temp_realData.push_back(realA[i]);
+                temp_imagData.push_back(imagA[i]);
             }
         }
     }
-
-    // setting dIndices and dPointers
-    res->dIndices.resize(res->diagonalMap.size());
-    res->dPointers.resize(res->diagonalMap.size());
-    #pragma omp parallel for
-    for(unsigned int i = 0; i < res->diagonalMap.size(); i++) {
-        auto it = std::next(res->diagonalMap.begin(), i);
-        res->dIndices[i] = it->first;
-        res->dPointers[i] = it->second;
-    }
+    // After loop: construct result using available API
+    res = std::make_shared<diaQMatrix>(matrix_shape, temp_dIndices);
+    res->setContiguousData(temp_realData, temp_imagData);
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

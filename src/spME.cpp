@@ -12,47 +12,37 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     // Stops when terms become negligibly small or reach a max iteration count.
 
     #ifdef DEBUG
-        printf("starting expm_negative_taylor -- ");
+        printf("starting <spME:expm_negative_taylor> --- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
     // Initialize result and create 0th diagonal
     std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
-    if(A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
-
-        std::shared_ptr<diagonal> d = A->getDiagonal(0);
-        unsigned int dLength = d->dLength;
-        valType *real_vals = d->realValues;
-        valType *imag_vals = d->imagValues;
-
-        std::shared_ptr<diagonal> res_diag = result->getDiagonal(0);
-        valType *res_real_vals = res_diag->realValues;
-        valType *res_imag_vals = res_diag->imagValues;
-
+    if(A->num_diags() == 1) {
+        unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[0]);
+        valType *real_vals = A->realData + A->diagOffsets[0];
+        valType *imag_vals = A->imagData + A->diagOffsets[0];
+        valType *res_real_vals = result->realData + result->diagOffsets[0];
+        valType *res_imag_vals = result->imagData + result->diagOffsets[0];
         // Compute exact exp(-i A t) for diagonal elements
         #pragma omp parallel for
         for (unsigned int i = 0; i < dLength; i++) {
             valType a_i = real_vals[i];
             valType b_i = imag_vals[i];
-
             valType t_a = t * a_i;
             valType t_b = t * b_i;
-
             valType exp_b = std::exp(t_b);
             valType cos_ta = std::cos(t_a);
             valType sin_ta = std::sin(t_a);
-
             res_real_vals[i] = exp_b * cos_ta;
             res_imag_vals[i] = -exp_b * sin_ta;
         }
-
         #ifdef DEBUG
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_negative_taylors took %f milliseconds\n", duration.count() / 1000.0);
         #endif
-
         return result;
     }
 
@@ -85,9 +75,9 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     // printf("Taylor converged at iteration %d with norm %.2e\n", i, X_power_i_whole_divided_by_i->norm());
 
     #ifdef DEBUG
-            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t expm_negative took %f milliseconds\n", duration.count() / 1000.0);
     #endif
 
     return result;
@@ -99,26 +89,37 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
-    if (A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
+    if (A->num_diags() == 1) {
         #ifdef DEBUG
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_negative_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
         #endif
-
         return expm_negative_taylor(A, t, max_iterations, scale_cutoff);
     }
 
 	// Step 1: Estimate the 1-norm and set tolerance!
 	valType norm_est = A->estimate_1norm();
-	const valType eps = (valType)1e-12;                 // small bias
+    #ifdef DEEP_DEBUG
+        printf("expm_negative_taylor_scaled: Estimated ||A||_1 = %.6f\n", norm_est);
+    #endif
+
+    const valType eps = (valType)1e-12;                 // small bias
     valType scaled_norm = t * norm_est + eps;           // nudge away from knife-edge
     int s = (scaled_norm > scale_cutoff)
         ? (int)std::ceil(std::log2(scaled_norm / scale_cutoff))
         : 0;
-    valType tolerance = std::max((valType)1e-9, (valType)(1e-5 / (1 << s)));
+
+    // valType tolerance = std::max((valType)1e-9, (valType)(1e-5 / (1 << s)));
+    valType scale = std::ldexp((valType)1.0, s);  // 1 * 2^s in floating point
+    valType tolerance = std::max((valType)1e-9, (valType)(1e-5 / scale));
 
 	valType scaled_t = t / static_cast<valType>(1 << s); // t / 2^s
+
+    #ifdef DEEP_DEBUG
+        printf("expm_negative_taylor_scaled: norm_est = %.6f, scaled_norm = %.6f, s = %d, scaled_t = %.6f, tolerance = %.2e\n",
+            norm_est, scaled_norm, s, scaled_t, tolerance);
+    #endif
 
 	if (s > 10) {
 		printf("\033[93m[WARNING]\033[0m expm_negative_taylor_scaled: scaling exponent s = %d is large (‖A‖₁ = %.3f)\n", s, norm_est);
@@ -141,47 +142,47 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 	return U;
 }
 
+
+// not optimized yet. may still have bugs..
 std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations) {
     #ifdef DEBUG
         printf("starting expm_negative_pade -- ");
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0]);
-
     // Efficient case: If A is purely diagonal, compute exact exponential
-    if (A->num_diags() == 1 && A->getDiagonal(0) != nullptr) {
-        result->createDiagonal(0);
+    if (A->num_diags() == 1) {
+        // Make a matrix with a proper main diagonal allocated
+        auto result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
-        std::shared_ptr<diagonal> d = A->getDiagonal(0);
-        unsigned int dLength = d->dLength;
-        valType *real_vals = d->realValues;
-        valType *imag_vals = d->imagValues;
+        unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[0]);
+        valType *real_vals = A->realData + A->diagOffsets[0];
+        valType *imag_vals = A->imagData + A->diagOffsets[0];
 
-        std::shared_ptr<diagonal> res_diag = result->getDiagonal(0);
-        valType *res_real_vals = res_diag->realValues;
-        valType *res_imag_vals = res_diag->imagValues;
+        // result is identity: single diagonal at index 0
+        valType *res_real_vals = result->realData + result->diagOffsets[0];
+        valType *res_imag_vals = result->imagData + result->diagOffsets[0];
 
         #pragma omp parallel for
         for (unsigned int i = 0; i < dLength; i++) {
             valType t_a = t * real_vals[i];
             valType t_b = t * imag_vals[i];
-
             valType exp_b = std::exp(t_b);
             valType cos_ta = std::cos(t_a);
             valType sin_ta = std::sin(t_a);
-
             res_real_vals[i] = exp_b * cos_ta;
             res_imag_vals[i] = -exp_b * sin_ta;
         }
 
         #ifdef DEBUG
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-            printf("\t\t expm_negative_pade took %f milliseconds\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
+            printf("\t\t expm_negative_pade took %f milliseconds\n",
+                    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0);
         #endif
-
         return result;
     }
+
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(A->matrix_shape[0], A->matrix_shape[1]);
 
     constexpr valType pade_numer[7] = {1.0, 1.0, 0.5, 0.16666666666667, 0.04166666666667, 0.00833333333333, 0.00138888888889};
     constexpr valType pade_denom[7] = {1.0, 0.5, 0.16666666666667, 0.04166666666667, 0.00833333333333, 0.00138888888889, 0.00019841269841};
@@ -336,28 +337,23 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
-    std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
+    // Efficient case: purely diagonal
+    if (num_diags() == 1) {
+        // Allocate a matrix with the main diagonal present
+        std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<identityMatrix>(this->matrix_shape[0]);
 
-    // Efficient case: If A is purely diagonal, principal
-    if (num_diags() == 1 && getDiagonal(0) != nullptr) {
-        std::shared_ptr<diagonal> diag = this->getDiagonal(0);
-        unsigned int dLength = diag->dLength;
-        valType *real_vals = diag->realValues;
-        valType *imag_vals = diag->imagValues;
+        unsigned int dLength = getDiagonalLengthInternal(dIndices[0]);
+        valType *real_vals = realData + diagOffsets[0];
+        valType *imag_vals = imagData + diagOffsets[0];
 
-        // Create the inverse matrix
-        inv_matrix->createDiagonal(0);
-        std::shared_ptr<diagonal> inv_diag = inv_matrix->getDiagonal(0);
+        valType *inv_real_vals = inv_matrix->realData + inv_matrix->diagOffsets[0];
+        valType *inv_imag_vals = inv_matrix->imagData + inv_matrix->diagOffsets[0];
 
-        valType *inv_real_vals = inv_diag->realValues;
-        valType *inv_imag_vals = inv_diag->imagValues;
-
-        #pragma omp parallel for
+		#pragma omp parallel for
         for (unsigned int i = 0; i < dLength; i++) {
             valType a_i = real_vals[i];
             valType b_i = imag_vals[i];
 
-            // Compute the complex reciprocal (1 / (a + ib))
             valType denom = a_i * a_i + b_i * b_i;
             if (denom == 0.0) {
                 throw std::runtime_error("Matrix is singular, cannot compute inverse.");
@@ -367,13 +363,17 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
             inv_imag_vals[i] = -b_i / denom;
         }
 
-        #ifdef DEBUG
-            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-            std::cout << "\t\t inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
-        #endif
-
-        return inv_matrix;
+		#ifdef DEBUG
+			auto end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t inverse took "
+					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+                  << " ms" << std::endl;
+		#endif
+        
+		return inv_matrix;
     }
+
+    std::shared_ptr<diaQMatrix> inv_matrix = std::make_shared<diaQMatrix>(this->matrix_shape[0], this->matrix_shape[1]);
 
     // Solve for each column of the identity matrix
     for (unsigned int col = 0; col < matrix_shape[1]; col++) {
@@ -395,7 +395,8 @@ std::shared_ptr<diaQMatrix> diaQMatrix::inverse() {
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        std::cout << "\t\t inverse took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        printf("spME:expm_negative_taylor took %.3f ms\n", duration / 1000.0);
     #endif
 
     return inv_matrix;
