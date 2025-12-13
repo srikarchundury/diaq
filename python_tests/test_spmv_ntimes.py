@@ -1,15 +1,24 @@
-import diaq as dq
 import numpy as np
 import sys
 from colorama import Fore, Style
 
 # print help to use sys.argv[0]
-if len(sys.argv) != 3:
-	print(f"Usage: python {sys.argv[0]} [vector_size] [the n in spMV_ntimes]")
+if len(sys.argv) != 4:
+	print(f"Usage: python {sys.argv[0]} [vector_size] [the n in spMV_ntimes] ['gpu' or 'cpu']")
 	exit(1)
 
 vec_size = int(sys.argv[1])
 n_times = int(sys.argv[2])
+backend = sys.argv[3].lower()
+
+if backend not in ['cpu', 'gpu']:
+	print("Backend must be either 'cpu' or 'gpu'")
+	exit(1)
+if backend == 'cpu':
+	import diaq as dq
+else:
+	import diaq_gpu as dq
+
 x_np = np.random.rand(vec_size) + 1j * np.random.rand(vec_size)
 x_dq = dq.from_numpy_vector(x_np)
 # x_dq.print_meta()

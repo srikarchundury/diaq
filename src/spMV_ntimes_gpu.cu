@@ -49,7 +49,7 @@ static inline void cudaCheck(cudaError_t err, const char *msg)
 std::shared_ptr<vector> spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A,
                      std::shared_ptr<vector> x,
                         int num_times) {
-    std::shared_ptr<vector> y = std::make_shared<vector>(A->matrix_shape[0]);
+    std::shared_ptr<vector> y = std::make_shared<vector>(A->matrix_shape[0], 0.0, 0.0);
     spMV_ntimes_cuda(A, x, y, num_times);
     return y;
 }
@@ -141,6 +141,8 @@ void spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A,
 	// Output buffer is size M
 	cudaCheck(cudaMalloc(&d_out_real, M * sizeof(valType)), "malloc d_out_real");
 	cudaCheck(cudaMalloc(&d_out_imag, M * sizeof(valType)), "malloc d_out_imag");
+    cudaCheck(cudaMemset(d_out_real, 0, M * sizeof(valType)), "memset d_out_real init");
+    cudaCheck(cudaMemset(d_out_imag, 0, M * sizeof(valType)), "memset d_out_imag init");
 
 	// Metadata needed only for multi-diagonal case
 	if (numDiags > 1) {
@@ -227,7 +229,11 @@ void spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A,
 		}
 	}
 
-	// Check kernel launch status (final)
+    #ifdef DEBUG
+        cudaCheck(cudaDeviceSynchronize(), "sync after kernels");
+    #endif
+
+    // Check kernel launch status (final)
 	cudaCheck(cudaGetLastError(), "kernel launch");
 
 	// ---------------- Copy result back ----------------
