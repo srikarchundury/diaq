@@ -19,7 +19,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
         diagonal(int di, unsigned int dl) {
             dIndex = di;
             dLength = dl;
-            #if VEC_TYPE == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 realValues = (valType *)calloc(dl, sizeof(valType));
                 imagValues = (valType *)calloc(dl, sizeof(valType));
             #else
@@ -39,9 +39,9 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dLength = dl;
         }
         ~diagonal() {
-            #ifdef DEEP_DEBUG
-                std::cout << "diagonal destructor called" << std::endl;
-            #endif
+            // #ifdef DEEP_DEBUG
+            //     std::cout << "diagonal destructor called" << std::endl;
+            // #endif
             // needed because we allocate memory ourserlves unlike shared_ptr! This place and under vector.hpp & denseMatrix.cpp are the only places where we need to free memory manually!!!
             if(realValues != nullptr) std::free(realValues);
             if(imagValues != nullptr) std::free(imagValues);
@@ -50,7 +50,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             dIndex = newIndex;
         }
         std::shared_ptr<diagonal> copy() {
-            #if VEC_TYPE == -1
+            #if NUM_BYTES_ALIGNED <= 0
                 valType *real_vals = (valType *)calloc(dLength, sizeof(valType));
                 valType *imag_vals = (valType *)calloc(dLength, sizeof(valType));
             #else
@@ -171,7 +171,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
 
         std::shared_ptr<diagonal> multiply(valType real, valType imag) {
             #ifdef DEBUG
-                auto start = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
             #endif
 
             if (real == 0.0 && imag == 0.0) {
@@ -187,7 +187,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             }
 
             #ifdef DEBUG
-                auto end = std::chrono::high_resolution_clock::now();
+                std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
                 std::cout << "multiply took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0 << " milliseconds" << std::endl;
             #endif
 
@@ -211,9 +211,7 @@ class diagonal : public std::enable_shared_from_this<diagonal> {
             const valType* real_other = other.realValues;
             const valType* imag_other = other.imagValues;
         
-            #if defined(SIMD_ENABLED)
             #pragma omp simd
-            #endif
             for (unsigned int i = 0; i < dLength; ++i) {
                 realValues[i] += real_other[i];
                 imagValues[i] += imag_other[i];

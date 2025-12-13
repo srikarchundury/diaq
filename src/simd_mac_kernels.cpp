@@ -25,7 +25,7 @@ void run_mac<double>(
     double *real_vals_final, double *imag_vals_final, bool overwrite
 ) {
     #ifdef DEEP_DEBUG
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // Find first aligned SIMD index
@@ -122,8 +122,8 @@ void run_mac<double>(
         }
 
         #ifdef DEEP_DEBUG
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+            long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             std::cout << "DEBUG: SIMD MAC double kernel took " << duration << " microseconds." << std::endl;
         #endif
     }
@@ -151,7 +151,7 @@ void run_mac<float>(
     float *real_vals_final, float *imag_vals_final, bool overwrite
 ) {
     #ifdef DEEP_DEBUG
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // Find first aligned SIMD index
@@ -247,8 +247,8 @@ void run_mac<float>(
         }
     }
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         std::cout << "DEBUG: SIMD MAC float kernel took " << duration << " microseconds." << std::endl;
     #endif
 }
@@ -263,7 +263,7 @@ void run_spmv_mac_1<double>(
     int dIndex, unsigned int dLength) {
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_mac_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -323,8 +323,8 @@ void run_spmv_mac_1<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         std::cout << "DEBUG: SIMD SPMV MAC double kernel took " << duration << " microseconds." << std::endl;
     #endif
 }
@@ -339,7 +339,7 @@ void run_spmv_mac_2<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_mac_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -398,8 +398,8 @@ void run_spmv_mac_2<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         std::cout << "DEBUG: SIMD SPMV MAC double kernel took " << duration << " microseconds." << std::endl;
     #endif
 }
@@ -414,7 +414,7 @@ void run_spmv_mac_0<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_mac_0 - SIMD aligned version --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -467,8 +467,8 @@ void run_spmv_mac_0<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         std::cout << "DEBUG: SIMD SPMV MAC double kernel took " << duration << " microseconds." << std::endl;
     #endif
 }

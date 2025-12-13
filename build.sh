@@ -13,10 +13,11 @@ Targets (default = cpu):
 Common CMake options:
   -DDEBUG=ON                      (default OFF)
   -DDEEP_DEBUG=ON                 (default OFF)
+  -DAVOID_ZERO_DIAGS=ON           (default ON)
   -DCUDA_ENABLED=ON               (auto for 'gpu')
   -DPAPI=ON                       (default OFF)
-  -DMAKE_TESTS=ON                 (default OFF)
-  -DSIMD_ENABLED=ON               (default ON)
+  -DMAKE_TESTS=ON                 (default ON)
+  -DMANUAL_SIMD=ON                (default ON)
   -DMAKE_TEST_FOR_DISASSEMBLY=ON  (default OFF)
   -DBUILD_PYTHON=ON               (default ON)
   -DPython3_EXECUTABLE=/path/python3
@@ -46,12 +47,13 @@ elif [[ "$uname_s" == "Darwin" ]]; then
   cores="$(sysctl -n hw.ncpu)"
 fi
 
-# Arrays (init BEFORE set -u usage)
+# Arrays (init BEFORE use)
 cmake_omp_args=()
 cmake_py_args=()
 
-# macOS: prefer Homebrew LLVM, wire up OpenMP for AppleClang
+# --- macOS: prefer Homebrew LLVM, wire up OpenMP for AppleClang ---
 if [[ "$uname_s" == "Darwin" ]]; then
+  # Prefer Homebrew LLVM if available and CC/CXX not set
   if command -v brew >/dev/null 2>&1; then
     llvm_prefix="$(brew --prefix llvm 2>/dev/null || true)"
     if [[ -n "${llvm_prefix:-}" && -z "${CC:-}" && -z "${CXX:-}" ]]; then
@@ -60,6 +62,8 @@ if [[ "$uname_s" == "Darwin" ]]; then
       echo "Using Homebrew LLVM: CC=$CC, CXX=$CXX"
     fi
   fi
+
+  # If using AppleClang, wire up libomp
   if [[ -n "${CXX:-}" ]] && "$CXX" --version 2>/dev/null | grep -qi "apple clang"; then
     omp_prefix="$(brew --prefix libomp 2>/dev/null || echo /opt/homebrew/opt/libomp)"
     cmake_omp_args+=(
@@ -92,7 +96,14 @@ should_install_python() {
 # --- CPU build ---
 if [[ "$target" == "cpu" || "$target" == "all" ]]; then
   rm -rf cpu_build && mkdir cpu_build
-  cmake_args=( -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLED=ON -DBUILD_PYTHON=ON )
+  cmake_args=(
+    -S . -B cpu_build
+    -DCMAKE_BUILD_TYPE=Release
+    -DMANUAL_SIMD=ON
+    -DMAKE_TESTS=ON
+    -DAVOID_ZERO_DIAGS=ON
+    -DBUILD_PYTHON=ON
+  )
   (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
   (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
   (( $# )) && cmake_args+=( "$@" )
@@ -110,7 +121,15 @@ if [[ "$target" == "gpu" || "$target" == "all" ]]; then
     echo "Note: CUDA is not supported on macOS. Skipping GPU build."
   else
     rm -rf gpu_build && mkdir gpu_build
-    cmake_args=( -S . -B gpu_build -DCMAKE_BUILD_TYPE=Release -DCUDA_ENABLED=ON )
+    cmake_args=(
+      -S . -B gpu_build
+      -DCMAKE_BUILD_TYPE=Release
+      -DAVOID_ZERO_DIAGS=ON
+      -DMAKE_TESTS=ON
+      -DCUDA_ENABLED=ON
+      -DMANUAL_SIMD=ON
+      -DBUILD_PYTHON=ON
+    )
     (( ${#cmake_omp_args[@]} )) && cmake_args+=( "${cmake_omp_args[@]}" )
     (( ${#cmake_py_args[@]} )) && cmake_args+=( "${cmake_py_args[@]}" )
     (( $# )) && cmake_args+=( "$@" )

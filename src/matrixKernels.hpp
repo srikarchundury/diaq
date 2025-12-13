@@ -7,15 +7,12 @@
 #include "vector.hpp"
 #include "config.hpp"
 #include "simd_kernels.hpp"
+#include "helpers.hpp"
 
 namespace diaq {
 
-unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
-unsigned int getDiagonalLength(int dIndex, std::array<unsigned int, 2> matrix_shape);
-std::shared_ptr<diagonal> multiplyDiagonals(unsigned int *shapeA, unsigned int *shapeB, int indexA, int indexB, std::shared_ptr<diagonal> diagA, std::shared_ptr<diagonal> diagB, int res_idx, std::shared_ptr<diagonal> res_diag, bool overwrite);
 std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
 std::shared_ptr<denseMatrix> denseProduct(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
-std::shared_ptr<diagonal> addElements(std::shared_ptr<diagonal> A, std::shared_ptr<diagonal> B);
 std::shared_ptr<diaQMatrix> add(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B);
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A);
 std::shared_ptr<diaQMatrix> reshape(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_tensor_shape);
@@ -24,6 +21,14 @@ std::vector<unsigned int> newTensorShape(std::vector<unsigned int> tensor_shape_
 std::vector<unsigned int> modifyTensorShape(std::vector<unsigned int> tShape, std::vector<unsigned int> axes);
 std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> new_order);
 std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A);
+
+std::array<unsigned int, 2> getMatrixShape(std::vector<unsigned int> tensor_shape);
+std::vector<unsigned int> getTenPos(const std::vector<unsigned int>& ten_pos_A,
+                                     const std::vector<unsigned int>& ten_pos_B,
+                                     const std::vector<unsigned int>& axes_A,
+                                     const std::vector<unsigned int>& axes_B,
+                                     const std::vector<unsigned int>& shape_A,
+                                     const std::vector<unsigned int>& shape_B);
 std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes);
 std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes);
 std::shared_ptr<diaQMatrix> array(std::shared_ptr<diaQMatrix> A);

@@ -24,9 +24,9 @@ void run_avx512<double>(
     double *real_vals_b, double *imag_vals_b,
     double *real_vals_final, double *imag_vals_final, bool overwrite
 ) {
-#ifdef DEEP_DEBUG
-    auto start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // Find first aligned SIMD index
     unsigned int simd_start = start;
@@ -120,94 +120,11 @@ void run_avx512<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
         printf("\t\trun_avx512 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
     #endif
-}    
-
-// // old original code
-// template<>
-// void run_avx512<double>(unsigned int k, unsigned int lenRes, unsigned int offsetA, unsigned int offsetB, unsigned int jump, unsigned int lenDiagA, unsigned int lenDiagB, double *real_vals_a, double *imag_vals_a, double *real_vals_b, double *imag_vals_b, double *real_vals_final, double *imag_vals_final) {
-
-//     #ifdef DEBUG
-//         // std::cout << "Starting run_avx512 double -- " << std::endl;
-//         auto start = std::chrono::high_resolution_clock::now();
-//     #endif
-
-//     // unsigned int loop_count = 0;
-//     // unsigned int k_cpy = k;
-//     // while (k_cpy < lenRes && k_cpy + offsetA - jump < lenDiagA && k_cpy + offsetB - jump < lenDiagB) {
-//     //     loop_count++;
-//     //     k_cpy++;
-//     // }
-
-//     unsigned int max_lenRes = lenRes - k;
-//     unsigned int max_lenDiagA = lenDiagA - (k + offsetA - jump);
-//     unsigned int max_lenDiagB = lenDiagB - (k + offsetB - jump);
-//     unsigned int loop_count = std::min({max_lenRes, max_lenDiagA, max_lenDiagB});
-
-//     __m512d real_a, real_b; // a for valuesA and b for valuesB
-//     __m512d imag_a, imag_b; // a for valuesA and b for valuesB
-//     __m512d real_reala_realb, real_imaga_imagb, real_res, imag_reala_imagb, imag_imaga_realb, imag_res;
-//     int left_overs = loop_count - ((loop_count / 8) * 8);
-//     unsigned int vec_loop = (loop_count / 8);
-//     unsigned int left_overs_start_at_A = k + offsetA - jump + PREFETCH_DIST * (loop_count / 8);
-//     unsigned int left_overs_start_at_B = k + offsetB - jump + PREFETCH_DIST * (loop_count / 8);
-
-//     #pragma omp parallel for
-//     for (unsigned int i = 0; i < vec_loop; ++i) {
-//         unsigned int idx = k + i * 8;
-
-//         // TODO: do prologue and epilogue separately! and middle part use SIMD aligned load and store!
-
-//         unsigned int offsetA_idx = idx + offsetA - jump;
-//         unsigned int offsetB_idx = idx + offsetB - jump;
-
-//         // Prefetch the next set of values for better cache utilization
-//         _mm_prefetch(&real_vals_a[offsetA_idx + PREFETCH_DIST], _MM_HINT_T0);
-//         _mm_prefetch(&imag_vals_a[offsetA_idx + PREFETCH_DIST], _MM_HINT_T0);
-//         _mm_prefetch(&real_vals_b[offsetB_idx + PREFETCH_DIST], _MM_HINT_T0);
-//         _mm_prefetch(&imag_vals_b[offsetB_idx + PREFETCH_DIST], _MM_HINT_T0);
-
-//         __m512d real_a = _mm512_loadu_pd(&real_vals_a[offsetA_idx]);
-//         __m512d imag_a = _mm512_loadu_pd(&imag_vals_a[offsetA_idx]);
-//         __m512d real_b = _mm512_loadu_pd(&real_vals_b[offsetB_idx]);
-//         __m512d imag_b = _mm512_loadu_pd(&imag_vals_b[offsetB_idx]);
-
-//         __m512d real_res = _mm512_fnmadd_pd(imag_a, imag_b, _mm512_mul_pd(real_a, real_b));  // real_res = (real_a * real_b) - (imag_a * imag_b)
-//         __m512d imag_res = _mm512_fmadd_pd(real_a, imag_b, _mm512_mul_pd(imag_a, real_b));  // imag_res = (real_a * imag_b) + (imag_a * real_b)
-
-//         _mm512_storeu_pd(&real_vals_final[idx], real_res);
-//         _mm512_storeu_pd(&imag_vals_final[idx], imag_res);
-//     }
-
-//     k += vec_loop * 8;
-
-//     if (left_overs != 0) {
-//         #pragma omp parallel for
-//         for (int i = 0; i < left_overs; ++i) {
-//             unsigned int idx_a = left_overs_start_at_A + i;
-//             unsigned int idx_b = left_overs_start_at_B + i;
-//             unsigned int idx_final = k + i;
-
-//             double real_a = real_vals_a[idx_a];
-//             double imag_a = imag_vals_a[idx_a];
-//             double real_b = real_vals_b[idx_b];
-//             double imag_b = imag_vals_b[idx_b];
-
-//             real_vals_final[idx_final] = (real_a * real_b) - (imag_a * imag_b);
-//             imag_vals_final[idx_final] = (real_a * imag_b) + (imag_a * real_b);
-//         }
-//     }
-
-//     #ifdef DEBUG
-//         auto end = std::chrono::high_resolution_clock::now();
-//         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-//         printf("\t\trun_avx512 - Double took %f milliseconds\n", duration.count()/1000.0);
-//     #endif
-    
-// }
+}
 
 // ------------------------AVX512 FLOAT----------------------------------------
 __m512 avx512_load_partial_float(int n, const float* p) {
@@ -233,7 +150,7 @@ void run_avx512<float>(
 ) {
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_avx512 float -- " << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // Find first aligned SIMD index
@@ -312,9 +229,9 @@ void run_avx512<float>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_avx512 - Float took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_avx512 - Float took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 
@@ -327,10 +244,10 @@ void run_spmv_avx512_1<double>(
     double *y_real_values, double *y_imag_values,
     int dIndex, unsigned int dLength) {
 
-#ifdef DEEP_DEBUG
-    std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // --- Prologue ---
     #pragma omp parallel for
@@ -389,9 +306,9 @@ void run_spmv_avx512_1<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx512_1 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_1 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 
@@ -403,10 +320,10 @@ void run_spmv_avx512_2<double>(
     double *y_real_values, double *y_imag_values,
     int dIndex, unsigned int dLength) {
 
-#ifdef DEEP_DEBUG
-    std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
-    auto start_time = std::chrono::high_resolution_clock::now();
-#endif
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
     // --- Prologue ---
     #pragma omp parallel for
@@ -465,9 +382,9 @@ void run_spmv_avx512_2<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx512_2 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_2 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 
@@ -481,7 +398,7 @@ void run_spmv_avx512_0<double>(
 
     #ifdef DEEP_DEBUG
         std::cout << "Starting run_spmv_avx512_0 - SIMD aligned version --" << std::endl;
-        auto start_time = std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
     // --- Prologue ---
@@ -534,9 +451,9 @@ void run_spmv_avx512_0<double>(
     }
 
     #ifdef DEEP_DEBUG
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        printf("\t\trun_spmv_avx512_0 - Double (Blocked SIMD) took %f milliseconds\n", duration.count() / 1000.0);
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_0 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
     #endif
 }
 

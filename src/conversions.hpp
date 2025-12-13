@@ -5,9 +5,11 @@
 #include "config.hpp"
 #include "diaQMatrix.hpp"
 #include "vector.hpp"
+#include "helpers.hpp"
 
 namespace diaq {
 
+// All conversion functions now use the new diaQMatrix storage layout (realData, imagData, diagOffsets, dIndices)
 std::vector<std::complex<valType>> to_numpy(std::shared_ptr<diaQMatrix> A);
 std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<unsigned int> shape);
 
