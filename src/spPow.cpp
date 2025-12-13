@@ -1,9 +1,4 @@
-// diaQspGEMM.cpp
 #include "matrixKernels.hpp"
-#ifdef CUDA_ENABLED
-    #include "conversions_gpu.hpp"
-    #include "matrixKernels_gpu.hpp"
-#endif
 
 namespace diaq {
     //
