@@ -14,7 +14,6 @@ std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vect
 std::shared_ptr<vector> spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, int n) {
     std::shared_ptr<vector> y = std::make_shared<vector>(A->matrix_shape[0], 0.0, 0.0);
     spMV_ntimes(A, x, y, n);
-    // x goes out of scope here and would be deleted by shared_ptr!
     return y;
 }
 
@@ -343,8 +342,8 @@ void spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::
                 spMV(A, y_temp, x_temp);
             }
         }
-        // If n is odd, the final result is in x_temp, so copy it to y
-        if (n % 2 == 1) {
+        // If n is even, the final result is in x_temp, so copy it to y
+        if (n % 2 == 0) {
             std::copy(x_temp->realValues, x_temp->realValues + y->numRows, y->realValues);
             std::copy(x_temp->imagValues, x_temp->imagValues + y->numRows, y->imagValues);
         }
