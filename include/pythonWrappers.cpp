@@ -437,6 +437,20 @@ std::string version() {
     );
 
     m.def(
+        "pow",
+        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int power){
+            #ifdef CUDA_ENABLED
+                return diaq::pow_cuda(A, power);
+            #else
+                return diaq::pow(A, power);
+            #endif
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
         "expm_negative",
         [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
             int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {

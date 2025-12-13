@@ -128,10 +128,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 	// Step 3: Compute e^{-i A t / 2^s}
 	std::shared_ptr<diaQMatrix> U = expm_negative_taylor(A, scaled_t, max_iterations, tolerance);
 
-	// Step 4: Square result s times
-	for (int i = 0; i < s; i++) {
-		U = product(U, U);
-	}
+	// // Step 4: Square result s times
+	// for (int i = 0; i < s; i++) {
+	// 	U = product(U, U);
+	// }
+    // replacing repeated spGEMM with pow function!
+    U = pow(U, s);
 
 	#ifdef DEBUG
 		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

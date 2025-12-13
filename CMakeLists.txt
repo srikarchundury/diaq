@@ -158,6 +158,7 @@ set(SOURCES
   ${SRC_DIR}/simd_kernels.cpp
   ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/spGEMM.cpp
+  ${SRC_DIR}/spPow.cpp
   ${SRC_DIR}/spME.cpp
   ${SRC_DIR}/spKron.cpp
   ${SRC_DIR}/denseKernels.cpp
@@ -288,6 +289,7 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spMV_gpu.cu
   ${SRC_DIR}/spMV_ntimes_gpu.cu
   ${SRC_DIR}/spME_gpu.cu
+  ${SRC_DIR}/spPow_gpu.cu
 )
 
 # ===== Core library target =====

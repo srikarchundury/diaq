@@ -129,8 +129,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<dia
 	// for (int i = 0; i < s; i++) {
 	// 	U = product_cuda(U, U);
 	// }
-    // new way to do this! so we avoid host-device transfers!!
-    U = product_ntimes_cuda(U, s);
+    // new way to do this! so we avoid host-device transfers s times!!
+    U = pow_cuda(U, s);
 
 	#ifdef DEBUG
 		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
