@@ -37,7 +37,10 @@ std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::share
 std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B);
 
 void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+void spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, int n);
 std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x);
+std::shared_ptr<vector> spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, int n);
+
 std::shared_ptr<vector> MV(std::shared_ptr<denseMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
 
 std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);

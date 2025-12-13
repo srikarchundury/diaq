@@ -20,6 +20,10 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A, std::sha
 void spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
 std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x);
 
+// we saw that hamiltonian simulation calls spmv multiple times in succession, so we can have a function that does spmv n times in one go on the GPU, avoiding memory transfers!
+void spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, int n);
+std::shared_ptr<vector> spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, int n);
+
 } // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_GPU_HPP

@@ -373,6 +373,31 @@ std::string version() {
         py::return_value_policy::automatic
     );
 
+    // spMV_ntimes overloads
+    m.def(
+        "spMV_ntimes",
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, int n) {
+            return diaq::spMV_ntimes(A, x, n);
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+    m.def(
+        "spMV_ntimes",
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, std::shared_ptr<diaq::vector> y, int n) {
+            diaq::spMV_ntimes(A, x, y, n);
+            return y;
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    // spMV overloads
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x) {
@@ -382,7 +407,6 @@ std::string version() {
         py::arg(),
         py::return_value_policy::automatic
     );
-    
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, std::shared_ptr<diaq::vector> y) {

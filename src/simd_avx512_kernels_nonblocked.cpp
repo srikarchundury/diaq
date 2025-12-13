@@ -235,208 +235,226 @@ void run_avx512<float>(
     #endif
 }
 
-// ------------------------AVX512 DOUBLE: SPMV TILE KERNELS --------------------
-// dIndex < 0: subdiagonal, y_index = i - dIndex
+// ------------------------AVX512 DOUBLE----------------------------------------
 template<>
 void run_spmv_avx512_1<double>(
-    unsigned int start, unsigned int end,
+    unsigned int simd_start, unsigned int simd_end,
     double *x_real_values, double *x_imag_values,
-    double *real_vals,    double *imag_vals,
+    double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
-    int dIndex, unsigned int /*dLength*/)
-{
-#ifdef DEEP_DEBUG
-    std::cout << "run_spmv_avx512_1 tile [" << start << "," << end
-              << ") dIndex=" << dIndex << std::endl;
-    auto t0 = std::chrono::high_resolution_clock::now();
-#endif
+    int dIndex, unsigned int dLength) {
 
-    // process [start, end) in chunks of up to VEC_WIDTH
-    for (unsigned int i = start; i < end; i += VEC_WIDTH) {
-        unsigned int span   = end - i;
-        unsigned int width  = (span >= VEC_WIDTH) ? VEC_WIDTH : span;
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_1 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
+
+    // --- Prologue ---
+    #pragma omp parallel for
+    for (unsigned int i = 0; i < simd_start; ++i) {
         unsigned int y_index = i - dIndex;
 
-        __m512d a_r, a_i, x_r, x_i, y_r, y_i;
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[i];
+        double x_i = x_imag_values[i];
 
-        if (width == VEC_WIDTH) {
-            // unmasked
+        y_real_values[y_index] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[y_index] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    // --- SIMD Main Loop with Blocking ---
+    #pragma omp parallel for schedule(static)
+    for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+        unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+
+        for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+            unsigned int y_index = i - dIndex;
+
             _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&y_real_values[y_index + PREFETCH_DIST], _MM_HINT_T0);
 
-            a_r = _mm512_loadu_pd(&real_vals[i]);
-            a_i = _mm512_loadu_pd(&imag_vals[i]);
-            x_r = _mm512_loadu_pd(&x_real_values[i]);
-            x_i = _mm512_loadu_pd(&x_imag_values[i]);
+            __m512d a_r = _mm512_load_pd(&real_vals[i]);
+            __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_r = _mm512_load_pd(&x_real_values[i]);
+            __m512d x_i = _mm512_load_pd(&x_imag_values[i]);
 
-            y_r = _mm512_loadu_pd(&y_real_values[y_index]);
-            y_i = _mm512_loadu_pd(&y_imag_values[y_index]);
-        } else {
-            // masked tail
-            __mmask8 mask = (1u << width) - 1u;
+            __m512d y_r = _mm512_load_pd(&y_real_values[y_index]);
+            __m512d y_i = _mm512_load_pd(&y_imag_values[y_index]);
 
-            a_r = _mm512_maskz_loadu_pd(mask, &real_vals[i]);
-            a_i = _mm512_maskz_loadu_pd(mask, &imag_vals[i]);
-            x_r = _mm512_maskz_loadu_pd(mask, &x_real_values[i]);
-            x_i = _mm512_maskz_loadu_pd(mask, &x_imag_values[i]);
-            y_r = _mm512_maskz_loadu_pd(mask, &y_real_values[y_index]);
-            y_i = _mm512_maskz_loadu_pd(mask, &y_imag_values[y_index]);
-
-            // compute
             y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
             y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
 
-            _mm512_mask_storeu_pd(&y_real_values[y_index], mask, y_r);
-            _mm512_mask_storeu_pd(&y_imag_values[y_index], mask, y_i);
-            continue;
+            _mm512_store_pd(&y_real_values[y_index], y_r);
+            _mm512_store_pd(&y_imag_values[y_index], y_i);
         }
-
-        // main complex FMA: y += A * x
-        y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
-        y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
-
-        _mm512_storeu_pd(&y_real_values[y_index], y_r);
-        _mm512_storeu_pd(&y_imag_values[y_index], y_i);
     }
 
-#ifdef DEEP_DEBUG
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto dur =
-        std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
-    printf("\t\trun_spmv_avx512_1 tile took %f ms\n", dur.count() / 1000.0);
-#endif
+    // --- Epilogue ---
+    #pragma omp parallel for
+    for (unsigned int i = simd_end; i < dLength; ++i) {
+        unsigned int y_index = i - dIndex;
+
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[i];
+        double x_i = x_imag_values[i];
+
+        y_real_values[y_index] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[y_index] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    #ifdef DEEP_DEBUG
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_1 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
+    #endif
 }
 
-// dIndex > 0: superdiagonal, x_index = i + dIndex
 template<>
 void run_spmv_avx512_2<double>(
-    unsigned int start, unsigned int end,
+    unsigned int simd_start, unsigned int simd_end,
     double *x_real_values, double *x_imag_values,
-    double *real_vals,    double *imag_vals,
+    double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
-    int dIndex, unsigned int /*dLength*/)
-{
-#ifdef DEEP_DEBUG
-    std::cout << "run_spmv_avx512_2 tile [" << start << "," << end
-              << ") dIndex=" << dIndex << std::endl;
-    auto t0 = std::chrono::high_resolution_clock::now();
-#endif
+    int dIndex, unsigned int dLength) {
 
-    for (unsigned int i = start; i < end; i += VEC_WIDTH) {
-        unsigned int span   = end - i;
-        unsigned int width  = (span >= VEC_WIDTH) ? VEC_WIDTH : span;
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_2 - Aligned SIMD (w/ Prologue/Epilogue) --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
+
+    // --- Prologue ---
+    #pragma omp parallel for
+    for (unsigned int i = 0; i < simd_start; ++i) {
         unsigned int x_index = i + dIndex;
 
-        __m512d a_r, a_i, x_r, x_i, y_r, y_i;
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[x_index];
+        double x_i = x_imag_values[x_index];
 
-        if (width == VEC_WIDTH) {
+        y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    // --- SIMD Main Loop with Blocking ---
+    #pragma omp parallel for schedule(static)
+    for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+        unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+
+        for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
+            unsigned int x_index = i + dIndex;
+
             _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&x_real_values[x_index + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
 
-            a_r = _mm512_loadu_pd(&real_vals[i]);
-            a_i = _mm512_loadu_pd(&imag_vals[i]);
-            x_r = _mm512_loadu_pd(&x_real_values[x_index]);
-            x_i = _mm512_loadu_pd(&x_imag_values[x_index]);
-            y_r = _mm512_loadu_pd(&y_real_values[i]);
-            y_i = _mm512_loadu_pd(&y_imag_values[i]);
-        } else {
-            __mmask8 mask = (1u << width) - 1u;
+            __m512d a_r = _mm512_load_pd(&real_vals[i]);
+            __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_r = _mm512_load_pd(&x_real_values[x_index]);
+            __m512d x_i = _mm512_load_pd(&x_imag_values[x_index]);
 
-            a_r = _mm512_maskz_loadu_pd(mask, &real_vals[i]);
-            a_i = _mm512_maskz_loadu_pd(mask, &imag_vals[i]);
-            x_r = _mm512_maskz_loadu_pd(mask, &x_real_values[x_index]);
-            x_i = _mm512_maskz_loadu_pd(mask, &x_imag_values[x_index]);
-            y_r = _mm512_maskz_loadu_pd(mask, &y_real_values[i]);
-            y_i = _mm512_maskz_loadu_pd(mask, &y_imag_values[i]);
+            __m512d y_r = _mm512_load_pd(&y_real_values[i]);
+            __m512d y_i = _mm512_load_pd(&y_imag_values[i]);
 
             y_r = _mm512_fmadd_pd(a_r, x_r, _mm512_fnmadd_pd(a_i, x_i, y_r));
             y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
 
-            _mm512_mask_storeu_pd(&y_real_values[i], mask, y_r);
-            _mm512_mask_storeu_pd(&y_imag_values[i], mask, y_i);
-            continue;
+            _mm512_store_pd(&y_real_values[i], y_r);
+            _mm512_store_pd(&y_imag_values[i], y_i);
         }
-
-        y_r = _mm512_fmadd_pd(a_r, x_r, _mm512_fnmadd_pd(a_i, x_i, y_r));
-        y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
-
-        _mm512_storeu_pd(&y_real_values[i], y_r);
-        _mm512_storeu_pd(&y_imag_values[i], y_i);
     }
 
-#ifdef DEEP_DEBUG
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto dur =
-        std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
-    printf("\t\trun_spmv_avx512_2 tile took %f ms\n", dur.count() / 1000.0);
-#endif
+    // --- Epilogue ---
+    #pragma omp parallel for
+    for (unsigned int i = simd_end; i < dLength; ++i) {
+        unsigned int x_index = i + dIndex;
+
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[x_index];
+        double x_i = x_imag_values[x_index];
+
+        y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    #ifdef DEEP_DEBUG
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_2 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
+    #endif
 }
 
-// dIndex == 0: main diagonal, indices line up
 template<>
 void run_spmv_avx512_0<double>(
-    unsigned int start, unsigned int end,
+    unsigned int simd_start, unsigned int simd_end,
     double *x_real_values, double *x_imag_values,
-    double *real_vals,    double *imag_vals,
+    double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
-    int /*dIndex*/, unsigned int /*dLength*/)
-{
-#ifdef DEEP_DEBUG
-    std::cout << "run_spmv_avx512_0 tile [" << start << "," << end
-              << ") (main diagonal)\n";
-    auto t0 = std::chrono::high_resolution_clock::now();
-#endif
+    int dIndex, unsigned int dLength) {
 
-    for (unsigned int i = start; i < end; i += VEC_WIDTH) {
-        unsigned int span  = end - i;
-        unsigned int width = (span >= VEC_WIDTH) ? VEC_WIDTH : span;
+    #ifdef DEEP_DEBUG
+        std::cout << "Starting run_spmv_avx512_0 - SIMD aligned version --" << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+    #endif
 
-        __m512d a_r, a_i, x_r, x_i, y_r, y_i;
+    // --- Prologue ---
+    #pragma omp parallel for
+    for (unsigned int i = 0; i < simd_start; ++i) {
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[i];
+        double x_i = x_imag_values[i];
 
-        if (width == VEC_WIDTH) {
+        y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    // --- SIMD aligned loop with blocking ---
+    #pragma omp parallel for schedule(static)
+    for (unsigned int block_start = simd_start; block_start < simd_end; block_start += BLOCK_SIZE) {
+        unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
+
+        for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
             _mm_prefetch(&real_vals[i + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&x_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&y_real_values[i + PREFETCH_DIST], _MM_HINT_T0);
 
-            a_r = _mm512_loadu_pd(&real_vals[i]);
-            a_i = _mm512_loadu_pd(&imag_vals[i]);
-            x_r = _mm512_loadu_pd(&x_real_values[i]);
-            x_i = _mm512_loadu_pd(&x_imag_values[i]);
-            y_r = _mm512_loadu_pd(&y_real_values[i]);
-            y_i = _mm512_loadu_pd(&y_imag_values[i]);
-        } else {
-            __mmask8 mask = (1u << width) - 1u;
-
-            a_r = _mm512_maskz_loadu_pd(mask, &real_vals[i]);
-            a_i = _mm512_maskz_loadu_pd(mask, &imag_vals[i]);
-            x_r = _mm512_maskz_loadu_pd(mask, &x_real_values[i]);
-            x_i = _mm512_maskz_loadu_pd(mask, &x_imag_values[i]);
-            y_r = _mm512_maskz_loadu_pd(mask, &y_real_values[i]);
-            y_i = _mm512_maskz_loadu_pd(mask, &y_imag_values[i]);
+            __m512d a_r = _mm512_load_pd(&real_vals[i]);
+            __m512d a_i = _mm512_load_pd(&imag_vals[i]);
+            __m512d x_r = _mm512_load_pd(&x_real_values[i]);
+            __m512d x_i = _mm512_load_pd(&x_imag_values[i]);
+            __m512d y_r = _mm512_load_pd(&y_real_values[i]);
+            __m512d y_i = _mm512_load_pd(&y_imag_values[i]);
 
             y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
             y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
 
-            _mm512_mask_storeu_pd(&y_real_values[i], mask, y_r);
-            _mm512_mask_storeu_pd(&y_imag_values[i], mask, y_i);
-            continue;
+            _mm512_store_pd(&y_real_values[i], y_r);
+            _mm512_store_pd(&y_imag_values[i], y_i);
         }
-
-        y_r = _mm512_fnmadd_pd(a_i, x_i, _mm512_fmadd_pd(a_r, x_r, y_r));
-        y_i = _mm512_fmadd_pd(a_r, x_i, _mm512_fmadd_pd(a_i, x_r, y_i));
-
-        _mm512_storeu_pd(&y_real_values[i], y_r);
-        _mm512_storeu_pd(&y_imag_values[i], y_i);
     }
 
-#ifdef DEEP_DEBUG
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto dur =
-        std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
-    printf("\t\trun_spmv_avx512_0 tile took %f ms\n", dur.count() / 1000.0);
-#endif
+    // --- Epilogue ---
+    #pragma omp parallel for
+    for (unsigned int i = simd_end; i < dLength; ++i) {
+        double a_r = real_vals[i];
+        double a_i = imag_vals[i];
+        double x_r = x_real_values[i];
+        double x_i = x_imag_values[i];
+
+        y_real_values[i] += (a_r * x_r) - (a_i * x_i);
+        y_imag_values[i] += (a_r * x_i) + (a_i * x_r);
+    }
+
+    #ifdef DEEP_DEBUG
+        std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();
+        long long duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+        printf("\t\trun_spmv_avx512_0 - Double (Blocked SIMD) took %f milliseconds\n", duration / 1000.0);
+    #endif
 }
 
 } // namespace diaq
