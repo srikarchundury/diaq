@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script is used to list all the tests in the tests.cpp file, something for my convenience, later I shall write a testing framework to automate this process
 
-file = "tests/tests.cpp"
+file = "./cpp_tests/test_main.cpp"
 print("\n-- List of Tests --\n")
 
 # read this file
@@ -10,7 +10,6 @@ with open(file, 'r') as f:
 	lines = f.readlines()
 	# iterate over lines
 	for line in lines:
-		# if the line contains the word TEST_CASE
 		if "strcmp" in line:
 			try:
 				deets = line.split('"')

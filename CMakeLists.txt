@@ -43,7 +43,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Keep warnings loud; don't hide useful ones
 add_compile_options(
   -Wall -Wextra
   -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
@@ -54,13 +53,14 @@ add_compile_options(
 include(CheckCXXCompilerFlag)
 
 # ===== Layout (dirs & deps) =====
-set(SRC_DIR   ${CMAKE_SOURCE_DIR}/src)
-set(INC_DIR   ${CMAKE_SOURCE_DIR}/include)
-set(TESTS_DIR ${CMAKE_SOURCE_DIR}/tests)
+set(SRC_DIR       ${CMAKE_SOURCE_DIR}/src)
+set(INC_DIR       ${CMAKE_SOURCE_DIR}/include)
+set(TESTS_DIR     ${CMAKE_SOURCE_DIR}/tests)
+set(CPP_TESTS_DIR ${CMAKE_SOURCE_DIR}/cpp_tests)
 
-set(PHMAP_DIR   ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
+set(PHMAP_DIR     ${CMAKE_SOURCE_DIR}/dependencies/parallel-hashmap)
 add_subdirectory(${PHMAP_DIR}) # header-only but fine to add; keep consistent
-set(PYBIND11_DIR ${CMAKE_SOURCE_DIR}/dependencies/pybind11)
+set(PYBIND11_DIR  ${CMAKE_SOURCE_DIR}/dependencies/pybind11)
 
 # Headers for our code + phmap
 include_directories(${INC_DIR} ${PHMAP_DIR})
@@ -77,27 +77,32 @@ endif()
 option(DEBUG                      "Enable debugging mode"                             OFF)
 option(DEEP_DEBUG                 "Enable deep debugging mode"                        OFF)
 option(CUDA_ENABLED               "Enable CUDA support"                               OFF)
-option(SIMD_ENABLED               "Enable SIMD"                                       ON)
+option(MANUAL_SIMD                "Enable manual SIMD kernel selection"               ON)
 option(PAPI                       "Enable PAPI support"                               OFF)
-option(MAKE_TESTS                 "Enable building tests"                             OFF)
+option(MAKE_TESTS                 "Enable building tests"                             ON)
 option(MAKE_TEST_FOR_DISASSEMBLY  "Enable building test_for_disassembly"              OFF)
 option(BUILD_PYTHON               "Build Python bindings using pybind11"              ON)
+option(AVOID_ZERO_DIAGS           "Avoid storing zero diagonals in sparse matrices"   ON)
 
 message(STATUS "${BoldYellow}>>> Build options:${Reset}")
 message(STATUS "  DEBUG = ${DEBUG}")
 message(STATUS "  DEEP_DEBUG = ${DEEP_DEBUG}")
 message(STATUS "  CUDA_ENABLED = ${CUDA_ENABLED}")
-message(STATUS "  SIMD_ENABLED = ${SIMD_ENABLED}")
+message(STATUS "  MANUAL_SIMD = ${MANUAL_SIMD}")
 message(STATUS "  PAPI = ${PAPI}")
 message(STATUS "  MAKE_TESTS = ${MAKE_TESTS}")
 message(STATUS "  MAKE_TEST_FOR_DISASSEMBLY = ${MAKE_TEST_FOR_DISASSEMBLY}")
 message(STATUS "  BUILD_PYTHON = ${BUILD_PYTHON}")
+message(STATUS "  AVOID_ZERO_DIAGS = ${AVOID_ZERO_DIAGS}")
 
 if(DEBUG OR DEEP_DEBUG)
   set(CMAKE_BUILD_TYPE Debug)
   add_definitions(-DDEBUG)
   if(DEEP_DEBUG)
     add_definitions(-DDEEP_DEBUG)
+  endif()
+  if(AVOID_ZERO_DIAGS)
+    add_definitions(-DAVOID_ZERO_DIAGS)
   endif()
 elseif(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -133,25 +138,37 @@ endif()
 
 # ===== Common sources =====
 set(SOURCES
+  # --- .hpp files ---
   ${SRC_DIR}/config.hpp
-  ${SRC_DIR}/config.cpp
   ${SRC_DIR}/denseMatrix.hpp
   ${SRC_DIR}/diagonal.hpp
   ${SRC_DIR}/diaQMatrix.hpp
   ${SRC_DIR}/specialMatrices.hpp
   ${SRC_DIR}/vector.hpp
   ${SRC_DIR}/conversions.hpp
-  ${SRC_DIR}/conversions.cpp
   ${SRC_DIR}/kernels.hpp
   ${SRC_DIR}/simd_kernels.hpp
-  ${SRC_DIR}/simd_kernels.cpp
   ${SRC_DIR}/matrixKernels.hpp
-  ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/norms.hpp
-  ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.hpp
-  ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.hpp
+  # --- .cpp files ---
+  ${SRC_DIR}/config.cpp
+  ${SRC_DIR}/conversions.cpp
+  ${SRC_DIR}/simd_kernels.cpp
+  ${SRC_DIR}/matrixKernels.cpp
+  ${SRC_DIR}/spGEMM.cpp
+  ${SRC_DIR}/spME.cpp
+  ${SRC_DIR}/spKron.cpp
+  ${SRC_DIR}/denseKernels.cpp
+  ${SRC_DIR}/additionKernels.cpp
+  ${SRC_DIR}/reshapeKernels.cpp
+  ${SRC_DIR}/transposeKernels.cpp
+  ${SRC_DIR}/tensordotKernels.cpp
+  ${SRC_DIR}/spMV_blocked.cpp
+  # ${SRC_DIR}/spMV.cpp
+  ${SRC_DIR}/norms.cpp
+  ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.cpp
 )
 
@@ -160,9 +177,9 @@ set(DIAQ_COMPILE_DEFS "")
 unset(DIAQ_VEC_TYPE_VALUE)
 set(DIAQ_SIMD_COMPILE_OPTS "")
 
-if(SIMD_ENABLED)
-  list(APPEND DIAQ_COMPILE_DEFS SIMD_ENABLED)
-  if(DIAQ_ARCH_ARM64)
+if(MANUAL_SIMD)
+  list(APPEND DIAQ_COMPILE_DEFS MANUAL_SIMD)
+  if(DIAQ_ARCH_ARM64) # Apple / generic ARM64
     list(APPEND SOURCES
       ${SRC_DIR}/simd_mac_kernels.hpp
       ${SRC_DIR}/simd_mac_kernels.cpp
@@ -171,22 +188,23 @@ if(SIMD_ENABLED)
     set(DIAQ_VEC_TYPE_VALUE 3)
     message(STATUS "${BoldGreen}>>> SIMD backend: NEON/AdvSIMD (VEC_TYPE=3)${Reset}")
 
-  elseif(DIAQ_ARCH_X86)
+  elseif(DIAQ_ARCH_X86) # x86_64
     check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
     check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
     check_cxx_compiler_flag("-msse2"    HAS_SSE2)
 
-    if(HAS_AVX512F)
+    if(HAS_AVX512F) # prioritize AVX-512 if available
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx512_kernels.hpp
-        ${SRC_DIR}/simd_avx512_kernels.cpp
+        # ${SRC_DIR}/simd_avx512_kernels.cpp
+        ${SRC_DIR}/simd_avx512_kernels_blocked.cpp
       )
       set(DIAQ_VEC_TYPE_VALUE 2)
       list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX512F)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX-512 (VEC_TYPE=2)${Reset}")
 
-    elseif(HAS_AVX2)
+    elseif(HAS_AVX2) # next, try AVX2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx2_kernels.hpp
         ${SRC_DIR}/simd_avx2_kernels.cpp
@@ -196,7 +214,7 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX2)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX2 (VEC_TYPE=1)${Reset}")
 
-    elseif(HAS_SSE2)
+    elseif(HAS_SSE2) # finally, try SSE2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_sse_kernels.hpp
         ${SRC_DIR}/simd_sse_kernels.cpp
@@ -206,7 +224,7 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SSE2)
       message(STATUS "${BoldGreen}>>> SIMD backend: SSE2 (VEC_TYPE=0)${Reset}")
 
-    else()
+    else() # no SIMD support detected; fall back to scalar kernels
       list(APPEND SOURCES
         ${SRC_DIR}/simd_nosimd_kernels.hpp
         ${SRC_DIR}/simd_nosimd_kernels.cpp
@@ -215,7 +233,11 @@ if(SIMD_ENABLED)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
       message(STATUS "${BoldYellow}>>> SIMD backend: SCALAR (VEC_TYPE=-1)${Reset}")
     endif()
-  else()
+
+  else() # unknown arch; fall back to scalar kernels
+    check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
+    check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
+    check_cxx_compiler_flag("-msse2"    HAS_SSE2)
     list(APPEND SOURCES
       ${SRC_DIR}/simd_nosimd_kernels.hpp
       ${SRC_DIR}/simd_nosimd_kernels.cpp
@@ -224,22 +246,46 @@ if(SIMD_ENABLED)
     list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
     message(STATUS "${BoldYellow}>>> SIMD backend: SCALAR (VEC_TYPE=-1)${Reset}")
   endif()
-else()
+else() # MANUAL_SIMD is OFF: rely on auto-vectorization, but still target best ISA
+  check_cxx_compiler_flag("-mavx512f" HAS_AVX512F)
+  check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
+  check_cxx_compiler_flag("-msse2"    HAS_SSE2)
+
   list(APPEND SOURCES
     ${SRC_DIR}/simd_nosimd_kernels.hpp
     ${SRC_DIR}/simd_nosimd_kernels.cpp
   )
   set(DIAQ_VEC_TYPE_VALUE -1)
   list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
-  message(STATUS "${BoldYellow}>>> SIMD disabled: SCALAR (VEC_TYPE=-1)${Reset}")
+
+  if(HAS_AVX512F)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX-512 (VEC_TYPE=-1)${Reset}")
+  elseif(HAS_AVX2)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx2 -mfma)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX2 (VEC_TYPE=-1)${Reset}")
+  elseif(HAS_SSE2)
+    list(APPEND DIAQ_SIMD_COMPILE_OPTS -msse2)
+    message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target SSE2 (VEC_TYPE=-1)${Reset}")
+  else()
+    message(STATUS "${BoldYellow}>>> SIMD disabled: SCALAR only, no extra ISA flags (VEC_TYPE=-1)${Reset}")
+  endif()
+endif()
+
+if(AVOID_ZERO_DIAGS)
+  list(APPEND DIAQ_COMPILE_DEFS AVOID_ZERO_DIAGS)
 endif()
 
 # ===== CUDA (optional) =====
 set(CUDA_SOURCES
+  # --- .hpp files ---
   ${SRC_DIR}/conversions_gpu.hpp
-  ${SRC_DIR}/conversions_gpu.cu
   ${SRC_DIR}/matrixKernels_gpu.hpp
+  # --- .cu files ---
+  ${SRC_DIR}/conversions_gpu.cu
   ${SRC_DIR}/matrixKernels_gpu.cu
+  ${SRC_DIR}/spGEMM_gpu.cu
+  ${SRC_DIR}/spMV_gpu.cu
 )
 
 # ===== Core library target =====
@@ -247,21 +293,54 @@ if(CUDA_ENABLED)
   message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
   find_package(CUDA REQUIRED)
   set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
+
+  # If SIMD compile opts were chosen, forward them to nvcc's host compiler
+  if(DIAQ_SIMD_COMPILE_OPTS)
+    foreach(_opt IN LISTS DIAQ_SIMD_COMPILE_OPTS)
+      list(APPEND CUDA_NVCC_FLAGS -Xcompiler ${_opt})
+    endforeach()
+  endif()
+
   cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
-  target_compile_options(diaq_core PUBLIC -O3)
-  target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX)
-  target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED)
-  set(BUILD_TYPE "gpu_build")
-else()
-  message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
-  add_library(diaq_core SHARED ${SOURCES})
+
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
   else()
     target_compile_options(diaq_core PUBLIC -O3)
   endif()
+
+  target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
+
+  if(DIAQ_COMPILE_DEFS)
+    target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED ${DIAQ_COMPILE_DEFS})
+  else()
+    target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED)
+  endif()
+
+  if(DEBUG)
+    target_compile_definitions(diaq_core PUBLIC DEBUG)
+  endif()
+  if(DEEP_DEBUG)
+    target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
+  endif()
+else()
+  message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
+  add_library(diaq_core SHARED ${SOURCES})
+
+  if(DIAQ_SIMD_COMPILE_OPTS)
+    target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
+  else()
+    target_compile_options(diaq_core PUBLIC -O3)
+  endif()
+
+  if(DEBUG)
+    target_compile_definitions(diaq_core PUBLIC DEBUG)
+  endif()
+  if(DEEP_DEBUG)
+    target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
+  endif()
+
   target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX)
-  set(BUILD_TYPE "cpu_build")
 endif()
 
 # Ensure OpenMP compile flags are visible to all TUs (Linux Clang/GCC safety net)
@@ -291,7 +370,7 @@ if(PAPI)
   include_directories($ENV{PAPI_DIR}/include)
   target_compile_definitions(diaq_core PUBLIC PAPI_ON)
   if(EXISTS "$ENV{PAPI_DIR}/lib/libpapi.so")
-    target_link_libraries(diaq_core PUBLIC $ENV{PAPI_DIR}/lib/libpapi.so)
+    target_link_libraries(diaq_core $ENV{PAPI_DIR}/lib/libpapi.so)
   else()
     message(FATAL_ERROR "${BoldRed}PAPI library not found at $ENV{PAPI_DIR}/lib/libpapi.so${Reset}")
   endif()
@@ -299,9 +378,16 @@ endif()
 
 # ===== Tests (optional) =====
 if(MAKE_TESTS)
-  add_executable(tests ${TESTS_DIR}/tests.cpp)
+  file(GLOB CPP_TEST_SOURCES
+    ${CPP_TESTS_DIR}/*.cpp
+  )
+  add_executable(tests
+    ${CPP_TEST_SOURCES}
+  )
+  set(TEST_BIN_DIR ${CMAKE_BINARY_DIR}/bin)
+  set_target_properties(tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${TEST_BIN_DIR})
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
-  # mirror OpenMP compile flags for tests too (header pragmas)
+
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(tests PRIVATE -fopenmp)
     target_link_options(tests PRIVATE -fopenmp)
@@ -322,8 +408,7 @@ if(MAKE_TEST_FOR_DISASSEMBLY)
   target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
 endif()
 
-# ===== Output dirs =====
-set(CMAKE_BINARY_DIR        ${CMAKE_SOURCE_DIR}/${BUILD_TYPE})
+# ===== Output dirs (per build tree: cpu_build, gpu_build, etc.) =====
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
@@ -332,40 +417,53 @@ message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
   add_subdirectory(${PYBIND11_DIR})
-  pybind11_add_module(diaq ${INC_DIR}/pythonWrappers.cpp)
-  target_link_libraries(diaq PRIVATE diaq_core)
 
-  # Ensure the module also compiles with OpenMP flags (its TUs include your headers)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(diaq PRIVATE -fopenmp)
-    target_link_options(diaq PRIVATE -fopenmp)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    target_compile_options(diaq PRIVATE -qopenmp)
-    target_link_options(diaq PRIVATE -qopenmp)
+  # Choose module name based on CUDA_ENABLED
+  if(CUDA_ENABLED)
+    set(PY_MODULE_NAME diaq_gpu)
+  else()
+    set(PY_MODULE_NAME diaq)
   endif()
 
+  pybind11_add_module(${PY_MODULE_NAME} ${INC_DIR}/pythonWrappers.cpp)
+  target_link_libraries(${PY_MODULE_NAME} PUBLIC diaq_core)
+
+  # Ensure the module also compiles with OpenMP flags
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+    target_link_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+  endif()
+
+  # RPATH for the Python extension
   if(APPLE)
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "@loader_path/../lib;@rpath;${LIBRARY_OUTPUT_PATH}"
       MACOSX_RPATH  ON
     )
   else()
-    set_target_properties(diaq PROPERTIES
+    set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
       INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
     )
   endif()
 
-  # Install into the active env’s site-packages
-  if(DEFINED ENV{VIRTUAL_ENV})
-    set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
-  elseif(DEFINED ENV{CONDA_PREFIX})
-    set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+  # Install into the active env’s site-packages.
+  # Respect user-specified Python3_EXECUTABLE if already set.
+  if(NOT DEFINED Python3_EXECUTABLE)
+    if(DEFINED ENV{VIRTUAL_ENV})
+      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+    elseif(DEFINED ENV{CONDA_PREFIX})
+      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+    endif()
   endif()
+
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
   execute_process(
@@ -374,5 +472,8 @@ if(BUILD_PYTHON)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   message(STATUS "${BoldGreen}>>> Installing Python module directly into: ${PYTHON_SITE_DIR}${Reset}")
-  install(TARGETS diaq LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+
+  # Install the *right* Python module and the shared core library
+  install(TARGETS ${PY_MODULE_NAME} LIBRARY DESTINATION ${PYTHON_SITE_DIR})
+  install(TARGETS diaq_core        LIBRARY DESTINATION ${PYTHON_SITE_DIR})
 endif()

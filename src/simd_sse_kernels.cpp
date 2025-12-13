@@ -25,7 +25,7 @@ __m128 sse_load_partial_float(int n, float *p) {
     return xmm;
 }
 void sse_store_partial_float(int n, float *loc, __m128 vec) {
-    #pragma GCC unroll 8
+    // #pragma GCC unroll 8
     for(int i = 0; i < n; i++){
         loc[i] = vec[i];
     }
