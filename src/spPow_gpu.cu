@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include "matrixKernels.hpp"
 
 namespace diaq {
     // C = A^n on GPU

@@ -438,7 +438,7 @@ std::string version() {
 
     m.def(
         "pow",
-        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int power){
+        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int power) {
             #ifdef CUDA_ENABLED
                 return diaq::pow_cuda(A, power);
             #else

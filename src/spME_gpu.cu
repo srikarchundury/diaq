@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include "matrixKernels.hpp"
 
 namespace diaq {
 
@@ -80,7 +81,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(std::shared_ptr<diaQMatrix
     return result;
 }
 
-std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0) {
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff) {
 	#ifdef DEBUG
 		printf("starting expm_negative_taylor_scaled_cuda -- ");
 		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();

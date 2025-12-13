@@ -288,8 +288,8 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spGEMM_gpu.cu
   ${SRC_DIR}/spMV_gpu.cu
   ${SRC_DIR}/spMV_ntimes_gpu.cu
-  ${SRC_DIR}/spME_gpu.cu
-  ${SRC_DIR}/spPow_gpu.cu
+  ${SRC_DIR}/spME_gpu.cu # dont know if I can write an end to end spME-GPU, this one just accelerates parts of it!
+  ${SRC_DIR}/spPow_gpu.cu # same as above one!
 )
 
 # ===== Core library target =====
