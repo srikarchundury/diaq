@@ -426,7 +426,7 @@ std::string version() {
     //     py::arg("axes"),
     //     py::return_value_policy::automatic
     // );
-    
+
     m.def(
         "multiply_by_scalar",
         [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType real, diaq::valType imag) { return diaq::multiply_by_scalar(A, real, imag); },
@@ -440,7 +440,11 @@ std::string version() {
         "expm_negative",
         [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
             int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
-            return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+            #ifdef CUDA_ENABLED
+                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff);
+            #else
+                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+            #endif
         },
         py::arg("A"), py::arg("t"),
         py::arg("max_iterations") = 100,

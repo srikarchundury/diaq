@@ -287,6 +287,7 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spGEMM_gpu.cu
   ${SRC_DIR}/spMV_gpu.cu
   ${SRC_DIR}/spMV_ntimes_gpu.cu
+  ${SRC_DIR}/spME_gpu.cu
 )
 
 # ===== Core library target =====

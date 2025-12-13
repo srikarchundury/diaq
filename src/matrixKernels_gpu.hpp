@@ -24,6 +24,10 @@ std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr
 void spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, int n);
 std::shared_ptr<vector> spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, int n);
 
+// sparse matrix exponential on GPU
+std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType tolerance);
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0);
+
 } // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_GPU_HPP
