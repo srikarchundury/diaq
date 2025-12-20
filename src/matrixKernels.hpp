@@ -86,6 +86,9 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 std::shared_ptr<diaQMatrix> matrix_power(std::shared_ptr<diaQMatrix> U, int exponent);
 std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations);
 
+std::shared_ptr<diaQMatrix> adjoint(std::shared_ptr<diaQMatrix> A, bool swap_tensor_shape = false);
+void adjoint_inplace(std::shared_ptr<diaQMatrix> A, bool swap_tensor_shape = false);
+
 } // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_HPP
