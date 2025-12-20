@@ -8,12 +8,12 @@
 
 // operations
 #include "../src/conversions.hpp"
-#include "../src/kernels.hpp"
+#include "../src/kernels.hpp" // this encapsulates matrixKernels and vectorKernels
 #include "../src/norms.hpp"
 
 // items
 #include "../src/denseMatrix.hpp"
-#include "../src/diagonal.hpp"
+// #include "../src/diagonal.hpp" # not needed anymore! diagonals are now just vectors inside diaQMatrix
 #include "../src/diaQMatrix.hpp"
 #include "../src/specialMatrices.hpp"
 #include "../src/vector.hpp"

@@ -158,6 +158,7 @@ set(SOURCES
   ${SRC_DIR}/simd_kernels.cpp
   ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/spGEMM.cpp
+  ${SRC_DIR}/spPow.cpp
   ${SRC_DIR}/spME.cpp
   ${SRC_DIR}/spKron.cpp
   ${SRC_DIR}/denseKernels.cpp
@@ -165,8 +166,8 @@ set(SOURCES
   ${SRC_DIR}/reshapeKernels.cpp
   ${SRC_DIR}/transposeKernels.cpp
   ${SRC_DIR}/tensordotKernels.cpp
-  ${SRC_DIR}/spMV_blocked.cpp
-  # ${SRC_DIR}/spMV.cpp
+  ${SRC_DIR}/spMV.cpp
+  # ${SRC_DIR}/spMV_nonblocked.cpp
   ${SRC_DIR}/norms.cpp
   ${SRC_DIR}/vectorKernels.cpp
   ${SRC_DIR}/helpers.cpp
@@ -196,8 +197,8 @@ if(MANUAL_SIMD)
     if(HAS_AVX512F) # prioritize AVX-512 if available
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx512_kernels.hpp
-        # ${SRC_DIR}/simd_avx512_kernels.cpp
-        ${SRC_DIR}/simd_avx512_kernels_blocked.cpp
+        ${SRC_DIR}/simd_avx512_kernels.cpp
+        # ${SRC_DIR}/simd_avx512_kernels_nonblocked.cpp
       )
       set(DIAQ_VEC_TYPE_VALUE 2)
       list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
@@ -286,6 +287,9 @@ set(CUDA_SOURCES
   ${SRC_DIR}/matrixKernels_gpu.cu
   ${SRC_DIR}/spGEMM_gpu.cu
   ${SRC_DIR}/spMV_gpu.cu
+  ${SRC_DIR}/spMV_ntimes_gpu.cu
+  ${SRC_DIR}/spME_gpu.cu # dont know if I can write an end to end spME-GPU, this one just accelerates parts of it!
+  ${SRC_DIR}/spPow_gpu.cu # same as above one!
 )
 
 # ===== Core library target =====
