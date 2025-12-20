@@ -1499,6 +1499,26 @@ public:
 		}
 	}
 
+	std::complex<valType> get(unsigned int row, unsigned int col) const {
+		int dIndex = static_cast<int>(col) - static_cast<int>(row);
+		int slot   = findDiagonalSlot(dIndex);
+		if (slot < 0) {
+			return std::complex<valType>(0.0, 0.0);
+		}
+		unsigned int len = getDiagonalLengthInternal(dIndex);
+		unsigned int pos;
+		if (dIndex >= 0) {
+			pos = static_cast<unsigned int>(row);
+		} else {
+			pos = static_cast<unsigned int>(col);
+		}
+		if (pos >= len) {
+			return std::complex<valType>(0.0, 0.0);
+		}
+		unsigned int off = diagOffsets[static_cast<size_t>(slot)];
+		return std::complex<valType>(realData[off + pos], imagData[off + pos]);
+	}
+
 	// Export to flat diag representation.
 	void getDiagFlatData(unsigned int *n_diags,
 	                     int **diagonal_indices,

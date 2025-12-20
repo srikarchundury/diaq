@@ -78,10 +78,10 @@ std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, va
 std::shared_ptr<diaQMatrix> pow(std::shared_ptr<diaQMatrix> A, int n);
 
 std::shared_ptr<diaQMatrix> expm_taylor(std::shared_ptr<diaQMatrix> A, int max_iterations, valType tolerance);
-std::shared_ptr<diaQMatrix> expm_taylor_scaled(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff = 1.0);
+std::shared_ptr<diaQMatrix> expm_taylor_scaled(std::shared_ptr<diaQMatrix> A, int max_iterations = 100, valType scale_cutoff = 1.0);
 
 std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType tolerance);
-std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0);
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations = 100, valType scale_cutoff = 1.0);
 
 std::shared_ptr<diaQMatrix> matrix_power(std::shared_ptr<diaQMatrix> U, int exponent);
 std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations);

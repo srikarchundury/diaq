@@ -64,6 +64,23 @@ class vector : public std::enable_shared_from_this<vector> {
             #endif
         }
 
+        //constructor from std::vector<std::complex<valType>>
+        vector(const std::vector<std::complex<valType>>& vec) {
+            numRows = vec.size();
+            #if NUM_BYTES_ALIGNED <= 0
+                realValues = (valType *)calloc(numRows, sizeof(valType));
+                imagValues = (valType *)calloc(numRows, sizeof(valType));
+            #else
+                realValues = aligned_alloc_helper(numRows * sizeof(valType));
+                imagValues = aligned_alloc_helper(numRows * sizeof(valType));
+            #endif
+            #pragma omp parallel for
+            for(unsigned int i = 0; i < numRows; i++) {
+                realValues[i] = vec[i].real();
+                imagValues[i] = vec[i].imag();
+            }
+        }
+
         vector(unsigned int M, valType init_real) {
             numRows = M;
             #if NUM_BYTES_ALIGNED <= 0
