@@ -118,6 +118,19 @@ class vector : public std::enable_shared_from_this<vector> {
             return std::complex<valType>(realValues[i], imagValues[i]);
         }
 
+        std::shared_ptr<vector> adjoint() {
+            std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
+
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                realValues[i] = realValues[i];
+                imagValues[i] = -1 * imagValues[i];
+            }
+            return v;
+        }
+
         std::shared_ptr<vector> subtract(std::shared_ptr<vector> v) {
             assert(numRows == v->numRows);
             std::shared_ptr<vector> result = std::make_shared<vector>(numRows);
