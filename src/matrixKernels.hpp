@@ -1,6 +1,16 @@
 #ifndef DIAQ_MATRIXKERNELS_HPP
 #define DIAQ_MATRIXKERNELS_HPP
 
+// others
+#include <unordered_map>
+#include <vector>
+#include <utility>
+#include <algorithm>
+#include <cmath>
+#include <chrono>
+#include <cstdio>
+#include <iostream>
+
 #include "diaQMatrix.hpp"
 #include "denseMatrix.hpp"
 #include "specialMatrices.hpp"
@@ -37,7 +47,10 @@ std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::share
 std::shared_ptr<diaQMatrix> operator+(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B);
 
 void spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
+void spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y, int n);
 std::shared_ptr<vector> spMV(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x);
+std::shared_ptr<vector> spMV_ntimes(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, int n);
+
 std::shared_ptr<vector> MV(std::shared_ptr<denseMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y);
 
 std::shared_ptr<denseMatrix> dense_kron_product(std::shared_ptr<denseMatrix> A, std::shared_ptr<denseMatrix> B);
@@ -62,8 +75,14 @@ std::shared_ptr<diaQMatrix> conjbar(std::shared_ptr<diaQMatrix> A);
 
 std::shared_ptr<diaQMatrix> multiply_by_scalar(std::shared_ptr<diaQMatrix> A, valType real, valType imag);
 
+std::shared_ptr<diaQMatrix> pow(std::shared_ptr<diaQMatrix> A, int n);
+
+std::shared_ptr<diaQMatrix> expm_taylor(std::shared_ptr<diaQMatrix> A, int max_iterations, valType tolerance);
+std::shared_ptr<diaQMatrix> expm_taylor_scaled(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff = 1.0);
+
 std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType tolerance);
-std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff);
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0);
+
 std::shared_ptr<diaQMatrix> matrix_power(std::shared_ptr<diaQMatrix> U, int exponent);
 std::shared_ptr<diaQMatrix> expm_negative_pade(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations);
 

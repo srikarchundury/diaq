@@ -49,6 +49,7 @@ std::string version() {
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::automatic)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::automatic)
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::automatic)
+        .def("set_at_diag", &diaq::diaQMatrix::set_at_diag, py::return_value_policy::automatic)
         .def("copy", &diaq::diaQMatrix::copy, py::return_value_policy::automatic)
         .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
             py::buffer_info shape_info = shape.request();
@@ -373,6 +374,31 @@ std::string version() {
         py::return_value_policy::automatic
     );
 
+    // spMV_ntimes overloads
+    m.def(
+        "spMV_ntimes",
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, int n) {
+            return diaq::spMV_ntimes(A, x, n);
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+    m.def(
+        "spMV_ntimes",
+        [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, std::shared_ptr<diaq::vector> y, int n) {
+            diaq::spMV_ntimes(A, x, y, n);
+            return y;
+        },
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    // spMV overloads
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x) {
@@ -382,7 +408,6 @@ std::string version() {
         py::arg(),
         py::return_value_policy::automatic
     );
-    
     m.def(
         "spMV",
         [](std::shared_ptr<diaq::diaQMatrix> A, std::shared_ptr<diaq::vector> x, std::shared_ptr<diaq::vector> y) {
@@ -402,7 +427,7 @@ std::string version() {
     //     py::arg("axes"),
     //     py::return_value_policy::automatic
     // );
-    
+
     m.def(
         "multiply_by_scalar",
         [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType real, diaq::valType imag) { return diaq::multiply_by_scalar(A, real, imag); },
@@ -413,10 +438,44 @@ std::string version() {
     );
 
     m.def(
+        "pow",
+        [](std::shared_ptr<diaq::diaQMatrix> A, unsigned int power) {
+            #ifdef CUDA_ENABLED
+                return diaq::pow_cuda(A, power);
+            #else
+                return diaq::pow(A, power);
+            #endif
+        },
+        py::arg(),
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
+        "expm",
+        [](std::shared_ptr<diaq::diaQMatrix> A,
+            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
+            #ifdef CUDA_ENABLED
+                return diaq::expm_taylor_scaled_cuda(A, max_iterations, scale_cutoff);
+            #else
+                return diaq::expm_taylor_scaled(A, max_iterations, scale_cutoff);
+            #endif
+        },
+        py::arg("A"),
+        py::arg("max_iterations") = 100,
+        py::arg("scale_cutoff")   = 1.0,
+        py::return_value_policy::automatic
+    );
+
+    m.def(
         "expm_negative",
         [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
             int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
-            return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+            #ifdef CUDA_ENABLED
+                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff);
+            #else
+                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+            #endif
         },
         py::arg("A"), py::arg("t"),
         py::arg("max_iterations") = 100,

@@ -6,6 +6,119 @@
 
 namespace diaq {
 
+std::shared_ptr<diaQMatrix> expm_taylor_scaled(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff) {
+	#ifdef DEBUG
+		printf("starting expm_taylor_scaled -- ");
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	#endif
+
+	// Fast path: single diagonal case => no need for scaling logic here if your base expm handles it well.
+	if (A->num_diags() == 1) {
+		return expm_taylor(A, max_iterations, scale_cutoff);
+	}
+
+    valType norm_est = A->estimate_1norm();
+	#ifdef DEEP_DEBUG
+		printf("expm_taylor_scaled: Estimated ||A||_1 = %.6f\n", norm_est);
+	#endif
+
+	const valType eps = (valType)1e-12;
+	valType scaled_norm = norm_est + eps;
+
+	int s = (scaled_norm > scale_cutoff)
+		? (int)std::ceil(std::log2(scaled_norm / scale_cutoff))
+		: 0;
+
+	if (s > 10) {
+		printf("\033[93m[WARNING]\033[0m expm_taylor_scaled: scaling exponent s = %d is large (‖A‖₁ = %.3f)\n", s, norm_est);
+	}
+
+	valType inv_scale = std::ldexp((valType)1.0, -s); // 2^{-s}
+	std::shared_ptr<diaQMatrix> A_scaled = std::make_shared<diaQMatrix>(*A); // requires copy-ctor
+	A_scaled->scale_by_real(inv_scale);
+
+	valType scale = std::ldexp((valType)1.0, s); // 2^s
+	valType tolerance = std::max((valType)1e-9, (valType)((valType)1e-5 / scale));
+
+	#ifdef DEEP_DEBUG
+		printf("expm_taylor_scaled: norm_est = %.6f, scaled_norm = %.6f, s = %d, inv_scale = %.6e, tolerance = %.2e\n",
+			norm_est, scaled_norm, s, inv_scale, tolerance);
+	#endif
+
+	std::shared_ptr<diaQMatrix> U = expm_taylor(A_scaled, max_iterations, tolerance);
+
+	U = pow(U, s);
+
+	#ifdef DEBUG
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		printf("\t\t expm_taylor_scaled took %f milliseconds\n", duration.count() / 1000.0);
+	#endif
+
+	return U;
+}
+
+std::shared_ptr<diaQMatrix> expm_taylor(std::shared_ptr<diaQMatrix> A, int max_iterations, valType tolerance) {
+    #ifdef DEBUG
+        printf("starting expm_taylor -- ");
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    #endif
+
+    // initialize result and create 0th diagonal
+    std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+
+    if(A->num_diags() == 1) {
+        unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[0]);
+        valType *real_vals = A->realData + A->diagOffsets[0];
+        valType *imag_vals = A->imagData + A->diagOffsets[0];
+        valType *res_real_vals = result->realData + result->diagOffsets[0];
+        valType *res_imag_vals = result->imagData + result->diagOffsets[0];
+        // Compute exact exp(A) for diagonal elements
+        #pragma omp parallel for
+        for (unsigned int i = 0; i < dLength; i++) {
+            valType a_i = real_vals[i];
+            valType b_i = imag_vals[i];
+            valType exp_a = std::exp(a_i);
+            valType cos_b = std::cos(b_i);
+            valType sin_b = std::sin(b_i);
+            res_real_vals[i] = exp_a * cos_b;
+            res_imag_vals[i] = exp_a * sin_b;
+        }
+        #ifdef DEBUG
+            std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            printf("\t\t expm_taylor took %f milliseconds\n", duration.count() / 1000.0);
+        #endif
+        return result;
+    }
+    // Use Taylor series expansion for non-diagonal matrices
+
+    std::shared_ptr<diaQMatrix> X = A->copy();
+    std::shared_ptr<diaQMatrix> X_power_i_whole_divided_by_i = std::make_shared<identityMatrix>(A->matrix_shape[0]); // X power 0 / 0! // result is already identity matrix currently
+
+    int i;
+    for(i = 1; i <= max_iterations; i++) {
+        X_power_i_whole_divided_by_i = product(X_power_i_whole_divided_by_i, X);
+        X_power_i_whole_divided_by_i->divide_by_int(i);
+        result->add(X_power_i_whole_divided_by_i);
+        // Check convergence
+        // if (i % 5 == 0 && X_power_i_whole_divided_by_i->norm() < tolerance) break;
+        if (X_power_i_whole_divided_by_i->norm() < tolerance) break;
+    }
+    if(i == max_iterations) {
+        printf("Warning: expm_taylor reached max iterations (%d) without convergence.\n", max_iterations);
+    }
+    // printf("Taylor converged at iteration %d with norm %.2e\n", i, X_power_i_whole_divided_by_i->norm());
+
+    #ifdef DEBUG
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        printf("\t\t expm_taylor took %f milliseconds\n", duration.count() / 1000.0);
+    #endif
+
+    return result;
+}
+
 std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType tolerance) {
     // Computes e^(-i * A * t) using the Taylor series expansion
     // e^(-i * A * t) ≈ I - i * A * t + (-i * A * t)^2 / 2! + (-i * A * t)^3 / 3! + ...
@@ -83,7 +196,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor(std::shared_ptr<diaQMatrix> A, 
     return result;
 }
 
-std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0) {
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff) {
 	#ifdef DEBUG
 		printf("starting expm_negative_taylor_scaled -- ");
 		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
@@ -128,10 +241,12 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled(std::shared_ptr<diaQMatr
 	// Step 3: Compute e^{-i A t / 2^s}
 	std::shared_ptr<diaQMatrix> U = expm_negative_taylor(A, scaled_t, max_iterations, tolerance);
 
-	// Step 4: Square result s times
-	for (int i = 0; i < s; i++) {
-		U = product(U, U);
-	}
+	// // Step 4: Square result s times
+	// for (int i = 0; i < s; i++) {
+	// 	U = product(U, U);
+	// }
+    // replacing repeated spGEMM with pow function!
+    U = pow(U, s);
 
 	#ifdef DEBUG
 		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
