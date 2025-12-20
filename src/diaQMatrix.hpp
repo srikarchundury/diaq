@@ -636,6 +636,16 @@ public:
 		imagData[offset + pos]   = imag_val;
 	}
 
+	void set_at_diag(int d_idx, unsigned int d_pos, valType real_val, valType imag_val) {
+		int slot = findDiagonalSlot(d_idx);
+		if (slot < 0) {
+			throw std::runtime_error("set_diag: diagonal index not present in dIndices.");
+		}
+		unsigned int offset      = diagOffsets[static_cast<size_t>(slot)];
+		realData[offset + d_pos] = real_val;
+		imagData[offset + d_pos] = imag_val;
+	}
+
 	void set(unsigned int x, unsigned int y, valType real_val, valType imag_val) {
 		std::array<int, 2> d_pos  = getDiagonalPosition(x, y);
 		int dIndex               = d_pos[0];

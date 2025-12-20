@@ -49,6 +49,7 @@ std::string version() {
         .def("reshape", &diaq::diaQMatrix::reshape, py::return_value_policy::automatic)
         .def("print", &diaq::diaQMatrix::print, py::return_value_policy::automatic)
         .def("print_meta", &diaq::diaQMatrix::print_meta, py::return_value_policy::automatic)
+        .def("set_at_diag", &diaq::diaQMatrix::set_at_diag, py::return_value_policy::automatic)
         .def("copy", &diaq::diaQMatrix::copy, py::return_value_policy::automatic)
         .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
             py::buffer_info shape_info = shape.request();
