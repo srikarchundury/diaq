@@ -1019,6 +1019,12 @@ public:
 
 	// this *= real
 	std::shared_ptr<diaQMatrix> scale_by_real(valType real) {
+		#ifdef DEBUG
+			std::printf("starting scale_by_real -- real = %f --", real);
+			std::chrono::high_resolution_clock::time_point start =
+			std::chrono::high_resolution_clock::now();
+		#endif
+
 		#pragma omp parallel for
 		for (size_t k = 0; k < dIndices.size(); k++) {
 			unsigned int len = getDiagonalLengthInternal(dIndices[k]);
@@ -1030,6 +1036,12 @@ public:
 				imagData[off + j] *= real;
 			}
 		}
+		#ifdef DEBUG
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t scale_by_real took "
+		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+		          << " ms" << std::endl;
+		#endif
 		return shared_from_this();
 	}
 
@@ -1207,9 +1219,40 @@ public:
         #endif
     }
 
-	// Deep copy as shared_ptr.
+	// Deep copy as shared_ptr (diagonal-wise, logical lengths only).
 	std::shared_ptr<diaQMatrix> copy() const {
-		return std::make_shared<diaQMatrix>(*this);
+		#ifdef DEBUG
+			std::printf("starting copy -- ");
+			auto start = std::chrono::high_resolution_clock::now();
+		#endif
+
+		// Construct fresh storage with the same diag layout
+		std::shared_ptr<diaQMatrix> C =
+			std::make_shared<diaQMatrix>(matrix_shape, dIndices, shape);
+
+		// Copy each diagonal using logical length (do NOT copy padding blindly)
+		#pragma omp parallel for
+		for (size_t k = 0; k < dIndices.size(); ++k) {
+			unsigned int len  = getDiagonalLengthInternal(dIndices[k]);
+			unsigned int offA = diagOffsets[k];
+			unsigned int offC = C->diagOffsets[k];
+
+			// You can add omp simd if you like
+			#pragma omp simd
+			for (unsigned int j = 0; j < len; ++j) {
+				C->realData[offC + j] = realData[offA + j];
+				C->imagData[offC + j] = imagData[offA + j];
+			}
+		}
+
+		#ifdef DEBUG
+			auto end = std::chrono::high_resolution_clock::now();
+			std::cout << "\t\t copy took "
+				<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
+				<< " ms" << std::endl;
+		#endif
+
+		return C;
 	}
 
 	// C = (i * imag) * this (copy + scale).
