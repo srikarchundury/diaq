@@ -159,6 +159,7 @@ set(SOURCES
   ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/spGEMM.cpp
   ${SRC_DIR}/spPow.cpp
+  ${SRC_DIR}/spAdjoint.cpp
   ${SRC_DIR}/spME.cpp
   ${SRC_DIR}/spKron.cpp
   ${SRC_DIR}/denseKernels.cpp

@@ -8,6 +8,7 @@
 
 namespace diaq {
 
+std::shared_ptr<diaQMatrix> outerProduct(std::shared_ptr<vector> v1, std::shared_ptr<vector> v2);
 void zeroize(vector &x);
 void unitize(vector &x);
 void randomize(vector &x, valType scale, valType mean);

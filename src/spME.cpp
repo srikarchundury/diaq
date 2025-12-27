@@ -73,6 +73,7 @@ std::shared_ptr<diaQMatrix> expm_taylor(std::shared_ptr<diaQMatrix> A, int max_i
         valType *imag_vals = A->imagData + A->diagOffsets[0];
         valType *res_real_vals = result->realData + result->diagOffsets[0];
         valType *res_imag_vals = result->imagData + result->diagOffsets[0];
+
         // Compute exact exp(A) for diagonal elements
         #pragma omp parallel for
         for (unsigned int i = 0; i < dLength; i++) {
@@ -84,11 +85,13 @@ std::shared_ptr<diaQMatrix> expm_taylor(std::shared_ptr<diaQMatrix> A, int max_i
             res_real_vals[i] = exp_a * cos_b;
             res_imag_vals[i] = exp_a * sin_b;
         }
+
         #ifdef DEBUG
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
             printf("\t\t expm_taylor took %f milliseconds\n", duration.count() / 1000.0);
         #endif
+
         return result;
     }
     // Use Taylor series expansion for non-diagonal matrices

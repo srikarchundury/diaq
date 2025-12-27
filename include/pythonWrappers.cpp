@@ -452,6 +452,19 @@ std::string version() {
     );
 
     m.def(
+        "adjoint",
+        [](std::shared_ptr<diaq::diaQMatrix> A) {
+            // #ifdef CUDA_ENABLED
+            //     return diaq::adjoint_cuda(A);
+            // #else
+                return diaq::adjoint(A);
+            // #endif
+        },
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
         "expm",
         [](std::shared_ptr<diaq::diaQMatrix> A,
             int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
