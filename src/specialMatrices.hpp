@@ -13,10 +13,11 @@ class identityMatrix : public diaQMatrix {
 		{
 			// Storage is now allocated by base constructor
 			if (realData && imagData) {
+				unsigned int off = diagOffsets[0];
 				#pragma omp parallel for
-				for(unsigned int i = 0; i < s; i++) {
-					realData[i] = (valType)1.0;
-					imagData[i] = (valType)0.0;
+				for (unsigned int i = 0; i < s; ++i) {
+					realData[off + i] = 1.0;
+					imagData[off + i] = 0.0;
 				}
 			}
 		}
@@ -24,33 +25,30 @@ class identityMatrix : public diaQMatrix {
 
 class permutationMatrix : public diaQMatrix {
 	public:
-		permutationMatrix(unsigned int s, std::vector<unsigned int> row_order) : diaQMatrix(s) {
+		permutationMatrix(unsigned int s, std::vector<unsigned int> row_order)
+		: diaQMatrix({s, s}, std::vector<int>{0})  // or whatever, just ensure base is valid
+		{
 			#if NUM_BYTES_ALIGNED <= 0
 				valType *real = (valType *)calloc(s * s, sizeof(valType));
 			#else
 				valType *real = aligned_alloc_helper(s * s * sizeof(valType));
+				#pragma omp parallel for
+				for (unsigned int i = 0; i < s*s; ++i) real[i] = 0.0;
 			#endif
-			for(unsigned int i = 0 ; i < s; i++) {
-				for(unsigned int j = 0; j < s; j++) {
-					if(j == row_order[i]) {
-						real[i * s + j] = 1;
-					} else {
-						real[i * s + j] = 0;
-					}
+
+			for (unsigned int i = 0; i < s; i++) {
+				for (unsigned int j = 0; j < s; j++) {
+					real[i * s + j] = (j == row_order[i]) ? 1.0 : 0.0;
 				}
 			}
+
 			std::shared_ptr<denseMatrix> d = std::make_shared<denseMatrix>(s, real);
 			std::shared_ptr<diaQMatrix> qs = d->convertToDiaQ();
-			// Copy new API fields
-			this->dIndices = qs->dIndices;
-			this->diagOffsets = qs->diagOffsets;
-			// No need to set diagLengths; use getDiagonalLengthInternal
-			this->realData = qs->realData;
-			this->imagData = qs->imagData;
-			this->matrix_shape = qs->matrix_shape;
-			this->shape = qs->shape;
+
+			this->freeStorage();      // free our current storage (if any)
+			this->swap(*qs);          // now *this owns qs's buffers; qs owns ours (likely null)
 		}
-};;
+};
 
 } // namespace diaq
 

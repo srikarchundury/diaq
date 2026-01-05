@@ -1357,7 +1357,7 @@ public:
 		          << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
 		          << " ms" << std::endl;
 		#endif
-		
+
 		return C;
 	}
 
