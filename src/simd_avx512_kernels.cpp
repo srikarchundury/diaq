@@ -19,7 +19,8 @@ void avx512_store_partial_double(int n, double *loc, __m512d vec) {
 
 template<>
 void run_avx512<double>(
-    unsigned int start, unsigned int end, unsigned int a_offset, unsigned int b_offset,
+    unsigned int start, unsigned int end,
+    int a_offset, int b_offset,
     double *real_vals_a, double *imag_vals_a,
     double *real_vals_b, double *imag_vals_b,
     double *real_vals_final, double *imag_vals_final, bool overwrite
@@ -45,8 +46,8 @@ void run_avx512<double>(
     // --- Prologue (unaligned/scalar) ---
     #pragma omp parallel for
     for (unsigned int idx = start; idx < simd_start; ++idx) {
-        unsigned int idx_a = idx + a_offset;
-        unsigned int idx_b = idx + b_offset;
+        int idx_a = (int)idx + a_offset;
+        int idx_b = (int)idx + b_offset;
 
         double real_a = real_vals_a[idx_a];
         double imag_a = imag_vals_a[idx_a];
@@ -68,8 +69,8 @@ void run_avx512<double>(
         unsigned int block_end = std::min(block_start + BLOCK_SIZE, simd_end);
 
         for (unsigned int i = block_start; i + VEC_WIDTH <= block_end; i += VEC_WIDTH) {
-            unsigned int idx_a = i + a_offset;
-            unsigned int idx_b = i + b_offset;
+            int idx_a = (int)i + a_offset;
+            int idx_b = (int)i + b_offset;
 
             _mm_prefetch(&real_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
             _mm_prefetch(&imag_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
@@ -102,8 +103,8 @@ void run_avx512<double>(
     // --- Epilogue ---
     #pragma omp parallel for
     for (unsigned int idx = simd_end; idx < end; ++idx) {
-        unsigned int idx_a = idx + a_offset;
-        unsigned int idx_b = idx + b_offset;
+        int idx_a = (int)idx + a_offset;
+        int idx_b = (int)idx + b_offset;
 
         double real_a = real_vals_a[idx_a];
         double imag_a = imag_vals_a[idx_a];
@@ -143,7 +144,7 @@ void avx512_store_partial_float(int n, float *loc, __m512 vec) {
 template<>
 void run_avx512<float>(
     unsigned int start, unsigned int end,
-    unsigned int a_offset, unsigned int b_offset,
+    int a_offset, int b_offset,
     float *real_vals_a, float *imag_vals_a,
     float *real_vals_b, float *imag_vals_b,
     float *real_vals_final, float *imag_vals_final, bool overwrite
@@ -170,8 +171,8 @@ void run_avx512<float>(
     // --- Prologue (unaligned/scalar) ---
     #pragma omp parallel for
     for (unsigned int idx = start; idx < simd_start; ++idx) {
-        unsigned int idx_a = idx + a_offset;
-        unsigned int idx_b = idx + b_offset;
+        int idx_a = (int)idx + a_offset;
+        int idx_b = (int)idx + b_offset;
 
         float real_a = real_vals_a[idx_a];
         float imag_a = imag_vals_a[idx_a];
@@ -188,8 +189,8 @@ void run_avx512<float>(
     #pragma omp parallel for
     for (unsigned int i = 0; i < simd_vec_blocks; ++i) {
         unsigned int idx   = simd_start + i * VEC_WIDTH;
-        unsigned int idx_a = idx + a_offset;
-        unsigned int idx_b = idx + b_offset;
+        int idx_a = (int)idx + a_offset;
+        int idx_b = (int)idx + b_offset;
 
         _mm_prefetch(&real_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
         _mm_prefetch(&imag_vals_a[idx_a + PREFETCH_DIST], _MM_HINT_T0);
@@ -216,8 +217,8 @@ void run_avx512<float>(
     // --- Epilogue (unaligned/scalar) ---
     #pragma omp parallel for
     for (unsigned int idx = simd_end; idx < end; ++idx) {
-        unsigned int idx_a = idx + a_offset;
-        unsigned int idx_b = idx + b_offset;
+        int idx_a = (int)idx + a_offset;
+        int idx_b = (int)idx + b_offset;
 
         float real_a = real_vals_a[idx_a];
         float imag_a = imag_vals_a[idx_a];
