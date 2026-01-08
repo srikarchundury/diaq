@@ -206,8 +206,8 @@ void multiplyDiagonalsSegment(
         return;
     }
 
-    unsigned int a_offset = (unsigned int)(offsetA - jump);
-    unsigned int b_offset = (unsigned int)(offsetB - jump);
+    int a_offset = (int)(offsetA - jump);
+    int b_offset = (int)(offsetB - jump);
 
     // We can still block inside the tile if desired
     unsigned int blockSize = BLOCK_SIZE / 4;

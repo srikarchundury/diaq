@@ -467,32 +467,40 @@ std::string version() {
     m.def(
         "expm",
         [](std::shared_ptr<diaq::diaQMatrix> A,
-            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
+        int max_iterations,
+        diaq::valType scale_cutoff,
+        diaq::valType tolerance) {
             #ifdef CUDA_ENABLED
-                return diaq::expm_taylor_scaled_cuda(A, max_iterations, scale_cutoff);
+                return diaq::expm_taylor_scaled_cuda(A, max_iterations, scale_cutoff, tolerance);
             #else
-                return diaq::expm_taylor_scaled(A, max_iterations, scale_cutoff);
+                return diaq::expm_taylor_scaled(A, max_iterations, scale_cutoff, tolerance);
             #endif
         },
         py::arg("A"),
         py::arg("max_iterations") = 100,
         py::arg("scale_cutoff")   = 1.0,
+        py::arg("tolerance")      = (diaq::valType)1e-12,
         py::return_value_policy::automatic
     );
 
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
-            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
+        [](std::shared_ptr<diaq::diaQMatrix> A,
+        diaq::valType t,
+        int max_iterations,
+        diaq::valType scale_cutoff,
+        diaq::valType tolerance) {
             #ifdef CUDA_ENABLED
-                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff);
+                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff, tolerance);
             #else
-                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff, tolerance);
             #endif
         },
-        py::arg("A"), py::arg("t"),
+        py::arg("A"),
+        py::arg("t"),
         py::arg("max_iterations") = 100,
         py::arg("scale_cutoff")   = 1.0,
+        py::arg("tolerance")      = (diaq::valType)1e-12,
         py::return_value_policy::automatic
     );
 

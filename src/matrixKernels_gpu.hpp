@@ -35,12 +35,12 @@ std::shared_ptr<vector> spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A, std::sha
 std::shared_ptr<diaQMatrix> pow_cuda(std::shared_ptr<diaQMatrix> A, int n);
 
 // sparse matrix exponential on GPU - just expm(A)
-std::shared_ptr<diaQMatrix> expm_taylor_cuda(std::shared_ptr<diaQMatrix> A, int max_iterations, valType tolerance);
-std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff = 1.0);
+std::shared_ptr<diaQMatrix> expm_taylor_cuda(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
+std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
 
 // sparse matrix exponential on GPU - negative time
-std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType tolerance);
-std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0);
+std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
+std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
 
 } // namespace diaq
 
