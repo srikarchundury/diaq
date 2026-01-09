@@ -5,6 +5,14 @@
 #include <stdexcept>
 #include <cstdio>
 
+#ifndef SPGEMM_TPB
+#define SPGEMM_TPB 256
+#endif
+
+#ifndef SPGEMM_TILE_T
+#define SPGEMM_TILE_T 256
+#endif
+
 namespace diaq {
 
 // -----------------------------------------------------------------------------
@@ -36,31 +44,18 @@ static inline unsigned int getDiagonalLengthHelper(
 // -----------------------------------------------------------------------------
 __global__ void product_kernel(
     int numRes,
-
-    // Result-diagonal metadata
-    const int * __restrict__ resDiagIndices,     // [numRes]
-    const unsigned int * __restrict__ resDiagOffsets, // [numRes]
-    const unsigned int * __restrict__ resDiagLens,    // [numRes]
-
-    // For each result-diagonal slot r, pairs are in
-    // [resPairOffset[r], resPairOffset[r+1]) in the pair arrays.
-    const unsigned int * __restrict__ resPairOffset,  // [numRes+1]
-
-    // Flattened pair data (totalPairs = resPairOffset[numRes])
-    const int * __restrict__ pair_dA,           // [totalPairs]
-    const int * __restrict__ pair_dB,           // [totalPairs]
-    const unsigned int * __restrict__ pairSlotA,// [totalPairs]
-    const unsigned int * __restrict__ pairSlotB,// [totalPairs]
-
-    // A diagonal metadata
-    const unsigned int * __restrict__ A_diagOffsets,  // [numA]
-    const unsigned int * __restrict__ A_diagLens,     // [numA]
-
-    // B diagonal metadata
-    const unsigned int * __restrict__ B_diagOffsets,  // [numB]
-    const unsigned int * __restrict__ B_diagLens,     // [numB]
-
-    // Data arrays (SoA layout)
+    const int * __restrict__ resDiagIndices,
+    const unsigned int * __restrict__ resDiagOffsets,
+    const unsigned int * __restrict__ resDiagLens,
+    const unsigned int * __restrict__ resPairOffset,
+    const int * __restrict__ pair_dA,
+    const int * __restrict__ pair_dB,
+    const unsigned int * __restrict__ pairSlotA,
+    const unsigned int * __restrict__ pairSlotB,
+    const unsigned int * __restrict__ A_diagOffsets,
+    const unsigned int * __restrict__ A_diagLens,
+    const unsigned int * __restrict__ B_diagOffsets,
+    const unsigned int * __restrict__ B_diagLens,
     const valType * __restrict__ A_real,
     const valType * __restrict__ A_imag,
     const valType * __restrict__ B_real,
@@ -69,9 +64,7 @@ __global__ void product_kernel(
     valType * __restrict__ C_imag
 ) {
     int resSlot = blockIdx.x;
-    if (resSlot >= numRes) {
-        return;
-    }
+    if (resSlot >= numRes) return;
 
     int dC = resDiagIndices[resSlot];
     unsigned int offC = resDiagOffsets[resSlot];
@@ -80,7 +73,7 @@ __global__ void product_kernel(
     unsigned int pairStart = resPairOffset[resSlot];
     unsigned int pairEnd   = resPairOffset[resSlot + 1];
 
-    // Loop over all (dA, dB) pairs contributing to this result diagonal.
+    // Loop over contributing pairs
     for (unsigned int p = pairStart; p < pairEnd; ++p) {
         int dA = pair_dA[p];
         int dB = pair_dB[p];
@@ -96,59 +89,53 @@ __global__ void product_kernel(
 
         bool first = (p == pairStart);
 
-        // Parallel over positions t along result diagonal
-        for (unsigned int t = threadIdx.x; t < lenC; t += blockDim.x) {
+        // Tiled traversal over t along result diagonal
+        for (unsigned int t0 = 0; t0 < lenC; t0 += SPGEMM_TILE_T) {
+            unsigned int tEnd = t0 + SPGEMM_TILE_T;
+            if (tEnd > lenC) tEnd = lenC;
 
-            // Matrix coordinates (i, j) for C's diagonal element (dC, t)
-            int i, j;
-            if (dC >= 0) {
-                i = static_cast<int>(t);
-                j = static_cast<int>(t) + dC;
-            } else {
-                i = static_cast<int>(t) - dC; // dC < 0
-                j = static_cast<int>(t);
+            // Parallel within this tile
+            for (unsigned int t = t0 + threadIdx.x; t < tEnd; t += blockDim.x) {
+
+                int i, j;
+                if (dC >= 0) {
+                    i = static_cast<int>(t);
+                    j = static_cast<int>(t) + dC;
+                } else {
+                    i = static_cast<int>(t) - dC;
+                    j = static_cast<int>(t);
+                }
+
+                int pA = (dA >= 0) ? i : (i + dA);
+                int pB = (dB >= 0) ? (i + dA) : j;
+
+                if (pA < 0 || pB < 0) continue;
+                if ((unsigned int)pA >= lenA || (unsigned int)pB >= lenB) continue;
+
+                unsigned int idxA = offA + (unsigned int)pA;
+                unsigned int idxB = offB + (unsigned int)pB;
+                unsigned int idxC = offC + t;
+
+                valType ar = A_real[idxA];
+                valType ai = A_imag[idxA];
+                valType br = B_real[idxB];
+                valType bi = B_imag[idxB];
+
+                valType cr = ar * br - ai * bi;
+                valType ci = ar * bi + ai * br;
+
+                if (first) {
+                    C_real[idxC] = cr;
+                    C_imag[idxC] = ci;
+                } else {
+                    C_real[idxC] += cr;
+                    C_imag[idxC] += ci;
+                }
             }
 
-            // Position along A's diagonal dA
-            int pA = (dA >= 0) ? i : (i + dA);
-
-            // Position along B's diagonal dB
-            int pB = (dB >= 0) ? (i + dA) : j;
-
-            // Bounds check against diagonal lengths
-            if (pA < 0 || pB < 0) {
-                continue;
-            }
-            if (static_cast<unsigned int>(pA) >= lenA ||
-                static_cast<unsigned int>(pB) >= lenB) {
-                continue;
-            }
-
-            unsigned int idxA = offA + static_cast<unsigned int>(pA);
-            unsigned int idxB = offB + static_cast<unsigned int>(pB);
-            unsigned int idxC = offC + t;
-
-            valType ar = A_real[idxA];
-            valType ai = A_imag[idxA];
-            valType br = B_real[idxB];
-            valType bi = B_imag[idxB];
-
-            valType cr = ar * br - ai * bi;
-            valType ci = ar * bi + ai * br;
-
-            if (first) {
-                // First contributing pair overwrites
-                C_real[idxC] = cr;
-                C_imag[idxC] = ci;
-            } else {
-                // Subsequent pairs accumulate
-                C_real[idxC] += cr;
-                C_imag[idxC] += ci;
-            }
+            // Ensure the block finishes this tile for this pair before next tile/pair
+            __syncthreads();
         }
-
-        // Ensure all threads in block finished this pair before moving on
-        __syncthreads();
     }
 }
 
@@ -384,7 +371,7 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     // -------------------------------------------------------------------------
     // Step 5: Launch kernel
     // -------------------------------------------------------------------------
-    int threadsPerBlock = 256;
+    int threadsPerBlock = SPGEMM_TPB;
     int blocksPerGrid   = static_cast<int>(numRes);
 
     product_kernel<<<blocksPerGrid, threadsPerBlock>>>(
