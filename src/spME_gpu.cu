@@ -15,15 +15,15 @@ std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(
 ) {
 	#ifdef DEBUG
 		printf("starting expm_taylor_scaled_cuda -- ");
-		auto start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
 	// Fast path: single diagonal case
 	if (A->num_diags() == 1) {
-		auto res = expm_taylor_cuda(A, max_iterations, scale_cutoff, tolerance);
+		std::shared_ptr<diaQMatrix> res = expm_taylor_cuda(A, max_iterations, scale_cutoff, tolerance);
 		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 			printf("\t\t expm_taylor_scaled_cuda took %f milliseconds\n", duration.count() / 1000.0);
 		#endif
 		return res;
@@ -48,7 +48,7 @@ std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(
 
 	// A_scaled = A / 2^s (do NOT mutate A)
 	valType inv_scale = std::ldexp((valType)1.0, -s); // 2^{-s}
-	auto A_scaled = std::make_shared<diaQMatrix>(*A);
+	std::shared_ptr<diaQMatrix> A_scaled = std::make_shared<diaQMatrix>(*A);
 	A_scaled->scale_by_real(inv_scale);
 
 	// Do NOT override caller tolerance. Optionally tighten for squaring stability:
@@ -60,7 +60,7 @@ std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(
 	#endif
 
 	// Compute exp(A/2^s) on CUDA
-	auto U = expm_taylor_cuda(A_scaled, max_iterations, scale_cutoff, tol_scaled);
+	std::shared_ptr<diaQMatrix> U = expm_taylor_cuda(A_scaled, max_iterations, scale_cutoff, tol_scaled);
 
 	// Scale-and-square: exp(A) = exp(A/2^s)^(2^s) => square s times
 	U = pow_cuda(U, 1 << s);
@@ -69,8 +69,8 @@ std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(
 	// }
 
 	#ifdef DEBUG
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+		std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("\t\t expm_taylor_scaled_cuda took %f milliseconds\n", duration.count() / 1000.0);
 	#endif
 
@@ -91,11 +91,10 @@ std::shared_ptr<diaQMatrix> expm_taylor_cuda(
 ) {
 	#ifdef DEBUG
 		printf("starting <spME:expm_taylor_cuda> -- ");
-		auto start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
-	auto result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
-
+	std::shared_ptr<identityMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 	// Optional diagonal fast-path (host). Keep minimal.
 	if (A->num_diags() == 1) {
 		unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[0]);
@@ -117,14 +116,14 @@ std::shared_ptr<diaQMatrix> expm_taylor_cuda(
 		}
 
 		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 			printf("\t\t expm_taylor_cuda took %f milliseconds\n", duration.count() / 1000.0);
 		#endif
 		return result;
 	}
 
-	auto term = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+	std::shared_ptr<diaQMatrix> term = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
 	int i;
 	for (i = 1; i <= max_iterations; i++) {
@@ -140,8 +139,8 @@ std::shared_ptr<diaQMatrix> expm_taylor_cuda(
 	}
 
 	#ifdef DEBUG
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+		std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("\t\t expm_taylor_cuda took %f milliseconds\n", duration.count() / 1000.0);
 	#endif
 
@@ -163,10 +162,10 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(
 ) {
 	#ifdef DEBUG
 		printf("starting <spME:expm_negative_taylor_cuda> -- ");
-		auto start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
-	auto result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+	std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
 	if (A->num_diags() == 1) {
 		unsigned int dLength = A->getDiagonalLengthInternal(A->dIndices[0]);
@@ -190,15 +189,15 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(
 		}
 
 		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 			printf("\t\t expm_negative_taylor_cuda took %f milliseconds\n", duration.count() / 1000.0);
 		#endif
 		return result;
 	}
 
-	auto X = A->copy_and_scale_by_imag(-1.0 * t);
-	auto term = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+	std::shared_ptr<diaQMatrix> X = A->copy_and_scale_by_imag(-1.0 * t);
+	std::shared_ptr<diaQMatrix> term = std::make_shared<identityMatrix>(A->matrix_shape[0]);
 
 	int i;
 	for (i = 1; i <= max_iterations; i++) {
@@ -214,8 +213,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(
 	}
 
 	#ifdef DEBUG
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+		std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("\t\t expm_negative_taylor_cuda took %f milliseconds\n", duration.count() / 1000.0);
 	#endif
 
@@ -236,14 +235,14 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(
 ) {
 	#ifdef DEBUG
 		printf("starting expm_negative_taylor_scaled_cuda -- ");
-		auto start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 	#endif
 
 	if (A->num_diags() == 1) {
-		auto res = expm_negative_taylor_cuda(A, t, max_iterations, scale_cutoff, tolerance);
+		std::shared_ptr<diaQMatrix> res = expm_negative_taylor_cuda(A, t, max_iterations, scale_cutoff, tolerance);
 		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+			std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+			std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 			printf("\t\t expm_negative_taylor_scaled_cuda took %f milliseconds\n", duration.count() / 1000.0);
 		#endif
 		return res;
@@ -277,7 +276,7 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(
 			norm_est, scaled_norm, s, scaled_t, tol_scaled);
 	#endif
 
-	auto U = expm_negative_taylor_cuda(A, scaled_t, max_iterations, scale_cutoff, tol_scaled);
+	std::shared_ptr<diaQMatrix> U = expm_negative_taylor_cuda(A, scaled_t, max_iterations, scale_cutoff, tol_scaled);
 
 	// Scale-and-square (square s times)
 	U = pow_cuda(U, 1 << s);
@@ -286,8 +285,8 @@ std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(
 	// }
 
 	#ifdef DEBUG
-		auto end = std::chrono::high_resolution_clock::now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+		std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		printf("\t\t expm_negative_taylor_scaled_cuda took %f milliseconds\n", duration.count() / 1000.0);
 	#endif
 

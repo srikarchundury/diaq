@@ -275,13 +275,14 @@ public:
     }
 
 	bool isAligned() const {
-		if constexpr (NUM_BYTES_ALIGNED <= 0) {
+		#if NUM_BYTES_ALIGNED <= 0
 			return true; // no alignment requirement in this build
-		}
-		auto is_aligned = [](const void* p){
-			return (reinterpret_cast<std::uintptr_t>(p) % NUM_BYTES_ALIGNED) == 0;
-		};
+		#else
+			auto is_aligned = [](const void* ptr) -> bool {
+				return (reinterpret_cast<std::uintptr_t>(ptr) % NUM_BYTES_ALIGNED) == 0;
+			};
 		return is_aligned(realData) && is_aligned(imagData);
+		#endif
 	}
 
 	// -------------------- Storage helpers --------------------
