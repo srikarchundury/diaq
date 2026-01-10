@@ -14,6 +14,16 @@
 #include <cstdio>
 #include <iostream>
 
+// ================= CPU spGEMM tiling knobs =================
+#ifndef CPU_RES_BLOCK
+	#define CPU_RES_BLOCK 4
+#endif
+
+#ifndef CPU_ELEM_BLOCK
+	#define CPU_ELEM_BLOCK 2048
+#endif
+// ===========================================================
+
 namespace diaq {
 
 std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A,
@@ -379,8 +389,8 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
 
         // Tile sizes in diagonal-space and element-space.
         // These can be tuned later.
-        const unsigned int RES_BLOCK  = 4;      // number of diagonals per tile
-        const unsigned int ELEM_BLOCK = 2048;   // number of elements per tile
+        const unsigned int RES_BLOCK  = (unsigned int)CPU_RES_BLOCK;    // diagonals per tile
+        const unsigned int ELEM_BLOCK = (unsigned int)CPU_ELEM_BLOCK;   // elements per tile
 
         unsigned int numResTiles =
             (numRes + RES_BLOCK - 1) / RES_BLOCK;
