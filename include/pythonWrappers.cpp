@@ -504,6 +504,29 @@ std::string version() {
         py::return_value_policy::automatic
     );
 
+    #ifdef CUDA_ENABLED
+        m.def(
+            "hamiltonian_simulation_cuda",
+            [](std::shared_ptr<diaq::diaQMatrix> H,
+            std::shared_ptr<diaq::vector> psi0,
+            diaq::valType dt,
+            long unsigned int r,/*num_timesteps*/
+            int max_iterations,
+            diaq::valType scale_cutoff,
+            diaq::valType tolerance) {
+                return diaq::hamiltonian_simulation_cuda(H, psi0, dt, r, max_iterations, scale_cutoff, tolerance);
+            },
+            py::arg("H"),
+            py::arg("psi0"),
+            py::arg("dt"),
+            py::arg("r"),/*num_timesteps*/
+            py::arg("max_iterations") = 100,
+            py::arg("scale_cutoff")   = 1.0,
+            py::arg("tolerance")      = (diaq::valType)1e-12,
+            py::return_value_policy::automatic
+        );
+    #endif
+
     // mixed kernels! dense times sparse and sparse times dense
     m.def(
         "dq_times_np",

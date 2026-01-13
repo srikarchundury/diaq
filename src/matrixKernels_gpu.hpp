@@ -42,6 +42,9 @@ std::shared_ptr<diaQMatrix> expm_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> 
 std::shared_ptr<diaQMatrix> expm_negative_taylor_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
 std::shared_ptr<diaQMatrix> expm_negative_taylor_scaled_cuda(std::shared_ptr<diaQMatrix> A, valType t, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
 
+// sparse hamiltonian simulation on GPU
+std::shared_ptr<vector> hamiltonian_simulation_cuda(std::shared_ptr<diaQMatrix> H, std::shared_ptr<vector> psi0, valType t, long unsigned r/*num_timesteps*/, int max_iterations, valType scale_cutoff = 1.0, valType tolerance = 1e-12);
+
 } // namespace diaq
 
 #endif // DIAQ_MATRIXKERNELS_GPU_HPP
