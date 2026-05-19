@@ -297,17 +297,30 @@ set(CUDA_SOURCES
 # ===== Core library target =====
 if(CUDA_ENABLED)
   message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
-  find_package(CUDA REQUIRED)
-  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
+  enable_language(CUDA)
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 80 CACHE STRING "CUDA architectures to build for" FORCE)
+  endif()
+  find_package(CUDAToolkit REQUIRED)
+  message(STATUS "${BoldGreen}>>> CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}${Reset}")
+
+  add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
+  set_target_properties(diaq_core PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON
+    CUDA_SEPARABLE_COMPILATION ON
+  )
+
+  target_compile_options(diaq_core PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fPIC>
+  )
 
   # If SIMD compile opts were chosen, forward them to nvcc's host compiler
   if(DIAQ_SIMD_COMPILE_OPTS)
     foreach(_opt IN LISTS DIAQ_SIMD_COMPILE_OPTS)
-      list(APPEND CUDA_NVCC_FLAGS -Xcompiler ${_opt})
+      target_compile_options(diaq_core PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${_opt}>)
     endforeach()
   endif()
-
-  cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
 
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
@@ -315,7 +328,7 @@ if(CUDA_ENABLED)
     target_compile_options(diaq_core PUBLIC -O3)
   endif()
 
-  target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
+  target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX CUDA::cudart)
 
   if(DIAQ_COMPILE_DEFS)
     target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED ${DIAQ_COMPILE_DEFS})
@@ -422,7 +435,34 @@ message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 # ===== Python bindings (pybind11) =====
 if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
-  add_subdirectory(${PYBIND11_DIR})
+
+  if(NOT DEFINED Python3_EXECUTABLE)
+    if(DEFINED ENV{VIRTUAL_ENV})
+      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+    elseif(DEFINED ENV{CONDA_PREFIX})
+      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+    endif()
+  endif()
+
+  find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+  set(_pybind11_found FALSE)
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m pybind11 --cmakedir
+    RESULT_VARIABLE _pybind11_cmakedir_status
+    OUTPUT_VARIABLE _pybind11_cmakedir
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(_pybind11_cmakedir_status EQUAL 0 AND EXISTS "${_pybind11_cmakedir}/pybind11Config.cmake")
+    find_package(pybind11 CONFIG REQUIRED PATHS "${_pybind11_cmakedir}" NO_DEFAULT_PATH)
+    set(_pybind11_found TRUE)
+  elseif(EXISTS "${PYBIND11_DIR}/CMakeLists.txt")
+    add_subdirectory(${PYBIND11_DIR})
+    set(_pybind11_found TRUE)
+  else()
+    message(FATAL_ERROR "${BoldRed}pybind11 not found in the active Python environment and vendored dependency is missing.${Reset}")
+  endif()
 
   # Choose module name based on CUDA_ENABLED
   if(CUDA_ENABLED)
@@ -461,17 +501,6 @@ if(BUILD_PYTHON)
   endif()
 
   # Install into the active env’s site-packages.
-  # Respect user-specified Python3_EXECUTABLE if already set.
-  if(NOT DEFINED Python3_EXECUTABLE)
-    if(DEFINED ENV{VIRTUAL_ENV})
-      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
-    elseif(DEFINED ENV{CONDA_PREFIX})
-      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
-    endif()
-  endif()
-
-  find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
   execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
     OUTPUT_VARIABLE PYTHON_SITE_DIR
