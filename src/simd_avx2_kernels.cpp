@@ -257,7 +257,7 @@ void run_spmv_avx_0(unsigned int start, unsigned int end, valTypeTemplate *x_rea
 // ------------------------AVX DOUBLE----------------------------------------
 template<>
 void run_spmv_avx_1<double>(
-    unsigned int simd_start, unsigned int simd_end,
+    unsigned int start, unsigned int end,
     double *x_real_values, double *x_imag_values,
     double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
@@ -268,9 +268,19 @@ void run_spmv_avx_1<double>(
         std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
-    // --- Prologue ---
+    // Compute SIMD-aligned sub-range within [start, end). dIndex < 0 here.
+    // Need i % 4 == 0 and (i - dIndex) % 4 == 0; since dIndex is negative,
+    // (i - dIndex) = i + |dIndex|, computed safely via unsigned arithmetic.
+    unsigned int simd_start = start;
+    for (; simd_start + 4 <= end; ++simd_start) {
+        if ((simd_start % 4 == 0) && ((simd_start - (unsigned int)dIndex) % 4 == 0)) break;
+    }
+    if (simd_start + 4 > end) simd_start = end;
+    unsigned int simd_end = end - ((end - simd_start) % 4);
+
+    // --- Prologue [start, simd_start) ---
     #pragma omp parallel for
-    for (unsigned int i = 0; i < simd_start; ++i) {
+    for (unsigned int i = start; i < simd_start; ++i) {
         unsigned int y_index = i - dIndex;
 
         double a_r = real_vals[i];
@@ -310,9 +320,9 @@ void run_spmv_avx_1<double>(
         }
     }
 
-    // --- Epilogue ---
+    // --- Epilogue [simd_end, end) ---
     #pragma omp parallel for
-    for (unsigned int i = simd_end; i < dLength; ++i) {
+    for (unsigned int i = simd_end; i < end; ++i) {
         unsigned int y_index = i - dIndex;
 
         double a_r = real_vals[i];
@@ -332,7 +342,7 @@ void run_spmv_avx_1<double>(
 }
 template<>
 void run_spmv_avx_2<double>(
-    unsigned int simd_start, unsigned int simd_end,
+    unsigned int start, unsigned int end,
     double *x_real_values, double *x_imag_values,
     double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
@@ -343,9 +353,18 @@ void run_spmv_avx_2<double>(
         std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
-    // --- Prologue ---
+    // Compute SIMD-aligned sub-range within [start, end). dIndex > 0 here.
+    // Need i % 4 == 0 and (i + dIndex) % 4 == 0; both satisfied when dIndex % 4 == 0.
+    unsigned int simd_start = start;
+    for (; simd_start + 4 <= end; ++simd_start) {
+        if ((simd_start % 4 == 0) && ((simd_start + (unsigned int)dIndex) % 4 == 0)) break;
+    }
+    if (simd_start + 4 > end) simd_start = end;
+    unsigned int simd_end = end - ((end - simd_start) % 4);
+
+    // --- Prologue [start, simd_start) ---
     #pragma omp parallel for
-    for (unsigned int i = 0; i < simd_start; ++i) {
+    for (unsigned int i = start; i < simd_start; ++i) {
         unsigned int x_index = i + dIndex;
 
         double a_r = real_vals[i];
@@ -385,9 +404,9 @@ void run_spmv_avx_2<double>(
         }
     }
 
-    // --- Epilogue ---
+    // --- Epilogue [simd_end, end) ---
     #pragma omp parallel for
-    for (unsigned int i = simd_end; i < dLength; ++i) {
+    for (unsigned int i = simd_end; i < end; ++i) {
         unsigned int x_index = i + dIndex;
 
         double a_r = real_vals[i];
@@ -408,7 +427,7 @@ void run_spmv_avx_2<double>(
 
 template<>
 void run_spmv_avx_0<double>(
-    unsigned int simd_start, unsigned int simd_end,
+    unsigned int start, unsigned int end,
     double *x_real_values, double *x_imag_values,
     double *real_vals, double *imag_vals,
     double *y_real_values, double *y_imag_values,
@@ -419,9 +438,18 @@ void run_spmv_avx_0<double>(
         std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
     #endif
 
-    // --- Prologue ---
+    // Compute SIMD-aligned sub-range within [start, end). dIndex == 0 here.
+    // Need i % 4 == 0; alignment always achievable.
+    unsigned int simd_start = start;
+    for (; simd_start + 4 <= end; ++simd_start) {
+        if (simd_start % 4 == 0) break;
+    }
+    if (simd_start + 4 > end) simd_start = end;
+    unsigned int simd_end = end - ((end - simd_start) % 4);
+
+    // --- Prologue [start, simd_start) ---
     #pragma omp parallel for
-    for (unsigned int i = 0; i < simd_start; ++i) {
+    for (unsigned int i = start; i < simd_start; ++i) {
         double a_r = real_vals[i];
         double a_i = imag_vals[i];
         double x_r = x_real_values[i];
@@ -456,9 +484,9 @@ void run_spmv_avx_0<double>(
         }
     }
 
-    // --- Epilogue ---
+    // --- Epilogue [simd_end, end) ---
     #pragma omp parallel for
-    for (unsigned int i = simd_end; i < dLength; ++i) {
+    for (unsigned int i = simd_end; i < end; ++i) {
         double a_r = real_vals[i];
         double a_i = imag_vals[i];
         double x_r = x_real_values[i];
