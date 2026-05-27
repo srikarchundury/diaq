@@ -136,6 +136,31 @@ if(APPLE AND DIAQ_ARCH_ARM64)
   set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "" FORCE)
 endif()
 
+# ===== CPU feature detection from /proc/cpuinfo (Linux only) =====
+# check_cxx_compiler_flag only tests whether the compiler accepts the flag,
+# NOT whether the runtime CPU actually supports the ISA extension. On Linux
+# we can read /proc/cpuinfo for the ground truth.
+set(CPU_HAS_AVX512F ON)  # default ON: non-Linux falls back to compiler check
+set(CPU_HAS_AVX2    ON)
+set(CPU_HAS_SSE2    ON)
+if(UNIX AND NOT APPLE AND EXISTS "/proc/cpuinfo")
+  file(READ "/proc/cpuinfo" _cpuinfo)
+  if(NOT _cpuinfo MATCHES " avx512f")
+    set(CPU_HAS_AVX512F OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: avx512f NOT present on this CPU${Reset}")
+  else()
+    message(STATUS "${BoldGreen}>>> /proc/cpuinfo: avx512f present${Reset}")
+  endif()
+  if(NOT _cpuinfo MATCHES " avx2")
+    set(CPU_HAS_AVX2 OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: avx2 NOT present on this CPU${Reset}")
+  endif()
+  if(NOT _cpuinfo MATCHES " sse2")
+    set(CPU_HAS_SSE2 OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: sse2 NOT present on this CPU${Reset}")
+  endif()
+endif()
+
 # ===== Common sources =====
 set(SOURCES
   # --- .hpp files ---
@@ -195,7 +220,7 @@ if(MANUAL_SIMD)
     check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
     check_cxx_compiler_flag("-msse2"    HAS_SSE2)
 
-    if(HAS_AVX512F) # prioritize AVX-512 if available
+    if(HAS_AVX512F AND CPU_HAS_AVX512F) # prioritize AVX-512 if compiler+CPU both support it
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx512_kernels.hpp
         ${SRC_DIR}/simd_avx512_kernels.cpp
@@ -206,7 +231,7 @@ if(MANUAL_SIMD)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX512F)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX-512 (VEC_TYPE=2)${Reset}")
 
-    elseif(HAS_AVX2) # next, try AVX2
+    elseif(HAS_AVX2 AND CPU_HAS_AVX2) # next, try AVX2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx2_kernels.hpp
         ${SRC_DIR}/simd_avx2_kernels.cpp
@@ -216,7 +241,7 @@ if(MANUAL_SIMD)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX2)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX2 (VEC_TYPE=1)${Reset}")
 
-    elseif(HAS_SSE2) # finally, try SSE2
+    elseif(HAS_SSE2 AND CPU_HAS_SSE2) # finally, try SSE2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_sse_kernels.hpp
         ${SRC_DIR}/simd_sse_kernels.cpp
@@ -260,13 +285,13 @@ else() # MANUAL_SIMD is OFF: rely on auto-vectorization, but still target best I
   set(DIAQ_VEC_TYPE_VALUE -1)
   list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
 
-  if(HAS_AVX512F)
+  if(HAS_AVX512F AND CPU_HAS_AVX512F)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX-512 (VEC_TYPE=-1)${Reset}")
-  elseif(HAS_AVX2)
+  elseif(HAS_AVX2 AND CPU_HAS_AVX2)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx2 -mfma)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX2 (VEC_TYPE=-1)${Reset}")
-  elseif(HAS_SSE2)
+  elseif(HAS_SSE2 AND CPU_HAS_SSE2)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -msse2)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target SSE2 (VEC_TYPE=-1)${Reset}")
   else()

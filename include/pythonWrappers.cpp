@@ -374,6 +374,56 @@ std::string version() {
         py::return_value_policy::automatic
     );
 
+    m.def(
+        "identity_kron_matrix_times_vector",
+        [](unsigned int n,
+           std::shared_ptr<diaq::diaQMatrix> A,
+           std::shared_ptr<diaq::vector> x,
+           std::shared_ptr<diaq::vector> y) {
+            diaq::identity_kron_matrix_times_vector(n, A, x, y);
+            return y;
+        },
+        py::arg("n"),
+        py::arg("A"),
+        py::arg("x"),
+        py::arg("y"),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
+        "matrix_kron_identity_times_vector",
+        [](std::shared_ptr<diaq::diaQMatrix> A,
+           unsigned int n,
+           std::shared_ptr<diaq::vector> x,
+           std::shared_ptr<diaq::vector> y) {
+            diaq::matrix_kron_identity_times_vector(A, n, x, y);
+            return y;
+        },
+        py::arg("A"),
+        py::arg("n"),
+        py::arg("x"),
+        py::arg("y"),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
+        "identity_kron_matrix_kron_identity_times_vector",
+        [](unsigned int before,
+           std::shared_ptr<diaq::diaQMatrix> gate,
+           unsigned int after,
+           std::shared_ptr<diaq::vector> x,
+           std::shared_ptr<diaq::vector> y) {
+            diaq::identity_kron_matrix_kron_identity_times_vector(before, gate, after, x, y);
+            return y;
+        },
+        py::arg("before"),
+        py::arg("gate"),
+        py::arg("after"),
+        py::arg("x"),
+        py::arg("y"),
+        py::return_value_policy::automatic
+    );
+
     // spMV_ntimes overloads
     m.def(
         "spMV_ntimes",
