@@ -64,6 +64,23 @@ class vector : public std::enable_shared_from_this<vector> {
             #endif
         }
 
+        //constructor from std::vector<std::complex<valType>>
+        vector(const std::vector<std::complex<valType>>& vec) {
+            numRows = vec.size();
+            #if NUM_BYTES_ALIGNED <= 0
+                realValues = (valType *)calloc(numRows, sizeof(valType));
+                imagValues = (valType *)calloc(numRows, sizeof(valType));
+            #else
+                realValues = aligned_alloc_helper(numRows * sizeof(valType));
+                imagValues = aligned_alloc_helper(numRows * sizeof(valType));
+            #endif
+            #pragma omp parallel for
+            for(unsigned int i = 0; i < numRows; i++) {
+                realValues[i] = vec[i].real();
+                imagValues[i] = vec[i].imag();
+            }
+        }
+
         vector(unsigned int M, valType init_real) {
             numRows = M;
             #if NUM_BYTES_ALIGNED <= 0
@@ -116,6 +133,19 @@ class vector : public std::enable_shared_from_this<vector> {
 
         const std::complex<valType> operator[](unsigned int i) const {
             return std::complex<valType>(realValues[i], imagValues[i]);
+        }
+
+        std::shared_ptr<vector> adjoint() {
+            std::shared_ptr<vector> v = std::make_shared<vector>(numRows);
+            valType *realValues = v->realValues;
+            valType *imagValues = v->imagValues;
+
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                realValues[i] = realValues[i];
+                imagValues[i] = -1 * imagValues[i];
+            }
+            return v;
         }
 
         std::shared_ptr<vector> subtract(std::shared_ptr<vector> v) {

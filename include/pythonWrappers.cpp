@@ -452,36 +452,80 @@ std::string version() {
     );
 
     m.def(
+        "adjoint",
+        [](std::shared_ptr<diaq::diaQMatrix> A) {
+            // #ifdef CUDA_ENABLED
+            //     return diaq::adjoint_cuda(A);
+            // #else
+                return diaq::adjoint(A);
+            // #endif
+        },
+        py::arg(),
+        py::return_value_policy::automatic
+    );
+
+    m.def(
         "expm",
         [](std::shared_ptr<diaq::diaQMatrix> A,
-            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
+        int max_iterations,
+        diaq::valType scale_cutoff,
+        diaq::valType tolerance) {
             #ifdef CUDA_ENABLED
-                return diaq::expm_taylor_scaled_cuda(A, max_iterations, scale_cutoff);
+                return diaq::expm_taylor_scaled_cuda(A, max_iterations, scale_cutoff, tolerance);
             #else
-                return diaq::expm_taylor_scaled(A, max_iterations, scale_cutoff);
+                return diaq::expm_taylor_scaled(A, max_iterations, scale_cutoff, tolerance);
             #endif
         },
         py::arg("A"),
         py::arg("max_iterations") = 100,
         py::arg("scale_cutoff")   = 1.0,
+        py::arg("tolerance")      = (diaq::valType)1e-12,
         py::return_value_policy::automatic
     );
 
     m.def(
         "expm_negative",
-        [](std::shared_ptr<diaq::diaQMatrix> A, diaq::valType t,
-            int max_iterations = 100, diaq::valType scale_cutoff = 1.0) {
+        [](std::shared_ptr<diaq::diaQMatrix> A,
+        diaq::valType t,
+        int max_iterations,
+        diaq::valType scale_cutoff,
+        diaq::valType tolerance) {
             #ifdef CUDA_ENABLED
-                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff);
+                return diaq::expm_negative_taylor_scaled_cuda(A, t, max_iterations, scale_cutoff, tolerance);
             #else
-                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff);
+                return diaq::expm_negative_taylor_scaled(A, t, max_iterations, scale_cutoff, tolerance);
             #endif
         },
-        py::arg("A"), py::arg("t"),
+        py::arg("A"),
+        py::arg("t"),
         py::arg("max_iterations") = 100,
         py::arg("scale_cutoff")   = 1.0,
+        py::arg("tolerance")      = (diaq::valType)1e-12,
         py::return_value_policy::automatic
     );
+
+    #ifdef CUDA_ENABLED
+        m.def(
+            "hamiltonian_simulation_cuda",
+            [](std::shared_ptr<diaq::diaQMatrix> H,
+            std::shared_ptr<diaq::vector> psi0,
+            diaq::valType dt,
+            long unsigned int r,/*num_timesteps*/
+            int max_iterations,
+            diaq::valType scale_cutoff,
+            diaq::valType tolerance) {
+                return diaq::hamiltonian_simulation_cuda(H, psi0, dt, r, max_iterations, scale_cutoff, tolerance);
+            },
+            py::arg("H"),
+            py::arg("psi0"),
+            py::arg("dt"),
+            py::arg("r"),/*num_timesteps*/
+            py::arg("max_iterations") = 100,
+            py::arg("scale_cutoff")   = 1.0,
+            py::arg("tolerance")      = (diaq::valType)1e-12,
+            py::return_value_policy::automatic
+        );
+    #endif
 
     // mixed kernels! dense times sparse and sparse times dense
     m.def(

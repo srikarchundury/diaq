@@ -159,6 +159,7 @@ set(SOURCES
   ${SRC_DIR}/matrixKernels.cpp
   ${SRC_DIR}/spGEMM.cpp
   ${SRC_DIR}/spPow.cpp
+  ${SRC_DIR}/spAdjoint.cpp
   ${SRC_DIR}/spME.cpp
   ${SRC_DIR}/spKron.cpp
   ${SRC_DIR}/denseKernels.cpp
@@ -290,6 +291,7 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spMV_ntimes_gpu.cu
   ${SRC_DIR}/spME_gpu.cu # dont know if I can write an end to end spME-GPU, this one just accelerates parts of it!
   ${SRC_DIR}/spPow_gpu.cu # same as above one!
+  ${SRC_DIR}/spHamSim_gpu_all_fused.cu # specialized kernel for Hamiltonian end to end on GPU!!
 )
 
 # ===== Core library target =====

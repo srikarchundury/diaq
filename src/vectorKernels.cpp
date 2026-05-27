@@ -8,6 +8,30 @@
 
 namespace diaq {
 
+std::shared_ptr<diaQMatrix> outerProduct(std::shared_ptr<vector> v1, std::shared_ptr<vector> v2) {;
+    std::vector<int> all_diags;
+    all_diags.reserve(v1->numRows + v2->numRows - 1);
+    for (int k = -static_cast<int>(v2->numRows) + 1; k <= static_cast<int>(v1->numRows) - 1; ++k) {
+        all_diags.push_back(k);
+    } // since outerproduct is dense anway!
+    std::shared_ptr<diaQMatrix> M = std::make_shared<diaQMatrix>(std::array{v1->numRows, v2->numRows}, all_diags);
+
+    #pragma omp parallel for
+    for (unsigned int i = 0; i < v1->numRows; ++i) {
+        valType r1 = v1->realValues[i];
+        valType im1 = v1->imagValues[i];
+        for (unsigned int j = 0; j < v2->numRows; ++j) {
+            valType r2 = v2->realValues[j];
+            valType im2 = v2->imagValues[j];
+            valType real_part = r1 * r2 - im1 * im2;
+            valType imag_part = r1 * im2 + im1 * r2;
+            M->set(i, j, real_part, imag_part);
+        }
+    }
+    M->pruneMatrix();
+    return M;
+}
+
 /**
  * @brief Set all elements of a given (complex) vector to 0+0i
  * 
