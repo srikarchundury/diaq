@@ -241,25 +241,21 @@ import diaq as dq
 a1 = np.arange(16, dtype=np.complex128).reshape(2, 2, 2, 2)
 a2 = np.arange(16, 32, dtype=np.complex128).reshape(2, 2, 2, 2)
 
-# NumPy baseline
-res_np = np.tensordot(a1, a2, axes=((2,), (1,)))
-
 # Convert to DiaQ
 q1 = dq.from_numpy(a1)
 q2 = dq.from_numpy(a2)
 
-# Equivalent contraction through reshape + SpGEMM
+# tensordot(a1, a2, axes=((2,),(1,))) via reshape + SpGEMM
 q1r = dq.reshape(q1, [8, 2])
 q2r = dq.reshape(q2, [2, 8])
 qres = dq.product(q1r, q2r)
 
-res_dq = dq.to_numpy(qres)
-expected = np.dot(
-    a1.transpose(0, 1, 3, 2).reshape(8, 2),
-    a2.transpose(1, 0, 2, 3).reshape(2, 8),
-)
+res_dq = dq.to_numpy(qres)   # shape (8, 8)
 
-np.testing.assert_allclose(res_dq, expected, rtol=1e-10, atol=1e-12)
+# NumPy reference: contract axis 2 of a1 with axis 1 of a2 → shape (2,2,2,2,2,2)
+res_np = np.tensordot(a1, a2, axes=((2,), (1,)))
+
+np.testing.assert_allclose(res_dq, res_np.reshape(8, 8), rtol=1e-10, atol=1e-12)
 ```
 
 ## Quick Start (C++)
