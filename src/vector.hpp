@@ -2,6 +2,7 @@
 #define DIAQ_VECTOR_HPP
 
 #include "config.hpp"
+#include <stdexcept>
 
 namespace diaq {
 
@@ -269,6 +270,170 @@ class vector : public std::enable_shared_from_this<vector> {
         void print_meta() {
             std::cout << "length (" << numRows << ")" << std::endl;
             std::cout << "sparsity = " << sparsity() << std::endl;
+        }
+
+        vector initializeState(const vector &full_old_state, const std::vector<valType> &gate_parameters,
+                               const std::vector<unsigned int> &wire_dimensions,
+                               const std::vector<unsigned int> &targets) {
+            auto prod_dims = [](const std::vector<unsigned int> &dims) -> unsigned long long {
+                unsigned long long p = 1;
+                for (unsigned int d : dims) {
+                    p *= static_cast<unsigned long long>(d);
+                }
+                return p;
+            };
+
+            const unsigned long long total_dim = prod_dims(wire_dimensions);
+            if (static_cast<unsigned long long>(full_old_state.numRows) != total_dim) {
+                throw std::invalid_argument("state.size != prod(wire_dims)");
+            }
+
+            std::vector<valType> amps(gate_parameters);
+            long double amp_sq = 0.0L;
+            #pragma omp parallel for reduction(+:amp_sq)
+            for (long long i = 0; i < static_cast<long long>(amps.size()); ++i) {
+                const long double re = static_cast<long double>(amps[static_cast<size_t>(i)]);
+                amp_sq += re * re;
+            }
+
+            const long double amp_norm = std::sqrt(amp_sq);
+            if (amp_norm == 0.0L) {
+                throw std::invalid_argument("zero-norm vector");
+            }
+            const valType inv_amp_norm = static_cast<valType>(1.0L / amp_norm);
+
+            #pragma omp parallel for
+            for (long long i = 0; i < static_cast<long long>(amps.size()); ++i) {
+                amps[static_cast<size_t>(i)] *= inv_amp_norm;
+            }
+
+            if (targets.empty()) {
+                if (amps.size() != static_cast<size_t>(total_dim)) {
+                    throw std::invalid_argument("full INITIALIZE size mismatch");
+                }
+
+                vector out(static_cast<unsigned int>(total_dim));
+                #pragma omp parallel for
+                for (long long i = 0; i < static_cast<long long>(total_dim); ++i) {
+                    out.realValues[static_cast<size_t>(i)] = amps[static_cast<size_t>(i)];
+                    out.imagValues[static_cast<size_t>(i)] = 0.0;
+                }
+                return out;
+            }
+
+            const unsigned int W = static_cast<unsigned int>(wire_dimensions.size());
+            for (unsigned int t : targets) {
+                if (t >= W) {
+                    throw std::invalid_argument("target out of range");
+                }
+            }
+
+            std::vector<char> is_t(static_cast<size_t>(W), 0);
+            for (unsigned int t : targets) {
+                is_t[static_cast<size_t>(t)] = 1;
+            }
+
+            std::vector<unsigned int> rest_axes;
+            rest_axes.reserve(static_cast<size_t>(W));
+            for (unsigned int w = 0; w < W; ++w) {
+                if (!is_t[static_cast<size_t>(w)]) {
+                    rest_axes.push_back(w);
+                }
+            }
+
+            unsigned long long target_dim = 1;
+            for (unsigned int t : targets) {
+                target_dim *= static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(t)]);
+            }
+
+            unsigned long long rest_dim = 1;
+            for (unsigned int w : rest_axes) {
+                rest_dim *= static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w)]);
+            }
+
+            if (amps.size() != static_cast<size_t>(target_dim)) {
+                throw std::invalid_argument("subset INITIALIZE size mismatch");
+            }
+
+            std::vector<unsigned long long> stride(static_cast<size_t>(W), 1);
+            for (unsigned int w = 1; w < W; ++w) {
+                stride[static_cast<size_t>(w)] = stride[static_cast<size_t>(w - 1)] *
+                                                 static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w - 1)]);
+            }
+
+            std::vector<unsigned long long> t_base(static_cast<size_t>(target_dim), 0);
+            std::vector<unsigned long long> r_base(static_cast<size_t>(rest_dim), 0);
+
+            #pragma omp parallel for
+            for (long long t = 0; t < static_cast<long long>(target_dim); ++t) {
+                unsigned long long tmp = static_cast<unsigned long long>(t);
+                unsigned long long g = 0;
+                for (size_t i = 0; i < targets.size(); ++i) {
+                    const unsigned int w = targets[i];
+                    const unsigned long long d = tmp % static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w)]);
+                    tmp /= static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w)]);
+                    g += d * stride[static_cast<size_t>(w)];
+                }
+                t_base[static_cast<size_t>(t)] = g;
+            }
+
+            #pragma omp parallel for
+            for (long long r = 0; r < static_cast<long long>(rest_dim); ++r) {
+                unsigned long long tmp = static_cast<unsigned long long>(r);
+                unsigned long long g = 0;
+                for (size_t i = 0; i < rest_axes.size(); ++i) {
+                    const unsigned int w = rest_axes[i];
+                    const unsigned long long d = tmp % static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w)]);
+                    tmp /= static_cast<unsigned long long>(wire_dimensions[static_cast<size_t>(w)]);
+                    g += d * stride[static_cast<size_t>(w)];
+                }
+                r_base[static_cast<size_t>(r)] = g;
+            }
+
+            std::vector<valType> rest_real(static_cast<size_t>(rest_dim), 0.0);
+            std::vector<valType> rest_imag(static_cast<size_t>(rest_dim), 0.0);
+
+            #pragma omp parallel for
+            for (long long r = 0; r < static_cast<long long>(rest_dim); ++r) {
+                const unsigned long long idx = r_base[static_cast<size_t>(r)];
+                rest_real[static_cast<size_t>(r)] = full_old_state.realValues[static_cast<size_t>(idx)];
+                rest_imag[static_cast<size_t>(r)] = full_old_state.imagValues[static_cast<size_t>(idx)];
+            }
+
+            long double rest_sq = 0.0L;
+            #pragma omp parallel for reduction(+:rest_sq)
+            for (long long i = 0; i < static_cast<long long>(rest_dim); ++i) {
+                const long double re = static_cast<long double>(rest_real[static_cast<size_t>(i)]);
+                const long double im = static_cast<long double>(rest_imag[static_cast<size_t>(i)]);
+                rest_sq += re * re + im * im;
+            }
+
+            const long double rest_norm = std::sqrt(rest_sq);
+            if (rest_norm == 0.0L) {
+                std::fill(rest_real.begin(), rest_real.end(), 0.0);
+                std::fill(rest_imag.begin(), rest_imag.end(), 0.0);
+                rest_real[0] = 1.0;
+            } else {
+                const valType inv_rest_norm = static_cast<valType>(1.0L / rest_norm);
+                #pragma omp parallel for
+                for (long long i = 0; i < static_cast<long long>(rest_dim); ++i) {
+                    rest_real[static_cast<size_t>(i)] *= inv_rest_norm;
+                    rest_imag[static_cast<size_t>(i)] *= inv_rest_norm;
+                }
+            }
+
+            vector out(static_cast<unsigned int>(total_dim));
+            #pragma omp parallel for collapse(2) schedule(static)
+            for (long long t = 0; t < static_cast<long long>(target_dim); ++t) {
+                for (long long r = 0; r < static_cast<long long>(rest_dim); ++r) {
+                    const unsigned long long gidx = t_base[static_cast<size_t>(t)] + r_base[static_cast<size_t>(r)];
+                    const valType amp = amps[static_cast<size_t>(t)];
+                    out.realValues[static_cast<size_t>(gidx)] = amp * rest_real[static_cast<size_t>(r)];
+                    out.imagValues[static_cast<size_t>(gidx)] = amp * rest_imag[static_cast<size_t>(r)];
+                }
+            }
+
+            return out;
         }
 
         valType sparsity() {

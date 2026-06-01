@@ -95,6 +95,7 @@ std::string version() {
         .def("getArray", &diaq::vector::getArray, py::return_value_policy::automatic)
         .def("copy", &diaq::vector::copy, py::return_value_policy::automatic)
         .def("isEqualTo", &diaq::vector::isEqualTo, py::return_value_policy::automatic)
+        .def("initializeState", &diaq::vector::initializeState, py::return_value_policy::automatic)
         ;
 
     // diaq::denseMatrix class
