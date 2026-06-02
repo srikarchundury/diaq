@@ -97,6 +97,56 @@ class vector : public std::enable_shared_from_this<vector> {
                 imagValues[i] = 0.0;
             }
         }
+
+        vector(const vector &other) {
+            numRows = other.numRows;
+            #if NUM_BYTES_ALIGNED <= 0
+                realValues = (valType *)calloc(numRows, sizeof(valType));
+                imagValues = (valType *)calloc(numRows, sizeof(valType));
+            #else
+                realValues = aligned_alloc_helper(numRows * sizeof(valType));
+                imagValues = aligned_alloc_helper(numRows * sizeof(valType));
+            #endif
+            #pragma omp parallel for
+            for (unsigned int i = 0; i < numRows; ++i) {
+                realValues[i] = other.realValues[i];
+                imagValues[i] = other.imagValues[i];
+            }
+        }
+
+        vector &operator=(const vector &other) {
+            if (this != &other) {
+                vector tmp(other);
+                std::swap(numRows, tmp.numRows);
+                std::swap(realValues, tmp.realValues);
+                std::swap(imagValues, tmp.imagValues);
+            }
+            return *this;
+        }
+
+        vector(vector &&other) noexcept {
+            numRows = other.numRows;
+            realValues = other.realValues;
+            imagValues = other.imagValues;
+            other.numRows = 0;
+            other.realValues = nullptr;
+            other.imagValues = nullptr;
+        }
+
+        vector &operator=(vector &&other) noexcept {
+            if (this != &other) {
+                std::free(realValues);
+                std::free(imagValues);
+                numRows = other.numRows;
+                realValues = other.realValues;
+                imagValues = other.imagValues;
+                other.numRows = 0;
+                other.realValues = nullptr;
+                other.imagValues = nullptr;
+            }
+            return *this;
+        }
+
         ~vector() {
             // #ifdef DEEP_DEBUG
             //     std::cout << "vector destructor called" << std::endl;
@@ -272,9 +322,9 @@ class vector : public std::enable_shared_from_this<vector> {
             std::cout << "sparsity = " << sparsity() << std::endl;
         }
 
-        vector initializeState(const vector &full_old_state, const std::vector<valType> &gate_parameters,
-                               const std::vector<unsigned int> &wire_dimensions,
-                               const std::vector<unsigned int> &targets) {
+        vector initializeState(const vector &full_old_state, const std::vector<std::complex<valType>> &gate_parameters,
+                       const std::vector<unsigned int> &wire_dimensions,
+                       const std::vector<unsigned int> &targets) {
             auto prod_dims = [](const std::vector<unsigned int> &dims) -> unsigned long long {
                 unsigned long long p = 1;
                 for (unsigned int d : dims) {
@@ -288,12 +338,12 @@ class vector : public std::enable_shared_from_this<vector> {
                 throw std::invalid_argument("state.size != prod(wire_dims)");
             }
 
-            std::vector<valType> amps(gate_parameters);
+            std::vector<std::complex<valType>> amps(gate_parameters);
             long double amp_sq = 0.0L;
             #pragma omp parallel for reduction(+:amp_sq)
             for (long long i = 0; i < static_cast<long long>(amps.size()); ++i) {
-                const long double re = static_cast<long double>(amps[static_cast<size_t>(i)]);
-                amp_sq += re * re;
+                const std::complex<valType> amp = amps[static_cast<size_t>(i)];
+                amp_sq += static_cast<long double>(std::norm(amp));
             }
 
             const long double amp_norm = std::sqrt(amp_sq);
@@ -315,8 +365,8 @@ class vector : public std::enable_shared_from_this<vector> {
                 vector out(static_cast<unsigned int>(total_dim));
                 #pragma omp parallel for
                 for (long long i = 0; i < static_cast<long long>(total_dim); ++i) {
-                    out.realValues[static_cast<size_t>(i)] = amps[static_cast<size_t>(i)];
-                    out.imagValues[static_cast<size_t>(i)] = 0.0;
+                    out.realValues[static_cast<size_t>(i)] = amps[static_cast<size_t>(i)].real();
+                    out.imagValues[static_cast<size_t>(i)] = amps[static_cast<size_t>(i)].imag();
                 }
                 return out;
             }
@@ -427,9 +477,11 @@ class vector : public std::enable_shared_from_this<vector> {
             for (long long t = 0; t < static_cast<long long>(target_dim); ++t) {
                 for (long long r = 0; r < static_cast<long long>(rest_dim); ++r) {
                     const unsigned long long gidx = t_base[static_cast<size_t>(t)] + r_base[static_cast<size_t>(r)];
-                    const valType amp = amps[static_cast<size_t>(t)];
-                    out.realValues[static_cast<size_t>(gidx)] = amp * rest_real[static_cast<size_t>(r)];
-                    out.imagValues[static_cast<size_t>(gidx)] = amp * rest_imag[static_cast<size_t>(r)];
+                    const std::complex<valType> amp = amps[static_cast<size_t>(t)];
+                    const valType rest_re = rest_real[static_cast<size_t>(r)];
+                    const valType rest_im = rest_imag[static_cast<size_t>(r)];
+                    out.realValues[static_cast<size_t>(gidx)] = amp.real() * rest_re - amp.imag() * rest_im;
+                    out.imagValues[static_cast<size_t>(gidx)] = amp.real() * rest_im + amp.imag() * rest_re;
                 }
             }
 
