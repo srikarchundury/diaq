@@ -138,6 +138,31 @@ if(APPLE AND DIAQ_ARCH_ARM64)
   set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "" FORCE)
 endif()
 
+# ===== CPU feature detection from /proc/cpuinfo (Linux only) =====
+# check_cxx_compiler_flag only tests whether the compiler accepts the flag,
+# NOT whether the runtime CPU actually supports the ISA extension. On Linux
+# we can read /proc/cpuinfo for the ground truth.
+set(CPU_HAS_AVX512F ON)  # default ON: non-Linux falls back to compiler check
+set(CPU_HAS_AVX2    ON)
+set(CPU_HAS_SSE2    ON)
+if(UNIX AND NOT APPLE AND EXISTS "/proc/cpuinfo")
+  file(READ "/proc/cpuinfo" _cpuinfo)
+  if(NOT _cpuinfo MATCHES " avx512f")
+    set(CPU_HAS_AVX512F OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: avx512f NOT present on this CPU${Reset}")
+  else()
+    message(STATUS "${BoldGreen}>>> /proc/cpuinfo: avx512f present${Reset}")
+  endif()
+  if(NOT _cpuinfo MATCHES " avx2")
+    set(CPU_HAS_AVX2 OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: avx2 NOT present on this CPU${Reset}")
+  endif()
+  if(NOT _cpuinfo MATCHES " sse2")
+    set(CPU_HAS_SSE2 OFF)
+    message(STATUS "${BoldYellow}>>> /proc/cpuinfo: sse2 NOT present on this CPU${Reset}")
+  endif()
+endif()
+
 # ===== Common sources =====
 set(SOURCES
   # --- .hpp files ---
@@ -197,7 +222,7 @@ if(MANUAL_SIMD)
     check_cxx_compiler_flag("-mavx2"    HAS_AVX2)
     check_cxx_compiler_flag("-msse2"    HAS_SSE2)
 
-    if(HAS_AVX512F) # prioritize AVX-512 if available
+    if(HAS_AVX512F AND CPU_HAS_AVX512F) # prioritize AVX-512 if compiler+CPU both support it
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx512_kernels.hpp
         ${SRC_DIR}/simd_avx512_kernels.cpp
@@ -208,7 +233,7 @@ if(MANUAL_SIMD)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX512F)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX-512 (VEC_TYPE=2)${Reset}")
 
-    elseif(HAS_AVX2) # next, try AVX2
+    elseif(HAS_AVX2 AND CPU_HAS_AVX2) # next, try AVX2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_avx2_kernels.hpp
         ${SRC_DIR}/simd_avx2_kernels.cpp
@@ -218,7 +243,7 @@ if(MANUAL_SIMD)
       list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_AVX2)
       message(STATUS "${BoldGreen}>>> SIMD backend: AVX2 (VEC_TYPE=1)${Reset}")
 
-    elseif(HAS_SSE2) # finally, try SSE2
+    elseif(HAS_SSE2 AND CPU_HAS_SSE2) # finally, try SSE2
       list(APPEND SOURCES
         ${SRC_DIR}/simd_sse_kernels.hpp
         ${SRC_DIR}/simd_sse_kernels.cpp
@@ -262,13 +287,13 @@ else() # MANUAL_SIMD is OFF: rely on auto-vectorization, but still target best I
   set(DIAQ_VEC_TYPE_VALUE -1)
   list(APPEND DIAQ_COMPILE_DEFS CPU_SUPPORTS_SCALAR)
 
-  if(HAS_AVX512F)
+  if(HAS_AVX512F AND CPU_HAS_AVX512F)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx512f -mavx512dq -mfma)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX-512 (VEC_TYPE=-1)${Reset}")
-  elseif(HAS_AVX2)
+  elseif(HAS_AVX2 AND CPU_HAS_AVX2)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -mavx2 -mfma)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target AVX2 (VEC_TYPE=-1)${Reset}")
-  elseif(HAS_SSE2)
+  elseif(HAS_SSE2 AND CPU_HAS_SSE2)
     list(APPEND DIAQ_SIMD_COMPILE_OPTS -msse2)
     message(STATUS "${BoldGreen}>>> SIMD disabled: auto-vectorization target SSE2 (VEC_TYPE=-1)${Reset}")
   else()
@@ -300,17 +325,30 @@ set(CUDA_SOURCES
 # GPU
 if(CUDA_ENABLED)
   message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
-  find_package(CUDA REQUIRED)
-  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11 -Xcompiler -fPIC)
+  enable_language(CUDA)
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 80 CACHE STRING "CUDA architectures to build for" FORCE)
+  endif()
+  find_package(CUDAToolkit REQUIRED)
+  message(STATUS "${BoldGreen}>>> CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}${Reset}")
+
+  add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
+  set_target_properties(diaq_core PROPERTIES
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON
+    CUDA_SEPARABLE_COMPILATION ON
+  )
+
+  target_compile_options(diaq_core PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-fPIC>
+  )
 
   # If SIMD compile opts were chosen, forward them to nvcc's host compiler
   if(DIAQ_SIMD_COMPILE_OPTS)
     foreach(_opt IN LISTS DIAQ_SIMD_COMPILE_OPTS)
-      list(APPEND CUDA_NVCC_FLAGS -Xcompiler ${_opt})
+      target_compile_options(diaq_core PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${_opt}>)
     endforeach()
   endif()
-
-  cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
 
   if(DIAQ_SIMD_COMPILE_OPTS)
     target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
@@ -318,7 +356,7 @@ if(CUDA_ENABLED)
     target_compile_options(diaq_core PUBLIC ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
   endif()
 
-  target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
+  target_link_libraries(diaq_core PUBLIC OpenMP::OpenMP_CXX CUDA::cudart)
 
   if(DIAQ_COMPILE_DEFS)
     target_compile_definitions(diaq_core PUBLIC CUDA_ENABLED ${DIAQ_COMPILE_DEFS})
@@ -459,7 +497,34 @@ message(STATUS "${BoldBlue}>>> Build output: ${CMAKE_BINARY_DIR}${Reset}")
 # ===== Python bindings (pybind11) =====
 if(BUILD_PYTHON)
   message(STATUS "${BoldBlue}>>> Building Python bindings (pybind11)${Reset}")
-  add_subdirectory(${PYBIND11_DIR})
+
+  if(NOT DEFINED Python3_EXECUTABLE)
+    if(DEFINED ENV{VIRTUAL_ENV})
+      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
+    elseif(DEFINED ENV{CONDA_PREFIX})
+      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+    endif()
+  endif()
+
+  find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+
+  set(_pybind11_found FALSE)
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m pybind11 --cmakedir
+    RESULT_VARIABLE _pybind11_cmakedir_status
+    OUTPUT_VARIABLE _pybind11_cmakedir
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(_pybind11_cmakedir_status EQUAL 0 AND EXISTS "${_pybind11_cmakedir}/pybind11Config.cmake")
+    find_package(pybind11 CONFIG REQUIRED PATHS "${_pybind11_cmakedir}" NO_DEFAULT_PATH)
+    set(_pybind11_found TRUE)
+  elseif(EXISTS "${PYBIND11_DIR}/CMakeLists.txt")
+    add_subdirectory(${PYBIND11_DIR})
+    set(_pybind11_found TRUE)
+  else()
+    message(FATAL_ERROR "${BoldRed}pybind11 not found in the active Python environment and vendored dependency is missing.${Reset}")
+  endif()
 
   # Choose module name based on CUDA_ENABLED
   if(CUDA_ENABLED)
@@ -498,17 +563,6 @@ if(BUILD_PYTHON)
   endif()
 
   # Install into the active env’s site-packages.
-  # Respect user-specified Python3_EXECUTABLE if already set.
-  if(NOT DEFINED Python3_EXECUTABLE)
-    if(DEFINED ENV{VIRTUAL_ENV})
-      set(Python3_EXECUTABLE "$ENV{VIRTUAL_ENV}/bin/python")
-    elseif(DEFINED ENV{CONDA_PREFIX})
-      set(Python3_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
-    endif()
-  endif()
-
-  find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
   execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import site; print(site.getsitepackages()[0])"
     OUTPUT_VARIABLE PYTHON_SITE_DIR
