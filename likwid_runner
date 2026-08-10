@@ -1,0 +1,318 @@
+#!/bin/bash
+set -euo pipefail
+
+module load likwid/5.2.2
+
+export OMP_NUM_THREADS=64
+
+usage() {
+	cat <<EOF
+Usage:
+	$0 [--outdir DIR] -- <command> [args...]
+
+Examples:
+	$0 -- ./my_app input.dat
+	$0 --outdir results_likwid -- python app.py arg1 arg2
+	$0 -- env OMP_NUM_THREADS=16 ./a.out
+
+Notes:
+	- The command is run once normally, then once per selected LIKWID group.
+	- Use -- before the command.
+	- Example:
+	    $0 -- python app2_hamlib_latest.py 10 HAMFILE KEY diaq 1.8 5 True
+
+Environment variables:
+	- LIKWID_CORES: explicit LIKWID core list, e.g. 0-15
+	- OMP_NUM_THREADS: used to infer core list if LIKWID_CORES is unset
+	- SLURM_CPUS_PER_TASK: used to infer core list if LIKWID_CORES is unset
+EOF
+	exit 1
+}
+
+OUTDIR=""
+if [[ $# -eq 0 ]]; then
+	usage
+fi
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--outdir)
+			shift
+			[[ $# -gt 0 ]] || { echo "Error: --outdir needs a value"; exit 1; }
+			OUTDIR="$1"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		-h|--help)
+			usage
+			;;
+		*)
+			echo "Error: unknown option '$1'"
+			echo "Use -- before the command you want to profile."
+			usage
+			;;
+	esac
+done
+
+[[ $# -gt 0 ]] || { echo "Error: no command provided"; usage; }
+
+CMD=("$@")
+
+if [[ -z "$OUTDIR" ]]; then
+	OUTDIR="likwid_run_$(date +%Y%m%d_%H%M%S)"
+fi
+
+OUTDIR="$(realpath -m "$OUTDIR")"
+mkdir -p "$OUTDIR"
+
+cmd_string() {
+	printf '%q ' "${CMD[@]}"
+}
+
+log() {
+	echo "$@" | tee -a "$OUTDIR/run.log"
+}
+
+echo "==================================================" | tee "$OUTDIR/run.log"
+log "LIKWID helper starting"
+log "Timestamp : $(date)"
+log "Command   : $(cmd_string)"
+log "Output dir: $OUTDIR"
+log "=================================================="
+
+{
+	echo "==== ENVIRONMENT ===="
+	echo "HOSTNAME=$(hostname)"
+	echo "PWD=$(pwd)"
+	echo
+	echo "==== OMP / THREADING ENV ===="
+	env | grep -E '^(OMP|KMP|MKL|OPENBLAS|GOTO|VECLIB|NUMEXPR|LIKWID|SLURM)_' || true
+	echo
+	echo "==== PATH TOOLS ===="
+	which likwid-perfctr || true
+	which likwid-topology || true
+	which lscpu || true
+	which numactl || true
+	echo
+	echo "==== CPU INFO ===="
+	lscpu || true
+	echo
+	echo "==== NUMA INFO ===="
+	numactl --hardware || true
+} > "$OUTDIR/environment.txt" 2>&1
+
+likwid-topology > "$OUTDIR/likwid_topology.txt" 2>&1 || true
+
+if [[ -n "${LIKWID_CORES:-}" ]]; then
+	CORELIST="$LIKWID_CORES"
+elif [[ -n "${SLURM_CPUS_PER_TASK:-}" ]]; then
+	if [[ "$SLURM_CPUS_PER_TASK" =~ ^[0-9]+$ ]] && [[ "$SLURM_CPUS_PER_TASK" -gt 1 ]]; then
+		CORELIST="0-$((SLURM_CPUS_PER_TASK - 1))"
+	else
+		CORELIST="0"
+	fi
+elif [[ -n "${OMP_NUM_THREADS:-}" ]]; then
+	if [[ "$OMP_NUM_THREADS" =~ ^[0-9]+$ ]] && [[ "$OMP_NUM_THREADS" -gt 1 ]]; then
+		CORELIST="0-$((OMP_NUM_THREADS - 1))"
+	else
+		CORELIST="0"
+	fi
+else
+	CORELIST="0"
+fi
+
+log "Using LIKWID core list: $CORELIST"
+
+log ""
+log ">>> Baseline run (no LIKWID)"
+{
+	echo "===== BASELINE STDOUT/STDERR ====="
+	echo "Command: $(cmd_string)"
+	echo
+	/usr/bin/time -v "${CMD[@]}"
+} > "$OUTDIR/baseline.txt" 2>&1 || true
+
+AVAILABLE_GROUPS_FILE="$OUTDIR/available_groups.txt"
+
+log ""
+log "Available performance groups on this machine:"
+likwid-perfctr -a > "$AVAILABLE_GROUPS_FILE" 2>&1 || true
+head -n 200 "$AVAILABLE_GROUPS_FILE" >> "$OUTDIR/run.log" || true
+
+if grep -q "No groups defined" "$AVAILABLE_GROUPS_FILE"; then
+	log ""
+	log "LIKWID did not find any performance groups on this machine."
+	log "See: $AVAILABLE_GROUPS_FILE"
+	cat > "$OUTDIR/README_NEXT_STEPS.txt" <<EOF
+LIKWID could not determine performance groups on this machine.
+
+Files produced here:
+- baseline.txt
+- environment.txt
+- likwid_topology.txt
+- available_groups.txt
+- run.log
+
+Check:
+- that you are on a supported CPU architecture
+- that the LIKWID module version supports this CPU
+- that likwid-perfctr -a works interactively on this node
+EOF
+	log ""
+	log "Done. Outputs are in: $OUTDIR"
+	exit 0
+fi
+
+PERF_GROUPS=(
+	BRANCH
+	CLOCK
+	CYCLE_ACTIVITY
+	CYCLE_STALLS
+	DATA
+	DIVIDE
+	ENERGY
+	FLOPS_AVX
+	FLOPS_DP
+	FLOPS_SP
+	MEM
+	MEM_DP
+	MEM_SP
+	CACHES
+	L2
+	L2CACHE
+	L3
+	L3CACHE
+	TLB_DATA
+	TLB_INSTR
+	TMA
+	UOPS_EXEC
+	UOPS_ISSUE
+	UOPS_RETIRE
+	UPI
+)
+
+SUPPORTED_GROUPS=()
+for g in "${PERF_GROUPS[@]}"; do
+	if grep -qE "(^|[[:space:]])${g}([[:space:]]|$)" "$AVAILABLE_GROUPS_FILE"; then
+		SUPPORTED_GROUPS+=("$g")
+	fi
+done
+
+log ""
+if [[ ${#SUPPORTED_GROUPS[@]} -eq 0 ]]; then
+	log "No requested LIKWID groups from PERF_GROUPS are supported on this machine."
+	cat > "$OUTDIR/README_NEXT_STEPS.txt" <<EOF
+LIKWID is installed and responded, but none of the requested groups in the script
+were found in the available group list for this machine.
+
+Files produced here:
+- baseline.txt
+- environment.txt
+- likwid_topology.txt
+- available_groups.txt
+- run.log
+
+Inspect available_groups.txt and adjust PERF_GROUPS accordingly.
+EOF
+	log ""
+	log "Done. Outputs are in: $OUTDIR"
+	exit 0
+fi
+
+log "Selected LIKWID groups to run:"
+for g in "${SUPPORTED_GROUPS[@]}"; do
+	log "  - $g"
+done
+
+RAN_GROUPS=()
+FAILED_GROUPS=()
+
+run_group() {
+	local group="$1"
+	local outfile="$OUTDIR/${group}.txt"
+
+	log ""
+	log ">>> Running LIKWID group: $group"
+
+	{
+		echo "===== GROUP: $group ====="
+		echo "Command: $(cmd_string)"
+		echo "Cores  : $CORELIST"
+		echo
+		/usr/bin/time -v likwid-perfctr -C "$CORELIST" -g "$group" -O -- "${CMD[@]}"
+	} > "$outfile" 2>&1
+
+	local rc=$?
+	if [[ $rc -ne 0 ]]; then
+		log "Group $group failed; see $outfile"
+		FAILED_GROUPS+=("$group")
+		return 0
+	fi
+
+	RAN_GROUPS+=("$group")
+	return 0
+}
+
+for g in "${SUPPORTED_GROUPS[@]}"; do
+	run_group "$g"
+done
+
+{
+	echo "Files produced here:"
+	echo "- baseline.txt"
+	echo "- environment.txt"
+	echo "- likwid_topology.txt"
+	echo "- available_groups.txt"
+	echo "- run.log"
+	for g in "${RAN_GROUPS[@]}"; do
+		echo "- ${g}.txt"
+	done
+	echo
+	echo "Groups requested by script:"
+	for g in "${PERF_GROUPS[@]}"; do
+		echo "- $g"
+	done
+	echo
+	echo "Groups supported on this machine and selected:"
+	for g in "${SUPPORTED_GROUPS[@]}"; do
+		echo "- $g"
+	done
+	echo
+	if [[ ${#FAILED_GROUPS[@]} -gt 0 ]]; then
+		echo "Groups that failed during execution:"
+		for g in "${FAILED_GROUPS[@]}"; do
+			echo "- $g"
+		done
+		echo
+	fi
+	echo "Tips:"
+	echo "- Use L2CACHE and L3CACHE for cache miss rate / ratio."
+	echo "- Use L2, L3, and CACHES for cache bandwidth behavior."
+	echo "- Use MEM, MEM_DP, MEM_SP for memory bandwidth and arithmetic balance."
+	echo "- Use CLOCK, CYCLE_ACTIVITY, CYCLE_STALLS, and TMA for execution bottlenecks."
+	echo "- Use FLOPS_DP, FLOPS_SP, and FLOPS_AVX for floating-point throughput."
+	echo "- Use BRANCH for branch prediction miss behavior."
+	echo "- Use TLB_DATA and TLB_INSTR for TLB miss behavior."
+} > "$OUTDIR/README_NEXT_STEPS.txt"
+
+log ""
+if [[ ${#RAN_GROUPS[@]} -gt 0 ]]; then
+	log "Successfully ran groups:"
+	for g in "${RAN_GROUPS[@]}"; do
+		log "  - $g"
+	done
+fi
+
+if [[ ${#FAILED_GROUPS[@]} -gt 0 ]]; then
+	log ""
+	log "Groups that failed:"
+	for g in "${FAILED_GROUPS[@]}"; do
+		log "  - $g"
+	done
+fi
+
+log ""
+log "Done. Outputs are in: $OUTDIR"

@@ -20,6 +20,7 @@ Common CMake options:
   -DMANUAL_SIMD=ON                (default ON)
   -DMAKE_TEST_FOR_DISASSEMBLY=ON  (default OFF)
   -DBUILD_PYTHON=ON               (default ON)
+  -DSIMD_REPORT=ON                (default OFF)
   -DPython3_EXECUTABLE=/path/python3
 USAGE
 }

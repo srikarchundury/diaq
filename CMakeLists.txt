@@ -83,6 +83,7 @@ option(MAKE_TESTS                 "Enable building tests"                       
 option(MAKE_TEST_FOR_DISASSEMBLY  "Enable building test_for_disassembly"              OFF)
 option(BUILD_PYTHON               "Build Python bindings using pybind11"              ON)
 option(AVOID_ZERO_DIAGS           "Avoid storing zero diagonals in sparse matrices"   ON)
+option(SIMD_REPORT                "Enable compiler vectorization reports"            OFF)
 
 message(STATUS "${BoldYellow}>>> Build options:${Reset}")
 message(STATUS "  DEBUG = ${DEBUG}")
@@ -94,6 +95,7 @@ message(STATUS "  MAKE_TESTS = ${MAKE_TESTS}")
 message(STATUS "  MAKE_TEST_FOR_DISASSEMBLY = ${MAKE_TEST_FOR_DISASSEMBLY}")
 message(STATUS "  BUILD_PYTHON = ${BUILD_PYTHON}")
 message(STATUS "  AVOID_ZERO_DIAGS = ${AVOID_ZERO_DIAGS}")
+message(STATUS "  SIMD_REPORT = ${SIMD_REPORT}")
 
 if(DEBUG OR DEEP_DEBUG)
   set(CMAKE_BUILD_TYPE Debug)
@@ -295,6 +297,7 @@ set(CUDA_SOURCES
 )
 
 # ===== Core library target =====
+# GPU
 if(CUDA_ENABLED)
   message(STATUS "${BoldBlue}>>> Building GPU version${Reset}")
   find_package(CUDA REQUIRED)
@@ -310,9 +313,9 @@ if(CUDA_ENABLED)
   cuda_add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
 
   if(DIAQ_SIMD_COMPILE_OPTS)
-    target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
+    target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
   else()
-    target_compile_options(diaq_core PUBLIC -O3)
+    target_compile_options(diaq_core PUBLIC ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
   endif()
 
   target_link_libraries(diaq_core OpenMP::OpenMP_CXX)
@@ -329,14 +332,16 @@ if(CUDA_ENABLED)
   if(DEEP_DEBUG)
     target_compile_definitions(diaq_core PUBLIC DEEP_DEBUG)
   endif()
+
+# CPU
 else()
   message(STATUS "${BoldBlue}>>> Building CPU version${Reset}")
   add_library(diaq_core SHARED ${SOURCES})
 
   if(DIAQ_SIMD_COMPILE_OPTS)
-    target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} -O3)
+    target_compile_options(diaq_core PUBLIC ${DIAQ_SIMD_COMPILE_OPTS} ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
   else()
-    target_compile_options(diaq_core PUBLIC -O3)
+    target_compile_options(diaq_core PUBLIC ${DIAQ_VEC_REPORT_COMPILE_OPTS} -O3)
   endif()
 
   if(DEBUG)
@@ -382,6 +387,37 @@ if(PAPI)
   endif()
 endif()
 
+# ===== Optional SIMD/vectorization reports =====
+set(DIAQ_VEC_REPORT_COMPILE_OPTS "")
+set(DIAQ_VEC_REPORT_LINK_OPTS "")
+
+if(SIMD_REPORT)
+  message(STATUS "${BoldYellow}>>> SIMD/vectorization reports enabled${Reset}")
+
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    list(APPEND DIAQ_VEC_REPORT_COMPILE_OPTS
+      -fopt-info-vec-optimized
+      -fopt-info-vec-missed
+    )
+
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND DIAQ_VEC_REPORT_COMPILE_OPTS
+      -Rpass=loop-vectorize
+      -Rpass-missed=loop-vectorize
+      -Rpass-analysis=loop-vectorize
+    )
+
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    list(APPEND DIAQ_VEC_REPORT_COMPILE_OPTS
+      -qopt-report=5
+      -qopt-report-phase=vec
+    )
+
+  else()
+    message(WARNING "SIMD_REPORT requested, but no vectorization-report flags are configured for compiler: ${CMAKE_CXX_COMPILER_ID}")
+  endif()
+endif()
+
 # ===== Tests (optional) =====
 if(MAKE_TESTS)
   file(GLOB CPP_TEST_SOURCES
@@ -395,20 +431,21 @@ if(MAKE_TESTS)
   target_link_libraries(tests PRIVATE diaq_core OpenMP::OpenMP_CXX)
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(tests PRIVATE -fopenmp)
-    target_link_options(tests PRIVATE -fopenmp)
+    target_compile_options(tests PRIVATE -fopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
+    target_link_options(tests PRIVATE -fopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(tests PRIVATE -fopenmp)
+    target_compile_options(tests PRIVATE -fopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
     target_link_options(tests PRIVATE -fopenmp)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    target_compile_options(tests PRIVATE -qopenmp)
+    target_compile_options(tests PRIVATE -qopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
     target_link_options(tests PRIVATE -qopenmp)
   endif()
 endif()
 
 if(MAKE_TEST_FOR_DISASSEMBLY)
   add_library(test_for_disassembly_obj OBJECT ${TESTS_DIR}/test_for_disassembly.cpp)
-  target_compile_options(test_for_disassembly_obj PRIVATE -O0)
+  # target_compile_options(test_for_disassembly_obj PRIVATE -O0)
+  target_compile_options(test_for_disassembly_obj PRIVATE ${DIAQ_VEC_REPORT_COMPILE_OPTS})
   add_library(test_for_disassembly_static STATIC $<TARGET_OBJECTS:test_for_disassembly_obj>)
   set_target_properties(test_for_disassembly_static PROPERTIES OUTPUT_NAME test_for_disassembly)
   target_link_libraries(test_for_disassembly_static PRIVATE diaq_core OpenMP::OpenMP_CXX)
@@ -436,13 +473,13 @@ if(BUILD_PYTHON)
 
   # Ensure the module also compiles with OpenMP flags
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
     target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -fopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
     target_link_options(${PY_MODULE_NAME} PRIVATE -fopenmp)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    target_compile_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
+    target_compile_options(${PY_MODULE_NAME} PRIVATE -qopenmp ${DIAQ_VEC_REPORT_COMPILE_OPTS})
     target_link_options(${PY_MODULE_NAME} PRIVATE -qopenmp)
   endif()
 
