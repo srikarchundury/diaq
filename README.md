@@ -5,7 +5,7 @@ DiaQ is a high-performance C++/CUDA library for diagonal-aware sparse linear alg
 [![arXiv](https://img.shields.io/badge/arXiv-2405.01250-B31B1B.svg)](https://arxiv.org/abs/2405.01250)
 [![ACM ICS 2026](https://img.shields.io/badge/ACM%20ICS%202026-10.1145%2F3797905.3807869-0077B5.svg)](https://doi.org/10.1145/3797905.3807869)
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](LICENSE)
 
 ## Features
 
@@ -351,4 +351,4 @@ If you use DiaQ in your research, please cite:
 
 ## License
 
-DiaQ is licensed under the [Apache License, Version 2.0](LICENSE).
+DiaQ is licensed under the [BSD 3-Clause License](LICENSE).
