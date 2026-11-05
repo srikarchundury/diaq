@@ -2451,7 +2451,7 @@ int main(int argc, char **argv) {
         std::vector<unsigned int> axes_A{2};
         std::vector<unsigned int> axes_B{0};
         std::vector<std::vector<unsigned int>> axes{axes_A, axes_B};
-        std::shared_ptr<diaq::diaQMatrix> res1 = diaq::tensordot1(q_A24, q_B24, axes);
+        std::shared_ptr<diaq::diaQMatrix> res1 = diaq::tensordot(q_A24, q_B24, axes);
         res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
@@ -2516,7 +2516,7 @@ int main(int argc, char **argv) {
         std::vector<unsigned int> axes_A{2};
         std::vector<unsigned int> axes_B{1};
         std::vector<std::vector<unsigned int>> axes{axes_A, axes_B};
-        std::shared_ptr<diaq::diaQMatrix> res1 = diaq::tensordot1(q_first, q_second, axes);
+        std::shared_ptr<diaq::diaQMatrix> res1 = diaq::tensordot(q_first, q_second, axes);
         res1->print();
         std::cout << " -- " << std::endl;
         std::cout << " -- Tensordot Done -- " << std::endl;
