@@ -16,6 +16,18 @@ std::string version() {
     return DIAQ_VERSION;
 }
 
+// A matrix shape from Python: exactly two entries. (The bindings copied the buffer into a 2-element array without
+// checking its length, so a longer shape overwrote the stack.)
+static std::array<unsigned int, 2> shape_pair(py::array_t<unsigned int> shape) {
+    py::buffer_info info = shape.request();
+    if (info.size != 2) {
+        throw std::invalid_argument("matrix_reshape: the new matrix shape needs exactly 2 entries");
+    }
+    std::array<unsigned int, 2> out;
+    std::memcpy(out.data(), info.ptr, 2 * sizeof(unsigned int));
+    return out;
+}
+
 #ifdef CUDA_ENABLED
     PYBIND11_MODULE(diaq_gpu, m)
 #else
@@ -52,10 +64,9 @@ std::string version() {
         .def("set_at_diag", &diaq::diaQMatrix::set_at_diag, py::return_value_policy::automatic)
         .def("copy", &diaq::diaQMatrix::copy, py::return_value_policy::automatic)
         .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
-            py::buffer_info shape_info = shape.request();
-            std::array<unsigned int, 2> shape_ptr;
-            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
-            return self->matrix_reshape(shape_ptr);
+            // in place; returns the matrix itself so that the call can be chained (it returned None)
+            self->matrix_reshape(shape_pair(shape));
+            return self;
         }, py::arg(), py::return_value_policy::automatic)
         .def("transpose", [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); }, py::arg(), py::return_value_policy::automatic)
         .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int) const>(&diaq::diaQMatrix::getItem), py::return_value_policy::automatic)
@@ -225,10 +236,7 @@ std::string version() {
         m.def(
         "matrix_reshape",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned int> shape) {
-            py::buffer_info shape_info = shape.request();
-            std::array<unsigned int, 2> shape_ptr;
-            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
-            return diaq::matrix_reshape(A, shape_ptr);
+            return diaq::matrix_reshape(A, shape_pair(shape));
         },
         py::arg(),
         py::arg(),
