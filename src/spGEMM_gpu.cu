@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include <map>
 #include <unordered_map>
 #include <vector>
 #include <utility>
@@ -9,9 +10,6 @@
 #define SPGEMM_TPB 256
 #endif
 
-#ifndef SPGEMM_TILE_T
-#define SPGEMM_TILE_T 256
-#endif
 
 namespace diaq {
 
@@ -39,8 +37,10 @@ static inline unsigned int getDiagonalLengthHelper(
 }
 
 // -----------------------------------------------------------------------------
-// GPU kernel: block per result diagonal, threads over positions t
-// and sequential over contributing (dA, dB) pairs.
+// GPU kernel: block per result diagonal, threads over positions t; each thread
+// sums all contributing (dA, dB) pairs for its positions in registers and writes
+// C once (the positions of a thread are the same for every pair, so no tiles or
+// block barriers are needed, and C is not read back once per pair).
 // -----------------------------------------------------------------------------
 __global__ void product_kernel(
     int numRes,
@@ -66,76 +66,34 @@ __global__ void product_kernel(
     int resSlot = blockIdx.x;
     if (resSlot >= numRes) return;
 
-    int dC = resDiagIndices[resSlot];
-    unsigned int offC = resDiagOffsets[resSlot];
-    unsigned int lenC = resDiagLens[resSlot];
+    const int dC = resDiagIndices[resSlot];
+    const unsigned int offC = resDiagOffsets[resSlot];
+    const unsigned int lenC = resDiagLens[resSlot];
+    const unsigned int pairStart = resPairOffset[resSlot];
+    const unsigned int pairEnd   = resPairOffset[resSlot + 1];
 
-    unsigned int pairStart = resPairOffset[resSlot];
-    unsigned int pairEnd   = resPairOffset[resSlot + 1];
-
-    // Loop over contributing pairs
-    for (unsigned int p = pairStart; p < pairEnd; ++p) {
-        int dA = pair_dA[p];
-        int dB = pair_dB[p];
-
-        unsigned int slotA = pairSlotA[p];
-        unsigned int slotB = pairSlotB[p];
-
-        unsigned int offA = A_diagOffsets[slotA];
-        unsigned int lenA = A_diagLens[slotA];
-
-        unsigned int offB = B_diagOffsets[slotB];
-        unsigned int lenB = B_diagLens[slotB];
-
-        bool first = (p == pairStart);
-
-        // Tiled traversal over t along result diagonal
-        for (unsigned int t0 = 0; t0 < lenC; t0 += SPGEMM_TILE_T) {
-            unsigned int tEnd = t0 + SPGEMM_TILE_T;
-            if (tEnd > lenC) tEnd = lenC;
-
-            // Parallel within this tile
-            for (unsigned int t = t0 + threadIdx.x; t < tEnd; t += blockDim.x) {
-
-                int i, j;
-                if (dC >= 0) {
-                    i = static_cast<int>(t);
-                    j = static_cast<int>(t) + dC;
-                } else {
-                    i = static_cast<int>(t) - dC;
-                    j = static_cast<int>(t);
-                }
-
-                int pA = (dA >= 0) ? i : (i + dA);
-                int pB = (dB >= 0) ? (i + dA) : j;
-
-                if (pA < 0 || pB < 0) continue;
-                if ((unsigned int)pA >= lenA || (unsigned int)pB >= lenB) continue;
-
-                unsigned int idxA = offA + (unsigned int)pA;
-                unsigned int idxB = offB + (unsigned int)pB;
-                unsigned int idxC = offC + t;
-
-                valType ar = A_real[idxA];
-                valType ai = A_imag[idxA];
-                valType br = B_real[idxB];
-                valType bi = B_imag[idxB];
-
-                valType cr = ar * br - ai * bi;
-                valType ci = ar * bi + ai * br;
-
-                if (first) {
-                    C_real[idxC] = cr;
-                    C_imag[idxC] = ci;
-                } else {
-                    C_real[idxC] += cr;
-                    C_imag[idxC] += ci;
-                }
-            }
-
-            // Ensure the block finishes this tile for this pair before next tile/pair
-            __syncthreads();
+    for (unsigned int t = threadIdx.x; t < lenC; t += blockDim.x) {
+        const int i = (dC >= 0) ? static_cast<int>(t) : static_cast<int>(t) - dC;
+        const int j = (dC >= 0) ? static_cast<int>(t) + dC : static_cast<int>(t);
+        valType cr = 0.0, ci = 0.0;
+        for (unsigned int p = pairStart; p < pairEnd; ++p) {   // same order as before: identical sums
+            const int dA = pair_dA[p];
+            const int dB = pair_dB[p];
+            const int pA = (dA >= 0) ? i : (i + dA);
+            const int pB = (dB >= 0) ? (i + dA) : j;
+            const unsigned int slotA = pairSlotA[p];
+            const unsigned int slotB = pairSlotB[p];
+            if (pA < 0 || pB < 0) continue;
+            if ((unsigned int)pA >= A_diagLens[slotA] || (unsigned int)pB >= B_diagLens[slotB]) continue;
+            const unsigned int idxA = A_diagOffsets[slotA] + (unsigned int)pA;
+            const unsigned int idxB = B_diagOffsets[slotB] + (unsigned int)pB;
+            const valType ar = A_real[idxA], ai = A_imag[idxA];
+            const valType br = B_real[idxB], bi = B_imag[idxB];
+            cr += ar * br - ai * bi;
+            ci += ar * bi + ai * br;
         }
+        C_real[offC + t] = cr;
+        C_imag[offC + t] = ci;
     }
 }
 
@@ -180,26 +138,25 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     std::vector<int> resDiagIndices;                         // result diagonal indices dC
     std::vector< std::vector< std::pair<int,int> > > resSources; // per result diag: list of (dA, dB)
 
-    int minResIdx = -static_cast<int>(res_dims[0]) + 1;
-    int maxResIdx =  static_cast<int>(res_dims[1]) - 1;
-
-    for (int res_idx = minResIdx; res_idx <= maxResIdx; ++res_idx) {
-        std::vector< std::pair<int,int> > sources_here;
-
-        for (int sA = 0; sA < static_cast<int>(A->dIndices.size()); ++sA) {
-            int dA = A->dIndices[static_cast<std::size_t>(sA)];
-            int dB = res_idx - dA;
-
-            auto itB = BIndexToSlot.find(dB);
-            if (itB != BIndexToSlot.end()) {
-                // Store diagonal indices; slots can be recovered from maps
-                sources_here.emplace_back(dA, dB);
+    // Every pair (dA, dB) contributes to dC = dA + dB: enumerate the pairs (O(numA * numB)) instead of every
+    // possible result diagonal times the diagonals of A (O((rows + cols) * numA) hash lookups). Within one dC the
+    // pairs stay in the order of A's diagonals, as before.
+    {
+        const int minResIdx = -static_cast<int>(res_dims[0]) + 1;
+        const int maxResIdx =  static_cast<int>(res_dims[1]) - 1;
+        std::map<int, std::vector< std::pair<int,int> > > byResult;
+        for (std::size_t sA = 0; sA < A->dIndices.size(); ++sA) {
+            const int dA = A->dIndices[sA];
+            for (std::size_t sB = 0; sB < B->dIndices.size(); ++sB) {
+                const int dB = B->dIndices[sB];
+                const int dC = dA + dB;
+                if (dC < minResIdx || dC > maxResIdx) continue;
+                byResult[dC].emplace_back(dA, dB);
             }
         }
-
-        if (!sources_here.empty()) {
-            resDiagIndices.push_back(res_idx);
-            resSources.push_back(std::move(sources_here));
+        for (auto &entry : byResult) {
+            resDiagIndices.push_back(entry.first);
+            resSources.push_back(std::move(entry.second));
         }
     }
 

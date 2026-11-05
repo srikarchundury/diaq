@@ -8,9 +8,13 @@
 // Values are double or complex double (interleaved real, imaginary: the layout of numpy's complex128 and of
 // torch.complex128), so tensors from torch or cupy are passed by their data pointers.
 //
-// One thread per entry of C, consecutive threads along a row of C (and of B): reads of B and writes of C are
-// coalesced; the diagonal values of a row are read once per column of B. The offsets are staged in shared memory
-// when there are at most SPMM_DIA_SHARED_OFFSETS of them.
+// Each thread owns one column j of C and a tile of ROWS consecutive rows (ROWS = 16 for at most 1024 rows and at least
+// 32 columns of B, else 1; measured on an A100: tiling makes a 16 x 256 matrix with all 271 diagonals 3-4x faster
+// and tall banded matrices with 33-65 diagonals 2x slower): consecutive threads take consecutive columns, so reads of B and writes of C are coalesced; within a
+// thread, the rows of a tile meet the same rows of B on neighbouring diagonals, so a row segment of B loaded for one
+// diagonal is reused from L1 for the next ones (with one row per thread, a wide matrix with many diagonals re-reads
+// B from memory once per row of A). The offsets are staged in shared memory when there are at most
+// SPMM_DIA_SHARED_OFFSETS of them.
 #include <cuda_runtime.h>
 #include <cuComplex.h>
 #include <cstdint>
@@ -37,7 +41,7 @@ template <> __device__ __forceinline__ cuDoubleComplex zero_val<cuDoubleComplex>
     return make_cuDoubleComplex(0.0, 0.0);
 }
 
-template <typename T, bool SHARED>
+template <typename T, bool SHARED, int ROWS>
 __global__ void spmm_dia_kernel(int64_t n_rows, int64_t n_cols, int64_t n_right, int n_diags,
                                 const int64_t *__restrict__ offsets, const T *__restrict__ vals,
                                 const T *__restrict__ B, T *__restrict__ C) {
@@ -48,26 +52,37 @@ __global__ void spmm_dia_kernel(int64_t n_rows, int64_t n_cols, int64_t n_right,
         __syncthreads();
         off = s_off;
     }
-    const int64_t total = n_rows * n_right;
+    const int64_t n_tiles = (n_rows + ROWS - 1) / ROWS;
+    const int64_t total = n_tiles * n_right;
     for (int64_t e = blockIdx.x * (int64_t)blockDim.x + threadIdx.x; e < total;
          e += (int64_t)gridDim.x * blockDim.x) {
-        const int64_t r = e / n_right;
-        const int64_t j = e - r * n_right;
-        T acc = zero_val<T>();
+        const int64_t tile = e / n_right;
+        const int64_t j = e - tile * n_right;
+        const int64_t r0 = tile * ROWS;
+        T acc[ROWS];
+#pragma unroll
+        for (int q = 0; q < ROWS; ++q) acc[q] = zero_val<T>();
         for (int k = 0; k < n_diags; ++k) {
-            const int64_t c = r + off[k];
-            if (c >= 0 && c < n_cols) acc = fma_val(acc, vals[(int64_t)k * n_rows + r], B[c * n_right + j]);
+            const int64_t o = off[k];
+            const T *v = vals + (int64_t)k * n_rows;
+#pragma unroll
+            for (int q = 0; q < ROWS; ++q) {
+                const int64_t r = r0 + q;
+                const int64_t c = r + o;
+                if (r < n_rows && c >= 0 && c < n_cols) acc[q] = fma_val(acc[q], v[r], B[c * n_right + j]);
+            }
         }
-        C[e] = acc;
+#pragma unroll
+        for (int q = 0; q < ROWS; ++q)
+            if (r0 + q < n_rows) C[(r0 + q) * n_right + j] = acc[q];
     }
 }
 
-template <typename T>
-void launch(int64_t n_rows, int64_t n_cols, int64_t n_right, int n_diags, const int64_t *offsets, const T *vals,
-            const T *B, T *C, cudaStream_t stream) {
+template <typename T, int ROWS>
+void launch_rows(int64_t n_rows, int64_t n_cols, int64_t n_right, int n_diags, const int64_t *offsets,
+                 const T *vals, const T *B, T *C, cudaStream_t stream) {
     const int threads = 256;
-    const int64_t total = n_rows * n_right;
-    if (total == 0) return;
+    const int64_t total = ((n_rows + ROWS - 1) / ROWS) * n_right;
     int device = 0, sms = 0;
     cudaGetDevice(&device);
     cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, device);
@@ -75,11 +90,22 @@ void launch(int64_t n_rows, int64_t n_cols, int64_t n_right, int n_diags, const 
     const int64_t cap = (int64_t)sms * 32;
     if (blocks > cap) blocks = cap;
     if (n_diags <= SPMM_DIA_SHARED_OFFSETS) {
-        spmm_dia_kernel<T, true><<<(unsigned int)blocks, threads, n_diags * sizeof(int64_t), stream>>>(
+        spmm_dia_kernel<T, true, ROWS><<<(unsigned int)blocks, threads, n_diags * sizeof(int64_t), stream>>>(
             n_rows, n_cols, n_right, n_diags, offsets, vals, B, C);
     } else {
-        spmm_dia_kernel<T, false><<<(unsigned int)blocks, threads, 0, stream>>>(
+        spmm_dia_kernel<T, false, ROWS><<<(unsigned int)blocks, threads, 0, stream>>>(
             n_rows, n_cols, n_right, n_diags, offsets, vals, B, C);
+    }
+}
+
+template <typename T>
+void launch(int64_t n_rows, int64_t n_cols, int64_t n_right, int n_diags, const int64_t *offsets, const T *vals,
+            const T *B, T *C, cudaStream_t stream) {
+    if (n_rows * n_right == 0) return;
+    if (n_right >= 32 && n_rows <= 1024) {  // few rows, many columns of B: tile rows to reuse B from L1
+        launch_rows<T, 16>(n_rows, n_cols, n_right, n_diags, offsets, vals, B, C, stream);
+    } else {  // tall matrices: one row per thread (more threads, fewer registers)
+        launch_rows<T, 1>(n_rows, n_cols, n_right, n_diags, offsets, vals, B, C, stream);
     }
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) throw std::runtime_error(std::string("spmm_dia_device: ") + cudaGetErrorString(err));
