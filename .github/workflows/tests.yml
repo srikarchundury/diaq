@@ -6,6 +6,9 @@
 #   kernels are compiled here but not run; run python_tests/test_device_matrix.py, test_spmm_dia_device.py and
 #   check_gpu_vs_numpy.py on a GPU machine before merging GPU changes.
 #
+# MALLOC_PERTURB_ makes glibc fill every new allocation with a junk byte pattern, so a buffer that is read before it
+# is written fails the tests on every run instead of only when the runner's heap happens to hold old data.
+#
 # To block merges on these checks, mark "cpu" and "cuda-build" as required status checks in the branch rules of
 # dev and main (Settings > Branches / Rules).
 name: tests
@@ -42,10 +45,12 @@ jobs:
       - name: C++ tests
         env:
           OMP_NUM_THREADS: "4"
+          MALLOC_PERTURB_: "165"
         run: bash cpp_tests/run_all.sh cpu_build/bin/tests
       - name: Python tests
         env:
           OMP_NUM_THREADS: "4"
+          MALLOC_PERTURB_: "165"
           PYTHONPATH: ${{ github.workspace }}/cpu_build/lib
         run: python python_tests/run_ci.py
 
