@@ -317,6 +317,7 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spME_gpu.cu # dont know if I can write an end to end spME-GPU, this one just accelerates parts of it!
   ${SRC_DIR}/spPow_gpu.cu # same as above one!
   ${SRC_DIR}/spHamSim_gpu_all_fused.cu # specialized kernel for Hamiltonian end to end on GPU!!
+  ${SRC_DIR}/spMM_device_gpu.cu # DIA x dense on device pointers (no host copies), for SCOPE
 )
 
 # ===== Core library target =====

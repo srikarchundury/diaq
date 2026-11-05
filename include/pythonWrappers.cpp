@@ -555,6 +555,18 @@ std::string version() {
     );
 
     #ifdef CUDA_ENABLED
+        // DIA x dense on arrays already on the GPU (torch / cupy data pointers), no host copies.
+        m.def(
+            "spmm_dia_device",
+            [](std::uintptr_t offsets, std::uintptr_t vals, int n_diags, int64_t n_rows, int64_t n_cols,
+               std::uintptr_t B, int64_t n_right, std::uintptr_t C, bool is_complex, std::uintptr_t stream) {
+                diaq::spmm_dia_device(offsets, vals, n_diags, n_rows, n_cols, B, n_right, C, is_complex, stream);
+            },
+            py::arg("offsets"), py::arg("vals"), py::arg("n_diags"), py::arg("n_rows"), py::arg("n_cols"),
+            py::arg("B"), py::arg("n_right"), py::arg("C"), py::arg("is_complex"), py::arg("stream") = 0,
+            "C = A * B, A in row-aligned DIA format (offsets int64[n_diags], vals[n_diags * n_rows]); B (n_cols x "
+            "n_right) and C (n_rows x n_right) row-major; double or complex double; all pointers on the GPU."
+        );
         m.def(
             "hamiltonian_simulation_cuda",
             [](std::shared_ptr<diaq::diaQMatrix> H,

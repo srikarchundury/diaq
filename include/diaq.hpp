@@ -20,5 +20,8 @@
 
 // helpers
 #include "../src/helpers.hpp"
+#ifdef CUDA_ENABLED
+#include "../src/spMM_device_gpu.hpp"
+#endif
 
 #endif
