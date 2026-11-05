@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Python packages
-        run: python -m pip install --upgrade pip numpy colorama
+        run: python -m pip install --upgrade pip numpy scipy colorama
       - name: Configure
         run: >
           cmake -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DMANUAL_SIMD=ON -DAVOID_ZERO_DIAGS=ON

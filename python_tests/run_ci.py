@@ -19,6 +19,7 @@ TESTS = [  # script and arguments
     ["test_np_times_dq.py"],
     ["test_precision.py"],
     ["test_format_conversion_1.py"],
+    ["test_api_vs_numpy.py"],
 ]
 
 failed = []
