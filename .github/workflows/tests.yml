@@ -1,0 +1,71 @@
+# Build and test DiaQ on every pull request into dev or main (and on pushes to them), so the result shows in the PR.
+#
+# - cpu: CPU build (SIMD backend picked for the runner), all named C++ tests (cpp_tests/run_all.sh) and the Python
+#   tests that check results against numpy (python_tests/run_ci.py).
+# - cuda-build: the GPU build compiled in NVIDIA's CUDA container. GitHub's hosted runners have no GPU, so the GPU
+#   kernels are compiled here but not run; run python_tests/test_device_matrix.py, test_spmm_dia_device.py and
+#   check_gpu_vs_numpy.py on a GPU machine before merging GPU changes.
+#
+# To block merges on these checks, mark "cpu" and "cuda-build" as required status checks in the branch rules of
+# dev and main (Settings > Branches / Rules).
+name: tests
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Python packages
+        run: python -m pip install --upgrade pip numpy colorama
+      - name: Configure
+        run: >
+          cmake -S . -B cpu_build -DCMAKE_BUILD_TYPE=Release -DMANUAL_SIMD=ON -DAVOID_ZERO_DIAGS=ON
+          -DMAKE_TESTS=ON -DBUILD_PYTHON=ON -DPython3_EXECUTABLE="$(which python)"
+      - name: Build
+        run: cmake --build cpu_build -j 4
+      - name: C++ tests
+        env:
+          OMP_NUM_THREADS: "4"
+        run: bash cpp_tests/run_all.sh cpu_build/bin/tests
+      - name: Python tests
+        env:
+          OMP_NUM_THREADS: "4"
+          PYTHONPATH: ${{ github.workspace }}/cpu_build/lib
+        run: python python_tests/run_ci.py
+
+  cuda-build:
+    runs-on: ubuntu-latest
+    container: nvidia/cuda:12.4.1-devel-ubuntu22.04
+    steps:
+      - name: Tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git cmake build-essential \
+            python3 python3-dev python3-pip
+          python3 -m pip install numpy
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure (CUDA, A100 architecture)
+        run: >
+          cmake -S . -B gpu_build -DCMAKE_BUILD_TYPE=Release -DCUDA_ENABLED=ON -DCMAKE_CUDA_ARCHITECTURES=80
+          -DMANUAL_SIMD=ON -DAVOID_ZERO_DIAGS=ON -DMAKE_TESTS=ON -DBUILD_PYTHON=ON
+          -DPython3_EXECUTABLE="$(which python3)"
+      - name: Build (compile only; no GPU on the runner)
+        run: cmake --build gpu_build -j 4
