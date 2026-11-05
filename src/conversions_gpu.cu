@@ -1,5 +1,8 @@
 #ifdef CUDA_ENABLED
 #include "conversions_gpu.hpp"
+#include "cuda_check.hpp"
+#include <stdexcept>
+#include <string>
 
 namespace diaq {
 
@@ -141,7 +144,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
             printf("\t\t cudaMalloc device_diagonal_idx failed: %s\n",
                     cudaGetErrorString(err));
         #endif
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
     err = cudaMalloc(&device_diagonal_pos,
@@ -152,7 +155,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
                     cudaGetErrorString(err));
         #endif
         cudaFree(device_diagonal_idx);
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
     unsigned int totalDataSize = product;
@@ -181,7 +184,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
     err = cudaDeviceSynchronize();
@@ -191,7 +194,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
     // ----- Host copies (currently not used in the host-side reconstruction,
@@ -218,7 +221,7 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
     err = cudaMemcpy(
@@ -234,11 +237,11 @@ std::shared_ptr<diaQMatrix> from_numpy_cuda(std::complex<valType>* values,
         #endif
         cudaFree(device_diagonal_idx);
         cudaFree(device_diagonal_pos);
-        return nullptr;
+        throw std::runtime_error(std::string("convert to diaQ (GPU): ") + cudaGetErrorString(err));
     }
 
-    cudaFree(device_diagonal_idx);
-    cudaFree(device_diagonal_pos);
+    DIAQ_CUDA_CHECK(cudaFree(device_diagonal_idx));
+    DIAQ_CUDA_CHECK(cudaFree(device_diagonal_pos));
 
     // ----- Build diaQMatrix, skipping all-zero diagonals -----
 
@@ -332,10 +335,10 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
     int*          device_diagonal_idx  = nullptr;
     unsigned int* device_diagonal_pos  = nullptr;
 
-    cudaMalloc(&device_diagonal_idx,
-               static_cast<std::size_t>(size) * sizeof(int));
-    cudaMalloc(&device_diagonal_pos,
-               static_cast<std::size_t>(size) * sizeof(unsigned int));
+    DIAQ_CUDA_CHECK(cudaMalloc(&device_diagonal_idx,
+               static_cast<std::size_t>(size) * sizeof(int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&device_diagonal_pos,
+               static_cast<std::size_t>(size) * sizeof(unsigned int)));
 
     int threadsPerBlock = 1024;
     int numBlocks = static_cast<int>(
@@ -350,7 +353,7 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
         device_diagonal_idx,
         device_diagonal_pos
     );
-    cudaDeviceSynchronize();
+    DIAQ_CUDA_CHECK(cudaDeviceSynchronize());
 
     // ----- Host copies -----
     std::shared_ptr<int[]> host_diagonal_idx(
@@ -362,21 +365,21 @@ std::shared_ptr<diaQMatrix> convertToDiaQ_cuda(std::shared_ptr<denseMatrix> d,
         std::default_delete<unsigned int[]>()
     );
 
-    cudaMemcpy(
+    DIAQ_CUDA_CHECK(cudaMemcpy(
         host_diagonal_idx.get(),
         device_diagonal_idx,
         static_cast<std::size_t>(size) * sizeof(int),
         cudaMemcpyDeviceToHost
-    );
-    cudaMemcpy(
+    ));
+    DIAQ_CUDA_CHECK(cudaMemcpy(
         host_diagonal_pos.get(),
         device_diagonal_pos,
         static_cast<std::size_t>(size) * sizeof(unsigned int),
         cudaMemcpyDeviceToHost
-    );
+    ));
 
-    cudaFree(device_diagonal_idx);
-    cudaFree(device_diagonal_pos);
+    DIAQ_CUDA_CHECK(cudaFree(device_diagonal_idx));
+    DIAQ_CUDA_CHECK(cudaFree(device_diagonal_pos));
 
     // ----- Build diaQMatrix in diagonal order, skipping all-zero diagonals -----
     int min_diag = -static_cast<int>(new_shape[0]) + 1;

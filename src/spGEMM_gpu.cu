@@ -1,5 +1,6 @@
 #include "matrixKernels_gpu.hpp"
 #include "cuda_check.hpp"
+#include "deviceMatrix_gpu.hpp"
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -14,28 +15,6 @@
 
 namespace diaq {
 
-// -----------------------------------------------------------------------------
-// Helper: diagonal length (same logic as in diaQspGEMM.cpp)
-// -----------------------------------------------------------------------------
-static inline unsigned int getDiagonalLengthHelper(
-    int dIndex,
-    const std::array<unsigned int, 2> &shape)
-{
-    unsigned int lenRes;
-    if (dIndex < 0) {
-        lenRes = shape[0] + dIndex;
-    } else if (dIndex > 0) {
-        lenRes = shape[1] - dIndex;
-    } else {
-        lenRes = (shape[0] > shape[1]) ? shape[1] : shape[0];
-    }
-    if (lenRes > shape[0]) {
-        lenRes = shape[0];
-    } else if (lenRes > shape[1]) {
-        lenRes = shape[1];
-    }
-    return lenRes;
-}
 
 // -----------------------------------------------------------------------------
 // GPU kernel: block per result diagonal, threads over positions t; each thread
@@ -99,300 +78,86 @@ __global__ void product_kernel(
 }
 
 // -----------------------------------------------------------------------------
-// Host-side product_cuda: precompute diagonal pairs, flatten metadata, launch kernel.
+// C = A B on the device: pair the diagonals on the host (from the host copies of the
+// metadata), then one block per result diagonal.
 // -----------------------------------------------------------------------------
-std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
-                                         std::shared_ptr<diaQMatrix> B) {
-    #ifdef DEBUG
-        printf("starting <spGEMM:product_cuda> --- ");
-        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-    #endif
-
-    // Basic dimension check (same as CPU version)
-    if (A->matrix_shape[1] != B->matrix_shape[0]) {
+std::shared_ptr<deviceDiaQMatrix> product_device(const deviceDiaQMatrix &A, const deviceDiaQMatrix &B) {
+    if (A.matrix_shape[1] != B.matrix_shape[0]) {
         throw std::runtime_error("diaQMatrix product_cuda: dimension mismatch.");
     }
+    const std::array<unsigned int, 2> res_dims = {A.matrix_shape[0], B.matrix_shape[1]};
 
-    std::array<unsigned int, 2> res_dims;
-    res_dims[0] = A->matrix_shape[0];
-    res_dims[1] = B->matrix_shape[1];
-
-    // -------------------------------------------------------------------------
-    // Build index -> slot maps for A and B (host-side)
-    // -------------------------------------------------------------------------
-    std::unordered_map<int, unsigned int> AIndexToSlot;
-    std::unordered_map<int, unsigned int> BIndexToSlot;
-
-    for (int sA = 0; sA < static_cast<int>(A->dIndices.size()); ++sA) {
-        int idxA = A->dIndices[static_cast<std::size_t>(sA)];
-        AIndexToSlot[idxA] = static_cast<unsigned int>(sA);
-    }
-
-    for (int sB = 0; sB < static_cast<int>(B->dIndices.size()); ++sB) {
-        int idxB = B->dIndices[static_cast<std::size_t>(sB)];
-        BIndexToSlot[idxB] = static_cast<unsigned int>(sB);
-    }
-
-    // -------------------------------------------------------------------------
-    // Step 1: Precompute which result diagonals exist and their (dA, dB) sources
-    // -------------------------------------------------------------------------
-    std::vector<int> resDiagIndices;                         // result diagonal indices dC
-    std::vector< std::vector< std::pair<int,int> > > resSources; // per result diag: list of (dA, dB)
-
-    // Every pair (dA, dB) contributes to dC = dA + dB: enumerate the pairs (O(numA * numB)) instead of every
-    // possible result diagonal times the diagonals of A (O((rows + cols) * numA) hash lookups). Within one dC the
-    // pairs stay in the order of A's diagonals, as before.
-    {
-        const int minResIdx = -static_cast<int>(res_dims[0]) + 1;
-        const int maxResIdx =  static_cast<int>(res_dims[1]) - 1;
-        std::map<int, std::vector< std::pair<int,int> > > byResult;
-        for (std::size_t sA = 0; sA < A->dIndices.size(); ++sA) {
-            const int dA = A->dIndices[sA];
-            for (std::size_t sB = 0; sB < B->dIndices.size(); ++sB) {
-                const int dB = B->dIndices[sB];
-                const int dC = dA + dB;
-                if (dC < minResIdx || dC > maxResIdx) continue;
-                byResult[dC].emplace_back(dA, dB);
-            }
-        }
-        for (auto &entry : byResult) {
-            resDiagIndices.push_back(entry.first);
-            resSources.push_back(std::move(entry.second));
+    // Every pair (dA, dB) contributes to dC = dA + dB: enumerate the pairs (O(numA * numB)); within one dC the pairs
+    // stay in the order of A's diagonals.
+    const int minResIdx = -static_cast<int>(res_dims[0]) + 1;
+    const int maxResIdx =  static_cast<int>(res_dims[1]) - 1;
+    std::map<int, std::vector<std::pair<unsigned int, unsigned int> > > byResult;  // dC -> (slot in A, slot in B)
+    for (std::size_t sA = 0; sA < A.dIndices.size(); ++sA) {
+        for (std::size_t sB = 0; sB < B.dIndices.size(); ++sB) {
+            const int dC = A.dIndices[sA] + B.dIndices[sB];
+            if (dC < minResIdx || dC > maxResIdx) continue;
+            byResult[dC].emplace_back(static_cast<unsigned int>(sA), static_cast<unsigned int>(sB));
         }
     }
+    std::vector<int> resDiagIndices;
+    for (const auto &entry : byResult) resDiagIndices.push_back(entry.first);
+    auto C = std::make_shared<deviceDiaQMatrix>(res_dims, resDiagIndices);  // zeroed values
+    const unsigned int numRes = static_cast<unsigned int>(resDiagIndices.size());
+    if (numRes == 0) return C;
 
-    unsigned int numRes = static_cast<unsigned int>(resDiagIndices.size());
-    if (numRes == 0) {
-        // No result diagonals: return an empty matrix
-        return std::make_shared<diaQMatrix>(res_dims);
-    }
-
-    // -------------------------------------------------------------------------
-    // Step 2: Allocate result diaQMatrix on host with these diagonals
-    // -------------------------------------------------------------------------
-    std::shared_ptr<diaQMatrix> result =
-        std::make_shared<diaQMatrix>(res_dims, resDiagIndices);
-
-    // -------------------------------------------------------------------------
-    // Step 3: Build host-side metadata arrays
-    // -------------------------------------------------------------------------
-    // Result-diagonal metadata
-    std::vector<int>          h_resDiagIndices(numRes);
-    std::vector<unsigned int> h_resDiagOffsets(numRes);
-    std::vector<unsigned int> h_resDiagLens(numRes);
-
-    for (unsigned int r = 0; r < numRes; ++r) {
-        h_resDiagIndices[r] = resDiagIndices[r];
-        h_resDiagOffsets[r] = result->diagOffsets[r];
-        h_resDiagLens[r]    = getDiagonalLengthHelper(resDiagIndices[r], res_dims);
-    }
-
-    unsigned int numA = static_cast<unsigned int>(A->dIndices.size());
-    unsigned int numB = static_cast<unsigned int>(B->dIndices.size());
-
-    std::vector<unsigned int> h_A_diagOffsets(numA);
-    std::vector<unsigned int> h_A_diagLens(numA);
-    std::vector<unsigned int> h_B_diagOffsets(numB);
-    std::vector<unsigned int> h_B_diagLens(numB);
-
-    for (unsigned int s = 0; s < numA; ++s) {
-        h_A_diagOffsets[s] = A->diagOffsets[s];
-        h_A_diagLens[s]    = A->getDiagonalLengthInternal(A->dIndices[s]);
-    }
-    for (unsigned int s = 0; s < numB; ++s) {
-        h_B_diagOffsets[s] = B->diagOffsets[s];
-        h_B_diagLens[s]    = B->getDiagonalLengthInternal(B->dIndices[s]);
-    }
-
-    // Flatten pair structure
     std::vector<unsigned int> h_resPairOffset(numRes + 1);
-    unsigned int totalPairs = 0;
-    for (unsigned int r = 0; r < numRes; ++r) {
-        h_resPairOffset[r] = totalPairs;
-        totalPairs += static_cast<unsigned int>(resSources[r].size());
-    }
-    h_resPairOffset[numRes] = totalPairs;
-
-    std::vector<int>          h_pair_dA(totalPairs);
-    std::vector<int>          h_pair_dB(totalPairs);
-    std::vector<unsigned int> h_pairSlotA(totalPairs);
-    std::vector<unsigned int> h_pairSlotB(totalPairs);
-
+    std::vector<int> h_pair_dA, h_pair_dB;
+    std::vector<unsigned int> h_pairSlotA, h_pairSlotB;
     {
-        unsigned int p = 0;
-        for (unsigned int r = 0; r < numRes; ++r) {
-            for (const auto &pr : resSources[r]) {
-                int dA = pr.first;
-                int dB = pr.second;
-
-                auto itA = AIndexToSlot.find(dA);
-                auto itB = BIndexToSlot.find(dB);
-                if (itA == AIndexToSlot.end() || itB == BIndexToSlot.end()) {
-                    continue; // should not happen
-                }
-
-                h_pair_dA[p]    = dA;
-                h_pair_dB[p]    = dB;
-                h_pairSlotA[p]  = itA->second;
-                h_pairSlotB[p]  = itB->second;
+        unsigned int r = 0, p = 0;
+        for (const auto &entry : byResult) {
+            h_resPairOffset[r++] = p;
+            for (const auto &slots : entry.second) {
+                h_pair_dA.push_back(A.dIndices[slots.first]);
+                h_pair_dB.push_back(B.dIndices[slots.second]);
+                h_pairSlotA.push_back(slots.first);
+                h_pairSlotB.push_back(slots.second);
                 ++p;
             }
         }
-        // In case any pair was skipped, adjust totalPairs (defensive)
-        totalPairs = p;
-        h_resPairOffset[numRes] = totalPairs;
+        h_resPairOffset[numRes] = p;
     }
+    const std::size_t totalPairs = h_pair_dA.size();
 
-    // -------------------------------------------------------------------------
-    // Step 4: Allocate device memory and copy data
-    // -------------------------------------------------------------------------
-    // Data arrays
-    valType *d_A_real = nullptr, *d_A_imag = nullptr;
-    valType *d_B_real = nullptr, *d_B_imag = nullptr;
-    valType *d_C_real = nullptr, *d_C_imag = nullptr;
+    // pair metadata on the device (freed on every exit path)
+    struct Ints {
+        void *p = nullptr;
+        Ints(const void *src, std::size_t bytes) {
+            DIAQ_CUDA_CHECK(cudaMalloc(&p, bytes));
+            DIAQ_CUDA_CHECK(cudaMemcpy(p, src, bytes, cudaMemcpyHostToDevice));
+        }
+        ~Ints() { cudaFree(p); }
+    };
+    Ints d_resPairOffset(h_resPairOffset.data(), (numRes + 1) * sizeof(unsigned int));
+    Ints d_pair_dA(h_pair_dA.data(), totalPairs * sizeof(int));
+    Ints d_pair_dB(h_pair_dB.data(), totalPairs * sizeof(int));
+    Ints d_pairSlotA(h_pairSlotA.data(), totalPairs * sizeof(unsigned int));
+    Ints d_pairSlotB(h_pairSlotB.data(), totalPairs * sizeof(unsigned int));
 
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_real, A->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_imag, A->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_real, B->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_imag, B->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_C_real, result->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_C_imag, result->totalLength * sizeof(valType)));
+    product_kernel<<<numRes, SPGEMM_TPB>>>(
+        static_cast<int>(numRes), C->d_dIndices, C->d_diagOffsets, C->d_diagLens,
+        static_cast<const unsigned int *>(d_resPairOffset.p), static_cast<const int *>(d_pair_dA.p),
+        static_cast<const int *>(d_pair_dB.p), static_cast<const unsigned int *>(d_pairSlotA.p),
+        static_cast<const unsigned int *>(d_pairSlotB.p), A.d_diagOffsets, A.d_diagLens, B.d_diagOffsets,
+        B.d_diagLens, A.d_real, A.d_imag, B.d_real, B.d_imag, C->d_real, C->d_imag);
+    DIAQ_CUDA_CHECK(cudaGetLastError());
+    DIAQ_CUDA_CHECK(cudaDeviceSynchronize());  // before the pair metadata is freed
+    return C;
+}
 
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_real, A->realData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_imag, A->imagData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_real, B->realData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_imag, B->imagData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
-
-    // Initialize C on device to zero (not strictly necessary due to "first" overwrite,
-    // but keeps things robust if logic changes)
-    DIAQ_CUDA_CHECK(cudaMemset(d_C_real, 0, result->totalLength * sizeof(valType)));
-    DIAQ_CUDA_CHECK(cudaMemset(d_C_imag, 0, result->totalLength * sizeof(valType)));
-
-    // Metadata arrays
-    int *d_resDiagIndices = nullptr;
-    unsigned int *d_resDiagOffsets = nullptr;
-    unsigned int *d_resDiagLens    = nullptr;
-    unsigned int *d_resPairOffset  = nullptr;
-
-    int *d_pair_dA = nullptr;
-    int *d_pair_dB = nullptr;
-    unsigned int *d_pairSlotA = nullptr;
-    unsigned int *d_pairSlotB = nullptr;
-
-    unsigned int *d_A_diagOffsets = nullptr;
-    unsigned int *d_A_diagLens    = nullptr;
-    unsigned int *d_B_diagOffsets = nullptr;
-    unsigned int *d_B_diagLens    = nullptr;
-
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagIndices, numRes * sizeof(int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagOffsets, numRes * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagLens,    numRes * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_resPairOffset, (numRes + 1) * sizeof(unsigned int)));
-
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagIndices, h_resDiagIndices.data(),
-               numRes * sizeof(int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagOffsets, h_resDiagOffsets.data(),
-               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagLens,    h_resDiagLens.data(),
-               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_resPairOffset,  h_resPairOffset.data(),
-               (numRes + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice));
-
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_pair_dA,     totalPairs * sizeof(int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_pair_dB,     totalPairs * sizeof(int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_pairSlotA,   totalPairs * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_pairSlotB,   totalPairs * sizeof(unsigned int)));
-
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_pair_dA,   h_pair_dA.data(),
-               totalPairs * sizeof(int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_pair_dB,   h_pair_dB.data(),
-               totalPairs * sizeof(int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_pairSlotA, h_pairSlotA.data(),
-               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_pairSlotB, h_pairSlotB.data(),
-               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice));
-
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_diagOffsets, numA * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_diagLens,    numA * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_diagOffsets, numB * sizeof(unsigned int)));
-    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_diagLens,    numB * sizeof(unsigned int)));
-
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_diagOffsets, h_A_diagOffsets.data(),
-               numA * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_diagLens,    h_A_diagLens.data(),
-               numA * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_diagOffsets, h_B_diagOffsets.data(),
-               numB * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_diagLens,    h_B_diagLens.data(),
-               numB * sizeof(unsigned int), cudaMemcpyHostToDevice));
-
-    // -------------------------------------------------------------------------
-    // Step 5: Launch kernel
-    // -------------------------------------------------------------------------
-    int threadsPerBlock = SPGEMM_TPB;
-    int blocksPerGrid   = static_cast<int>(numRes);
-
-    product_kernel<<<blocksPerGrid, threadsPerBlock>>>(
-        static_cast<int>(numRes),
-        d_resDiagIndices,
-        d_resDiagOffsets,
-        d_resDiagLens,
-        d_resPairOffset,
-        d_pair_dA,
-        d_pair_dB,
-        d_pairSlotA,
-        d_pairSlotB,
-        d_A_diagOffsets,
-        d_A_diagLens,
-        d_B_diagOffsets,
-        d_B_diagLens,
-        d_A_real,
-        d_A_imag,
-        d_B_real,
-        d_B_imag,
-        d_C_real,
-        d_C_imag
-    );
-
-    DIAQ_CUDA_CHECK(cudaDeviceSynchronize());
-
-    // -------------------------------------------------------------------------
-    // Step 6: Copy result back to host and clean up
-    // -------------------------------------------------------------------------
-    DIAQ_CUDA_CHECK(cudaMemcpy(result->realData, d_C_real,
-               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost));
-    DIAQ_CUDA_CHECK(cudaMemcpy(result->imagData, d_C_imag,
-               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost));
-
-    DIAQ_CUDA_CHECK(cudaFree(d_A_real));
-    DIAQ_CUDA_CHECK(cudaFree(d_A_imag));
-    DIAQ_CUDA_CHECK(cudaFree(d_B_real));
-    DIAQ_CUDA_CHECK(cudaFree(d_B_imag));
-    DIAQ_CUDA_CHECK(cudaFree(d_C_real));
-    DIAQ_CUDA_CHECK(cudaFree(d_C_imag));
-
-    DIAQ_CUDA_CHECK(cudaFree(d_resDiagIndices));
-    DIAQ_CUDA_CHECK(cudaFree(d_resDiagOffsets));
-    DIAQ_CUDA_CHECK(cudaFree(d_resDiagLens));
-    DIAQ_CUDA_CHECK(cudaFree(d_resPairOffset));
-
-    DIAQ_CUDA_CHECK(cudaFree(d_pair_dA));
-    DIAQ_CUDA_CHECK(cudaFree(d_pair_dB));
-    DIAQ_CUDA_CHECK(cudaFree(d_pairSlotA));
-    DIAQ_CUDA_CHECK(cudaFree(d_pairSlotB));
-
-    DIAQ_CUDA_CHECK(cudaFree(d_A_diagOffsets));
-    DIAQ_CUDA_CHECK(cudaFree(d_A_diagLens));
-    DIAQ_CUDA_CHECK(cudaFree(d_B_diagOffsets));
-    DIAQ_CUDA_CHECK(cudaFree(d_B_diagLens));
-
-    #ifdef DEBUG
-        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        printf("spGEMM:product_cuda took %.3f ms\n", duration / 1.0);
-    #endif
-
-    return result;
+// C = A B for host matrices (both uploaded for this call; chains of products, as in pow, stay on the device with
+// product_device).
+std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B) {
+    if (A->matrix_shape[1] != B->matrix_shape[0]) {
+        throw std::runtime_error("diaQMatrix product_cuda: dimension mismatch.");
+    }
+    deviceDiaQMatrix dA(A), dB(B);
+    return product_device(dA, dB)->to_host();
 }
 
 } // namespace diaq

@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include "cuda_check.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -245,14 +246,14 @@ void spMV_ntimes_cuda(std::shared_ptr<diaQMatrix> A,
 	if (d_diagOffsets) cudaFree(d_diagOffsets);
 	if (d_diagLens) cudaFree(d_diagLens);
 
-	cudaFree(d_A_real);
-	cudaFree(d_A_imag);
+	DIAQ_CUDA_CHECK(cudaFree(d_A_real));
+	DIAQ_CUDA_CHECK(cudaFree(d_A_imag));
 
-	cudaFree(d_in_real);
-	cudaFree(d_in_imag);
+	DIAQ_CUDA_CHECK(cudaFree(d_in_real));
+	DIAQ_CUDA_CHECK(cudaFree(d_in_imag));
 
-	cudaFree(d_out_real);
-	cudaFree(d_out_imag);
+	DIAQ_CUDA_CHECK(cudaFree(d_out_real));
+	DIAQ_CUDA_CHECK(cudaFree(d_out_imag));
 
 	#ifdef DEBUG
 		auto end = std::chrono::high_resolution_clock::now();

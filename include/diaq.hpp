@@ -22,6 +22,7 @@
 #include "../src/helpers.hpp"
 #ifdef CUDA_ENABLED
 #include "../src/spMM_device_gpu.hpp"
+#include "../src/deviceMatrix_gpu.hpp"
 #endif
 
 #endif

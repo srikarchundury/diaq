@@ -563,6 +563,38 @@ static std::array<unsigned int, 2> shape_pair(py::array_t<unsigned int> shape) {
     );
 
     #ifdef CUDA_ENABLED
+        // diaQ matrices kept in GPU memory: upload once, then products without copying the matrix again
+        py::class_<diaq::deviceDiaQMatrix, std::shared_ptr<diaq::deviceDiaQMatrix>>(m, "DeviceMatrix",
+            "A diaQMatrix in GPU memory (uploaded once). spMV(DeviceMatrix, vector) copies only the vectors; "
+            "product(DeviceMatrix, DeviceMatrix) returns a DeviceMatrix without leaving the GPU; to_host() downloads.")
+            .def(py::init<const std::shared_ptr<diaq::diaQMatrix> &>(), py::arg("A"))
+            .def("to_host", &diaq::deviceDiaQMatrix::to_host)
+            .def("copy", &diaq::deviceDiaQMatrix::copy)
+            .def_property_readonly("shape", [](const diaq::deviceDiaQMatrix &d) { return d.matrix_shape; })
+            .def_property_readonly("num_diags", &diaq::deviceDiaQMatrix::num_diags)
+            .def_property_readonly("diagonals", [](const diaq::deviceDiaQMatrix &d) { return d.dIndices; });
+        m.def("to_device", [](std::shared_ptr<diaq::diaQMatrix> A) { return std::make_shared<diaq::deviceDiaQMatrix>(A); },
+              py::arg("A"), "Upload a diaQMatrix to the GPU (a DeviceMatrix).");
+        m.def("spMV", [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::shared_ptr<diaq::vector> x) {
+                  return diaq::spmv_cuda(A, x);
+              }, py::arg(), py::arg(), py::return_value_policy::automatic);
+        m.def("product", [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::shared_ptr<diaq::deviceDiaQMatrix> B) {
+                  return diaq::product_device(*A, *B);
+              }, py::arg(), py::arg(), py::return_value_policy::automatic);
+        m.def(
+            "spmv_device",
+            [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::uintptr_t x_real, std::uintptr_t x_imag,
+               std::uintptr_t y_real, std::uintptr_t y_imag, std::uintptr_t stream) {
+                diaq::spmv_device(*A, reinterpret_cast<const diaq::valType *>(x_real),
+                                  reinterpret_cast<const diaq::valType *>(x_imag),
+                                  reinterpret_cast<diaq::valType *>(y_real), reinterpret_cast<diaq::valType *>(y_imag),
+                                  reinterpret_cast<cudaStream_t>(stream));
+            },
+            py::arg("A"), py::arg("x_real"), py::arg("x_imag"), py::arg("y_real"), py::arg("y_imag"),
+            py::arg("stream") = 0,
+            "y = A x with x, y as GPU arrays of float64 (real and imaginary parts, e.g. torch data pointers); "
+            "y is overwritten; asynchronous on `stream`.");
+
         // DIA x dense on arrays already on the GPU (torch / cupy data pointers), no host copies.
         m.def(
             "spmm_dia_device",
