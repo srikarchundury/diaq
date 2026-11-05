@@ -20,6 +20,7 @@
 
 // helpers
 #include "../src/helpers.hpp"
+#include "../src/dia_viability.hpp"
 #ifdef CUDA_ENABLED
 #include "../src/spMM_device_gpu.hpp"
 #include "../src/deviceMatrix_gpu.hpp"

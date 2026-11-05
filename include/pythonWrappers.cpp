@@ -227,6 +227,30 @@ static std::array<unsigned int, 2> shape_pair(py::array_t<unsigned int> shape) {
         py::return_value_policy::automatic
         );
     
+        // when the DIA format is worth it (storage and diagonal budgets; see src/dia_viability.hpp)
+        m.def(
+            "dia_viability",
+            [](std::int64_t n_rows, std::int64_t n_cols, std::int64_t n_diags, std::int64_t nnz, std::int64_t n_right,
+               int itemsize, int index_bytes) {
+                const diaq::DiaViability v = diaq::dia_viability(n_rows, n_cols, n_diags, nnz, n_right, itemsize,
+                                                                 index_bytes);
+                py::dict d;
+                d["viable"] = v.viable;
+                d["storage_ok"] = v.storage_ok;
+                d["diagonals_ok"] = v.diagonals_ok;
+                d["dia_bytes"] = v.dia_bytes;
+                d["csr_bytes"] = v.csr_bytes;
+                d["density"] = v.density;
+                d["diagonal_budget"] = v.diagonal_budget;
+                d["reason"] = v.reason;
+                return d;
+            },
+            py::arg("n_rows"), py::arg("n_cols"), py::arg("n_diags"), py::arg("nnz"), py::arg("n_right"),
+            py::arg("itemsize") = 16, py::arg("index_bytes") = 8,
+            "Whether a matrix with n_diags stored diagonals and nnz nonzeros should be multiplied by a dense matrix "
+            "with n_right columns in DIA format: DIA bytes <= 0.9 x CSR bytes, and n_diags <= max(16, n_rows / 32) "
+            "(8 when n_right >= 32).");
+
         // kernel functions
         m.def("product", &diaq::product, py::return_value_policy::automatic);
         m.def("denseProduct", &diaq::denseProduct, py::return_value_policy::automatic);
