@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include "cuda_check.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -212,24 +213,24 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
     valType *d_x_real = nullptr, *d_x_imag = nullptr;
     valType *d_y_real = nullptr, *d_y_imag = nullptr;
 
-    cudaMalloc(&d_A_real, totalLength * sizeof(valType));
-    cudaMalloc(&d_A_imag, totalLength * sizeof(valType));
-    cudaMemcpy(d_A_real, A->realData,
-               totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_imag, A->imagData,
-               totalLength * sizeof(valType), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_real, totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_imag, totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_real, A->realData,
+               totalLength * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_imag, A->imagData,
+               totalLength * sizeof(valType), cudaMemcpyHostToDevice));
 
-    cudaMalloc(&d_x_real, N * sizeof(valType));
-    cudaMalloc(&d_x_imag, N * sizeof(valType));
-    cudaMemcpy(d_x_real, x->realValues,
-               N * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_x_imag, x->imagValues,
-               N * sizeof(valType), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_x_real, N * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_x_imag, N * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_x_real, x->realValues,
+               N * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_x_imag, x->imagValues,
+               N * sizeof(valType), cudaMemcpyHostToDevice));
 
-    cudaMalloc(&d_y_real, M * sizeof(valType));
-    cudaMalloc(&d_y_imag, M * sizeof(valType));
-    cudaMemset(d_y_real, 0, M * sizeof(valType));
-    cudaMemset(d_y_imag, 0, M * sizeof(valType));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_y_real, M * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_y_imag, M * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMemset(d_y_real, 0, M * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMemset(d_y_imag, 0, M * sizeof(valType)));
 
     #ifdef DEEP_DEBUG
         std::cout << "Host A_real: ";
@@ -248,7 +249,7 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
-        std::cerr << "CUDA error after allocation/copy: " << cudaGetErrorString(err) << std::endl;
+        throw std::runtime_error(std::string("spmv_cuda allocation/copy: ") + cudaGetErrorString(err));
     }
     int threadsPerBlock = 256;
     int maxBlocks       = 65535;
@@ -277,15 +278,15 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
             d_y_real,
             d_y_imag
         );
-        cudaDeviceSynchronize();
+        DIAQ_CUDA_CHECK(cudaDeviceSynchronize());
         err = cudaGetLastError();
         if (err != cudaSuccess) {
-            std::cerr << "CUDA error after kernel: " << cudaGetErrorString(err) << std::endl;
+            throw std::runtime_error(std::string("spmv_cuda kernel: ") + cudaGetErrorString(err));
         }
         #ifdef DEEP_DEBUG
             std::vector<valType> debug_y_real(M), debug_y_imag(M);
-            cudaMemcpy(debug_y_real.data(), d_y_real, M * sizeof(valType), cudaMemcpyDeviceToHost);
-            cudaMemcpy(debug_y_imag.data(), d_y_imag, M * sizeof(valType), cudaMemcpyDeviceToHost);
+            DIAQ_CUDA_CHECK(cudaMemcpy(debug_y_real.data(), d_y_real, M * sizeof(valType), cudaMemcpyDeviceToHost));
+            DIAQ_CUDA_CHECK(cudaMemcpy(debug_y_imag.data(), d_y_imag, M * sizeof(valType), cudaMemcpyDeviceToHost));
             std::cout << "Device y_real: ";
             for (size_t i = 0; i < M; ++i) std::cout << debug_y_real[i] << " ";
             std::cout << std::endl;
@@ -302,16 +303,16 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
         unsigned int *d_diagOffsets = nullptr;
         unsigned int *d_diagLens    = nullptr;
 
-        cudaMalloc(&d_dIndices,    numDiags * sizeof(int));
-        cudaMalloc(&d_diagOffsets, numDiags * sizeof(unsigned int));
-        cudaMalloc(&d_diagLens,    numDiags * sizeof(unsigned int));
+        DIAQ_CUDA_CHECK(cudaMalloc(&d_dIndices,    numDiags * sizeof(int)));
+        DIAQ_CUDA_CHECK(cudaMalloc(&d_diagOffsets, numDiags * sizeof(unsigned int)));
+        DIAQ_CUDA_CHECK(cudaMalloc(&d_diagLens,    numDiags * sizeof(unsigned int)));
 
-        cudaMemcpy(d_dIndices, h_dIndices.data(),
-                   numDiags * sizeof(int), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_diagOffsets, h_diagOffsets.data(),
-                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_diagLens, h_diagLens.data(),
-                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice);
+        DIAQ_CUDA_CHECK(cudaMemcpy(d_dIndices, h_dIndices.data(),
+                   numDiags * sizeof(int), cudaMemcpyHostToDevice));
+        DIAQ_CUDA_CHECK(cudaMemcpy(d_diagOffsets, h_diagOffsets.data(),
+                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice));
+        DIAQ_CUDA_CHECK(cudaMemcpy(d_diagLens, h_diagLens.data(),
+                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice));
 
         int blocks = (static_cast<int>(M) + threadsPerBlock - 1) / threadsPerBlock;
         if (blocks > maxBlocks) blocks = maxBlocks;
@@ -330,26 +331,27 @@ void spmv_cuda(std::shared_ptr<diaQMatrix> A,
             d_y_real,
             d_y_imag
         );
-        cudaDeviceSynchronize();
+        DIAQ_CUDA_CHECK(cudaGetLastError());
+        DIAQ_CUDA_CHECK(cudaDeviceSynchronize());
 
-        cudaFree(d_dIndices);
-        cudaFree(d_diagOffsets);
-        cudaFree(d_diagLens);
+        DIAQ_CUDA_CHECK(cudaFree(d_dIndices));
+        DIAQ_CUDA_CHECK(cudaFree(d_diagOffsets));
+        DIAQ_CUDA_CHECK(cudaFree(d_diagLens));
     }
 
     // ---------------- Copy result back ----------------
-    cudaMemcpy(y->realValues, d_y_real,
-               M * sizeof(valType), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y->imagValues, d_y_imag,
-               M * sizeof(valType), cudaMemcpyDeviceToHost);
+    DIAQ_CUDA_CHECK(cudaMemcpy(y->realValues, d_y_real,
+               M * sizeof(valType), cudaMemcpyDeviceToHost));
+    DIAQ_CUDA_CHECK(cudaMemcpy(y->imagValues, d_y_imag,
+               M * sizeof(valType), cudaMemcpyDeviceToHost));
 
     // ---------------- Cleanup ----------------
-    cudaFree(d_A_real);
-    cudaFree(d_A_imag);
-    cudaFree(d_x_real);
-    cudaFree(d_x_imag);
-    cudaFree(d_y_real);
-    cudaFree(d_y_imag);
+    DIAQ_CUDA_CHECK(cudaFree(d_A_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_A_imag));
+    DIAQ_CUDA_CHECK(cudaFree(d_x_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_x_imag));
+    DIAQ_CUDA_CHECK(cudaFree(d_y_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_y_imag));
 
     #ifdef DEBUG
         auto end = std::chrono::high_resolution_clock::now();

@@ -1222,30 +1222,23 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
     unsigned int after_N = 1L << after;
 
     std::array<unsigned int, 2> result_shape = {before_N * A->matrix_shape[0] * after_N, before_N * A->matrix_shape[1] * after_N};
-    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape);
-
-    // Prepare new API storage
-    std::vector<int> new_dIndices;
-    std::vector<unsigned int> new_diagOffsets;
-    // No need for new_diagLengths; use getDiagonalLengthInternal when needed
-    std::vector<valType> new_realData;
-    std::vector<valType> new_imagData;
-
-    unsigned int offset = 0;
+    // I_before kron A kron I_after: diagonal d of A becomes diagonal d * after_N; in each of the before_N diagonal
+    // blocks, element i of it becomes the after_N elements i * after_N + j. The result owns its storage, laid out for
+    // all diagonals first; each diagonal is then filled in parallel. (The result's value pointers were set to the
+    // data of local std::vectors, freed on return: dangling pointers and a double free when the result was
+    // destroyed; totalLength was not set.)
+    std::vector<int> result_diags(A->dIndices.size());
+    for (size_t a = 0; a < A->dIndices.size(); a++) result_diags[a] = A->dIndices[a] * static_cast<int>(after_N);
+    std::shared_ptr<diaQMatrix> result = std::make_shared<diaQMatrix>(result_shape, result_diags);
 
     #pragma omp parallel for schedule(dynamic)
     for(size_t a = 0; a < A->dIndices.size(); a++) {
         int dIndex = A->dIndices[a];
         unsigned int dLength = A->getDiagonalLengthInternal(dIndex);
-        valType *real_vals = A->realData + A->diagOffsets[a];
-        valType *imag_vals = A->imagData + A->diagOffsets[a];
-
-        int new_diag_index = dIndex * after_N;
-        unsigned int new_diag_length = result->getDiagonalLength(new_diag_index);
-
-        // Allocate temp storage for this diagonal
-        std::vector<valType> temp_real(new_diag_length, 0.0);
-        std::vector<valType> temp_imag(new_diag_length, 0.0);
+        const valType *real_vals = A->realData + A->diagOffsets[a];
+        const valType *imag_vals = A->imagData + A->diagOffsets[a];
+        valType *out_real = result->realData + result->diagOffsets[a];
+        valType *out_imag = result->imagData + result->diagOffsets[a];
 
         for(unsigned int rep = 0; rep < before_N; rep++) {
             unsigned int skip_places = rep * (after_N * (dLength + abs(dIndex)));
@@ -1256,31 +1249,13 @@ std::shared_ptr<diaQMatrix> identity_kron_matrix_kron_identity(unsigned int befo
                     #pragma omp simd
                     for(unsigned int j = 0; j < after_N; j++) {
                         unsigned int new_idx = skip_places + i * after_N + j;
-                        temp_real[new_idx] = each_real;
-                        temp_imag[new_idx] = each_imag;
+                        out_real[new_idx] = each_real;
+                        out_imag[new_idx] = each_imag;
                     }
                 }
             }
         }
-
-        // Store diagonal info
-        #pragma omp critical
-        {
-            new_dIndices.push_back(new_diag_index);
-            new_diagOffsets.push_back(offset);
-            // No need to push diagLengths; use getDiagonalLengthInternal
-            new_realData.insert(new_realData.end(), temp_real.begin(), temp_real.end());
-            new_imagData.insert(new_imagData.end(), temp_imag.begin(), temp_imag.end());
-            offset += new_diag_length;
-        }
     }
-
-    // Set result matrix data
-    result->dIndices = new_dIndices;
-    result->diagOffsets = new_diagOffsets;
-    // No need to assign diagLengths; contiguous API only
-    result->realData = new_realData.data();
-    result->imagData = new_imagData.data();
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

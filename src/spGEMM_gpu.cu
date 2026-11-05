@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"
+#include "cuda_check.hpp"
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -250,22 +251,22 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     valType *d_B_real = nullptr, *d_B_imag = nullptr;
     valType *d_C_real = nullptr, *d_C_imag = nullptr;
 
-    cudaMalloc(&d_A_real, A->totalLength * sizeof(valType));
-    cudaMalloc(&d_A_imag, A->totalLength * sizeof(valType));
-    cudaMalloc(&d_B_real, B->totalLength * sizeof(valType));
-    cudaMalloc(&d_B_imag, B->totalLength * sizeof(valType));
-    cudaMalloc(&d_C_real, result->totalLength * sizeof(valType));
-    cudaMalloc(&d_C_imag, result->totalLength * sizeof(valType));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_real, A->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_imag, A->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_real, B->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_imag, B->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_C_real, result->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_C_imag, result->totalLength * sizeof(valType)));
 
-    cudaMemcpy(d_A_real, A->realData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_imag, A->imagData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B_real, B->realData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B_imag, B->imagData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_real, A->realData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_imag, A->imagData, A->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_real, B->realData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_imag, B->imagData, B->totalLength * sizeof(valType), cudaMemcpyHostToDevice));
 
     // Initialize C on device to zero (not strictly necessary due to "first" overwrite,
     // but keeps things robust if logic changes)
-    cudaMemset(d_C_real, 0, result->totalLength * sizeof(valType));
-    cudaMemset(d_C_imag, 0, result->totalLength * sizeof(valType));
+    DIAQ_CUDA_CHECK(cudaMemset(d_C_real, 0, result->totalLength * sizeof(valType)));
+    DIAQ_CUDA_CHECK(cudaMemset(d_C_imag, 0, result->totalLength * sizeof(valType)));
 
     // Metadata arrays
     int *d_resDiagIndices = nullptr;
@@ -283,47 +284,47 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
     unsigned int *d_B_diagOffsets = nullptr;
     unsigned int *d_B_diagLens    = nullptr;
 
-    cudaMalloc(&d_resDiagIndices, numRes * sizeof(int));
-    cudaMalloc(&d_resDiagOffsets, numRes * sizeof(unsigned int));
-    cudaMalloc(&d_resDiagLens,    numRes * sizeof(unsigned int));
-    cudaMalloc(&d_resPairOffset, (numRes + 1) * sizeof(unsigned int));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagIndices, numRes * sizeof(int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagOffsets, numRes * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_resDiagLens,    numRes * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_resPairOffset, (numRes + 1) * sizeof(unsigned int)));
 
-    cudaMemcpy(d_resDiagIndices, h_resDiagIndices.data(),
-               numRes * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_resDiagOffsets, h_resDiagOffsets.data(),
-               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_resDiagLens,    h_resDiagLens.data(),
-               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_resPairOffset,  h_resPairOffset.data(),
-               (numRes + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagIndices, h_resDiagIndices.data(),
+               numRes * sizeof(int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagOffsets, h_resDiagOffsets.data(),
+               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_resDiagLens,    h_resDiagLens.data(),
+               numRes * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_resPairOffset,  h_resPairOffset.data(),
+               (numRes + 1) * sizeof(unsigned int), cudaMemcpyHostToDevice));
 
-    cudaMalloc(&d_pair_dA,     totalPairs * sizeof(int));
-    cudaMalloc(&d_pair_dB,     totalPairs * sizeof(int));
-    cudaMalloc(&d_pairSlotA,   totalPairs * sizeof(unsigned int));
-    cudaMalloc(&d_pairSlotB,   totalPairs * sizeof(unsigned int));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_pair_dA,     totalPairs * sizeof(int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_pair_dB,     totalPairs * sizeof(int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_pairSlotA,   totalPairs * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_pairSlotB,   totalPairs * sizeof(unsigned int)));
 
-    cudaMemcpy(d_pair_dA,   h_pair_dA.data(),
-               totalPairs * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pair_dB,   h_pair_dB.data(),
-               totalPairs * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pairSlotA, h_pairSlotA.data(),
-               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pairSlotB, h_pairSlotB.data(),
-               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_pair_dA,   h_pair_dA.data(),
+               totalPairs * sizeof(int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_pair_dB,   h_pair_dB.data(),
+               totalPairs * sizeof(int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_pairSlotA, h_pairSlotA.data(),
+               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_pairSlotB, h_pairSlotB.data(),
+               totalPairs * sizeof(unsigned int), cudaMemcpyHostToDevice));
 
-    cudaMalloc(&d_A_diagOffsets, numA * sizeof(unsigned int));
-    cudaMalloc(&d_A_diagLens,    numA * sizeof(unsigned int));
-    cudaMalloc(&d_B_diagOffsets, numB * sizeof(unsigned int));
-    cudaMalloc(&d_B_diagLens,    numB * sizeof(unsigned int));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_diagOffsets, numA * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_A_diagLens,    numA * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_diagOffsets, numB * sizeof(unsigned int)));
+    DIAQ_CUDA_CHECK(cudaMalloc(&d_B_diagLens,    numB * sizeof(unsigned int)));
 
-    cudaMemcpy(d_A_diagOffsets, h_A_diagOffsets.data(),
-               numA * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_diagLens,    h_A_diagLens.data(),
-               numA * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B_diagOffsets, h_B_diagOffsets.data(),
-               numB * sizeof(unsigned int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B_diagLens,    h_B_diagLens.data(),
-               numB * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_diagOffsets, h_A_diagOffsets.data(),
+               numA * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_A_diagLens,    h_A_diagLens.data(),
+               numA * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_diagOffsets, h_B_diagOffsets.data(),
+               numB * sizeof(unsigned int), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(d_B_diagLens,    h_B_diagLens.data(),
+               numB * sizeof(unsigned int), cudaMemcpyHostToDevice));
 
     // -------------------------------------------------------------------------
     // Step 5: Launch kernel
@@ -353,37 +354,37 @@ std::shared_ptr<diaQMatrix> product_cuda(std::shared_ptr<diaQMatrix> A,
         d_C_imag
     );
 
-    cudaDeviceSynchronize();
+    DIAQ_CUDA_CHECK(cudaDeviceSynchronize());
 
     // -------------------------------------------------------------------------
     // Step 6: Copy result back to host and clean up
     // -------------------------------------------------------------------------
-    cudaMemcpy(result->realData, d_C_real,
-               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost);
-    cudaMemcpy(result->imagData, d_C_imag,
-               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost);
+    DIAQ_CUDA_CHECK(cudaMemcpy(result->realData, d_C_real,
+               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost));
+    DIAQ_CUDA_CHECK(cudaMemcpy(result->imagData, d_C_imag,
+               result->totalLength * sizeof(valType), cudaMemcpyDeviceToHost));
 
-    cudaFree(d_A_real);
-    cudaFree(d_A_imag);
-    cudaFree(d_B_real);
-    cudaFree(d_B_imag);
-    cudaFree(d_C_real);
-    cudaFree(d_C_imag);
+    DIAQ_CUDA_CHECK(cudaFree(d_A_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_A_imag));
+    DIAQ_CUDA_CHECK(cudaFree(d_B_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_B_imag));
+    DIAQ_CUDA_CHECK(cudaFree(d_C_real));
+    DIAQ_CUDA_CHECK(cudaFree(d_C_imag));
 
-    cudaFree(d_resDiagIndices);
-    cudaFree(d_resDiagOffsets);
-    cudaFree(d_resDiagLens);
-    cudaFree(d_resPairOffset);
+    DIAQ_CUDA_CHECK(cudaFree(d_resDiagIndices));
+    DIAQ_CUDA_CHECK(cudaFree(d_resDiagOffsets));
+    DIAQ_CUDA_CHECK(cudaFree(d_resDiagLens));
+    DIAQ_CUDA_CHECK(cudaFree(d_resPairOffset));
 
-    cudaFree(d_pair_dA);
-    cudaFree(d_pair_dB);
-    cudaFree(d_pairSlotA);
-    cudaFree(d_pairSlotB);
+    DIAQ_CUDA_CHECK(cudaFree(d_pair_dA));
+    DIAQ_CUDA_CHECK(cudaFree(d_pair_dB));
+    DIAQ_CUDA_CHECK(cudaFree(d_pairSlotA));
+    DIAQ_CUDA_CHECK(cudaFree(d_pairSlotB));
 
-    cudaFree(d_A_diagOffsets);
-    cudaFree(d_A_diagLens);
-    cudaFree(d_B_diagOffsets);
-    cudaFree(d_B_diagLens);
+    DIAQ_CUDA_CHECK(cudaFree(d_A_diagOffsets));
+    DIAQ_CUDA_CHECK(cudaFree(d_A_diagLens));
+    DIAQ_CUDA_CHECK(cudaFree(d_B_diagOffsets));
+    DIAQ_CUDA_CHECK(cudaFree(d_B_diagLens));
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
