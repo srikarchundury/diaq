@@ -41,6 +41,10 @@ class vector : public std::enable_shared_from_this<vector> {
                 imagValues = (valType *)calloc(M, sizeof(valType));
             #else
                 imagValues = aligned_alloc_helper(M * sizeof(valType));
+                #pragma omp parallel for
+                for(unsigned int i = 0; i < M; i++) {
+                    imagValues[i] = 0.0;
+                }
             #endif
         }
 

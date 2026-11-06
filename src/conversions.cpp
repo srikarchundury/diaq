@@ -23,6 +23,12 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
     #else
         real_data = aligned_alloc_helper(nRows * nCols * sizeof(valType));
         imag_data = aligned_alloc_helper(nRows * nCols * sizeof(valType));
+        // aligned_alloc does not zero, and only the stored diagonals are written below
+        #pragma omp parallel for
+        for (size_t i = 0; i < (size_t)nRows * nCols; i++) {
+            real_data[i] = 0.0;
+            imag_data[i] = 0.0;
+        }
     #endif
 
     // Fill dense matrix from diagonals
