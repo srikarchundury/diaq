@@ -54,6 +54,9 @@ GPU kernels mirror the CPU kernel suite with a layout-consistent preallocated de
 - GPU SpGEMM: one thread block per result diagonal
 - Fused Hamiltonian simulation kernel (`spHamSim_gpu_all_fused`) for end-to-end time evolution on-device
 - Separate `diaq_gpu` Python module for GPU-accelerated workflows
+- Device-resident matrices (`DeviceMatrix` / `to_device`): upload once, then `spMV` and `product` without copying the
+  matrix again; `spmv_device` and `spmm_dia_device` work on GPU arrays (torch / cupy data pointers)
+- `dia_viability(...)`: whether a matrix is worth storing in DIA format for a product with a dense matrix
 
 ### Python Interface
 - **pybind11** bindings exposing the full kernel suite to Python
@@ -150,6 +153,16 @@ When built with -DMAKE_TESTS=ON, run from repository root:
 ./cpu_build/bin/tests kron_1
 ./cpu_build/bin/tests spmv_8
 ```
+
+All tests, as the CI runs them on every pull request into `dev` and `main` (`.github/workflows/tests.yml`):
+
+```bash
+bash cpp_tests/run_all.sh cpu_build/bin/tests          # every named C++ test
+PYTHONPATH=cpu_build/lib python python_tests/run_ci.py # Python tests against numpy (needs numpy, scipy)
+```
+
+GPU checks (on a machine with a GPU): `python_tests/test_device_matrix.py`, `test_spmm_dia_device.py`,
+`check_gpu_vs_numpy.py`, and any CPU-module test through `python_tests/run_with_gpu_module.py <test>.py`.
 
 Notes:
 

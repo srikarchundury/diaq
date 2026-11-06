@@ -21,6 +21,6 @@ res_dq.print()
 
 res_dq.print_meta()
 
-print("Testing tensordot : ", (
-    res_np == np.array(dq.to_numpy(res_dq)).reshape(res_dq.shape)
-).all())
+same = bool((res_np == np.array(dq.to_numpy(res_dq)).reshape(res_dq.shape)).all())
+print("Testing tensordot : ", same)
+assert same, "tensordot differs from numpy.tensordot"
