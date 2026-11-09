@@ -1,4 +1,5 @@
 #include "matrixKernels_gpu.hpp"   // diaq::valType, diaq::diaQMatrix, diaq::vector
+#include "cuda_check.hpp"
 #include <cuda_runtime.h>
 
 #include <cmath>
@@ -336,10 +337,10 @@ std::shared_ptr<vector> hamiltonian_simulation_cuda(
 		cudaCheck(cudaMemcpy(out->realValues, d_a_r, N * sizeof(valType), cudaMemcpyDeviceToHost), "D2H out.real");
 		cudaCheck(cudaMemcpy(out->imagValues, d_a_i, N * sizeof(valType), cudaMemcpyDeviceToHost), "D2H out.imag");
 
-		cudaFree(d_a_r); cudaFree(d_a_i);
-		cudaFree(d_b_r); cudaFree(d_b_i);
-		cudaFree(d_term_r); cudaFree(d_term_i);
-		cudaFree(d_tmp_r); cudaFree(d_tmp_i);
+		DIAQ_CUDA_CHECK(cudaFree(d_a_r)); cudaFree(d_a_i);
+		DIAQ_CUDA_CHECK(cudaFree(d_b_r)); cudaFree(d_b_i);
+		DIAQ_CUDA_CHECK(cudaFree(d_term_r)); cudaFree(d_term_i);
+		DIAQ_CUDA_CHECK(cudaFree(d_tmp_r)); cudaFree(d_tmp_i);
 		return out;
 	}
 
@@ -365,10 +366,10 @@ std::shared_ptr<vector> hamiltonian_simulation_cuda(
 	cudaCheck(cudaMemcpy(out->imagValues, d_a_i, N * sizeof(valType), cudaMemcpyDeviceToHost), "D2H out.imag");
 
 	// cleanup
-	cudaFree(d_a_r); cudaFree(d_a_i);
-	cudaFree(d_b_r); cudaFree(d_b_i);
-	cudaFree(d_term_r); cudaFree(d_term_i);
-	cudaFree(d_tmp_r); cudaFree(d_tmp_i);
+	DIAQ_CUDA_CHECK(cudaFree(d_a_r)); cudaFree(d_a_i);
+	DIAQ_CUDA_CHECK(cudaFree(d_b_r)); cudaFree(d_b_i);
+	DIAQ_CUDA_CHECK(cudaFree(d_term_r)); cudaFree(d_term_i);
+	DIAQ_CUDA_CHECK(cudaFree(d_tmp_r)); cudaFree(d_tmp_i);
 	// dH freed by destructor
 
 	return out;

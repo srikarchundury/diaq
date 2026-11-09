@@ -86,11 +86,11 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 should_install_python() {
-  local bdir="$1"
-  if cmake -LA -N "$bdir" 2>/dev/null | grep -q '^BUILD_PYTHON:BOOL=ON$'; then
-    return 0
-  fi
-  return 1
+  # Read the cache first: under `set -o pipefail`, `cmake ... | grep -q` fails when grep exits early and cmake gets
+  # SIGPIPE, so the install was skipped at random.
+  local bdir="$1" cache
+  cache="$(cmake -LA -N "$bdir" 2>/dev/null || true)"
+  grep -q '^BUILD_PYTHON:BOOL=ON$' <<< "$cache"
 }
 
 # --- CPU build ---

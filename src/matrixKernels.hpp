@@ -40,7 +40,6 @@ std::vector<unsigned int> getTenPos(const std::vector<unsigned int>& ten_pos_A,
                                      const std::vector<unsigned int>& shape_A,
                                      const std::vector<unsigned int>& shape_B);
 std::shared_ptr<diaQMatrix> tensordot(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes);
-std::shared_ptr<diaQMatrix> tensordot1(std::shared_ptr<diaQMatrix> A, std::shared_ptr<diaQMatrix> B, std::vector<std::vector<unsigned int> > axes);
 std::shared_ptr<diaQMatrix> array(std::shared_ptr<diaQMatrix> A);
 std::shared_ptr<diaQMatrix> einsum(std::shared_ptr<diaQMatrix> A, std::vector<unsigned int> axes);
 std::shared_ptr<diaQMatrix> operator*(std::shared_ptr<diaQMatrix> &A, std::shared_ptr<diaQMatrix> &B);

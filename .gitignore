@@ -65,3 +65,6 @@ __pycache__/
 # Dependencies folder: ignore loose files but keep submodules
 dependencies/*
 !dependencies/*/
+
+# Office lock files
+~$*

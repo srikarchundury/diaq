@@ -1,5 +1,6 @@
 #ifndef DIAQ_DIAQMATRIX_HPP
 #define DIAQ_DIAQMATRIX_HPP
+#include <unordered_map>
 
 #include <array>
 #include <vector>
@@ -861,175 +862,63 @@ public:
 	}
 
 	// A += B
-	void add(const std::shared_ptr<diaQMatrix> &B) {
-		// 1. Sanity check: shapes must match
-		if (matrix_shape[0] != B->matrix_shape[0] ||
-			matrix_shape[1] != B->matrix_shape[1]) {
+	// C = A + sign * B as a new matrix holding the union of their diagonals. Slots are looked up in hash maps built
+	// once (findDiagonalSlot is a linear search: O(D^2) for D diagonals).
+	static std::shared_ptr<diaQMatrix> combined(const diaQMatrix &A, const diaQMatrix &B, valType sign) {
+		if (A.matrix_shape[0] != B.matrix_shape[0] || A.matrix_shape[1] != B.matrix_shape[1]) {
 			throw std::runtime_error("diaQMatrix::add: shape mismatch");
 		}
-
-		#ifdef DEBUG
-			std::printf("starting add -- ");
-			auto start = std::chrono::high_resolution_clock::now();
-		#endif
-
-		// 2. Build the union of diagonal indices from A and B
 		std::vector<int> union_indices;
-		union_indices.reserve(dIndices.size() + B->dIndices.size());
-
-		for (int d : dIndices) {
-			union_indices.push_back(d);
-		}
-		for (int d : B->dIndices) {
-			union_indices.push_back(d);
-		}
-
+		union_indices.reserve(A.dIndices.size() + B.dIndices.size());
+		union_indices.insert(union_indices.end(), A.dIndices.begin(), A.dIndices.end());
+		union_indices.insert(union_indices.end(), B.dIndices.begin(), B.dIndices.end());
 		std::sort(union_indices.begin(), union_indices.end());
-		union_indices.erase(std::unique(union_indices.begin(), union_indices.end()),
-							union_indices.end());
+		union_indices.erase(std::unique(union_indices.begin(), union_indices.end()), union_indices.end());
 
-		// 3. Create a new matrix C that will hold A + B with all diagonals
-		std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(matrix_shape, union_indices, shape);
-		// std::cout << "\t\t\t is C aligned? " << C->isAligned() << std::endl;
+		std::unordered_map<int, int> slotA, slotB;
+		slotA.reserve(A.dIndices.size());
+		slotB.reserve(B.dIndices.size());
+		for (std::size_t k = 0; k < A.dIndices.size(); ++k) slotA[A.dIndices[k]] = static_cast<int>(k);
+		for (std::size_t k = 0; k < B.dIndices.size(); ++k) slotB[B.dIndices[k]] = static_cast<int>(k);
 
-		// 4. For each diagonal d in the union, add A(d) + B(d) into C(d)
-		//    (blocked over elements for cache friendliness)
-		std::size_t num_diags = union_indices.size();
-
-		#pragma omp parallel for
+		std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(A.matrix_shape, union_indices, A.shape);
+		const std::size_t num_diags = union_indices.size();
+		#pragma omp parallel for schedule(dynamic)
 		for (std::size_t k = 0; k < num_diags; ++k) {
-			int d = union_indices[k];
-
-			unsigned int len = C->getDiagonalLengthInternal(d);
-			unsigned int offC = C->diagOffsets[k];
-
-			// Find slots in A and B (may be -1 if diagonal is absent)
-			int slotA = this->findDiagonalSlot(d);
-			int slotB = B->findDiagonalSlot(d);
-
-			valType *aReal = nullptr;
-			valType *aImag = nullptr;
-			valType *bReal = nullptr;
-			valType *bImag = nullptr;
-
-			if (slotA >= 0) {
-				unsigned int offA = this->diagOffsets[slotA];
-				aReal = this->realData + offA;
-				aImag = this->imagData + offA;
-			}
-			if (slotB >= 0) {
-				unsigned int offB = B->diagOffsets[slotB];
-				bReal = B->realData + offB;
-				bImag = B->imagData + offB;
-			}
-
-			// Block over diagonal elements
-			for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
-				unsigned int end_j = j + BLOCK_SIZE;
-				if (end_j > len) end_j = len;
-
-				for (unsigned int t = j; t < end_j; ++t) {
-					valType ar = 0.0, ai = 0.0;
-					valType br = 0.0, bi = 0.0;
-
-					if (aReal) { ar = aReal[t]; ai = aImag[t]; }
-					if (bReal) { br = bReal[t]; bi = bImag[t]; }
-
-					C->realData[offC + t] = ar + br;
-					C->imagData[offC + t] = ai + bi;
-				}
+			const int d = union_indices[k];
+			const unsigned int len = C->getDiagonalLengthInternal(d);
+			valType *cr = C->realData + C->diagOffsets[k];
+			valType *ci = C->imagData + C->diagOffsets[k];
+			auto ia = slotA.find(d);
+			auto ib = slotB.find(d);
+			const valType *ar = ia == slotA.end() ? nullptr : A.realData + A.diagOffsets[ia->second];
+			const valType *ai = ia == slotA.end() ? nullptr : A.imagData + A.diagOffsets[ia->second];
+			const valType *br = ib == slotB.end() ? nullptr : B.realData + B.diagOffsets[ib->second];
+			const valType *bi = ib == slotB.end() ? nullptr : B.imagData + B.diagOffsets[ib->second];
+			if (ar && br) {
+				#pragma omp simd
+				for (unsigned int t = 0; t < len; ++t) { cr[t] = ar[t] + sign * br[t]; ci[t] = ai[t] + sign * bi[t]; }
+			} else if (ar) {
+				std::copy(ar, ar + len, cr);
+				std::copy(ai, ai + len, ci);
+			} else {
+				#pragma omp simd
+				for (unsigned int t = 0; t < len; ++t) { cr[t] = sign * br[t]; ci[t] = sign * bi[t]; }
 			}
 		}
+		return C;
+	}
 
-		// 5. Swap result C back into *this (in-place A = A + B)
+	// A += B (in place: the union of the diagonals replaces A's storage)
+	void add(const std::shared_ptr<diaQMatrix> &B) {
+		std::shared_ptr<diaQMatrix> C = combined(*this, *B, 1.0);
 		this->swap(*C);
-
-		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			std::cout << "\t\t add took "
-					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-					<< " ms" << std::endl;
-		#endif
 	}
 
 	// A -= B
 	void subtract(const std::shared_ptr<diaQMatrix> &B) {
-
-		// 1. Sanity check: shapes must match
-		if (matrix_shape[0] != B->matrix_shape[0] ||
-			matrix_shape[1] != B->matrix_shape[1]) {
-			throw std::runtime_error("diaQMatrix::subtract: shape mismatch");
-		}
-		#ifdef DEBUG
-			std::printf("starting subtract -- ");
-			auto start = std::chrono::high_resolution_clock::now();
-		#endif
-
-		// 2. Build the union of diagonal indices from A and B
-		std::vector<int> union_indices;
-		union_indices.reserve(dIndices.size() + B->dIndices.size());
-		for (int d : dIndices) {
-			union_indices.push_back(d);
-		}
-		for (int d : B->dIndices) {
-			union_indices.push_back(d);
-		}
-		std::sort(union_indices.begin(), union_indices.end());
-		union_indices.erase(std::unique(union_indices.begin(), union_indices.end()),
-							union_indices.end());
-
-		// 3. Create a new matrix C that will hold A - B with all diagonals
-		std::shared_ptr<diaQMatrix> C = std::make_shared<diaQMatrix>(matrix_shape, union_indices, shape);
-
-		// 4. For each diagonal d in the union, compute A(d) - B(d) into C(d)
-		//    (blocked over elements for cache friendliness)
-		std::size_t num_diags = union_indices.size();
-		#pragma omp parallel for
-		for (std::size_t k = 0; k < num_diags; ++k) {
-			int d = union_indices[k];
-			unsigned int len = C->getDiagonalLengthInternal(d);
-			unsigned int offC = C->diagOffsets[k];
-			// Find slots in A and B (may be -1 if diagonal is absent)
-			int slotA = this->findDiagonalSlot(d);
-			int slotB = B->findDiagonalSlot(d);
-			valType *aReal = nullptr;
-			valType *aImag = nullptr;
-			valType *bReal = nullptr;
-			valType *bImag = nullptr;
-			if (slotA >= 0) {
-				unsigned int offA = this->diagOffsets[slotA];
-				aReal = this->realData + offA;
-				aImag = this->imagData + offA;
-			}
-			if (slotB >= 0) {
-				unsigned int offB = B->diagOffsets[slotB];
-				bReal = B->realData + offB;
-				bImag = B->imagData + offB;
-			}
-			// Block over diagonal elements
-			for (unsigned int j = 0; j < len; j += BLOCK_SIZE) {
-				unsigned int end_j = j + BLOCK_SIZE;
-				if (end_j > len) end_j = len;
-				for (unsigned int t = j; t < end_j; ++t) {
-					valType ar = 0.0, ai = 0.0;
-					valType br = 0.0, bi = 0.0;
-					if (aReal) { ar = aReal[t]; ai = aImag[t]; }
-					if (bReal) { br = bReal[t]; bi = bImag[t]; }
-					C->realData[offC + t] =  ar - br;
-					C->imagData[offC + t] =  ai - bi;
-				}
-			}
-		}
-
-		// 5. Swap result C back into *this (in-place A = A - B)
+		std::shared_ptr<diaQMatrix> C = combined(*this, *B, -1.0);
 		this->swap(*C);
-
-		#ifdef DEBUG
-			auto end = std::chrono::high_resolution_clock::now();
-			std::cout << "\t\t subtract took "
-					<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0
-					<< " ms" << std::endl;
-		#endif
 	}
 
 	// this *= i * imag

@@ -1,4 +1,6 @@
 #include "matrixKernels_gpu.hpp"
+#include "cuda_check.hpp"
+#include "deviceMatrix_gpu.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -134,228 +136,71 @@ __global__ void spmv_row_kernel(
 }
 
 // -----------------------------------------------------------------------------
-// y = A * x  (convenience wrapper returning a new vector)
+// y = A x with A, x, y on the device: one kernel for a single diagonal (vector times
+// shifted vector), else the row kernel over all diagonals.
 // -----------------------------------------------------------------------------
-std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A,
-                                  std::shared_ptr<vector> x) {
-    unsigned int M = A->matrix_shape[0];
-    auto y = std::make_shared<vector>(M, 0.0, 0.0);
+void spmv_device(const deviceDiaQMatrix &A, const valType *x_real, const valType *x_imag, valType *y_real,
+                 valType *y_imag, cudaStream_t stream) {
+    const unsigned int M = A.matrix_shape[0];
+    const unsigned int N = A.matrix_shape[1];
+    DIAQ_CUDA_CHECK(cudaMemsetAsync(y_real, 0, M * sizeof(valType), stream));
+    DIAQ_CUDA_CHECK(cudaMemsetAsync(y_imag, 0, M * sizeof(valType), stream));
+    const unsigned int numDiags = static_cast<unsigned int>(A.num_diags());
+    if (numDiags == 0) return;
+    const int threadsPerBlock = 256;
+    const int maxBlocks = 65535;
+    if (numDiags == 1) {
+        const unsigned int len = A.diagLens[0];
+        int blocks = static_cast<int>((len + threadsPerBlock - 1) / threadsPerBlock);
+        if (blocks > maxBlocks) blocks = maxBlocks;
+        if (blocks > 0) {
+            spmv_single_diag_kernel<<<blocks, threadsPerBlock, 0, stream>>>(
+                len, A.dIndices[0], A.diagOffsets[0], M, N, A.d_real, A.d_imag, x_real, x_imag, y_real, y_imag);
+        }
+    } else {
+        int blocks = static_cast<int>((M + threadsPerBlock - 1) / threadsPerBlock);
+        if (blocks > maxBlocks) blocks = maxBlocks;
+        spmv_row_kernel<<<blocks, threadsPerBlock, 0, stream>>>(
+            M, N, static_cast<int>(numDiags), A.d_dIndices, A.d_diagOffsets, A.d_diagLens, A.d_real, A.d_imag,
+            x_real, x_imag, y_real, y_imag);
+    }
+    DIAQ_CUDA_CHECK(cudaGetLastError());
+}
+
+// Host vectors in and out, A already on the device: copies x and y only.
+static void spmv_host_vectors(const deviceDiaQMatrix &A, const std::shared_ptr<vector> &x,
+                              const std::shared_ptr<vector> &y) {
+    const unsigned int M = A.matrix_shape[0];
+    const unsigned int N = A.matrix_shape[1];
+    if (x->numRows != N) throw std::runtime_error("spmv_cuda: dimension mismatch (x length vs A.cols)");
+    if (y->numRows != M) throw std::runtime_error("spmv_cuda: dimension mismatch (y length vs A.rows)");
+    DeviceBuffer xr(N), xi(N), yr(M), yi(M);
+    DIAQ_CUDA_CHECK(cudaMemcpy(xr.p, x->realValues, N * sizeof(valType), cudaMemcpyHostToDevice));
+    DIAQ_CUDA_CHECK(cudaMemcpy(xi.p, x->imagValues, N * sizeof(valType), cudaMemcpyHostToDevice));
+    spmv_device(A, xr.p, xi.p, yr.p, yi.p, 0);
+    DIAQ_CUDA_CHECK(cudaMemcpy(y->realValues, yr.p, M * sizeof(valType), cudaMemcpyDeviceToHost));
+    DIAQ_CUDA_CHECK(cudaMemcpy(y->imagValues, yi.p, M * sizeof(valType), cudaMemcpyDeviceToHost));
+}
+
+// y = A * x, host matrix and vectors (A is uploaded for this call; for repeated products with one A, upload it once
+// as a deviceDiaQMatrix).
+void spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x, std::shared_ptr<vector> y) {
+    if (x->numRows != A->matrix_shape[1]) throw std::runtime_error("spmv_cuda: dimension mismatch (x length vs A.cols)");
+    if (y->numRows != A->matrix_shape[0]) throw std::runtime_error("spmv_cuda: dimension mismatch (y length vs A.rows)");
+    deviceDiaQMatrix dA(A);
+    spmv_host_vectors(dA, x, y);
+}
+
+std::shared_ptr<vector> spmv_cuda(std::shared_ptr<diaQMatrix> A, std::shared_ptr<vector> x) {
+    auto y = std::make_shared<vector>(A->matrix_shape[0], 0.0, 0.0);
     spmv_cuda(A, x, y);
     return y;
 }
 
-// -----------------------------------------------------------------------------
-// Core GPU spMV: y = A * x
-// -----------------------------------------------------------------------------
-void spmv_cuda(std::shared_ptr<diaQMatrix> A,
-               std::shared_ptr<vector> x,
-               std::shared_ptr<vector> y) {
-
-    #ifdef DEBUG
-        printf("starting <spMV_gpu> --- ");
-        auto start = std::chrono::high_resolution_clock::now();
-    #endif
-
-    unsigned int M = A->matrix_shape[0];
-    unsigned int N = A->matrix_shape[1];
-
-    // Dimension checks (same as CPU semantics)
-    if (x->numRows != N) {
-        throw std::runtime_error("spmv_cuda: dimension mismatch (x length vs A.cols)");
-    }
-    if (y->numRows != M) {
-        throw std::runtime_error("spmv_cuda: dimension mismatch (y length vs A.rows)");
-    }
-
-    unsigned int numDiags = static_cast<unsigned int>(A->dIndices.size());
-    if (numDiags == 0) {
-        #ifdef DEEP_DEBUG
-            std::cout << "spmv_cuda: empty matrix, zeroing out y." << std::endl;
-        #endif
-        for (unsigned int i = 0; i < M; ++i) {
-            y->realValues[i] = 0.0;
-            y->imagValues[i] = 0.0;
-        }
-        return;
-    }
-
-    // ---------------- Host-side diagonal metadata ----------------
-    std::vector<int>          h_dIndices(numDiags);
-    std::vector<unsigned int> h_diagOffsets(numDiags);
-    std::vector<unsigned int> h_diagLens(numDiags);
-
-    for (unsigned int k = 0; k < numDiags; ++k) {
-        int d = A->dIndices[k];
-        h_dIndices[k]    = d;
-        h_diagOffsets[k] = A->diagOffsets[k];
-        h_diagLens[k]    = A->getDiagonalLengthInternal(d);
-    }
-
-    std::size_t totalLength = A->totalLength;
-
-    #ifdef DEEP_DEBUG
-        std::cout << "GPU spmv meta:" << std::endl;
-        std::cout << "  M=" << M << ", N=" << N
-                  << ", numDiags=" << numDiags
-                  << ", totalLength=" << totalLength << std::endl;
-        for (unsigned int k = 0; k < numDiags; ++k) {
-            std::cout << "  k=" << k
-                      << " d=" << h_dIndices[k]
-                      << " offset=" << h_diagOffsets[k]
-                      << " len=" << h_diagLens[k]
-                      << std::endl;
-        }
-    #endif
-
-    // ---------------- Device allocations ----------------
-    valType *d_A_real = nullptr, *d_A_imag = nullptr;
-    valType *d_x_real = nullptr, *d_x_imag = nullptr;
-    valType *d_y_real = nullptr, *d_y_imag = nullptr;
-
-    cudaMalloc(&d_A_real, totalLength * sizeof(valType));
-    cudaMalloc(&d_A_imag, totalLength * sizeof(valType));
-    cudaMemcpy(d_A_real, A->realData,
-               totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_A_imag, A->imagData,
-               totalLength * sizeof(valType), cudaMemcpyHostToDevice);
-
-    cudaMalloc(&d_x_real, N * sizeof(valType));
-    cudaMalloc(&d_x_imag, N * sizeof(valType));
-    cudaMemcpy(d_x_real, x->realValues,
-               N * sizeof(valType), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_x_imag, x->imagValues,
-               N * sizeof(valType), cudaMemcpyHostToDevice);
-
-    cudaMalloc(&d_y_real, M * sizeof(valType));
-    cudaMalloc(&d_y_imag, M * sizeof(valType));
-    cudaMemset(d_y_real, 0, M * sizeof(valType));
-    cudaMemset(d_y_imag, 0, M * sizeof(valType));
-
-    #ifdef DEEP_DEBUG
-        std::cout << "Host A_real: ";
-        for (size_t i = 0; i < totalLength; ++i) std::cout << A->realData[i] << " ";
-        std::cout << std::endl;
-        std::cout << "Host A_imag: ";
-        for (size_t i = 0; i < totalLength; ++i) std::cout << A->imagData[i] << " ";
-        std::cout << std::endl;
-        std::cout << "Host x_real: ";
-        for (size_t i = 0; i < N; ++i) std::cout << x->realValues[i] << " ";
-        std::cout << std::endl;
-        std::cout << "Host x_imag: ";
-        for (size_t i = 0; i < N; ++i) std::cout << x->imagValues[i] << " ";
-        std::cout << std::endl;
-    #endif
-
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        std::cerr << "CUDA error after allocation/copy: " << cudaGetErrorString(err) << std::endl;
-    }
-    int threadsPerBlock = 256;
-    int maxBlocks       = 65535;
-
-    // -----------------------------------------------------------------
-    // SPECIAL CASE: single diagonal -> vector * shifted-vector
-    // -----------------------------------------------------------------
-    if (numDiags == 1) {
-        int          d     = h_dIndices[0];
-        unsigned int off   = h_diagOffsets[0];
-        unsigned int len   = h_diagLens[0];
-
-        int blocks = (static_cast<int>(len) + threadsPerBlock - 1) / threadsPerBlock;
-        if (blocks > maxBlocks) blocks = maxBlocks;
-
-        spmv_single_diag_kernel<<<blocks, threadsPerBlock>>>(
-            len,
-            d,
-            off,
-            M,
-            N,
-            d_A_real,
-            d_A_imag,
-            d_x_real,
-            d_x_imag,
-            d_y_real,
-            d_y_imag
-        );
-        cudaDeviceSynchronize();
-        err = cudaGetLastError();
-        if (err != cudaSuccess) {
-            std::cerr << "CUDA error after kernel: " << cudaGetErrorString(err) << std::endl;
-        }
-        #ifdef DEEP_DEBUG
-            std::vector<valType> debug_y_real(M), debug_y_imag(M);
-            cudaMemcpy(debug_y_real.data(), d_y_real, M * sizeof(valType), cudaMemcpyDeviceToHost);
-            cudaMemcpy(debug_y_imag.data(), d_y_imag, M * sizeof(valType), cudaMemcpyDeviceToHost);
-            std::cout << "Device y_real: ";
-            for (size_t i = 0; i < M; ++i) std::cout << debug_y_real[i] << " ";
-            std::cout << std::endl;
-            std::cout << "Device y_imag: ";
-            for (size_t i = 0; i < M; ++i) std::cout << debug_y_imag[i] << " ";
-            std::cout << std::endl;
-        #endif
-    }
-    // -----------------------------------------------------------------
-    // GENERAL CASE: multiple diagonals -> row-based kernel
-    // -----------------------------------------------------------------
-    else {
-        int          *d_dIndices    = nullptr;
-        unsigned int *d_diagOffsets = nullptr;
-        unsigned int *d_diagLens    = nullptr;
-
-        cudaMalloc(&d_dIndices,    numDiags * sizeof(int));
-        cudaMalloc(&d_diagOffsets, numDiags * sizeof(unsigned int));
-        cudaMalloc(&d_diagLens,    numDiags * sizeof(unsigned int));
-
-        cudaMemcpy(d_dIndices, h_dIndices.data(),
-                   numDiags * sizeof(int), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_diagOffsets, h_diagOffsets.data(),
-                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice);
-        cudaMemcpy(d_diagLens, h_diagLens.data(),
-                   numDiags * sizeof(unsigned int), cudaMemcpyHostToDevice);
-
-        int blocks = (static_cast<int>(M) + threadsPerBlock - 1) / threadsPerBlock;
-        if (blocks > maxBlocks) blocks = maxBlocks;
-
-        spmv_row_kernel<<<blocks, threadsPerBlock>>>(
-            M,
-            N,
-            static_cast<int>(numDiags),
-            d_dIndices,
-            d_diagOffsets,
-            d_diagLens,
-            d_A_real,
-            d_A_imag,
-            d_x_real,
-            d_x_imag,
-            d_y_real,
-            d_y_imag
-        );
-        cudaDeviceSynchronize();
-
-        cudaFree(d_dIndices);
-        cudaFree(d_diagOffsets);
-        cudaFree(d_diagLens);
-    }
-
-    // ---------------- Copy result back ----------------
-    cudaMemcpy(y->realValues, d_y_real,
-               M * sizeof(valType), cudaMemcpyDeviceToHost);
-    cudaMemcpy(y->imagValues, d_y_imag,
-               M * sizeof(valType), cudaMemcpyDeviceToHost);
-
-    // ---------------- Cleanup ----------------
-    cudaFree(d_A_real);
-    cudaFree(d_A_imag);
-    cudaFree(d_x_real);
-    cudaFree(d_x_imag);
-    cudaFree(d_y_real);
-    cudaFree(d_y_imag);
-
-    #ifdef DEBUG
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        printf("spMV_gpu completed in %.3f ms\n", duration / 1000.0);
-    #endif
+std::shared_ptr<vector> spmv_cuda(const std::shared_ptr<deviceDiaQMatrix> &A, std::shared_ptr<vector> x) {
+    auto y = std::make_shared<vector>(A->matrix_shape[0], 0.0, 0.0);
+    spmv_host_vectors(*A, x, y);
+    return y;
 }
 
 } // namespace diaq

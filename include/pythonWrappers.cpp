@@ -16,6 +16,18 @@ std::string version() {
     return DIAQ_VERSION;
 }
 
+// A matrix shape from Python: exactly two entries. (The bindings copied the buffer into a 2-element array without
+// checking its length, so a longer shape overwrote the stack.)
+static std::array<unsigned int, 2> shape_pair(py::array_t<unsigned int> shape) {
+    py::buffer_info info = shape.request();
+    if (info.size != 2) {
+        throw std::invalid_argument("matrix_reshape: the new matrix shape needs exactly 2 entries");
+    }
+    std::array<unsigned int, 2> out;
+    std::memcpy(out.data(), info.ptr, 2 * sizeof(unsigned int));
+    return out;
+}
+
 #ifdef CUDA_ENABLED
     PYBIND11_MODULE(diaq_gpu, m)
 #else
@@ -52,10 +64,9 @@ std::string version() {
         .def("set_at_diag", &diaq::diaQMatrix::set_at_diag, py::return_value_policy::automatic)
         .def("copy", &diaq::diaQMatrix::copy, py::return_value_policy::automatic)
         .def("matrix_reshape", [](std::shared_ptr<diaq::diaQMatrix> self, py::array_t<unsigned int> shape) {
-            py::buffer_info shape_info = shape.request();
-            std::array<unsigned int, 2> shape_ptr;
-            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
-            return self->matrix_reshape(shape_ptr);
+            // in place; returns the matrix itself so that the call can be chained (it returned None)
+            self->matrix_reshape(shape_pair(shape));
+            return self;
         }, py::arg(), py::return_value_policy::automatic)
         .def("transpose", [](std::shared_ptr<diaq::diaQMatrix> self, std::vector<unsigned int> new_order) { return self->transpose(new_order); }, py::arg(), py::return_value_policy::automatic)
         .def("getItem", static_cast<std::complex<diaq::valType> (diaq::diaQMatrix::*)(unsigned int) const>(&diaq::diaQMatrix::getItem), py::return_value_policy::automatic)
@@ -216,6 +227,30 @@ std::string version() {
         py::return_value_policy::automatic
         );
     
+        // when the DIA format is worth it (storage and diagonal budgets; see src/dia_viability.hpp)
+        m.def(
+            "dia_viability",
+            [](std::int64_t n_rows, std::int64_t n_cols, std::int64_t n_diags, std::int64_t nnz, std::int64_t n_right,
+               int itemsize, int index_bytes) {
+                const diaq::DiaViability v = diaq::dia_viability(n_rows, n_cols, n_diags, nnz, n_right, itemsize,
+                                                                 index_bytes);
+                py::dict d;
+                d["viable"] = v.viable;
+                d["storage_ok"] = v.storage_ok;
+                d["diagonals_ok"] = v.diagonals_ok;
+                d["dia_bytes"] = v.dia_bytes;
+                d["csr_bytes"] = v.csr_bytes;
+                d["density"] = v.density;
+                d["diagonal_budget"] = v.diagonal_budget;
+                d["reason"] = v.reason;
+                return d;
+            },
+            py::arg("n_rows"), py::arg("n_cols"), py::arg("n_diags"), py::arg("nnz"), py::arg("n_right"),
+            py::arg("itemsize") = 16, py::arg("index_bytes") = 8,
+            "Whether a matrix with n_diags stored diagonals and nnz nonzeros should be multiplied by a dense matrix "
+            "with n_right columns in DIA format: DIA bytes <= 0.9 x CSR bytes, and n_diags <= max(16, n_rows / 32) "
+            "(8 when n_right >= 32).");
+
         // kernel functions
         m.def("product", &diaq::product, py::return_value_policy::automatic);
         m.def("denseProduct", &diaq::denseProduct, py::return_value_policy::automatic);
@@ -225,10 +260,7 @@ std::string version() {
         m.def(
         "matrix_reshape",
         [](std::shared_ptr<diaq::diaQMatrix> A, py::array_t<unsigned int> shape) {
-            py::buffer_info shape_info = shape.request();
-            std::array<unsigned int, 2> shape_ptr;
-            std::memcpy(shape_ptr.data(), shape_info.ptr, shape_info.size * sizeof(unsigned int));
-            return diaq::matrix_reshape(A, shape_ptr);
+            return diaq::matrix_reshape(A, shape_pair(shape));
         },
         py::arg(),
         py::arg(),
@@ -555,6 +587,50 @@ std::string version() {
     );
 
     #ifdef CUDA_ENABLED
+        // diaQ matrices kept in GPU memory: upload once, then products without copying the matrix again
+        py::class_<diaq::deviceDiaQMatrix, std::shared_ptr<diaq::deviceDiaQMatrix>>(m, "DeviceMatrix",
+            "A diaQMatrix in GPU memory (uploaded once). spMV(DeviceMatrix, vector) copies only the vectors; "
+            "product(DeviceMatrix, DeviceMatrix) returns a DeviceMatrix without leaving the GPU; to_host() downloads.")
+            .def(py::init<const std::shared_ptr<diaq::diaQMatrix> &>(), py::arg("A"))
+            .def("to_host", &diaq::deviceDiaQMatrix::to_host)
+            .def("copy", &diaq::deviceDiaQMatrix::copy)
+            .def_property_readonly("shape", [](const diaq::deviceDiaQMatrix &d) { return d.matrix_shape; })
+            .def_property_readonly("num_diags", &diaq::deviceDiaQMatrix::num_diags)
+            .def_property_readonly("diagonals", [](const diaq::deviceDiaQMatrix &d) { return d.dIndices; });
+        m.def("to_device", [](std::shared_ptr<diaq::diaQMatrix> A) { return std::make_shared<diaq::deviceDiaQMatrix>(A); },
+              py::arg("A"), "Upload a diaQMatrix to the GPU (a DeviceMatrix).");
+        m.def("spMV", [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::shared_ptr<diaq::vector> x) {
+                  return diaq::spmv_cuda(A, x);
+              }, py::arg(), py::arg(), py::return_value_policy::automatic);
+        m.def("product", [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::shared_ptr<diaq::deviceDiaQMatrix> B) {
+                  return diaq::product_device(*A, *B);
+              }, py::arg(), py::arg(), py::return_value_policy::automatic);
+        m.def(
+            "spmv_device",
+            [](std::shared_ptr<diaq::deviceDiaQMatrix> A, std::uintptr_t x_real, std::uintptr_t x_imag,
+               std::uintptr_t y_real, std::uintptr_t y_imag, std::uintptr_t stream) {
+                diaq::spmv_device(*A, reinterpret_cast<const diaq::valType *>(x_real),
+                                  reinterpret_cast<const diaq::valType *>(x_imag),
+                                  reinterpret_cast<diaq::valType *>(y_real), reinterpret_cast<diaq::valType *>(y_imag),
+                                  reinterpret_cast<cudaStream_t>(stream));
+            },
+            py::arg("A"), py::arg("x_real"), py::arg("x_imag"), py::arg("y_real"), py::arg("y_imag"),
+            py::arg("stream") = 0,
+            "y = A x with x, y as GPU arrays of float64 (real and imaginary parts, e.g. torch data pointers); "
+            "y is overwritten; asynchronous on `stream`.");
+
+        // DIA x dense on arrays already on the GPU (torch / cupy data pointers), no host copies.
+        m.def(
+            "spmm_dia_device",
+            [](std::uintptr_t offsets, std::uintptr_t vals, int n_diags, int64_t n_rows, int64_t n_cols,
+               std::uintptr_t B, int64_t n_right, std::uintptr_t C, bool is_complex, std::uintptr_t stream) {
+                diaq::spmm_dia_device(offsets, vals, n_diags, n_rows, n_cols, B, n_right, C, is_complex, stream);
+            },
+            py::arg("offsets"), py::arg("vals"), py::arg("n_diags"), py::arg("n_rows"), py::arg("n_cols"),
+            py::arg("B"), py::arg("n_right"), py::arg("C"), py::arg("is_complex"), py::arg("stream") = 0,
+            "C = A * B, A in row-aligned DIA format (offsets int64[n_diags], vals[n_diags * n_rows]); B (n_cols x "
+            "n_right) and C (n_rows x n_right) row-major; double or complex double; all pointers on the GPU."
+        );
         m.def(
             "hamiltonian_simulation_cuda",
             [](std::shared_ptr<diaq::diaQMatrix> H,
