@@ -317,6 +317,8 @@ set(CUDA_SOURCES
   ${SRC_DIR}/spME_gpu.cu # dont know if I can write an end to end spME-GPU, this one just accelerates parts of it!
   ${SRC_DIR}/spPow_gpu.cu # same as above one!
   ${SRC_DIR}/spHamSim_gpu_all_fused.cu # specialized kernel for Hamiltonian end to end on GPU!!
+  ${SRC_DIR}/spMM_device_gpu.cu # DIA x dense on device pointers (no host copies), for SCOPE
+  ${SRC_DIR}/deviceMatrix_gpu.cu # diaQ matrices kept in GPU memory (upload once, products on the device)
 )
 
 # ===== Core library target =====
@@ -330,6 +332,9 @@ if(CUDA_ENABLED)
   message(STATUS "${BoldGreen}>>> CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}${Reset}")
 
   add_library(diaq_core SHARED ${SOURCES} ${CUDA_SOURCES})
+  # the GPU build's library gets its own file name, so that installing the CPU and the GPU modules side by side does
+  # not overwrite one libdiaq_core.so with the other
+  set_target_properties(diaq_core PROPERTIES OUTPUT_NAME diaq_core_gpu)
   set_target_properties(diaq_core PROPERTIES
     CUDA_STANDARD 17
     CUDA_STANDARD_REQUIRED ON
@@ -521,7 +526,7 @@ if(BUILD_PYTHON)
   else()
     set_target_properties(${PY_MODULE_NAME} PROPERTIES
       BUILD_RPATH   "${LIBRARY_OUTPUT_PATH}"
-      INSTALL_RPATH "\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"
+      INSTALL_RPATH "\$ORIGIN;\$ORIGIN/../lib;${LIBRARY_OUTPUT_PATH}"  # $ORIGIN: the core library installed next to it
     )
   endif()
 

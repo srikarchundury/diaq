@@ -7,21 +7,23 @@
 namespace diaq {
 
 std::complex<valType> trace(std::shared_ptr<diaQMatrix> A) {
-    std::complex<valType> t = 0;
-    // iterate over diagonal Index 0 only
+    // the sum of diagonal 0. (Every thread added into one shared complex number without synchronisation, so
+    // updates were lost: wrong traces at random. Now an OpenMP reduction over the real and imaginary parts.)
+    valType re = 0.0, im = 0.0;
     for (size_t d = 0; d < A->dIndices.size(); ++d) {
         if (A->dIndices[d] == 0) {
-            unsigned int len = A->getDiagonalLengthInternal(0);
-            valType* realA = A->realData + A->diagOffsets[d];
-            valType* imagA = A->imagData + A->diagOffsets[d];
-            #pragma omp parallel for shared(t)
-            for (unsigned int i = 0; i < len; i++) {
-                t += std::complex<valType>(realA[i], imagA[i]);
+            const long long len = A->getDiagonalLengthInternal(0);
+            const valType* realA = A->realData + A->diagOffsets[d];
+            const valType* imagA = A->imagData + A->diagOffsets[d];
+            #pragma omp parallel for reduction(+:re, im)
+            for (long long i = 0; i < len; i++) {
+                re += realA[i];
+                im += imagA[i];
             }
             break;
         }
     }
-    return t;
+    return std::complex<valType>(re, im);
 }
 
 std::vector<unsigned int> newTensorShape(std::vector<unsigned int> tensor_shape_A, std::vector<unsigned int> tensor_shape_B, std::vector<unsigned int> axis_A, std::vector<unsigned int> axis_B) {

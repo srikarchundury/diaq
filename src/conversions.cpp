@@ -1,3 +1,5 @@
+#include "dense_to_diagonals.hpp"
+#include <algorithm>
 #include "conversions.hpp"
 
 #ifdef CUDA_ENABLED
@@ -21,6 +23,12 @@ std::shared_ptr<denseMatrix> diaQMatrix::convertToDenseMatrix(std::array<unsigne
     #else
         real_data = aligned_alloc_helper(nRows * nCols * sizeof(valType));
         imag_data = aligned_alloc_helper(nRows * nCols * sizeof(valType));
+        // aligned_alloc does not zero, and only the stored diagonals are written below
+        #pragma omp parallel for
+        for (size_t i = 0; i < (size_t)nRows * nCols; i++) {
+            real_data[i] = 0.0;
+            imag_data[i] = 0.0;
+        }
     #endif
 
     // Fill dense matrix from diagonals
@@ -52,60 +60,10 @@ std::shared_ptr<diaQMatrix> denseMatrix::convertToDiaQ(std::array<unsigned int, 
 #ifdef CUDA_ENABLED
     return convertToDiaQ_cuda(shared_from_this(), new_shape);
 #else
-    // Collect all possible diagonal indices for the matrix
-    std::vector<int> diag_indices;
-    int min_diag = -static_cast<int>(new_shape[0]) + 1;
-    int max_diag = static_cast<int>(new_shape[1]) - 1;
-    // Fastest: sequential diagonal order
-    std::vector<int> diag_order;
-    for (int d = min_diag; d <= max_diag; ++d) {
-        diag_order.push_back(d);
-    }
-    std::vector<int> nonzero_diags;
-    std::vector<std::vector<valType>> real_diags;
-    std::vector<std::vector<valType>> imag_diags;
-    #pragma omp parallel for schedule(static)
-    for (size_t idx = 0; idx < diag_order.size(); ++idx) {
-        int d = diag_order[idx];
-        unsigned int len = diaq::getDiagonalLength(d, new_shape);
-        std::vector<valType> real_diag(len, 0.0);
-        std::vector<valType> imag_diag(len, 0.0);
-        bool all_zero = true;
-        for (unsigned int j = 0; j < len; ++j) {
-            std::array<unsigned int, 2> mat_pos = diaQMatrix(new_shape, std::vector<int>{d}).getMatrixPosition(d, j);
-            unsigned int fi = mat_pos[0] * new_shape[1] + mat_pos[1];
-            real_diag[j] = realData[fi];
-            imag_diag[j] = imagData[fi];
-            if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
-                all_zero = false;
-            }
-        }
-        #pragma omp critical
-        {
-            if (!all_zero) {
-                nonzero_diags.push_back(d);
-                real_diags.push_back(real_diag);
-                imag_diags.push_back(imag_diag);
-            }
-        }
-    }
-    std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(new_shape, nonzero_diags, shape);
-
-    // Fill only nonzero diagonals (parallelized)
-    #pragma omp parallel for schedule(static)
-    for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
-        int d = nonzero_diags[idx];
-        unsigned int len = qm->getDiagonalLength(d);
-        int slot = qm->findDiagonalSlot(d);
-        if (slot < 0) continue;
-        unsigned int offset = qm->diagOffsets[slot];
-        for (unsigned int j = 0; j < len; ++j) {
-            qm->realData[offset + j] = real_diags[idx][j];
-            qm->imagData[offset + j] = imag_diags[idx][j];
-        }
-    }
-    qm->shape = shape;
-    return qm;
+    const valType *re = realData, *im = imagData;
+    return diagonals_from_dense(new_shape, shape, [re, im](long long i) {
+        return std::complex<valType>(re[i], im[i]);
+    });
 #endif
 }
 
@@ -202,56 +160,9 @@ std::shared_ptr<diaQMatrix> from_numpy(std::complex<valType> *vals, std::vector<
         return d->convertToDiaQ(new_shape);
 
     }  else { // matrix!
-        // Collect only nonzero diagonals
-        int min_diag = -static_cast<int>(shape[0]) + 1;
-        int max_diag = static_cast<int>(shape[1]) - 1;
-        // Fastest: sequential diagonal order
-        std::vector<int> diag_order;
-        for (int d = min_diag; d <= max_diag; ++d) {
-            diag_order.push_back(d);
-        }
-        std::vector<int> nonzero_diags;
-        std::vector<std::vector<valType>> real_diags;
-        std::vector<std::vector<valType>> imag_diags;
-        #pragma omp parallel for schedule(static)
-        for (size_t idx = 0; idx < diag_order.size(); ++idx) {
-            int d = diag_order[idx];
-            unsigned int len = diaq::getDiagonalLength(d, std::array<unsigned int,2>{shape[0], shape[1]});
-            std::vector<valType> real_diag(len, 0.0);
-            std::vector<valType> imag_diag(len, 0.0);
-            bool all_zero = true;
-            for (unsigned int j = 0; j < len; ++j) {
-                std::array<unsigned int, 2> mat_pos = diaQMatrix(std::array<unsigned int,2>{shape[0], shape[1]}, std::vector<int>{d}).getMatrixPosition(d, j);
-                unsigned int fi = mat_pos[0] * shape[1] + mat_pos[1];
-                real_diag[j] = vals[fi].real();
-                imag_diag[j] = vals[fi].imag();
-                if (real_diag[j] != 0.0 || imag_diag[j] != 0.0) {
-                    all_zero = false;
-                }
-            }
-            #pragma omp critical
-            {
-                if (!all_zero) {
-                    nonzero_diags.push_back(d);
-                    real_diags.push_back(real_diag);
-                    imag_diags.push_back(imag_diag);
-                }
-            }
-        }
-        std::shared_ptr<diaQMatrix> qm = std::make_shared<diaQMatrix>(std::array<unsigned int,2>{shape[0], shape[1]}, nonzero_diags, shape);
-        // Fill only nonzero diagonals (parallelized)
-        #pragma omp parallel for schedule(static)
-        for (size_t idx = 0; idx < nonzero_diags.size(); ++idx) {
-            int d = nonzero_diags[idx];
-            unsigned int len = qm->getDiagonalLength(d);
-            int slot = qm->findDiagonalSlot(d);
-            if (slot < 0) continue;
-            unsigned int offset = qm->diagOffsets[slot];
-            for (unsigned int j = 0; j < len; ++j) {
-                qm->realData[offset + j] = real_diags[idx][j];
-                qm->imagData[offset + j] = imag_diags[idx][j];
-            }
-        }
+        std::shared_ptr<diaQMatrix> qm = diagonals_from_dense(
+            std::array<unsigned int, 2>{shape[0], shape[1]}, shape,
+            [vals](long long i) { return vals[i]; });
 
 #ifdef DEEP_DEBUG
         std::cout << "from_numpy result below: " << std::endl;

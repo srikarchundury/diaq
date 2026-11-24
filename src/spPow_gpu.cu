@@ -1,5 +1,6 @@
 #include "matrixKernels_gpu.hpp"
 #include "matrixKernels.hpp"
+#include "deviceMatrix_gpu.hpp"
 
 namespace diaq {
 
@@ -27,30 +28,31 @@ std::shared_ptr<diaQMatrix> pow_cuda(std::shared_ptr<diaQMatrix> A, int n) {
 	if (e == 0) return std::make_shared<identityMatrix>(A->matrix_shape[0]);
 	if (e == 1) return A->copy(); // protect input
 
-	// Protect input once
-	std::shared_ptr<diaQMatrix> base = A->copy();
+	// The chain of products stays on the device: A is uploaded once and only the result comes back (product_cuda
+	// would copy both operands up and the product down at every step).
+	std::shared_ptr<deviceDiaQMatrix> base = std::make_shared<deviceDiaQMatrix>(A);
 
 	if (is_power_of_two_u64(e)) {
 		int s = ctz_u64(e);
 		for (int i = 0; i < s; ++i) {
-			base = product_cuda(base, base);
+			base = product_device(*base, *base);
 		}
-		return base;
+		return base->to_host();
 	}
 
-	std::shared_ptr<diaQMatrix> result = std::make_shared<identityMatrix>(A->matrix_shape[0]);
+	std::shared_ptr<deviceDiaQMatrix> result;  // starts as the first odd power of A (instead of I times A)
 
 	while (e > 0) {
 		if (e & 1ULL) {
-			result = product_cuda(result, base);
+			result = result ? product_device(*result, *base) : base->copy();
 		}
 		e >>= 1ULL;
 		if (e) {
-			base = product_cuda(base, base);
+			base = product_device(*base, *base);
 		}
 	}
 
-	return result;
+	return result->to_host();
 }
 
 } // namespace diaq

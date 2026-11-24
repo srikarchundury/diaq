@@ -1,4 +1,5 @@
 #include "matrixKernels.hpp"
+#include <unordered_map>
 
 namespace diaq {
     std::shared_ptr<diaQMatrix> adjoint(std::shared_ptr<diaQMatrix> A, bool swap_tensor_shape) {
@@ -28,34 +29,20 @@ namespace diaq {
         std::shared_ptr<diaQMatrix> B =
             std::make_shared<diaQMatrix>(new_mat_shape, new_dIndices, new_tensor_shape);
 
-        #pragma omp parallel for
+        // B was built with -d at the same slot k as d in A, and element pos of diagonal d of A, (r, c), lands at
+        // (c, r) of B, which is element pos of diagonal -d: a conjugated copy per diagonal. (This looked up the slot
+        // of -d by a linear search and recomputed matrix and diagonal positions for every element.)
+        #pragma omp parallel for schedule(dynamic)
         for (size_t k = 0; k < A->dIndices.size(); ++k) {
-            int d = A->dIndices[k];
-            unsigned int lenA = A->getDiagonalLengthInternal(d);
-            unsigned int offA = A->diagOffsets[k];
-
-            // Slot in B for diagonal -d (should exist)
-            int bslot = B->findDiagonalSlot(-d);
-            if (bslot < 0) continue;
-            unsigned int offB = B->diagOffsets[(size_t)bslot];
-
+            const unsigned int lenA = A->getDiagonalLengthInternal(A->dIndices[k]);
+            const valType *ar = A->realData + A->diagOffsets[k];
+            const valType *ai = A->imagData + A->diagOffsets[k];
+            valType *br = B->realData + B->diagOffsets[k];
+            valType *bi = B->imagData + B->diagOffsets[k];
+            #pragma omp simd
             for (unsigned int pos = 0; pos < lenA; ++pos) {
-                // A position (r,c)
-                std::array<unsigned int, 2> rc = A->getMatrixPosition(d, pos);
-                unsigned int r = rc[0];
-                unsigned int c = rc[1];
-
-                // In B, position becomes (c,r). Find its diagonal position (d',pos')
-                std::array<int, 2> dposB = B->getDiagonalPosition(c, r);
-                // dposB[0] should be -d
-                unsigned int posB = (unsigned int)dposB[1];
-
-                valType ar = A->realData[offA + pos];
-                valType ai = A->imagData[offA + pos];
-
-                // Conjugate: (ar + i ai)^* = ar - i ai
-                B->realData[offB + posB] = ar;
-                B->imagData[offB + posB] = -ai;
+                br[pos] = ar[pos];
+                bi[pos] = -ai[pos];
             }
         }
 
@@ -106,10 +93,15 @@ namespace diaq {
             return;
         }
 
+        // slot of every diagonal index, built once (findDiagonalSlot is a linear search: O(D^2) for D diagonals)
+        std::unordered_map<int, int> slot_of;
+        slot_of.reserve(A->dIndices.size());
+        for (size_t k = 0; k < A->dIndices.size(); ++k) slot_of[A->dIndices[k]] = static_cast<int>(k);
+
         // Check closure under negation: for every d, -d must exist
         bool closed = true;
         for (int d : A->dIndices) {
-            if (A->findDiagonalSlot(-d) < 0) {
+            if (slot_of.find(-d) == slot_of.end()) {
                 closed = false;
                 break;
             }
@@ -141,8 +133,9 @@ namespace diaq {
             if (done[k]) continue;
 
             int d = A->dIndices[k];
-            int k2 = A->findDiagonalSlot(-d);
-            if (k2 < 0) continue; // should not happen due to closed check
+            auto it2 = slot_of.find(-d);
+            if (it2 == slot_of.end()) continue; // should not happen due to closed check
+            int k2 = it2->second;
 
             done[k] = 1;
             done[(size_t)k2] = 1;

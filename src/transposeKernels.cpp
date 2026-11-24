@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "matrixKernels.hpp"
 #ifdef CUDA_ENABLED
     #include "conversions_gpu.hpp"
@@ -32,14 +33,16 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     // }
     // std::cout << new_order[new_order.size()-1] << ")" << std::endl;
 
-    // tranpose of the diagonals
-    if(A->shape.size() == 2) {
-        // just change order of dIndices so that x points to -x. without touching realData and imagData, inplace!
+    // matrix transpose: diagonal d of an R x C matrix is diagonal -d of the C x R transpose, element by element
+    // (this case built the result and then fell through to the general path below)
+    if (A->shape.size() == 2 && (new_order.empty() || (new_order.size() == 2 && new_order[0] == 1 && new_order[1] == 0))) {
         std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(*A);
-        #pragma omp parallel for
-        for(size_t d = 0; d < A->dIndices.size(); d++) {
+        for (size_t d = 0; d < A->dIndices.size(); d++) {
             res->dIndices[d] = -A->dIndices[d];
         }
+        std::swap(res->matrix_shape[0], res->matrix_shape[1]);
+        res->shape = {A->shape[1], A->shape[0]};
+        return res;
     }
     // otherwise, we have to do a lot of work
     // shape of result
@@ -66,36 +69,41 @@ std::shared_ptr<diaQMatrix> transpose(std::shared_ptr<diaQMatrix> A, std::vector
     }
     // std::cout << "new_shape = " << new_shape[0] << "," << new_shape[1] << std::endl;
     // res matrix/tensor
-    std::vector<int> temp_dIndices;
-    std::vector<unsigned int> temp_diagLens;
-    std::vector<valType> temp_realData;
-    std::vector<valType> temp_imagData;
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(new_shape);
-    #pragma omp parallel for
+    // Every stored nonzero moves to its permuted tensor position, i.e. to the row-major flat index of that position
+    // in the new tensor shape, laid out as a new_shape matrix. Previously the nonzeros were collected with push_back
+    // from an OpenMP parallel loop (a data race), the new position was taken from a 2-D shape for a tensor of any
+    // rank, and each nonzero was kept as one "diagonal" entry without its position along the diagonal.
+    struct Entry { int diag; unsigned int pos; valType re, im; };
+    std::vector<Entry> entries;
+    const unsigned long long cols = new_shape[1];
     for (size_t d = 0; d < A->dIndices.size(); ++d) {
-        int dIdx = A->dIndices[d];
-        unsigned int len = A->getDiagonalLengthInternal(dIdx);
-        valType* realA = A->realData + A->diagOffsets[d];
-        valType* imagA = A->imagData + A->diagOffsets[d];
+        const int dIdx = A->dIndices[d];
+        const unsigned int len = A->getDiagonalLengthInternal(dIdx);
+        const valType* realA = A->realData + A->diagOffsets[d];
+        const valType* imagA = A->imagData + A->diagOffsets[d];
         for (unsigned int i = 0; i < len; i++) {
-            std::vector<unsigned int> ten_pos = A->getTensorPosition(dIdx, i);
-            std::vector<unsigned int> new_ten_pos(new_order.size(), 1);
-            for(unsigned int j=0; j < new_order.size(); j++) {
-                new_ten_pos[j] = ten_pos[new_order[j]];
+            if (realA[i] == 0.0 && imagA[i] == 0.0) continue;
+            const std::vector<unsigned int> ten_pos = A->getTensorPosition(dIdx, i);
+            unsigned long long flat = 0;
+            for (unsigned int j = 0; j < l; j++) {
+                flat = flat * new_tensor_shape[j] + ten_pos[new_order[j]];
             }
-            std::array<int, 2> d_pos = res->getDiagonalPosition(new_ten_pos);
-            unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
-            if(realA[i] != 0.0 || imagA[i] != 0.0) {
-                temp_dIndices.push_back(d_pos[0]);
-                temp_diagLens.push_back(d_len);
-                temp_realData.push_back(realA[i]);
-                temp_imagData.push_back(imagA[i]);
-            }
+            const unsigned long long r = flat / cols, c = flat % cols;
+            const int diag = static_cast<int>(static_cast<long long>(c) - static_cast<long long>(r));
+            entries.push_back({diag, static_cast<unsigned int>(diag >= 0 ? r : c), realA[i], imagA[i]});
         }
     }
-    // After loop: construct result using available API
-    res = std::make_shared<diaQMatrix>(new_shape, temp_dIndices);
-    res->setContiguousData(temp_realData, temp_imagData);
+    std::vector<int> diags;
+    diags.reserve(entries.size());
+    for (const Entry& e : entries) diags.push_back(e.diag);
+    std::sort(diags.begin(), diags.end());
+    diags.erase(std::unique(diags.begin(), diags.end()), diags.end());
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(new_shape, diags, new_tensor_shape);
+    for (const Entry& e : entries) {
+        const size_t slot = static_cast<size_t>(std::lower_bound(diags.begin(), diags.end(), e.diag) - diags.begin());
+        res->realData[res->diagOffsets[slot] + e.pos] = e.re;
+        res->imagData[res->diagOffsets[slot] + e.pos] = e.im;
+    }
     return res;
 }
 

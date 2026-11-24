@@ -20,6 +20,11 @@ class denseMatrix : public std::enable_shared_from_this<denseMatrix> {
             #else
                 realData = aligned_alloc_helper(size * sizeof(valType));
                 imagData = aligned_alloc_helper(size * sizeof(valType));
+                #pragma omp parallel for
+                for(unsigned int i = 0; i < size; i++) {
+                    realData[i] = 0.0;
+                    imagData[i] = 0.0;
+                }
             #endif
 
             matrix_shape[0] = s;

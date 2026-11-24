@@ -1,3 +1,4 @@
+#include <map>
 // diaQspGEMM.cpp
 #include "matrixKernels.hpp"
 #ifdef CUDA_ENABLED
@@ -345,28 +346,25 @@ std::shared_ptr<diaQMatrix> product(std::shared_ptr<diaQMatrix> A,
         std::vector<int> resDiagIndices;
         std::vector< std::vector< std::pair<int,int> > > resSources;
 
-        int minResIdx = -(int)res_dims[0] + 1;
-        int maxResIdx =  (int)res_dims[1] - 1;
-
-        int res_idx;
-        for (res_idx = minResIdx; res_idx <= maxResIdx; ++res_idx) {
-            std::vector< std::pair<int,int> > sources_here;
-
-            for (int sA = 0; sA < A->dIndices.size(); ++sA) {
-                int dA = A->dIndices[sA];
-                int dB = res_idx - dA;
-
-                std::unordered_map<int, unsigned int>::iterator itB = BIndexToSlot.find(dB);
-                if (itB != BIndexToSlot.end()) {
-                    // Store diagonal indices, we will map them to slots later
-                    std::pair<int,int> pairAB(dA, dB);
-                    sources_here.push_back(pairAB);
+        // Every pair (dA, dB) contributes to dC = dA + dB: enumerate the pairs, O(numA * numB), instead of
+        // scanning every possible result diagonal against A's diagonals, O((rows + cols) * numA) hash lookups.
+        // Same result diagonals (ascending) and, within one, the pairs in the order of A's diagonals, as before.
+        {
+            const int minResIdx = -(int)res_dims[0] + 1;
+            const int maxResIdx =  (int)res_dims[1] - 1;
+            std::map<int, std::vector< std::pair<int,int> > > byResult;
+            for (size_t sA = 0; sA < A->dIndices.size(); ++sA) {
+                const int dA = A->dIndices[sA];
+                for (size_t sB = 0; sB < B->dIndices.size(); ++sB) {
+                    const int dB = B->dIndices[sB];
+                    const int dC = dA + dB;
+                    if (dC < minResIdx || dC > maxResIdx) continue;
+                    byResult[dC].emplace_back(dA, dB);
                 }
             }
-
-            if (!sources_here.empty()) {
-                resDiagIndices.push_back(res_idx);
-                resSources.push_back(sources_here);
+            for (auto &entry : byResult) {
+                resDiagIndices.push_back(entry.first);
+                resSources.push_back(std::move(entry.second));
             }
         }
 

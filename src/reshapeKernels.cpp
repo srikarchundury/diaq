@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <stdexcept>
 #include "matrixKernels.hpp"
 #ifdef CUDA_ENABLED
     #include "conversions_gpu.hpp"
@@ -23,34 +25,45 @@ std::shared_ptr<diaQMatrix> matrix_reshape(std::shared_ptr<diaQMatrix> A, std::a
         std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     #endif
 
-    // this is matrix_reshape.
-    // printf("diaq/matrix_reshape called with newshape (%ld, %ld)\n", matrix_shape[0], matrix_shape[1]);
-    std::vector<int> temp_dIndices;
-    std::vector<unsigned int> temp_diagLens;
-    std::vector<valType> temp_realData;
-    std::vector<valType> temp_imagData;
-    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape);
-    #pragma omp parallel for
+    // Every stored nonzero of A goes to the same row-major flat position in the new matrix shape, i.e. to new
+    // diagonal (col - row) and position along it. Previously the nonzeros were collected with push_back from an
+    // OpenMP parallel loop (a data race: corrupted the heap, "double free" at random), the flat index was computed
+    // from (diagonal, position) as if it were (row, column), and the result kept one "diagonal" entry per nonzero
+    // without its position along the diagonal.
+    const unsigned long long rowsA = A->matrix_shape[0], colsA = A->matrix_shape[1];
+    const unsigned long long rows = matrix_shape[0], cols = matrix_shape[1];
+    if (rowsA * colsA != rows * cols) {
+        throw std::invalid_argument("matrix_reshape: the new shape has a different number of entries");
+    }
+    struct Entry { int diag; unsigned int pos; valType re, im; };
+    std::vector<Entry> entries;
     for (size_t d = 0; d < A->dIndices.size(); ++d) {
-        int dIdx = A->dIndices[d];
-        unsigned int len = A->getDiagonalLengthInternal(dIdx);
-        valType* realA = A->realData + A->diagOffsets[d];
-        valType* imagA = A->imagData + A->diagOffsets[d];
-        for(unsigned int i = 0; i < len; i++) {
-            std::array<unsigned int, 2> pos = {static_cast<unsigned int>(dIdx), i};
-            std::array<int, 2> d_pos = res->getDiagonalPositionByFlatIndex(A->getFlatIndex(pos));
-            unsigned int d_len = res->getDiagonalLengthInternal(d_pos[0]);
-            if(realA[i] != 0.0 || imagA[i] != 0.0) {
-                temp_dIndices.push_back(d_pos[0]);
-                temp_diagLens.push_back(d_len);
-                temp_realData.push_back(realA[i]);
-                temp_imagData.push_back(imagA[i]);
-            }
+        const int dIdx = A->dIndices[d];
+        const unsigned int len = A->getDiagonalLengthInternal(dIdx);
+        const valType* realA = A->realData + A->diagOffsets[d];
+        const valType* imagA = A->imagData + A->diagOffsets[d];
+        for (unsigned int i = 0; i < len; i++) {
+            if (realA[i] == 0.0 && imagA[i] == 0.0) continue;
+            const unsigned long long row = (dIdx >= 0) ? i : i - static_cast<long long>(dIdx);
+            const unsigned long long col = (dIdx >= 0) ? i + static_cast<unsigned long long>(dIdx) : i;
+            const unsigned long long flat = row * colsA + col;
+            const unsigned long long r = flat / cols, c = flat % cols;
+            const int diag = static_cast<int>(static_cast<long long>(c) - static_cast<long long>(r));
+            const unsigned int pos = static_cast<unsigned int>(diag >= 0 ? r : c);  // position along the diagonal
+            entries.push_back({diag, pos, realA[i], imagA[i]});
         }
     }
-    // After loop: construct result using available API
-    res = std::make_shared<diaQMatrix>(matrix_shape, temp_dIndices);
-    res->setContiguousData(temp_realData, temp_imagData);
+    std::vector<int> diags;
+    diags.reserve(entries.size());
+    for (const Entry& e : entries) diags.push_back(e.diag);
+    std::sort(diags.begin(), diags.end());
+    diags.erase(std::unique(diags.begin(), diags.end()), diags.end());
+    std::shared_ptr<diaQMatrix> res = std::make_shared<diaQMatrix>(matrix_shape, diags);  // zeroed storage
+    for (const Entry& e : entries) {
+        const size_t slot = static_cast<size_t>(std::lower_bound(diags.begin(), diags.end(), e.diag) - diags.begin());
+        res->realData[res->diagOffsets[slot] + e.pos] = e.re;
+        res->imagData[res->diagOffsets[slot] + e.pos] = e.im;
+    }
 
     #ifdef DEBUG
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
