@@ -1,4 +1,4 @@
-# Build and test DiaQ on every pull request into dev or main (and on pushes to them), so the result shows in the PR.
+# Build and test DiaQ on every pull request into dev or main, so the result shows in the PR.
 #
 # - cpu: CPU build (SIMD backend picked for the runner), all named C++ tests (cpp_tests/run_all.sh) and the Python
 #   tests that check results against numpy (python_tests/run_ci.py).
@@ -13,10 +13,10 @@
 # dev and main (Settings > Branches / Rules).
 name: tests
 
+# Pull requests only. Branch rules allow changes into dev and main only through PRs, and a PR run already tests
+# the merge result, so a run on the push that merging makes would repeat it.
 on:
   pull_request:
-    branches: [dev, main]
-  push:
     branches: [dev, main]
   workflow_dispatch:
 
